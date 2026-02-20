@@ -5,9 +5,16 @@ Private Const TARGET_MAILBOX As String = "facturas@novogar.cr"      ' <-- Debe c
 Private Const INBOX_NAME As String = "Bandeja de entrada"          ' <-- En tu Outlook está en español
 Private Const TARGET_FOLDER_NAME As String = "FACTURAS RECIBIDAS"  ' <-- Subcarpeta dentro de Bandeja de entrada
 Private Const SAVE_FOLDER As String = "C:\Jose\Proyecto Novogar\facturas\recibidas\" ' <-- Debe existir y terminar en \
+' Rango de fechas configurable (inclusive)
+Private Const RANGE_START_YEAR As Integer = 2026
+Private Const RANGE_START_MONTH As Integer = 2
+Private Const RANGE_START_DAY As Integer = 17
+Private Const RANGE_END_YEAR As Integer = 2026
+Private Const RANGE_END_MONTH As Integer = 2
+Private Const RANGE_END_DAY As Integer = 19
 ' ============================================
 
-Public Sub DescargarAdjuntos_FACTURAS_RECIBIDAS_Enero2026()
+Public Sub DescargarAdjuntos_FACTURAS_RECIBIDAS_RangoFecha()
     Dim ns As Outlook.NameSpace
     Dim storeRoot As Outlook.Folder
     Dim inbox As Outlook.Folder
@@ -24,9 +31,9 @@ Public Sub DescargarAdjuntos_FACTURAS_RECIBIDAS_Enero2026()
 
     On Error GoTo EH
 
-    ' 01/01/2026 00:00:00 -> 31/01/2026 23:59:59 (incluye el 31)
-    startDate = DateSerial(2026, 2, 17)
-    endDate = DateSerial(2026, 2, 19) + TimeSerial(23, 59, 59)
+    ' Usa el rango definido en CONFIG (inclusive)
+    startDate = DateSerial(RANGE_START_YEAR, RANGE_START_MONTH, RANGE_START_DAY)
+    endDate = DateSerial(RANGE_END_YEAR, RANGE_END_MONTH, RANGE_END_DAY) + TimeSerial(23, 59, 59)
 
     ' Validar carpeta destino
     If Dir(SAVE_FOLDER, vbDirectory) = "" Then
@@ -348,4 +355,8 @@ Private Function EnsureUniquePath(ByVal fullPath As String) As String
         i = i + 1
     Loop
 End Function
+' Alias legado para mantener compatibilidad con macros anteriores.
+Public Sub DescargarAdjuntos_FACTURAS_RECIBIDAS_Enero2026()
+    DescargarAdjuntos_FACTURAS_RECIBIDAS_RangoFecha
+End Sub
 
