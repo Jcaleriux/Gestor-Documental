@@ -1,0 +1,351 @@
+Option Explicit
+
+' ================== CONFIG ==================
+Private Const TARGET_MAILBOX As String = "facturas@novogar.cr"      ' <-- Debe coincidir con el nombre del buzón en Outlook
+Private Const INBOX_NAME As String = "Bandeja de entrada"          ' <-- En tu Outlook está en español
+Private Const TARGET_FOLDER_NAME As String = "FACTURAS RECIBIDAS"  ' <-- Subcarpeta dentro de Bandeja de entrada
+Private Const SAVE_FOLDER As String = "C:\Jose\Proyecto Novogar\facturas\recibidas\" ' <-- Debe existir y terminar en \
+' ============================================
+
+Public Sub DescargarAdjuntos_FACTURAS_RECIBIDAS_Enero2026()
+    Dim ns As Outlook.NameSpace
+    Dim storeRoot As Outlook.Folder
+    Dim inbox As Outlook.Folder
+    Dim targetFolder As Outlook.Folder
+    Dim items As Outlook.items
+    Dim filtered As Outlook.items
+    Dim it As Object
+    Dim mail As Outlook.MailItem
+
+    Dim startDate As Date, endDate As Date
+    Dim filter As String
+
+    Dim countMails As Long, countFiles As Long
+
+    On Error GoTo EH
+
+    ' 01/01/2026 00:00:00 -> 31/01/2026 23:59:59 (incluye el 31)
+    startDate = DateSerial(2026, 2, 17)
+    endDate = DateSerial(2026, 2, 19) + TimeSerial(23, 59, 59)
+
+    ' Validar carpeta destino
+    If Dir(SAVE_FOLDER, vbDirectory) = "" Then
+        MsgBox "La carpeta de destino no existe: " & SAVE_FOLDER, vbCritical
+        Exit Sub
+    End If
+
+    Set ns = Application.GetNamespace("MAPI")
+
+    ' ?? Buscar buzón específico (no el default)
+    Set storeRoot = ns.Folders(TARGET_MAILBOX)
+    Set inbox = storeRoot.Folders(INBOX_NAME)
+    Set targetFolder = GetSubFolderByName(inbox, TARGET_FOLDER_NAME)
+
+    If targetFolder Is Nothing Then
+        MsgBox "No existe la carpeta '" & TARGET_FOLDER_NAME & "' dentro de '" & INBOX_NAME & "' del buzón '" & TARGET_MAILBOX & "'.", vbCritical
+        Exit Sub
+    End If
+
+    Set items = targetFolder.items
+    items.Sort "[ReceivedTime]", True
+
+    ' Restrict usualmente espera mm/dd/yyyy
+    filter = "[ReceivedTime] >= '" & Format(startDate, "mm/dd/yyyy hh:nn AMPM") & _
+             "' AND [ReceivedTime] <= '" & Format(endDate, "mm/dd/yyyy hh:nn AMPM") & "'"
+
+    Set filtered = items.Restrict(filter)
+
+    countMails = 0
+    countFiles = 0
+
+    For Each it In filtered
+        If TypeOf it Is Outlook.MailItem Then
+            Set mail = it
+
+            ' ? Solo procesar correos con adjuntos
+            If mail.Attachments.Count > 0 Then
+                countMails = countMails + 1
+                countFiles = countFiles + SaveAttachments_PdfXml_WithManifest(mail)
+            End If
+        End If
+    Next it
+
+    MsgBox "Proceso finalizado." & vbCrLf & _
+           "Correos procesados (con adjuntos): " & countMails & vbCrLf & _
+           "Archivos guardados (solo PDF/XML): " & countFiles & vbCrLf & _
+           "Destino: " & SAVE_FOLDER, vbInformation
+    Exit Sub
+
+EH:
+    MsgBox "Error: " & Err.Number & " - " & Err.Description, vbCritical
+End Sub
+
+' ================== CORE ==================
+' Guarda SOLO PDF y XML (ignora otros), clasifica XML (DOC vs RH) y crea manifest.json
+' Nombres:
+' <ingestion_id>.PDF.1.pdf
+' <ingestion_id>.DOC.1.xml
+' <ingestion_id>.RH.1.xml
+' <ingestion_id>.manifest.json
+Private Function SaveAttachments_PdfXml_WithManifest(ByVal mail As Outlook.MailItem) As Long
+    Dim att As Outlook.Attachment
+    Dim ingestionId As String
+    Dim ext As String
+    Dim saved As Long
+
+    Dim pdfIdx As Long, docIdx As Long, rhIdx As Long
+    Dim tmpPath As String, finalName As String, finalPath As String, kind As String
+
+    Dim manifestItems As String
+    Dim firstItem As Boolean
+
+    ingestionId = BuildIngestionId(mail)
+    firstItem = True
+    manifestItems = ""
+
+    For Each att In mail.Attachments
+        ext = LCase$(GetExtension(att.fileName))
+
+        ' ? Ignorar todo lo que no sea PDF o XML
+        If ext <> "pdf" And ext <> "xml" Then GoTo SkipAtt
+
+        If ext = "pdf" Then
+            pdfIdx = pdfIdx + 1
+            finalName = ingestionId & ".PDF." & pdfIdx & ".pdf"
+            finalPath = EnsureUniquePath(SAVE_FOLDER & finalName)
+            att.SaveAsFile finalPath
+
+            AppendManifestItem manifestItems, firstItem, "PDF", finalName, att.fileName, att.size
+            saved = saved + 1
+
+        ElseIf ext = "xml" Then
+            ' Guardar temporal para clasificar por contenido (root + namespace)
+            tmpPath = EnsureUniquePath(SAVE_FOLDER & ingestionId & ".__TMP__." & att.Index & ".xml")
+            att.SaveAsFile tmpPath
+
+            kind = ClassifyXmlByRoot(tmpPath) ' "DOC", "RH", "UNKNOWN"
+
+            If kind = "DOC" Then
+                docIdx = docIdx + 1
+                finalName = ingestionId & ".DOC." & docIdx & ".xml"
+            ElseIf kind = "RH" Then
+                rhIdx = rhIdx + 1
+                finalName = ingestionId & ".RH." & rhIdx & ".xml"
+            Else
+                ' XML raro/dañado: lo borramos e ignoramos
+                On Error Resume Next
+                Kill tmpPath
+                On Error GoTo 0
+                GoTo SkipAtt
+            End If
+
+            finalPath = EnsureUniquePath(SAVE_FOLDER & finalName)
+            Name tmpPath As finalPath
+
+            AppendManifestItem manifestItems, firstItem, kind, finalName, att.fileName, att.size
+            saved = saved + 1
+        End If
+
+SkipAtt:
+    Next att
+
+    If saved > 0 Then
+        WriteManifestJson SAVE_FOLDER & ingestionId & ".manifest.json", ingestionId, mail, manifestItems
+    End If
+
+    SaveAttachments_PdfXml_WithManifest = saved
+End Function
+
+' ================== XML classification (root + namespace) ==================
+Private Function ClassifyXmlByRoot(ByVal xmlPath As String) As String
+    ' Retorna: "RH", "DOC", "UNKNOWN"
+    Dim xml As Object ' MSXML2.DOMDocument.6.0 (late binding)
+    Dim root As Object
+    Dim rootName As String, ns As String
+
+    On Error GoTo EH
+
+    Set xml = CreateObject("MSXML2.DOMDocument.6.0")
+    xml.Async = False
+    xml.ValidateOnParse = False
+    xml.ResolveExternals = False
+
+    If Not xml.Load(xmlPath) Then
+        ClassifyXmlByRoot = "UNKNOWN"
+        Exit Function
+    End If
+
+    Set root = xml.DocumentElement
+    If root Is Nothing Then
+        ClassifyXmlByRoot = "UNKNOWN"
+        Exit Function
+    End If
+
+    rootName = LCase$(root.BaseName)        ' local name
+    ns = LCase$(root.NamespaceURI)
+
+    ' RH: <MensajeHacienda xmlns=".../mensajeHacienda">
+    If rootName = "mensajehacienda" And InStr(1, ns, "mensajehacienda", vbTextCompare) > 0 Then
+        ClassifyXmlByRoot = "RH"
+        Exit Function
+    End If
+
+    ' Documentos electrónicos (incluye varios tipos)
+    If IsElectronicDocRoot(rootName) Then
+        ClassifyXmlByRoot = "DOC"
+        Exit Function
+    End If
+
+    ClassifyXmlByRoot = "UNKNOWN"
+    Exit Function
+
+EH:
+    ClassifyXmlByRoot = "UNKNOWN"
+End Function
+
+Private Function IsElectronicDocRoot(ByVal rootNameLower As String) As Boolean
+    Select Case rootNameLower
+        Case "facturaelectronica", _
+             "tiqueteelectronico", _
+             "notacreditoelectronica", _
+             "notadebitoelectronica", _
+             "facturacompra"
+            IsElectronicDocRoot = True
+        Case Else
+            IsElectronicDocRoot = False
+    End Select
+End Function
+
+' ================== Manifest JSON ==================
+Private Sub AppendManifestItem(ByRef jsonArr As String, ByRef firstItem As Boolean, _
+                               ByVal tipo As String, ByVal savedAs As String, _
+                               ByVal originalName As String, ByVal sizeBytes As Long)
+    Dim item As String
+    item = "{""type"":""" & JsonEscape(tipo) & """," & _
+           """savedAs"":""" & JsonEscape(savedAs) & """," & _
+           """originalName"":""" & JsonEscape(originalName) & """," & _
+           """sizeBytes"":" & CStr(sizeBytes) & "}"
+
+    If firstItem Then
+        jsonArr = item
+        firstItem = False
+    Else
+        jsonArr = jsonArr & "," & item
+    End If
+End Sub
+
+Private Sub WriteManifestJson(ByVal manifestPath As String, ByVal ingestionId As String, _
+                              ByVal mail As Outlook.MailItem, ByVal attachmentsJson As String)
+    Dim f As Integer
+    Dim sender As String, subject As String, entryId As String, receivedIso As String
+
+    sender = SafeSenderEmail(mail)
+    subject = mail.subject
+    entryId = mail.entryId
+    receivedIso = Format(mail.ReceivedTime, "yyyy-mm-dd\THH:nn:ss")
+
+    f = FreeFile
+    Open manifestPath For Output As #f
+
+    Print #f, "{"
+    Print #f, "  ""ingestion_id"": """ & JsonEscape(ingestionId) & ""","
+    Print #f, "  ""source"": ""outlook"","
+    Print #f, "  ""received_time"": """ & JsonEscape(receivedIso) & ""","
+    Print #f, "  ""sender"": """ & JsonEscape(sender) & ""","
+    Print #f, "  ""subject"": """ & JsonEscape(subject) & ""","
+    Print #f, "  ""outlook_entry_id"": """ & JsonEscape(entryId) & ""","
+    Print #f, "  ""attachments_saved"": [" & attachmentsJson & "]"
+    Print #f, "}"
+
+    Close #f
+End Sub
+
+Private Function SafeSenderEmail(ByVal mail As Outlook.MailItem) As String
+    On Error GoTo EH
+    SafeSenderEmail = mail.SenderEmailAddress
+    Exit Function
+EH:
+    SafeSenderEmail = ""
+End Function
+
+Private Function JsonEscape(ByVal s As String) As String
+    s = Replace(s, "\", "\\")
+    s = Replace(s, """", "\""")
+    s = Replace(s, vbCrLf, "\n")
+    s = Replace(s, vbCr, "\n")
+    s = Replace(s, vbLf, "\n")
+    JsonEscape = s
+End Function
+
+' ================== Utilities ==================
+Private Function GetSubFolderByName(ByVal parentFolder As Outlook.Folder, ByVal subFolderName As String) As Outlook.Folder
+    Dim f As Outlook.Folder
+    For Each f In parentFolder.Folders
+        If StrComp(f.name, subFolderName, vbTextCompare) = 0 Then
+            Set GetSubFolderByName = f
+            Exit Function
+        End If
+    Next f
+    Set GetSubFolderByName = Nothing
+End Function
+
+Private Function GetExtension(ByVal fileName As String) As String
+    Dim p As Long
+    p = InStrRev(fileName, ".")
+    If p <= 0 Then
+        GetExtension = ""
+    Else
+        GetExtension = Mid$(fileName, p + 1)
+    End If
+End Function
+
+' Ingestion ID estable: timestamp + cola del EntryID alfanumérico
+Private Function BuildIngestionId(ByVal mail As Outlook.MailItem) As String
+    Dim ts As String, tail As String
+    ts = Format(mail.ReceivedTime, "yyyymmdd_hhnnss")
+    tail = Right$(CleanId(mail.entryId), 18)
+    If tail = "" Then tail = "NOENTRYID"
+    BuildIngestionId = ts & "_" & tail
+End Function
+
+Private Function CleanId(ByVal s As String) As String
+    Dim i As Long, ch As String, out As String
+    out = ""
+    For i = 1 To Len(s)
+        ch = Mid$(s, i, 1)
+        If (ch >= "0" And ch <= "9") Or (ch >= "A" And ch <= "Z") Or (ch >= "a" And ch <= "z") Then
+            out = out & ch
+        End If
+    Next i
+    CleanId = out
+End Function
+
+' Evita colisiones: agrega (1), (2), ...
+Private Function EnsureUniquePath(ByVal fullPath As String) As String
+    Dim base As String, ext As String, i As Long, dotPos As Long, candidate As String
+
+    If Dir(fullPath) = "" Then
+        EnsureUniquePath = fullPath
+        Exit Function
+    End If
+
+    dotPos = InStrRev(fullPath, ".")
+    If dotPos > 0 Then
+        base = Left$(fullPath, dotPos - 1)
+        ext = Mid$(fullPath, dotPos)
+    Else
+        base = fullPath
+        ext = ""
+    End If
+
+    i = 1
+    Do
+        candidate = base & " (" & i & ")" & ext
+        If Dir(candidate) = "" Then
+            EnsureUniquePath = candidate
+            Exit Function
+        End If
+        i = i + 1
+    Loop
+End Function
+
