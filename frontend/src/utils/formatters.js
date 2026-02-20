@@ -1,0 +1,61 @@
+export const formatAmount = (value) => {
+  const amount = Number(value);
+  const safe = Number.isFinite(amount) ? amount : 0;
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(safe);
+};
+
+export const formatDate = (value) => {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleDateString();
+};
+
+export const formatRelativeTime = (value) => {
+  if (!value) return 'Sin fecha';
+  const now = new Date();
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Fecha invalida';
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return 'Hace un momento';
+  if (diffMins < 60) return `Hace ${diffMins} min`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `Hace ${diffHours} hora${diffHours === 1 ? '' : 's'}`;
+  const diffDays = Math.floor(diffHours / 24);
+  return `Hace ${diffDays} dia${diffDays === 1 ? '' : 's'}`;
+};
+
+export const getMoneda = (doc) => (
+  doc?.resumen?.CodigoTipoMoneda?.CodigoMoneda ||
+  doc?.resumen?.CodigoMoneda ||
+  doc?.resumen?.codigoMoneda ||
+  'CRC'
+);
+
+export const getMontoDocumento = (doc, options = {}) => {
+  const { preferAjustado = false } = options;
+  const candidates = preferAjustado
+    ? [
+      doc?.total_a_pagar,
+      doc?.total_factura,
+      doc?.resumen?.TotalComprobante
+    ]
+    : [
+      doc?.total_factura,
+      doc?.total_a_pagar,
+      doc?.resumen?.TotalComprobante
+    ];
+
+  for (const value of candidates) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return 0;
+};

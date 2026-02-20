@@ -1,0 +1,179 @@
+const Joi = require('joi');
+
+const createComentarioSchema = Joi.object({
+  usuario: Joi.string().trim().required(),
+  texto: Joi.string().trim().required()
+});
+
+const createAuditoriaSchema = Joi.object({
+  accion: Joi.string().trim().required(),
+  usuario: Joi.string().trim().required(),
+  detalles: Joi.any(),
+  ip_address: Joi.string().trim().optional()
+});
+
+const createEstadoSchema = Joi.object({
+  estado_anterior: Joi.string().allow('', null),
+  estado_nuevo: Joi.string().trim().required(),
+  usuario: Joi.string().trim().required(),
+  motivo: Joi.string().allow('', null)
+});
+
+const updateEstadoSchema = Joi.object({
+  estado: Joi.string().trim().required()
+});
+
+const createVersionSchema = Joi.object({
+  usuario: Joi.string().trim().required(),
+  cambios: Joi.string().trim().required(),
+  ruta_archivo: Joi.string().allow('', null)
+});
+
+const tesoreriaActionSchema = Joi.object({
+  accion: Joi.string().trim().required(),
+  destino: Joi.string().trim().optional(),
+  motivo: Joi.string().allow('', null),
+  usuario: Joi.string().allow('', null)
+});
+
+const cambiarEstadoSchema = Joi.object({
+  estado: Joi.string().trim().required(),
+  usuario: Joi.string().allow('', null),
+  motivo: Joi.string().allow('', null),
+  force: Joi.boolean().optional(),
+  pagos_documentos: Joi.array().items(
+    Joi.object({
+      factura_id: Joi.number().integer().positive().required(),
+      monto_pago: Joi.number().positive().required()
+    })
+  ).optional()
+});
+
+const decisionDocumentoSchema = Joi.object({
+  etapa: Joi.string().trim().required(),
+  decision: Joi.string().trim().required(),
+  motivo: Joi.string().allow('', null),
+  usuario: Joi.string().allow('', null)
+});
+
+const crearTramiteSchema = Joi.object({
+  sociedad_id: Joi.any(),
+  factura_ids: Joi.array().items(Joi.number().integer().positive()).default([]),
+  retencion_factura_ids: Joi.array().items(Joi.number().integer().positive()).default([]),
+  usuario: Joi.string().allow('', null)
+}).custom((value, helpers) => {
+  const facturas = Array.isArray(value.factura_ids) ? value.factura_ids : [];
+  const retenciones = Array.isArray(value.retencion_factura_ids) ? value.retencion_factura_ids : [];
+  if (facturas.length === 0 && retenciones.length === 0) {
+    return helpers.error('any.invalid');
+  }
+  return value;
+}, 'tramite selection validation').messages({
+  'any.invalid': 'Seleccione al menos una factura o una retencion'
+});
+
+const rechazoTesoreriaSchema = Joi.object({
+  motivo: Joi.string().allow('', null),
+  usuario: Joi.string().allow('', null)
+});
+
+const upsertContabilizacionSchema = Joi.object({
+  fecha_documento: Joi.date().iso().allow(null, ''),
+  fecha_vencimiento: Joi.date().iso().allow(null, ''),
+  fecha_contabilizacion: Joi.date().iso().allow(null, ''),
+  plazo_credito: Joi.number().integer().allow(null),
+  retencion: Joi.number().allow(null),
+  descuento: Joi.number().allow(null),
+  anticipo_aplicado: Joi.number().allow(null),
+  monto_nota_credito: Joi.number().min(0).allow(null),
+  centro_costo: Joi.string().allow('', null),
+  cuenta_contable: Joi.string().allow('', null),
+  proyecto: Joi.string().allow('', null),
+  orden_compra: Joi.string().allow('', null),
+  numero_proveedor: Joi.string().allow('', null),
+  proveedor_id: Joi.number().integer().positive().allow(null),
+  tabla_pago_id: Joi.number().integer().positive().allow(null),
+  nota_credito_id: Joi.number().integer().positive().allow(null),
+  notas: Joi.string().allow('', null),
+  metadata: Joi.any(),
+  usuario: Joi.string().allow('', null)
+});
+
+const registrarPagoRetencionSchema = Joi.object({
+  monto: Joi.number().positive().required(),
+  fecha_pago: Joi.date().iso().allow(null, ''),
+  notas: Joi.string().allow('', null),
+  usuario: Joi.string().allow('', null)
+});
+
+const createUsuarioSchema = Joi.object({
+  nombre: Joi.string().trim().min(2).max(100).required(),
+  email: Joi.string().trim().email({ tlds: { allow: false } }).max(100).required(),
+  password: Joi.string().min(8).max(255).required(),
+  rol_id: Joi.number().integer().positive().required(),
+  activo: Joi.boolean().optional()
+});
+
+const updateUsuarioSchema = Joi.object({
+  nombre: Joi.string().trim().min(2).max(100).required(),
+  email: Joi.string().trim().email({ tlds: { allow: false } }).max(100).required(),
+  rol_id: Joi.number().integer().positive().required(),
+  activo: Joi.boolean().optional(),
+  password: Joi.string().min(8).max(255).allow('', null)
+});
+
+const setUsuarioSociedadesSchema = Joi.object({
+  sociedad_ids: Joi.array().items(Joi.number().integer().positive()).required()
+});
+
+const createProveedorSchema = Joi.object({
+  sociedad_id: Joi.number().integer().positive().required(),
+  identificacion_tipo: Joi.string().trim().max(20).allow('', null),
+  identificacion_numero: Joi.string().trim().min(3).max(50).required(),
+  nombre: Joi.string().trim().min(2).max(255).required(),
+  nombre_comercial: Joi.string().trim().max(255).allow('', null),
+  correo_electronico: Joi.string().trim().email({ tlds: { allow: false } }).max(255).allow('', null),
+  telefono_codigo_pais: Joi.string().trim().max(10).allow('', null),
+  telefono_numero: Joi.string().trim().max(50).allow('', null)
+});
+
+const updateProveedorSchema = Joi.object({
+  identificacion_tipo: Joi.string().trim().max(20).allow('', null),
+  identificacion_numero: Joi.string().trim().min(3).max(50).required(),
+  nombre: Joi.string().trim().min(2).max(255).required(),
+  nombre_comercial: Joi.string().trim().max(255).allow('', null),
+  correo_electronico: Joi.string().trim().email({ tlds: { allow: false } }).max(255).allow('', null),
+  telefono_codigo_pais: Joi.string().trim().max(10).allow('', null),
+  telefono_numero: Joi.string().trim().max(50).allow('', null)
+});
+
+const createTablaPagoSchema = Joi.object({
+  sociedad_id: Joi.number().integer().positive().required(),
+  proveedor_id: Joi.number().integer().positive().required(),
+  nombre: Joi.string().trim().max(255).allow('', null),
+  filename: Joi.string().trim().max(255).required(),
+  file_base64: Joi.string().trim().required(),
+  metadata: Joi.any(),
+  usuario: Joi.string().trim().max(100).allow('', null)
+});
+
+module.exports = {
+  createComentarioSchema,
+  createAuditoriaSchema,
+  createEstadoSchema,
+  updateEstadoSchema,
+  createVersionSchema,
+  tesoreriaActionSchema,
+  cambiarEstadoSchema,
+  decisionDocumentoSchema,
+  crearTramiteSchema,
+  rechazoTesoreriaSchema,
+  upsertContabilizacionSchema,
+  registrarPagoRetencionSchema,
+  createUsuarioSchema,
+  updateUsuarioSchema,
+  setUsuarioSociedadesSchema,
+  createProveedorSchema,
+  updateProveedorSchema,
+  createTablaPagoSchema
+};

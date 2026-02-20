@@ -1,0 +1,38 @@
+const PERMISSIONS = Object.freeze({
+  ACCESO_TOTAL: 'acceso_total',
+  SOCIEDADES_TODAS: 'sociedades_todas',
+  SOCIEDADES_ASIGNADAS: 'sociedades_asignadas',
+  USUARIOS_ADMINISTRAR: 'usuarios_administrar',
+  DOCUMENTOS_VER: 'documentos_ver',
+  DOCUMENTOS_DESCARGAR: 'documentos_descargar',
+  DOCUMENTOS_SUBIR: 'documentos_subir',
+  DOCUMENTOS_COMENTAR: 'documentos_comentar',
+  DOCUMENTOS_CONTABILIZAR: 'documentos_contabilizar',
+  DOCUMENTOS_TRAMITAR_PAGO: 'documentos_tramitar_pago',
+  DOCUMENTOS_APROBAR_GERENCIA: 'documentos_aprobar_gerencia',
+  DOCUMENTOS_APROBAR_GERENCIA_CONTABLE: 'documentos_aprobar_gerencia_contable',
+  DOCUMENTOS_APROBAR_GERENCIA_FINANCIERA: 'documentos_aprobar_gerencia_financiera',
+  DOCUMENTOS_FIRMAR_AUTORIZAR: 'documentos_firmar_autorizar',
+  DOCUMENTOS_MARCAR_PAGADO: 'documentos_marcar_pagado',
+  AUDITORIA_VER: 'auditoria_ver'
+});
+
+const WORKFLOW_PERMISSIONS = Object.freeze([
+  PERMISSIONS.DOCUMENTOS_CONTABILIZAR,
+  PERMISSIONS.DOCUMENTOS_TRAMITAR_PAGO,
+  PERMISSIONS.DOCUMENTOS_APROBAR_GERENCIA,
+  PERMISSIONS.DOCUMENTOS_APROBAR_GERENCIA_CONTABLE,
+  PERMISSIONS.DOCUMENTOS_APROBAR_GERENCIA_FINANCIERA,
+  PERMISSIONS.DOCUMENTOS_MARCAR_PAGADO
+]);
+
+const SOCIEDADES_ACCESS_PERMISSIONS = Object.freeze([
+  PERMISSIONS.SOCIEDADES_TODAS,
+  PERMISSIONS.SOCIEDADES_ASIGNADAS
+]);
+
+module.exports = {
+  PERMISSIONS,
+  WORKFLOW_PERMISSIONS,
+  SOCIEDADES_ACCESS_PERMISSIONS
+};

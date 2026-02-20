@@ -1,0 +1,7 @@
+id,sociedad_id,estado,creado_por,creado_en,actualizado_en
+5,21,en_revision_tesoreria_2,admin,2026-02-03 10:13:38.814388,2026-02-03 10:14:55.67497
+6,21,en_aprobacion_gerencia,admin,2026-02-03 11:33:07.604648,2026-02-03 11:33:17.988052
+1,21,pagado,admin,2026-02-03 02:02:35.856466,2026-02-03 02:33:12.621431
+3,21,pagado,admin,2026-02-03 02:33:31.846633,2026-02-03 02:34:22.535241
+2,21,en_aprobacion_gerencia_financiera,admin,2026-02-03 02:02:47.103706,2026-02-03 02:35:00.671506
+4,21,en_aprobacion_gerencia_financiera,admin,2026-02-03 10:07:19.33721,2026-02-03 10:08:07.826299

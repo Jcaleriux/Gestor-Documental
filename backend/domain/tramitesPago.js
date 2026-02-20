@@ -1,0 +1,116 @@
+const TRAMITE_ESTADOS = Object.freeze({
+  EN_APROBACION_GERENCIA: 'en_aprobacion_gerencia',
+  EN_APROBACION_GERENCIA_CONTABLE: 'en_aprobacion_gerencia_contable',
+  EN_APROBACION_GERENCIA_FINANCIERA: 'en_aprobacion_gerencia_financiera',
+  EN_REVISION_TESORERIA: 'en_revision_tesoreria',
+  EN_REVISION_TESORERIA_1: 'en_revision_tesoreria_1',
+  EN_REVISION_TESORERIA_2: 'en_revision_tesoreria_2',
+  PAGADO: 'pagado',
+  CANCELADO: 'cancelado'
+});
+
+const TRAMITE_ESTADOS_SET = new Set(Object.values(TRAMITE_ESTADOS));
+
+const TRANSICIONES_REVISION = [
+  TRAMITE_ESTADOS.EN_APROBACION_GERENCIA,
+  TRAMITE_ESTADOS.EN_APROBACION_GERENCIA_CONTABLE,
+  TRAMITE_ESTADOS.EN_APROBACION_GERENCIA_FINANCIERA
+];
+
+const TRANSICIONES = Object.freeze({
+  [TRAMITE_ESTADOS.EN_APROBACION_GERENCIA]: [TRAMITE_ESTADOS.EN_APROBACION_GERENCIA_CONTABLE],
+  [TRAMITE_ESTADOS.EN_APROBACION_GERENCIA_CONTABLE]: [TRAMITE_ESTADOS.EN_APROBACION_GERENCIA_FINANCIERA],
+  [TRAMITE_ESTADOS.EN_APROBACION_GERENCIA_FINANCIERA]: [TRAMITE_ESTADOS.PAGADO],
+  [TRAMITE_ESTADOS.EN_REVISION_TESORERIA]: TRANSICIONES_REVISION,
+  [TRAMITE_ESTADOS.EN_REVISION_TESORERIA_1]: TRANSICIONES_REVISION,
+  [TRAMITE_ESTADOS.EN_REVISION_TESORERIA_2]: TRANSICIONES_REVISION,
+  [TRAMITE_ESTADOS.PAGADO]: [],
+  [TRAMITE_ESTADOS.CANCELADO]: []
+});
+
+const DESTINOS_TESORERIA = Object.freeze({
+  GERENCIA: TRAMITE_ESTADOS.EN_APROBACION_GERENCIA,
+  GERENCIA_CONTABLE: TRAMITE_ESTADOS.EN_APROBACION_GERENCIA_CONTABLE,
+  GERENCIA_FINANCIERA: TRAMITE_ESTADOS.EN_APROBACION_GERENCIA_FINANCIERA
+});
+
+const DESTINOS_TESORERIA_SET = new Set(Object.values(DESTINOS_TESORERIA));
+
+const DOCUMENTO_DECISIONES = Object.freeze({
+  APROBADO: 'aprobado',
+  RECHAZADO: 'rechazado'
+});
+
+const DOCUMENTO_DECISIONES_SET = new Set(Object.values(DOCUMENTO_DECISIONES));
+
+const DOCUMENTO_ESTADOS = Object.freeze({
+  PENDIENTE: 'pendiente',
+  APROBADO: DOCUMENTO_DECISIONES.APROBADO,
+  RECHAZADO: DOCUMENTO_DECISIONES.RECHAZADO
+});
+
+const DOCUMENTO_ACCIONES = Object.freeze({
+  TESORERIA_EXCLUIR: 'tesoreria_excluir',
+  TESORERIA_REINCLUIR: 'tesoreria_reincluir',
+  TESORERIA_REENVIAR: 'tesoreria_reenviar',
+  DEVOLVER_TESORERIA: 'devolver_tesoreria',
+  DECISION_GERENCIA: 'decision_gerencia',
+  DECISION_GERENCIA_CONTABLE: 'decision_gerencia_contable',
+  DECISION_FINANCIERA: 'decision_financiera'
+});
+
+const TRAMITE_ACCIONES = Object.freeze({
+  CREAR_TRAMITE: 'crear_tramite',
+  CAMBIAR_ESTADO: 'cambiar_estado',
+  OVERRIDE_ESTADO: 'override_estado'
+});
+
+const TESORERIA_ESTADOS = Object.freeze({
+  PENDIENTE: 'pendiente',
+  EXCLUIDO: 'excluido',
+  REENVIADO: 'reenviado',
+  REINCLUIDO: 'reincluido'
+});
+
+const TESORERIA_ACCIONES = Object.freeze({
+  REENVIAR: 'reenviar',
+  EXCLUIR: 'excluir',
+  REINCLUIR: 'reincluir'
+});
+
+const TESORERIA_ACCIONES_SET = new Set(Object.values(TESORERIA_ACCIONES));
+
+const ETAPAS_DOC = Object.freeze({
+  gerencia: {
+    estado: 'estado_gerencia',
+    motivo: 'motivo_gerencia',
+    accion: DOCUMENTO_ACCIONES.DECISION_GERENCIA
+  },
+  gerencia_contable: {
+    estado: 'estado_gerencia_contable',
+    motivo: 'motivo_gerencia_contable',
+    accion: DOCUMENTO_ACCIONES.DECISION_GERENCIA_CONTABLE
+  },
+  financiera: {
+    estado: 'estado_financiero',
+    motivo: 'motivo_financiero',
+    accion: DOCUMENTO_ACCIONES.DECISION_FINANCIERA
+  }
+});
+
+module.exports = {
+  TRAMITE_ESTADOS,
+  TRAMITE_ESTADOS_SET,
+  TRANSICIONES,
+  DESTINOS_TESORERIA,
+  DESTINOS_TESORERIA_SET,
+  DOCUMENTO_DECISIONES,
+  DOCUMENTO_DECISIONES_SET,
+  DOCUMENTO_ESTADOS,
+  DOCUMENTO_ACCIONES,
+  TRAMITE_ACCIONES,
+  TESORERIA_ESTADOS,
+  TESORERIA_ACCIONES,
+  TESORERIA_ACCIONES_SET,
+  ETAPAS_DOC
+};

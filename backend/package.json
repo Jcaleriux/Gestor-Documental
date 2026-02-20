@@ -1,0 +1,43 @@
+{
+    "name": "novogar-backend",
+    "version": "1.0.0",
+    "description": "Backend Proyecto Novogar",
+    "main": "index.js",
+    "type": "commonjs",
+    "scripts": {
+        "db:init": "node db/create_tables.js",
+        "db:reset": "node db/reset_schema.js",
+        "db:check": "node db/check_structure.js",
+        "db:migrate:proveedores": "node db/migrate_proveedores.js",
+        "db:migrate:retenciones": "node db/migrate_retenciones.js",
+        "db:migrate:tramites-retenciones": "node db/migrate_tramites_retenciones.js",
+        "db:migrate:pagos-parciales": "node db/migrate_facturas_pagos_parciales.js",
+        "importar": "node scripts/importarFactura.js",
+        "watcher": "node scripts/watcher.js",
+        "proveedores:backfill": "node scripts/backfill_proveedores.js",
+        "reindex": "node scripts/reindex_rutas.js",
+        "diagnostico": "node scripts/diagnostico_docs.js",
+        "reporte-duplicados": "node scripts/reporte_duplicados.js",
+        "reset-docs": "node scripts/reset_documentos.js",
+        "server": "node server.js",
+        "dev": "node server.js",
+        "test": "jest"
+    },
+    "dependencies": {
+        "bcrypt": "^6.0.0",
+        "chokidar": "^5.0.0",
+        "cors": "^2.8.5",
+        "express": "^4.18.2",
+        "fast-xml-parser": "^5.3.4",
+        "fs-extra": "^11.3.3",
+        "joi": "^18.0.2",
+        "jsonwebtoken": "^9.0.0",
+        "nodemailer": "^8.0.0",
+        "pg": "^8.11.5",
+        "uuid": "^9.0.0"
+    },
+    "devDependencies": {
+        "jest": "^29.7.0",
+        "supertest": "^7.1.3"
+    }
+}
