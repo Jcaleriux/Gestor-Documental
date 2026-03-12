@@ -6,9 +6,7 @@ const { resolveDocumentPaths } = require("../utils/documentPaths");
 
 const baseDir = process.env.FACTURAS_BASE_DIR || path.resolve(__dirname, "..", "..");
 const documentPaths = resolveDocumentPaths(baseDir);
-const procesadasDir = fs.existsSync(documentPaths.legacyFacturasProcesadasDir)
-  ? documentPaths.legacyFacturasProcesadasDir
-  : documentPaths.facturasProcesadasDir;
+const procesadasDir = documentPaths.facturasProcesadasDir;
 const salidaDir = path.join(__dirname, "salidas");
 
 function listarXmls(dir) {

@@ -9,12 +9,8 @@ const { resolveDocumentPaths } = require("../utils/documentPaths");
 // ==============================
 const baseDir = process.env.FACTURAS_BASE_DIR || path.resolve(__dirname, "..", "..");
 const documentPaths = resolveDocumentPaths(baseDir);
-const carpetaEntrada = fs.existsSync(documentPaths.legacyFacturasRecibidasDir)
-  ? documentPaths.legacyFacturasRecibidasDir
-  : documentPaths.facturasRecibidasDir;
-const carpetaProcesados = fs.existsSync(documentPaths.legacyFacturasProcesadasDir)
-  ? documentPaths.legacyFacturasProcesadasDir
-  : documentPaths.facturasProcesadasDir;
+const carpetaEntrada = documentPaths.facturasRecibidasDir;
+const carpetaProcesados = documentPaths.facturasProcesadasDir;
 
 if (!fs.existsSync(carpetaEntrada)) {
   fs.mkdirSync(carpetaEntrada, { recursive: true });

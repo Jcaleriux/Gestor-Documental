@@ -4,6 +4,8 @@ import { useFacturasReport } from '../../src/hooks/facturas/useFacturasReport.js
 import { createHookHarness } from '../utils/hookHarness.js';
 import { createMockFn } from '../utils/mockFn.js';
 
+const useFacturasReportHarness = (props) => useFacturasReport(props);
+
 test('useFacturasReport usa dependencias inyectadas para construir y descargar reporte', async () => {
   const listNotasCredito = createMockFn(async () => ({
     data: {
@@ -25,7 +27,7 @@ test('useFacturasReport usa dependencias inyectadas para construir y descargar r
   const downloadReport = createMockFn();
 
   const hook = createHookHarness({
-    hook: (props) => useFacturasReport(props),
+    hook: useFacturasReportHarness,
     initialProps: {
       sociedadId: 10,
       filtradas: [{ id: 1 }],
@@ -70,7 +72,7 @@ test('useFacturasReport no descarga archivo cuando no hay filas', async () => {
   const downloadReport = createMockFn();
 
   const hook = createHookHarness({
-    hook: (props) => useFacturasReport(props),
+    hook: useFacturasReportHarness,
     initialProps: {
       sociedadId: 10,
       filtradas: [],

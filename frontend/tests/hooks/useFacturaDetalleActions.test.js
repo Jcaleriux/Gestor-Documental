@@ -1,57 +1,79 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { useFacturaDetalleActions } from '../../src/hooks/facturaDetalle/useFacturaDetalleActions.js';
+import { createScopedActionModule } from '../../src/hooks/facturaDetalle/actionRegistry.js';
 import { createMockFn } from '../utils/mockFn.js';
 
 const createNoop = () => {};
 
-const createBaseProps = () => ({
-  id: 42,
-  factura: { sociedad_id: 10, has_mensaje_hacienda: true, estado: 'en_revision' },
-  conta: {
-    proveedor_id: '5',
-    tabla_pago_id: '',
-    nota_credito_id: '',
-    monto_nota_credito: 0
-  },
-  proveedoresSociedad: [{ id: 5, identificacion_numero: '3101122334' }],
-  tablaPagoActual: null,
-  notaCreditoActual: null,
-  commentUser: 'admin',
-  commentText: 'texto',
-  estadoNuevo: 'contabilizado',
-  estadoUser: 'admin',
-  estadoMotivo: '',
-  retencionPagoMonto: '100',
-  retencionPagoFecha: '2026-02-18',
-  retencionPagoNotas: 'nota',
-  fetchAll: createMockFn(async () => {}),
-  setComentarios: createNoop,
-  setCommentText: createNoop,
-  setEstadoMotivo: createNoop,
-  setEstadoNuevo: createNoop,
-  setConta: createNoop,
-  setContaSaving: createNoop,
-  setContaMessage: createNoop,
-  setContaError: createNoop,
-  setTablasPagoProveedor: createNoop,
-  setTablaPagoActual: createNoop,
-  setTablasModalOpen: createNoop,
-  setTablasError: createNoop,
-  setTablasLoading: createNoop,
-  setNotasCreditoProveedor: createNoop,
-  setNotaCreditoActual: createNoop,
-  setNotasModalOpen: createNoop,
-  setNotasError: createNoop,
-  setNotasLoading: createNoop,
-  setRetencionPagoMonto: createNoop,
-  setRetencionPagoNotas: createNoop,
-  setRetencionPagoSaving: createNoop,
-  setRetencionPagoError: createNoop,
-  setRetencionPagoMessage: createNoop,
-  setMhLoading: createNoop,
-  setMhError: createNoop
-});
+const createBaseModuleInputs = () => {
+  const fetchAll = createMockFn(async () => {});
+
+  return {
+    commentEstado: {
+      id: 42,
+      factura: { sociedad_id: 10, has_mensaje_hacienda: true, estado: 'en_revision' },
+      commentUser: 'admin',
+      commentText: 'texto',
+      estadoNuevo: 'contabilizado',
+      estadoUser: 'admin',
+      estadoMotivo: '',
+      fetchAll,
+      setComentarios: createNoop,
+      setCommentText: createNoop,
+      setEstadoMotivo: createNoop,
+      setEstadoNuevo: createNoop
+    },
+    contabilizacion: {
+      id: 42,
+      factura: { sociedad_id: 10, has_mensaje_hacienda: true, estado: 'en_revision' },
+      conta: {
+        proveedor_id: '5',
+        tabla_pago_id: '',
+        nota_credito_id: '',
+        monto_nota_credito: 0
+      },
+      proveedoresSociedad: [{ id: 5, identificacion_numero: '3101122334' }],
+      setConta: createNoop,
+      setContaSaving: createNoop,
+      setContaMessage: createNoop,
+      setContaError: createNoop,
+      setTablasPagoProveedor: createNoop,
+      setTablaPagoActual: createNoop,
+      setTablasModalOpen: createNoop,
+      setTablasError: createNoop,
+      setTablasLoading: createNoop,
+      setOrdenesCompraProveedor: createNoop,
+      setOrdenCompraActual: createNoop,
+      setOrdenesModalOpen: createNoop,
+      setOrdenesError: createNoop,
+      setOrdenesLoading: createNoop,
+      setNotasCreditoProveedor: createNoop,
+      setNotaCreditoActual: createNoop,
+      setNotasModalOpen: createNoop,
+      setNotasError: createNoop,
+      setNotasLoading: createNoop,
+      retencionPagoMonto: '100',
+      retencionPagoFecha: '2026-02-18',
+      retencionPagoNotas: 'nota',
+      setRetencionPagoMonto: createNoop,
+      setRetencionPagoNotas: createNoop,
+      setRetencionPagoSaving: createNoop,
+      setRetencionPagoError: createNoop,
+      setRetencionPagoMessage: createNoop,
+      fetchAll
+    },
+    document: {
+      id: 42,
+      factura: { sociedad_id: 10, has_mensaje_hacienda: true, estado: 'en_revision' },
+      tablaPagoActual: null,
+      ordenCompraActual: null,
+      notaCreditoActual: null,
+      setMhLoading: createNoop,
+      setMhError: createNoop
+    }
+  };
+};
 
 test('useFacturaDetalleActions usa dependencias inyectadas para guardar contabilizacion', async () => {
   const saveContabilizacion = createMockFn(async () => ({}));
@@ -59,6 +81,7 @@ test('useFacturaDetalleActions usa dependencias inyectadas para guardar contabil
     saveContabilizacion,
     registrarPagoRetencion: createMockFn(async () => ({})),
     getTablasPago: createMockFn(async () => ({ data: { data: [] } })),
+    getOrdenesCompra: createMockFn(async () => ({ data: { data: [] } })),
     getNotasCredito: createMockFn(async () => ({ data: { data: [] } })),
     addComentario: createMockFn(async () => ({})),
     getComentarios: createMockFn(async () => ({ data: { data: [] } })),
@@ -67,12 +90,13 @@ test('useFacturaDetalleActions usa dependencias inyectadas para guardar contabil
     getMensajeHacienda: createMockFn(async () => ({ data: { data: { ruta_xml: 'mh.xml' } } }))
   };
 
+  const moduleInputs = createBaseModuleInputs();
   const fetchAll = createMockFn(async () => {});
-  const props = createBaseProps();
-  props.fetchAll = fetchAll;
+  moduleInputs.commentEstado.fetchAll = fetchAll;
+  moduleInputs.contabilizacion.fetchAll = fetchAll;
 
   const actions = useFacturaDetalleActions({
-    ...props,
+    moduleInputs,
     dependencies: {
       facturaApi,
       buildAuthUrl: (url) => url,
@@ -97,6 +121,7 @@ test('useFacturaDetalleActions usa buildAuthUrl/openWindow inyectados para ver m
     saveContabilizacion: createMockFn(async () => ({})),
     registrarPagoRetencion: createMockFn(async () => ({})),
     getTablasPago: createMockFn(async () => ({ data: { data: [] } })),
+    getOrdenesCompra: createMockFn(async () => ({ data: { data: [] } })),
     getNotasCredito: createMockFn(async () => ({ data: { data: [] } })),
     addComentario: createMockFn(async () => ({})),
     getComentarios: createMockFn(async () => ({ data: { data: [] } })),
@@ -106,7 +131,7 @@ test('useFacturaDetalleActions usa buildAuthUrl/openWindow inyectados para ver m
   };
 
   const actions = useFacturaDetalleActions({
-    ...createBaseProps(),
+    moduleInputs: createBaseModuleInputs(),
     dependencies: {
       facturaApi,
       buildAuthUrl,
@@ -126,39 +151,82 @@ test('useFacturaDetalleActions usa buildAuthUrl/openWindow inyectados para ver m
   ]);
 });
 
-test('useFacturaDetalleActions permite extender acciones via actionModules sin tocar el core', () => {
-  const customAction = createMockFn(() => 'ok');
-  const customModule = createMockFn((context) => ({
-    accionPersonalizada: () => customAction(context.id, context.estadoUser)
+test('useFacturaDetalleActions permite extender acciones por scope sin exponer contexto global', () => {
+  const createActions = createMockFn(({ moduleInputs, shared, scope }) => ({
+    inspeccionar: () => ({
+      scope,
+      id: moduleInputs.id,
+      estadoUser: moduleInputs.estadoUser,
+      hasShared: Boolean(shared)
+    })
   }));
 
+  const scopedModule = createScopedActionModule({
+    name: 'customScopedModule',
+    scope: 'commentEstado',
+    createActions
+  });
+
   const actions = useFacturaDetalleActions({
-    ...createBaseProps(),
+    moduleInputs: createBaseModuleInputs(),
     dependencies: {
-      actionModules: [customModule]
+      actionModules: [scopedModule]
     }
   });
 
-  const result = actions.accionPersonalizada();
+  const info = actions.inspeccionar();
 
-  assert.equal(customModule.calls.length, 1);
-  assert.equal(customAction.calls.length, 1);
-  assert.deepEqual(customAction.calls[0], [42, 'admin']);
-  assert.equal(result, 'ok');
+  assert.equal(createActions.calls.length, 1);
+  assert.equal(info.scope, 'commentEstado');
+  assert.equal(info.id, 42);
+  assert.equal(info.estadoUser, 'admin');
+  assert.equal(info.hasShared, true);
 });
 
 test('useFacturaDetalleActions protege contra nombres de accion duplicados en modulos', () => {
   const duplicatedModules = [
-    () => ({ accionDuplicada: () => 'a' }),
-    () => ({ accionDuplicada: () => 'b' })
+    createScopedActionModule({
+      name: 'moduleA',
+      scope: 'commentEstado',
+      createActions: () => ({ accionDuplicada: () => 'a' })
+    }),
+    createScopedActionModule({
+      name: 'moduleB',
+      scope: 'contabilizacion',
+      createActions: () => ({ accionDuplicada: () => 'b' })
+    })
   ];
 
   assert.throws(() => {
     useFacturaDetalleActions({
-      ...createBaseProps(),
+      moduleInputs: createBaseModuleInputs(),
       dependencies: {
         actionModules: duplicatedModules
       }
     });
   }, /FacturaDetalle action duplicated/);
+});
+
+test('useFacturaDetalleActions ya no acepta modulos legacy de funcion', () => {
+  const legacyModule = () => ({
+    accionPersonalizada: () => 42
+  });
+
+  assert.throws(() => {
+    useFacturaDetalleActions({
+      moduleInputs: createBaseModuleInputs(),
+      dependencies: {
+        actionModules: [legacyModule]
+      }
+    });
+  }, /legacy action modules ya no son soportados/);
+});
+
+test('useFacturaDetalleActions ya no acepta actionInputs legacy', () => {
+  assert.throws(() => {
+    useFacturaDetalleActions({
+      moduleInputs: createBaseModuleInputs(),
+      actionInputs: createBaseModuleInputs()
+    });
+  }, /actionInputs ya no es soportado/);
 });

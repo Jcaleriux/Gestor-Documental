@@ -2,7 +2,9 @@ import EmptyState from '../common/EmptyState';
 import SectionCard from '../common/SectionCard';
 import { FACTURA_DETALLE_LABELS } from '../../utils/uiLabels';
 
-function FacturaDetalleHistorialSection({ estados }) {
+function FacturaDetalleHistorialSection({ viewModel }) {
+  const { estados } = viewModel;
+
   return (
     <SectionCard title={FACTURA_DETALLE_LABELS.historial.title} className="mb-3">
       {estados.length === 0 && <EmptyState className="py-2">{FACTURA_DETALLE_LABELS.historial.empty}</EmptyState>}

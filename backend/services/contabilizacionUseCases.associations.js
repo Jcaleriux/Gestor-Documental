@@ -125,13 +125,98 @@ const resolveNotaCreditoSelection = async ({
   };
 };
 
-const resolveAssociationContext = async ({ contabilizacionRepo, factura, input, client }) => {
+const normalizeMoneda = (value) => String(value || '')
+  .trim()
+  .toUpperCase();
+
+const resolveMonedaFactura = (factura) => {
+  const resumen = factura?.resumen || {};
+  return normalizeMoneda(
+    resumen?.CodigoTipoMoneda?.CodigoMoneda
+    || resumen?.CodigoMoneda
+    || resumen?.codigoMoneda
+    || 'CRC'
+  );
+};
+
+const resolveOrdenCompraSelection = async ({
+  contabilizacionRepo,
+  factura,
+  sociedadId,
+  proveedorId,
+  proveedor,
+  ordenCompraId,
+  existingOrdenCompraId,
+  client
+}) => {
+  if (!ordenCompraId) {
+    return {
+      proveedorId,
+      proveedor,
+      ordenCompraId: null,
+      ordenCompraNombre: null
+    };
+  }
+
+  const ordenCompra = await contabilizacionRepo.getOrdenCompraById(ordenCompraId, client);
+  if (!ordenCompra || Number(ordenCompra.sociedad_id) !== sociedadId) {
+    throw createError(400, 'Orden de compra invalida para la sociedad de la factura');
+  }
+
+  const normalizedExisting = existingOrdenCompraId ? Number(existingOrdenCompraId) : null;
+  if (ordenCompra.estado === 'cerrada' && normalizedExisting !== ordenCompraId) {
+    throw createError(400, 'La orden de compra esta cerrada');
+  }
+
+  let proveedorIdFinal = proveedorId;
+  let proveedorFinal = proveedor;
+
+  if (proveedorIdFinal) {
+    if (Number(ordenCompra.proveedor_id) !== proveedorIdFinal) {
+      throw createError(400, 'La orden de compra no corresponde al proveedor seleccionado');
+    }
+  } else {
+    proveedorIdFinal = Number(ordenCompra.proveedor_id);
+    proveedorFinal = await ensureProveedorById({
+      contabilizacionRepo,
+      proveedorId: proveedorIdFinal,
+      sociedadId,
+      client
+    });
+  }
+
+  const monedaFactura = resolveMonedaFactura(factura);
+  const monedaOrdenCompra = normalizeMoneda(ordenCompra.moneda);
+  if (monedaFactura && monedaOrdenCompra && monedaFactura !== monedaOrdenCompra) {
+    throw createError(400, 'La moneda de la factura no coincide con la moneda de la orden de compra');
+  }
+
+  return {
+    proveedorId: proveedorIdFinal,
+    proveedor: proveedorFinal,
+    ordenCompraId,
+    ordenCompraNombre: ordenCompra.nombre || null
+  };
+};
+
+const resolveAssociationContext = async ({
+  contabilizacionRepo,
+  factura,
+  input,
+  existingContabilizacion,
+  client
+}) => {
   const sociedadId = Number(factura.sociedad_id);
   let proveedorId = input.proveedor_id ? Number(input.proveedor_id) : null;
   const tablaPagoId = input.tabla_pago_id ? Number(input.tabla_pago_id) : null;
   const notaCreditoId = input.nota_credito_id ? Number(input.nota_credito_id) : null;
+  const ordenCompraId = input.orden_compra_id ? Number(input.orden_compra_id) : null;
+  const existingOrdenCompraId = existingContabilizacion?.orden_compra_id
+    ? Number(existingContabilizacion.orden_compra_id)
+    : null;
   let montoNotaCredito = toOptionalNonNegativeNumber(input.monto_nota_credito, 'monto_nota_credito');
   let numeroProveedorFinal = input.numero_proveedor || null;
+  let ordenCompraTextoFinal = input.orden_compra || null;
 
   let proveedor = null;
   if (proveedorId) {
@@ -167,6 +252,23 @@ const resolveAssociationContext = async ({ contabilizacionRepo, factura, input, 
   proveedor = notaResolution.proveedor;
   montoNotaCredito = notaResolution.montoNotaCredito;
 
+  const ordenResolution = await resolveOrdenCompraSelection({
+    contabilizacionRepo,
+    factura,
+    sociedadId,
+    proveedorId,
+    proveedor,
+    ordenCompraId,
+    existingOrdenCompraId,
+    client
+  });
+  proveedorId = ordenResolution.proveedorId;
+  proveedor = ordenResolution.proveedor;
+
+  if (ordenResolution.ordenCompraNombre) {
+    ordenCompraTextoFinal = ordenResolution.ordenCompraNombre;
+  }
+
   if (proveedor && !numeroProveedorFinal) {
     numeroProveedorFinal = proveedor.identificacion_numero || null;
   }
@@ -175,6 +277,8 @@ const resolveAssociationContext = async ({ contabilizacionRepo, factura, input, 
     proveedorId,
     tablaPagoId,
     notaCreditoId,
+    ordenCompraId: ordenResolution.ordenCompraId,
+    ordenCompraTextoFinal,
     montoNotaCredito,
     numeroProveedorFinal
   };

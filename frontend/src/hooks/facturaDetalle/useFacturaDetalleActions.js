@@ -9,49 +9,26 @@ const defaultOpenWindow = (...args) => {
   return window.open(...args);
 };
 
-export const useFacturaDetalleActions = ({
-  id,
-  factura,
-  conta,
-  proveedoresSociedad,
-  tablaPagoActual,
-  notaCreditoActual,
-  commentUser,
-  commentText,
-  estadoNuevo,
-  estadoUser,
-  estadoMotivo,
-  retencionPagoMonto,
-  retencionPagoFecha,
-  retencionPagoNotas,
-  fetchAll,
-  setComentarios,
-  setCommentText,
-  setEstadoMotivo,
-  setEstadoNuevo,
-  setConta,
-  setContaSaving,
-  setContaMessage,
-  setContaError,
-  setTablasPagoProveedor,
-  setTablaPagoActual,
-  setTablasModalOpen,
-  setTablasError,
-  setTablasLoading,
-  setNotasCreditoProveedor,
-  setNotaCreditoActual,
-  setNotasModalOpen,
-  setNotasError,
-  setNotasLoading,
-  setRetencionPagoMonto,
-  setRetencionPagoNotas,
-  setRetencionPagoSaving,
-  setRetencionPagoError,
-  setRetencionPagoMessage,
-  setMhLoading,
-  setMhError,
-  dependencies = {}
-}) => {
+const normalizeModuleInputs = (moduleInputs = {}) => ({
+  commentEstado: moduleInputs.commentEstado || {},
+  contabilizacion: moduleInputs.contabilizacion || {},
+  document: moduleInputs.document || {}
+});
+
+const ensureNoLegacyActionInputs = (params) => {
+  if (Object.prototype.hasOwnProperty.call(params, 'actionInputs')) {
+    throw new Error('useFacturaDetalleActions: actionInputs ya no es soportado. Use moduleInputs.');
+  }
+};
+
+export const useFacturaDetalleActions = (params = {}) => {
+  ensureNoLegacyActionInputs(params);
+
+  const {
+    moduleInputs,
+    dependencies = {}
+  } = params;
+
   const {
     facturaApi = facturaDetalleApi,
     buildAuthUrl = withAuthToken,
@@ -59,47 +36,9 @@ export const useFacturaDetalleActions = ({
     actionModules = defaultActionModules
   } = dependencies;
 
-  const context = {
-    id,
-    factura,
-    conta,
-    proveedoresSociedad,
-    tablaPagoActual,
-    notaCreditoActual,
-    commentUser,
-    commentText,
-    estadoNuevo,
-    estadoUser,
-    estadoMotivo,
-    fetchAll,
-    setComentarios,
-    setCommentText,
-    setEstadoMotivo,
-    setEstadoNuevo,
-    setConta,
-    setContaSaving,
-    setContaMessage,
-    setContaError,
-    setTablasPagoProveedor,
-    setTablaPagoActual,
-    setTablasModalOpen,
-    setTablasError,
-    setTablasLoading,
-    setNotasCreditoProveedor,
-    setNotaCreditoActual,
-    setNotasModalOpen,
-    setNotasError,
-    setNotasLoading,
-    retencionPagoMonto,
-    retencionPagoFecha,
-    retencionPagoNotas,
-    setRetencionPagoMonto,
-    setRetencionPagoNotas,
-    setRetencionPagoSaving,
-    setRetencionPagoError,
-    setRetencionPagoMessage,
-    setMhLoading,
-    setMhError,
+  const normalizedModuleInputs = normalizeModuleInputs(moduleInputs);
+
+  const sharedDependencies = {
     facturaApi,
     buildAuthUrl,
     openWindow
@@ -107,6 +46,7 @@ export const useFacturaDetalleActions = ({
 
   return mergeModuleActions({
     modules: actionModules,
-    context
+    moduleInputs: normalizedModuleInputs,
+    shared: sharedDependencies
   });
 };

@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS public.facturas_contabilizacion
     cuenta_contable character varying(100),
     proyecto character varying(150),
     orden_compra character varying(100),
+    orden_compra_id integer,
     numero_proveedor character varying(50),
     proveedor_id integer,
     tabla_pago_id integer,
@@ -259,6 +260,26 @@ CREATE TABLE IF NOT EXISTS public.tablas_pago
     CONSTRAINT tablas_pago_pkey PRIMARY KEY (id)
 );
 
+CREATE TABLE IF NOT EXISTS public.ordenes_compra
+(
+    id serial NOT NULL,
+    sociedad_id integer NOT NULL,
+    proveedor_id integer NOT NULL,
+    nombre character varying(255) NOT NULL,
+    monto numeric(18, 4) NOT NULL,
+    moneda character varying(10) NOT NULL,
+    estado character varying(20) NOT NULL DEFAULT 'abierta'::character varying,
+    fecha date NOT NULL,
+    ruta_pdf character varying(255) NOT NULL,
+    creado_por character varying(100),
+    metadata jsonb,
+    creado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT ordenes_compra_pkey PRIMARY KEY (id),
+    CONSTRAINT ordenes_compra_estado_check CHECK (estado IN ('abierta', 'cerrada')),
+    CONSTRAINT ordenes_compra_monto_check CHECK (monto > 0)
+);
+
 CREATE TABLE IF NOT EXISTS public.tramites_pago
 (
     id serial NOT NULL,
@@ -392,6 +413,74 @@ CREATE TABLE IF NOT EXISTS public.versiones_documento
     CONSTRAINT versiones_documento_factura_numero_key UNIQUE (factura_id, numero)
 );
 
+CREATE TABLE IF NOT EXISTS public.ventas_unidades
+(
+    id serial NOT NULL,
+    sociedad_id integer NOT NULL,
+    proyecto_codigo character varying(20) NOT NULL,
+    unidad_codigo character varying(20) NOT NULL,
+    activo boolean DEFAULT true,
+    creado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT ventas_unidades_pkey PRIMARY KEY (id),
+    CONSTRAINT ventas_unidades_sociedad_id_proyecto_codigo_unidad_codigo_key UNIQUE (sociedad_id, proyecto_codigo, unidad_codigo)
+);
+
+CREATE TABLE IF NOT EXISTS public.ventas_operaciones
+(
+    id serial NOT NULL,
+    unidad_id integer NOT NULL,
+    cliente_nombre character varying(255) NOT NULL,
+    cliente_identificacion character varying(50),
+    estado character varying(20) NOT NULL DEFAULT 'activa'::character varying,
+    origen_operacion_id integer,
+    motivo text,
+    creado_por character varying(100),
+    metadata jsonb,
+    creado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    cerrado_en timestamp without time zone,
+    CONSTRAINT ventas_operaciones_pkey PRIMARY KEY (id),
+    CONSTRAINT ventas_operaciones_estado_check CHECK (estado IN (
+      'activa',
+      'cancelada',
+      'trasladada',
+      'cerrada'
+    ))
+);
+
+CREATE TABLE IF NOT EXISTS public.ventas_operaciones_historial
+(
+    id serial NOT NULL,
+    operacion_id integer NOT NULL,
+    accion character varying(50) NOT NULL,
+    estado_anterior character varying(20),
+    estado_nuevo character varying(20),
+    usuario character varying(100),
+    motivo text,
+    detalles jsonb,
+    creado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT ventas_operaciones_historial_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS public.ventas_operaciones_documentos
+(
+    id serial NOT NULL,
+    operacion_id integer NOT NULL,
+    codigo_documento character varying(50) NOT NULL,
+    nombre_archivo character varying(255) NOT NULL,
+    ruta_archivo text NOT NULL,
+    mime_type character varying(150),
+    tamanio_bytes integer,
+    hash_sha256 character varying(128),
+    metadata jsonb,
+    creado_por character varying(100),
+    creado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT ventas_operaciones_documentos_pkey PRIMARY KEY (id),
+    CONSTRAINT ventas_operaciones_documentos_operacion_id_codigo_documento_key UNIQUE (operacion_id, codigo_documento)
+);
+
 ALTER TABLE IF EXISTS public.auditoria
     ADD CONSTRAINT auditoria_factura_id_fkey FOREIGN KEY (factura_id)
     REFERENCES public.facturas (id) MATCH SIMPLE
@@ -450,6 +539,11 @@ ALTER TABLE IF EXISTS public.facturas_contabilizacion
     ON UPDATE NO ACTION
     ON DELETE SET NULL;
 ALTER TABLE IF EXISTS public.facturas_contabilizacion
+    ADD CONSTRAINT facturas_contabilizacion_orden_compra_id_fkey FOREIGN KEY (orden_compra_id)
+    REFERENCES public.ordenes_compra (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE SET NULL;
+ALTER TABLE IF EXISTS public.facturas_contabilizacion
     ADD CONSTRAINT facturas_contabilizacion_nota_credito_id_fkey FOREIGN KEY (nota_credito_id)
     REFERENCES public.notas_credito (id) MATCH SIMPLE
     ON UPDATE NO ACTION
@@ -460,6 +554,8 @@ CREATE INDEX IF NOT EXISTS idx_facturas_contabilizacion_proveedor
     ON public.facturas_contabilizacion(proveedor_id);
 CREATE INDEX IF NOT EXISTS idx_facturas_contabilizacion_tabla_pago
     ON public.facturas_contabilizacion(tabla_pago_id);
+CREATE INDEX IF NOT EXISTS idx_facturas_contabilizacion_orden_compra
+    ON public.facturas_contabilizacion(orden_compra_id);
 CREATE INDEX IF NOT EXISTS idx_facturas_contabilizacion_nota_credito
     ON public.facturas_contabilizacion(nota_credito_id);
 CREATE INDEX IF NOT EXISTS idx_facturas_contabilizacion_estado_retencion
@@ -583,6 +679,25 @@ CREATE INDEX IF NOT EXISTS idx_tablas_pago_sociedad
 CREATE INDEX IF NOT EXISTS idx_tablas_pago_proveedor
     ON public.tablas_pago(proveedor_id);
 
+ALTER TABLE IF EXISTS public.ordenes_compra
+    ADD CONSTRAINT ordenes_compra_sociedad_id_fkey FOREIGN KEY (sociedad_id)
+    REFERENCES public.sociedades (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+ALTER TABLE IF EXISTS public.ordenes_compra
+    ADD CONSTRAINT ordenes_compra_proveedor_id_fkey FOREIGN KEY (proveedor_id)
+    REFERENCES public.proveedores (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_ordenes_compra_sociedad
+    ON public.ordenes_compra(sociedad_id);
+CREATE INDEX IF NOT EXISTS idx_ordenes_compra_proveedor
+    ON public.ordenes_compra(proveedor_id);
+CREATE INDEX IF NOT EXISTS idx_ordenes_compra_estado
+    ON public.ordenes_compra(estado);
+CREATE INDEX IF NOT EXISTS idx_ordenes_compra_fecha
+    ON public.ordenes_compra(fecha);
+
 ALTER TABLE IF EXISTS public.tramites_pago
     ADD CONSTRAINT tramites_pago_sociedad_id_fkey FOREIGN KEY (sociedad_id)
     REFERENCES public.sociedades (id) MATCH SIMPLE
@@ -676,5 +791,59 @@ ALTER TABLE IF EXISTS public.versiones_documento
     ON DELETE CASCADE;
 CREATE INDEX IF NOT EXISTS idx_versiones_factura
     ON public.versiones_documento(factura_id);
+
+ALTER TABLE IF EXISTS public.ventas_unidades
+    ADD CONSTRAINT ventas_unidades_sociedad_id_fkey FOREIGN KEY (sociedad_id)
+    REFERENCES public.sociedades (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION;
+CREATE INDEX IF NOT EXISTS idx_ventas_unidades_sociedad
+    ON public.ventas_unidades(sociedad_id);
+CREATE INDEX IF NOT EXISTS idx_ventas_unidades_proyecto
+    ON public.ventas_unidades(proyecto_codigo);
+CREATE INDEX IF NOT EXISTS idx_ventas_unidades_unidad
+    ON public.ventas_unidades(unidad_codigo);
+
+ALTER TABLE IF EXISTS public.ventas_operaciones
+    ADD CONSTRAINT ventas_operaciones_unidad_id_fkey FOREIGN KEY (unidad_id)
+    REFERENCES public.ventas_unidades (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+ALTER TABLE IF EXISTS public.ventas_operaciones
+    ADD CONSTRAINT ventas_operaciones_origen_operacion_id_fkey FOREIGN KEY (origen_operacion_id)
+    REFERENCES public.ventas_operaciones (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_ventas_operaciones_unidad
+    ON public.ventas_operaciones(unidad_id);
+CREATE INDEX IF NOT EXISTS idx_ventas_operaciones_estado
+    ON public.ventas_operaciones(estado);
+CREATE INDEX IF NOT EXISTS idx_ventas_operaciones_creado_en
+    ON public.ventas_operaciones(creado_en DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_ventas_operaciones_unidad_activa
+    ON public.ventas_operaciones(unidad_id)
+    WHERE estado = 'activa';
+
+ALTER TABLE IF EXISTS public.ventas_operaciones_historial
+    ADD CONSTRAINT ventas_operaciones_historial_operacion_id_fkey FOREIGN KEY (operacion_id)
+    REFERENCES public.ventas_operaciones (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_ventas_operaciones_historial_operacion
+    ON public.ventas_operaciones_historial(operacion_id);
+CREATE INDEX IF NOT EXISTS idx_ventas_operaciones_historial_creado_en
+    ON public.ventas_operaciones_historial(creado_en DESC);
+
+ALTER TABLE IF EXISTS public.ventas_operaciones_documentos
+    ADD CONSTRAINT ventas_operaciones_documentos_operacion_id_fkey FOREIGN KEY (operacion_id)
+    REFERENCES public.ventas_operaciones (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_ventas_operaciones_documentos_operacion
+    ON public.ventas_operaciones_documentos(operacion_id);
+CREATE INDEX IF NOT EXISTS idx_ventas_operaciones_documentos_codigo
+    ON public.ventas_operaciones_documentos(codigo_documento);
+CREATE INDEX IF NOT EXISTS idx_ventas_operaciones_documentos_creado_en
+    ON public.ventas_operaciones_documentos(creado_en DESC);
 
 COMMIT;

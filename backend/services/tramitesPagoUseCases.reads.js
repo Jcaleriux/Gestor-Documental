@@ -1,4 +1,9 @@
-const { createError, assertFound } = require('../utils/errors');
+const { assertFound } = require('../utils/errors');
+const {
+  parsePositiveIntOrThrow,
+  parseOptionalPositiveIntOrThrow,
+  toNormalizedLowerString
+} = require('./tramitesPagoUseCases.helpers');
 const {
   mapTramiteRow,
   mapDocumentoRow,
@@ -8,26 +13,29 @@ const {
 
 const createTramitesPagoReadUseCases = ({ tramitesPagoRepo }) => {
   const listTramites = async ({ sociedadId, estado }) => {
-    const rows = await tramitesPagoRepo.listTramites({ sociedadId, estado });
+    const normalizedSociedadId = parseOptionalPositiveIntOrThrow(sociedadId, 'sociedadId');
+    const normalizedEstado = estado ? toNormalizedLowerString(estado) : undefined;
+    const rows = await tramitesPagoRepo.listTramites({
+      sociedadId: normalizedSociedadId,
+      estado: normalizedEstado
+    });
     return rows.map(mapTramiteRow);
   };
 
   const getRetencionesDisponibles = async ({ sociedadId }) => {
-    const sociedad = Number(sociedadId);
-    if (!Number.isInteger(sociedad) || sociedad <= 0) {
-      throw createError(400, 'sociedadId invalido');
-    }
+    const sociedad = parsePositiveIntOrThrow(sociedadId, 'sociedadId');
     const rows = await tramitesPagoRepo.getRetencionesDisponibles({ sociedadId: sociedad });
     return rows.map(mapRetencionRow);
   };
 
   const getTramite = async ({ id }) => {
-    const tramite = await tramitesPagoRepo.getTramiteById(id);
+    const tramiteId = parsePositiveIntOrThrow(id, 'id');
+    const tramite = await tramitesPagoRepo.getTramiteById(tramiteId);
     assertFound(tramite, 'Tramite no encontrado');
 
     const [documentos, retenciones] = await Promise.all([
-      tramitesPagoRepo.listDocumentosByTramite(id),
-      tramitesPagoRepo.listRetencionesByTramite(id)
+      tramitesPagoRepo.listDocumentosByTramite(tramiteId),
+      tramitesPagoRepo.listRetencionesByTramite(tramiteId)
     ]);
 
     return {
@@ -38,7 +46,8 @@ const createTramitesPagoReadUseCases = ({ tramitesPagoRepo }) => {
   };
 
   const getHistorial = async ({ id }) => {
-    const rows = await tramitesPagoRepo.listHistorialByTramite(id);
+    const tramiteId = parsePositiveIntOrThrow(id, 'id');
+    const rows = await tramitesPagoRepo.listHistorialByTramite(tramiteId);
     return rows.map(mapHistorialRow);
   };
 

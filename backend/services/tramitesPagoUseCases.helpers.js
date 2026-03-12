@@ -38,6 +38,23 @@ const normalizePagosDocumentos = (values) => {
   return Array.from(uniqueByFactura.values());
 };
 
+const toNormalizedLowerString = (value) => (value ?? '').toString().trim().toLowerCase();
+
+const parsePositiveIntOrThrow = (value, fieldName) => {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw createError(400, `${fieldName} invalido`);
+  }
+  return parsed;
+};
+
+const parseOptionalPositiveIntOrThrow = (value, fieldName) => {
+  if (value === undefined || value === null || value === '') {
+    return null;
+  }
+  return parsePositiveIntOrThrow(value, fieldName);
+};
+
 const PAGO_MONTO_EPSILON = 0.0001;
 
 const REQUIRED_REPO_METHODS = [
@@ -193,6 +210,9 @@ const registrarPagosPrincipales = async ({
 module.exports = {
   normalizeUniquePositiveIds,
   normalizePagosDocumentos,
+  toNormalizedLowerString,
+  parsePositiveIntOrThrow,
+  parseOptionalPositiveIntOrThrow,
   REQUIRED_REPO_METHODS,
   assertRepoContract,
   loadTramiteEstadoOrFail,

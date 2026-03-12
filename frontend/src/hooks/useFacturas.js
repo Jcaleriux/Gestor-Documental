@@ -1,20 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { facturasApi } from '../services/facturasApi';
 
 export const useFacturas = ({ sociedadId }) => {
   const [facturas, setFacturas] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!sociedadId) {
-      setFacturas([]);
-      setLoading(false);
-      return;
-    }
-    fetchFacturas();
-  }, [sociedadId]);
-
-  const fetchFacturas = async () => {
+  const fetchFacturas = useCallback(async () => {
     try {
       setLoading(true);
       const res = await facturasApi.listFacturas({ sociedadId });
@@ -26,7 +17,16 @@ export const useFacturas = ({ sociedadId }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [sociedadId]);
+
+  useEffect(() => {
+    if (!sociedadId) {
+      setFacturas([]);
+      setLoading(false);
+      return;
+    }
+    fetchFacturas();
+  }, [sociedadId, fetchFacturas]);
 
   return { facturas, loading };
 };

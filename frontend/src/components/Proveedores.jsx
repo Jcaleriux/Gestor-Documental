@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { proveedoresApi } from '../services/proveedoresApi';
 import PageHeader from './common/PageHeader';
 import SectionCard from './common/SectionCard';
@@ -46,7 +46,7 @@ function Proveedores({ sociedadId }) {
 
   const isEditing = editingId != null;
 
-  const loadProveedores = async ({ showLoader = true } = {}) => {
+  const loadProveedores = useCallback(async ({ showLoader = true } = {}) => {
     if (!sociedadId) {
       setProveedores([]);
       if (showLoader) setLoading(false);
@@ -65,12 +65,12 @@ function Proveedores({ sociedadId }) {
     } finally {
       if (showLoader) setLoading(false);
     }
-  };
+  }, [sociedadId]);
 
   useEffect(() => {
     setSearch('');
     loadProveedores();
-  }, [sociedadId]);
+  }, [sociedadId, loadProveedores]);
 
   const filteredProveedores = useMemo(() => {
     const term = search.trim().toLowerCase();

@@ -16,6 +16,13 @@ const getProveedores = (sociedadId) => axios.get('/api/proveedores', {
 const getTablasPago = ({ sociedadId, proveedorId }) => axios.get('/api/tablas-pago', {
   params: { sociedad_id: sociedadId, proveedor_id: proveedorId }
 });
+const getOrdenesCompra = ({ sociedadId, proveedorId, estado }) => axios.get('/api/ordenes-compra', {
+  params: {
+    sociedad_id: sociedadId,
+    proveedor_id: proveedorId,
+    estado: estado || undefined
+  }
+});
 const getNotasCredito = ({ sociedadId, proveedorId }) => axios.get('/api/notas-credito', {
   params: { sociedadId, proveedorId }
 });
@@ -33,5 +40,6 @@ export const facturaDetalleApi = {
   getMensajeHacienda,
   getProveedores,
   getTablasPago,
+  getOrdenesCompra,
   getNotasCredito
 };

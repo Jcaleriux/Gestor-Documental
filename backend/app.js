@@ -24,20 +24,13 @@ const filesAccessPermission = requireAnyPermission([
 app.use(cors());
 app.use(express.json({ limit: jsonBodyLimit }));
 
-// Serve static files from documentos directory (with legacy fallback)
+// Serve static files from documentos directory.
 app.use(
   '/files',
   requireAuth,
   loadUserPermissions,
   filesAccessPermission,
   express.static(documentPaths.documentsRootDir)
-);
-app.use(
-  '/files',
-  requireAuth,
-  loadUserPermissions,
-  filesAccessPermission,
-  express.static(documentPaths.legacyDocumentsRootDir)
 );
 
 // Auth routes
@@ -66,6 +59,8 @@ const usuariosRoutes = require('./routes/usuarios');
 const sociedadesRoutes = require('./routes/sociedades');
 const proveedoresRoutes = require('./routes/proveedores');
 const tablasPagoRoutes = require('./routes/tablasPago');
+const ordenesCompraRoutes = require('./routes/ordenesCompra');
+const ventasRoutes = require('./routes/ventas');
 
 [
   comentariosRoutes,
@@ -79,7 +74,9 @@ const tablasPagoRoutes = require('./routes/tablasPago');
   usuariosRoutes,
   sociedadesRoutes,
   proveedoresRoutes,
-  tablasPagoRoutes
+  tablasPagoRoutes,
+  ordenesCompraRoutes,
+  ventasRoutes
 ].forEach((router) => app.use('/api', requireAuth, loadUserPermissions, router));
 
 // Root route: API only

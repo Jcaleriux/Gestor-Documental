@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { dashboardApi } from '../services/dashboardApi';
 
 export const useDashboard = ({ sociedadId }) => {
@@ -6,17 +6,7 @@ export const useDashboard = ({ sociedadId }) => {
   const [recentDocs, setRecentDocs] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!sociedadId) {
-      setStats({});
-      setRecentDocs([]);
-      setLoading(false);
-      return;
-    }
-    fetchDashboard();
-  }, [sociedadId]);
-
-  const fetchDashboard = async () => {
+  const fetchDashboard = useCallback(async () => {
     try {
       setLoading(true);
       const params = { sociedadId };
@@ -32,7 +22,17 @@ export const useDashboard = ({ sociedadId }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [sociedadId]);
+
+  useEffect(() => {
+    if (!sociedadId) {
+      setStats({});
+      setRecentDocs([]);
+      setLoading(false);
+      return;
+    }
+    fetchDashboard();
+  }, [sociedadId, fetchDashboard]);
 
   return { stats, recentDocs, loading };
 };

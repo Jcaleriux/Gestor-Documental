@@ -24,6 +24,7 @@ export const createHookHarness = ({ hook, initialProps, autoRunEffects = true })
   }
 
   const stateValues = [];
+  const stateSetters = [];
   const memoValues = [];
   const memoDeps = [];
   const refValues = [];
@@ -52,14 +53,16 @@ export const createHookHarness = ({ hook, initialProps, autoRunEffects = true })
           : initialValue;
       }
 
-      const setState = (nextValue) => {
-        stateValues[currentIndex] = typeof nextValue === 'function'
-          ? nextValue(stateValues[currentIndex])
-          : nextValue;
-        scheduleRender();
-      };
+      if (!(currentIndex in stateSetters)) {
+        stateSetters[currentIndex] = (nextValue) => {
+          stateValues[currentIndex] = typeof nextValue === 'function'
+            ? nextValue(stateValues[currentIndex])
+            : nextValue;
+          scheduleRender();
+        };
+      }
 
-      return [stateValues[currentIndex], setState];
+      return [stateValues[currentIndex], stateSetters[currentIndex]];
     },
     useEffect(create, deps) {
       const currentIndex = effectIndex;

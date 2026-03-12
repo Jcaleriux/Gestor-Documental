@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink, Navigate } from 'react-router-dom';
 import axios from 'axios';
 import Dashboard from './components/Dashboard';
@@ -13,6 +13,8 @@ import Tramites from './components/Tramites';
 import TramiteDetalle from './components/TramiteDetalle';
 import Proveedores from './components/Proveedores';
 import TablasPagoIngenieria from './components/TablasPagoIngenieria';
+import OrdenesCompraIngenieria from './components/OrdenesCompraIngenieria';
+import VentasOperaciones from './components/VentasOperaciones';
 import {
   clearAuthSession,
   getAuthToken,
@@ -39,12 +41,65 @@ const initialsFromName = (name) => {
     .join('') || 'US';
 };
 
+const initialAppState = {
+  sociedades: [],
+  sociedadId: '',
+  authToken: '',
+  authUser: null,
+  authLoading: true
+};
+
+const appReducer = (state, action) => {
+  switch (action.type) {
+    case 'applySession':
+      return {
+        ...state,
+        authToken: action.token || '',
+        authUser: action.user || null
+      };
+    case 'clearSession':
+      return {
+        ...state,
+        sociedades: [],
+        sociedadId: '',
+        authToken: '',
+        authUser: null
+      };
+    case 'setAuthLoading':
+      return {
+        ...state,
+        authLoading: Boolean(action.value)
+      };
+    case 'setSociedades': {
+      const nextSociedades = Array.isArray(action.value) ? action.value : [];
+      const hasSelectedSociedad = nextSociedades.some(
+        (sociedad) => String(sociedad.id) === String(state.sociedadId)
+      );
+
+      return {
+        ...state,
+        sociedades: nextSociedades,
+        sociedadId: hasSelectedSociedad ? state.sociedadId : ''
+      };
+    }
+    case 'setSociedadId':
+      return {
+        ...state,
+        sociedadId: action.value || ''
+      };
+    default:
+      return state;
+  }
+};
+
 function App() {
-  const [sociedades, setSociedades] = useState([]);
-  const [sociedadId, setSociedadId] = useState('');
-  const [authToken, setAuthToken] = useState('');
-  const [authUser, setAuthUser] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const [{
+    sociedades,
+    sociedadId,
+    authToken,
+    authUser,
+    authLoading
+  }, dispatch] = useReducer(appReducer, initialAppState);
 
   const selectedSociedad = sociedades.find((s) => String(s.id) === String(sociedadId));
   const isAuthenticated = Boolean(authToken);
@@ -58,8 +113,15 @@ function App() {
     || userPermissions.includes('usuarios_administrar')
     || userPermissions.includes('documentos_subir')
     || userPermissions.includes('documentos_contabilizar');
+  const canUseOrdenesCompra = canUseTablasPago;
   const canTramitarPago = userPermissions.includes('acceso_total')
     || userPermissions.includes('documentos_tramitar_pago');
+  const canUseVentas = userPermissions.includes('acceso_total')
+    || userPermissions.includes('ventas_ver')
+    || userPermissions.includes('ventas_crear')
+    || userPermissions.includes('ventas_gestionar');
+  const canManageVentasDocumentos = userPermissions.includes('acceso_total')
+    || userPermissions.includes('ventas_gestionar');
 
   const userName = authUser?.nombre || 'Usuario';
   const userRole = authUser?.rol != null ? `Rol ${authUser.rol}` : 'Usuario';
@@ -67,51 +129,47 @@ function App() {
 
   const clearSession = useCallback(() => {
     clearAuthSession();
-    setAuthToken('');
-    setAuthUser(null);
-    setSociedades([]);
-    setSociedadId('');
+    dispatch({ type: 'clearSession' });
     setAxiosAuthHeader('');
   }, []);
 
   const applySession = useCallback(({ token, user }) => {
     saveAuthSession({ token, user });
-    setAuthToken(token || '');
-    setAuthUser(user || null);
+    dispatch({ type: 'applySession', token, user });
     setAxiosAuthHeader(token || '');
   }, []);
 
-  useEffect(() => {
-    const bootstrapAuth = async () => {
-      const token = getAuthToken();
-      const storedUser = getAuthUser();
+  const bootstrapAuth = useCallback(async () => {
+    const token = getAuthToken();
+    const storedUser = getAuthUser();
 
-      if (!token) {
-        setAuthLoading(false);
-        return;
-      }
+    if (!token) {
+      dispatch({ type: 'setAuthLoading', value: false });
+      return;
+    }
 
-      setAxiosAuthHeader(token);
+    setAxiosAuthHeader(token);
 
-      try {
-        const res = await axios.get('/api/auth/me');
-        const meUser = res.data?.data?.user || storedUser;
-        applySession({ token, user: meUser || null });
-      } catch {
-        clearSession();
-      } finally {
-        setAuthLoading(false);
-      }
-    };
-
-    bootstrapAuth();
+    try {
+      const res = await axios.get('/api/auth/me');
+      const meUser = res.data?.data?.user || storedUser;
+      applySession({ token, user: meUser || null });
+    } catch {
+      clearSession();
+    } finally {
+      dispatch({ type: 'setAuthLoading', value: false });
+    }
   }, [applySession, clearSession]);
+
+  useEffect(() => {
+    bootstrapAuth();
+  }, [bootstrapAuth]);
 
   const fetchSociedades = useCallback(async () => {
     try {
       const res = await axios.get('/api/sociedades');
       if (res.data.success) {
-        setSociedades(res.data.data || []);
+        dispatch({ type: 'setSociedades', value: res.data.data || [] });
       }
     } catch (err) {
       if (err.response?.status === 401) {
@@ -176,6 +234,7 @@ function App() {
               <NavLink to="/notas-credito" className="menu-link">Notas de credito</NavLink>
               <NavLink to="/tiquetes-electronicos" className="menu-link">Tiquetes electronicos</NavLink>
               <NavLink to="/tramites" className="menu-link">Tramites de pago</NavLink>
+              {canUseVentas && <NavLink to="/ventas" className="menu-link">Ventas</NavLink>}
             </nav>
           </div>
 
@@ -183,6 +242,7 @@ function App() {
             <div className="menu-title">Ingenieria</div>
             <nav className="menu">
               {canUseTablasPago && <NavLink to="/tablas-pago" className="menu-link">Tablas de pago</NavLink>}
+              {canUseOrdenesCompra && <NavLink to="/ordenes-compra" className="menu-link">Ordenes de compra</NavLink>}
             </nav>
           </div>
 
@@ -214,11 +274,12 @@ function App() {
             </div>
             <div className="topbar-actions">
               <div className="sociedad-picker">
-                <label className="sociedad-label">Sociedad</label>
+                <label className="sociedad-label" htmlFor="sociedad-select">Sociedad</label>
                 <select
+                  id="sociedad-select"
                   className="sociedad-select"
                   value={sociedadId}
-                  onChange={(e) => setSociedadId(e.target.value)}
+                  onChange={(e) => dispatch({ type: 'setSociedadId', value: e.target.value })}
                 >
                   <option value="">Seleccionar</option>
                   {sociedades.map((s) => (
@@ -256,8 +317,15 @@ function App() {
               <Route path="/tiquetes-electronicos" element={<TiquetesElectronicos sociedadId={sociedadId} />} />
               <Route path="/tramites" element={<Tramites sociedadId={sociedadId} canCreateTramite={canTramitarPago} />} />
               <Route path="/tramites/:id" element={<TramiteDetalle sociedadId={sociedadId} />} />
+              <Route
+                path="/ventas"
+                element={canUseVentas
+                  ? <VentasOperaciones sociedadId={sociedadId} canManageDocuments={canManageVentasDocumentos} />
+                  : <Navigate to="/" replace />}
+              />
               <Route path="/proveedores" element={canManageUsers ? <Proveedores sociedadId={sociedadId} /> : <Navigate to="/" replace />} />
               <Route path="/tablas-pago" element={canUseTablasPago ? <TablasPagoIngenieria sociedadId={sociedadId} /> : <Navigate to="/" replace />} />
+              <Route path="/ordenes-compra" element={canUseOrdenesCompra ? <OrdenesCompraIngenieria sociedadId={sociedadId} /> : <Navigate to="/" replace />} />
               <Route path="/login" element={<Navigate to="/" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

@@ -1,93 +1,291 @@
-Option Explicit
+﻿Option Explicit
 
 ' ================== CONFIG ==================
-Private Const TARGET_MAILBOX As String = "facturas@novogar.cr"      ' <-- Debe coincidir con el nombre del buzón en Outlook
-Private Const INBOX_NAME As String = "Bandeja de entrada"          ' <-- En tu Outlook está en español
-Private Const TARGET_FOLDER_NAME As String = "FACTURAS RECIBIDAS"  ' <-- Subcarpeta dentro de Bandeja de entrada
-Private Const SAVE_FOLDER As String = "C:\Jose\Proyecto Novogar\facturas\recibidas\" ' <-- Debe existir y terminar en \
-' Rango de fechas configurable (inclusive)
-Private Const RANGE_START_YEAR As Integer = 2026
-Private Const RANGE_START_MONTH As Integer = 2
-Private Const RANGE_START_DAY As Integer = 17
-Private Const RANGE_END_YEAR As Integer = 2026
-Private Const RANGE_END_MONTH As Integer = 2
-Private Const RANGE_END_DAY As Integer = 19
+Private Const TARGET_MAILBOX As String = "facturas@novogar.cr"      ' Puede ser DisplayName o SMTP (depende del Outlook)
+Private Const INBOX_NAME As String = "Bandeja de entrada"
+Private Const TARGET_FOLDER_NAME As String = "FACTURAS RECIBIDAS"  ' Subcarpeta dentro de Bandeja de entrada (o se busca en todo el buzón)
+Private Const SAVE_FOLDER As String = "C:\Jose\Proyecto Novogar\documentos\facturas recibidas\"
 ' ============================================
 
+' ================== ENTRYPOINT (recomendado) ==================
+' 1) Te pide rango (dd/mm/yyyy hh:mm 24h)
+' 2) Te deja elegir el folder real:
+'    - Si tienes un correo seleccionado, usa EXACTAMENTE la carpeta real de ese correo (lo más robusto).
+'    - Si no hay selección, intenta por ruta (Inbox\FACTURAS RECIBIDAS) y si no, busca por nombre en todo el buzón.
 Public Sub DescargarAdjuntos_FACTURAS_RECIBIDAS_RangoFecha()
-    Dim ns As Outlook.NameSpace
-    Dim storeRoot As Outlook.Folder
-    Dim inbox As Outlook.Folder
-    Dim targetFolder As Outlook.Folder
-    Dim items As Outlook.items
-    Dim filtered As Outlook.items
-    Dim it As Object
-    Dim mail As Outlook.MailItem
-
     Dim startDate As Date, endDate As Date
-    Dim filter As String
-
-    Dim countMails As Long, countFiles As Long
+    Dim targetFolder As Outlook.Folder
 
     On Error GoTo EH
 
-    ' Usa el rango definido en CONFIG (inclusive)
-    startDate = DateSerial(RANGE_START_YEAR, RANGE_START_MONTH, RANGE_START_DAY)
-    endDate = DateSerial(RANGE_END_YEAR, RANGE_END_MONTH, RANGE_END_DAY) + TimeSerial(23, 59, 59)
-
-    ' Validar carpeta destino
     If Dir(SAVE_FOLDER, vbDirectory) = "" Then
         MsgBox "La carpeta de destino no existe: " & SAVE_FOLDER, vbCritical
         Exit Sub
     End If
 
-    Set ns = Application.GetNamespace("MAPI")
+    If Not PromptDateRange(startDate, endDate) Then Exit Sub
 
-    ' ?? Buscar buzón específico (no el default)
-    Set storeRoot = ns.Folders(TARGET_MAILBOX)
-    Set inbox = storeRoot.Folders(INBOX_NAME)
-    Set targetFolder = GetSubFolderByName(inbox, TARGET_FOLDER_NAME)
-
+    Set targetFolder = ResolveTargetFolderRobust()
     If targetFolder Is Nothing Then
-        MsgBox "No existe la carpeta '" & TARGET_FOLDER_NAME & "' dentro de '" & INBOX_NAME & "' del buzón '" & TARGET_MAILBOX & "'.", vbCritical
+        MsgBox "No pude resolver la carpeta destino." & vbCrLf & _
+               "Tip: selecciona un correo dentro de la carpeta REAL y vuelve a ejecutar.", vbCritical
         Exit Sub
     End If
 
-    Set items = targetFolder.items
-    items.Sort "[ReceivedTime]", True
-
-    ' Restrict usualmente espera mm/dd/yyyy
-    filter = "[ReceivedTime] >= '" & Format(startDate, "mm/dd/yyyy hh:nn AMPM") & _
-             "' AND [ReceivedTime] <= '" & Format(endDate, "mm/dd/yyyy hh:nn AMPM") & "'"
-
-    Set filtered = items.Restrict(filter)
-
-    countMails = 0
-    countFiles = 0
-
-    For Each it In filtered
-        If TypeOf it Is Outlook.MailItem Then
-            Set mail = it
-
-            ' ? Solo procesar correos con adjuntos
-            If mail.Attachments.Count > 0 Then
-                countMails = countMails + 1
-                countFiles = countFiles + SaveAttachments_PdfXml_WithManifest(mail)
-            End If
-        End If
-    Next it
-
-    MsgBox "Proceso finalizado." & vbCrLf & _
-           "Correos procesados (con adjuntos): " & countMails & vbCrLf & _
-           "Archivos guardados (solo PDF/XML): " & countFiles & vbCrLf & _
-           "Destino: " & SAVE_FOLDER, vbInformation
+    ProcessFolderByDateRange targetFolder, startDate, endDate
     Exit Sub
 
 EH:
     MsgBox "Error: " & Err.Number & " - " & Err.Description, vbCritical
 End Sub
 
-' ================== CORE ==================
+' ================== DEBUG: imprime la carpeta real del correo seleccionado ==================
+Public Sub DEBUG_CarpetaRealDelCorreoSeleccionado()
+    Dim sel As Outlook.Selection
+    Dim it As Object
+    Dim mail As Outlook.MailItem
+
+    Set sel = Application.ActiveExplorer.Selection
+    If sel Is Nothing Or sel.Count = 0 Then
+        MsgBox "Selecciona un correo primero.", vbExclamation
+        Exit Sub
+    End If
+
+    Set it = sel.item(1)
+
+    If Not TypeOf it Is Outlook.MailItem Then
+        MsgBox "El elemento seleccionado no es un MailItem.", vbExclamation
+        Exit Sub
+    End If
+
+    Set mail = it
+
+    Debug.Print "==== CORREO SELECCIONADO ===="
+    Debug.Print "Subject:", mail.subject
+    Debug.Print "ReceivedTime:", mail.ReceivedTime
+    Debug.Print "SentOn:", mail.SentOn
+    Debug.Print "Store:", mail.parent.store.DisplayName
+    Debug.Print "Carpeta Parent:", mail.parent.folderPath
+    Debug.Print "EntryID:", mail.entryId
+    Debug.Print "============================="
+
+    MsgBox "Listo. Revisa Ctrl+G (Immediate Window).", vbInformation
+End Sub
+
+' ================== CORE PROCESSING ==================
+Private Sub ProcessFolderByDateRange(ByVal targetFolder As Outlook.Folder, ByVal startDate As Date, ByVal endDate As Date)
+    Dim items As Outlook.items
+    Dim it As Object
+    Dim mail As Outlook.MailItem
+
+    Dim countMails As Long, countFiles As Long, countSkippedRule As Long
+    Dim scanned As Long
+
+    On Error GoTo EH
+
+    Set items = targetFolder.items
+    items.Sort "[ReceivedTime]", True ' más nuevos primero
+
+    Debug.Print "==== PROCESO ===="
+    Debug.Print "Folder:", targetFolder.folderPath
+    Debug.Print "Items total:", items.Count
+    Debug.Print "Start:", startDate, " End:", endDate
+    Debug.Print "==============="
+
+    countMails = 0
+    countFiles = 0
+    countSkippedRule = 0
+
+    ' Nota: NO usamos Restrict para evitar problemas de locale/vistas.
+    ' Recorremos en orden descendente y salimos temprano cuando pasamos el rango.
+    For Each it In items
+        scanned = scanned + 1
+
+        If TypeOf it Is Outlook.MailItem Then
+            Set mail = it
+
+            If mail.ReceivedTime > endDate Then
+                ' Aún más nuevo que el rango -> seguir bajando
+            ElseIf mail.ReceivedTime < startDate Then
+                ' Ya pasamos el rango (como está ordenado desc, podemos salir)
+                Exit For
+            Else
+                ' Dentro del rango
+                If mail.Attachments.Count > 0 Then
+                    If HasMinimumPdfXmlAttachments(mail) Then
+                        countMails = countMails + 1
+                        countFiles = countFiles + SaveAttachments_PdfXml_WithManifest(mail)
+                    Else
+                        countSkippedRule = countSkippedRule + 1
+                    End If
+                End If
+            End If
+        End If
+
+        ' Evitar loops eternos si hay carpetas gigantes y rango muy reciente:
+        ' (opcional) puedes comentar esto si no lo quieres
+        If scanned >= 200000 Then Exit For
+    Next it
+
+    MsgBox "Proceso finalizado." & vbCrLf & _
+           "Carpeta: " & targetFolder.folderPath & vbCrLf & _
+           "Correos procesados (>=1 PDF y >=2 XML): " & countMails & vbCrLf & _
+           "Correos omitidos por regla mínima: " & countSkippedRule & vbCrLf & _
+           "Archivos guardados (solo PDF/XML): " & countFiles & vbCrLf & _
+           "Destino: " & SAVE_FOLDER, vbInformation
+    Exit Sub
+
+EH:
+    MsgBox "Error procesando carpeta: " & Err.Number & " - " & Err.Description, vbCritical
+End Sub
+
+' ================== Folder Resolution (robusto) ==================
+' Prioridad:
+' A) Si hay un correo seleccionado -> usar su carpeta real (lo más confiable)
+' B) Intentar ruta: TARGET_MAILBOX\Bandeja de entrada\FACTURAS RECIBIDAS
+' C) Buscar por nombre en todo el buzón
+Private Function ResolveTargetFolderRobust() As Outlook.Folder
+    Dim fromSelection As Outlook.Folder
+    Dim byPath As Outlook.Folder
+    Dim bySearch As Outlook.Folder
+
+    Set fromSelection = GetSelectedMailParentFolder()
+    If Not fromSelection Is Nothing Then
+        Debug.Print "Usando carpeta desde selección:", fromSelection.folderPath
+        Set ResolveTargetFolderRobust = fromSelection
+        Exit Function
+    End If
+
+    Set byPath = GetFolderByInboxPath()
+    If Not byPath Is Nothing Then
+        Debug.Print "Usando carpeta por ruta Inbox:", byPath.folderPath
+        Set ResolveTargetFolderRobust = byPath
+        Exit Function
+    End If
+
+    Set bySearch = FindFolderRecursive(GetStoreRoot(), TARGET_FOLDER_NAME)
+    If Not bySearch Is Nothing Then
+        Debug.Print "Usando carpeta por búsqueda global:", bySearch.folderPath
+        Set ResolveTargetFolderRobust = bySearch
+        Exit Function
+    End If
+
+    Set ResolveTargetFolderRobust = Nothing
+End Function
+
+Private Function GetSelectedMailParentFolder() As Outlook.Folder
+    On Error GoTo EH
+    Dim sel As Outlook.Selection
+    Dim it As Object
+    Dim mail As Outlook.MailItem
+
+    Set sel = Application.ActiveExplorer.Selection
+    If sel Is Nothing Or sel.Count = 0 Then
+        Set GetSelectedMailParentFolder = Nothing
+        Exit Function
+    End If
+
+    Set it = sel.item(1)
+    If Not TypeOf it Is Outlook.MailItem Then
+        Set GetSelectedMailParentFolder = Nothing
+        Exit Function
+    End If
+
+    Set mail = it
+    Set GetSelectedMailParentFolder = mail.parent
+    Exit Function
+
+EH:
+    Set GetSelectedMailParentFolder = Nothing
+End Function
+
+Private Function GetFolderByInboxPath() As Outlook.Folder
+    On Error GoTo EH
+    Dim ns As Outlook.NameSpace
+    Dim storeRoot As Outlook.Folder
+    Dim inbox As Outlook.Folder
+    Dim targetFolder As Outlook.Folder
+
+    Set ns = Application.GetNamespace("MAPI")
+    Set storeRoot = ns.Folders(TARGET_MAILBOX)
+    Set inbox = storeRoot.Folders(INBOX_NAME)
+    Set targetFolder = GetSubFolderByName(inbox, TARGET_FOLDER_NAME)
+
+    Set GetFolderByInboxPath = targetFolder
+    Exit Function
+
+EH:
+    Set GetFolderByInboxPath = Nothing
+End Function
+
+Private Function GetStoreRoot() As Outlook.Folder
+    Dim ns As Outlook.NameSpace
+    Set ns = Application.GetNamespace("MAPI")
+    Set GetStoreRoot = ns.Folders(TARGET_MAILBOX)
+End Function
+
+Private Function FindFolderRecursive(ByVal parent As Outlook.Folder, ByVal folderName As String) As Outlook.Folder
+    Dim f As Outlook.Folder
+
+    If StrComp(parent.name, folderName, vbTextCompare) = 0 Then
+        Set FindFolderRecursive = parent
+        Exit Function
+    End If
+
+    For Each f In parent.Folders
+        Set FindFolderRecursive = FindFolderRecursive(f, folderName)
+        If Not FindFolderRecursive Is Nothing Then Exit Function
+    Next f
+
+    Set FindFolderRecursive = Nothing
+End Function
+
+' ================== Date Prompt ==================
+Private Function PromptDateRange(ByRef startDate As Date, ByRef endDate As Date) As Boolean
+    Dim inputStart As String, inputEnd As String
+
+    inputStart = InputBox( _
+        "Ingrese fecha y hora INICIAL en formato:" & vbCrLf & _
+        "dd/mm/yyyy hh:mm (24 horas)" & vbCrLf & _
+        "Ejemplo: 27/02/2026 09:30", _
+        "Rango Inicial" _
+    )
+    If inputStart = "" Then
+        PromptDateRange = False
+        Exit Function
+    End If
+
+    inputEnd = InputBox( _
+        "Ingrese fecha y hora FINAL en formato:" & vbCrLf & _
+        "dd/mm/yyyy hh:mm (24 horas)" & vbCrLf & _
+        "Ejemplo: 02/03/2026 14:16", _
+        "Rango Final" _
+    )
+    If inputEnd = "" Then
+        PromptDateRange = False
+        Exit Function
+    End If
+
+    If Not IsDate(inputStart) Or Not IsDate(inputEnd) Then
+        MsgBox "Formato de fecha inválido. Use: dd/mm/yyyy hh:mm (24h)." & vbCrLf & _
+               "Ejemplo: 27/02/2026 09:30", vbCritical
+        PromptDateRange = False
+        Exit Function
+    End If
+
+    startDate = CDate(inputStart)
+    endDate = CDate(inputEnd)
+
+    If endDate < startDate Then
+        MsgBox "Rango inválido: la fecha/hora final es menor que la inicial.", vbCritical
+        PromptDateRange = False
+        Exit Function
+    End If
+
+    PromptDateRange = True
+End Function
+
+' ================== CORE: Save attachments + Manifest ==================
 ' Guarda SOLO PDF y XML (ignora otros), clasifica XML (DOC vs RH) y crea manifest.json
 ' Nombres:
 ' <ingestion_id>.PDF.1.pdf
@@ -113,7 +311,6 @@ Private Function SaveAttachments_PdfXml_WithManifest(ByVal mail As Outlook.MailI
     For Each att In mail.Attachments
         ext = LCase$(GetExtension(att.fileName))
 
-        ' ? Ignorar todo lo que no sea PDF o XML
         If ext <> "pdf" And ext <> "xml" Then GoTo SkipAtt
 
         If ext = "pdf" Then
@@ -126,7 +323,6 @@ Private Function SaveAttachments_PdfXml_WithManifest(ByVal mail As Outlook.MailI
             saved = saved + 1
 
         ElseIf ext = "xml" Then
-            ' Guardar temporal para clasificar por contenido (root + namespace)
             tmpPath = EnsureUniquePath(SAVE_FOLDER & ingestionId & ".__TMP__." & att.Index & ".xml")
             att.SaveAsFile tmpPath
 
@@ -139,7 +335,6 @@ Private Function SaveAttachments_PdfXml_WithManifest(ByVal mail As Outlook.MailI
                 rhIdx = rhIdx + 1
                 finalName = ingestionId & ".RH." & rhIdx & ".xml"
             Else
-                ' XML raro/dañado: lo borramos e ignoramos
                 On Error Resume Next
                 Kill tmpPath
                 On Error GoTo 0
@@ -163,10 +358,9 @@ SkipAtt:
     SaveAttachments_PdfXml_WithManifest = saved
 End Function
 
-' ================== XML classification (root + namespace) ==================
+' ================== XML classification ==================
 Private Function ClassifyXmlByRoot(ByVal xmlPath As String) As String
-    ' Retorna: "RH", "DOC", "UNKNOWN"
-    Dim xml As Object ' MSXML2.DOMDocument.6.0 (late binding)
+    Dim xml As Object ' MSXML2.DOMDocument.6.0
     Dim root As Object
     Dim rootName As String, ns As String
 
@@ -188,16 +382,14 @@ Private Function ClassifyXmlByRoot(ByVal xmlPath As String) As String
         Exit Function
     End If
 
-    rootName = LCase$(root.BaseName)        ' local name
+    rootName = LCase$(root.BaseName)
     ns = LCase$(root.NamespaceURI)
 
-    ' RH: <MensajeHacienda xmlns=".../mensajeHacienda">
     If rootName = "mensajehacienda" And InStr(1, ns, "mensajehacienda", vbTextCompare) > 0 Then
         ClassifyXmlByRoot = "RH"
         Exit Function
     End If
 
-    ' Documentos electrónicos (incluye varios tipos)
     If IsElectronicDocRoot(rootName) Then
         ClassifyXmlByRoot = "DOC"
         Exit Function
@@ -249,7 +441,7 @@ Private Sub WriteManifestJson(ByVal manifestPath As String, ByVal ingestionId As
     sender = SafeSenderEmail(mail)
     subject = mail.subject
     entryId = mail.entryId
-    receivedIso = Format(mail.ReceivedTime, "yyyy-mm-dd\THH:nn:ss")
+    receivedIso = Format$(mail.ReceivedTime, "yyyy-mm-dd\THH:nn:ss")
 
     f = FreeFile
     Open manifestPath For Output As #f
@@ -306,10 +498,28 @@ Private Function GetExtension(ByVal fileName As String) As String
     End If
 End Function
 
+' Regla mínima: al menos 1 PDF y 2 XML
+Private Function HasMinimumPdfXmlAttachments(ByVal mail As Outlook.MailItem) As Boolean
+    Dim att As Outlook.Attachment
+    Dim ext As String
+    Dim pdfCount As Long, xmlCount As Long
+
+    For Each att In mail.Attachments
+        ext = LCase$(GetExtension(att.fileName))
+        If ext = "pdf" Then
+            pdfCount = pdfCount + 1
+        ElseIf ext = "xml" Then
+            xmlCount = xmlCount + 1
+        End If
+    Next att
+
+    HasMinimumPdfXmlAttachments = (pdfCount >= 1 And xmlCount >= 2 And (pdfCount + xmlCount) >= 3)
+End Function
+
 ' Ingestion ID estable: timestamp + cola del EntryID alfanumérico
 Private Function BuildIngestionId(ByVal mail As Outlook.MailItem) As String
     Dim ts As String, tail As String
-    ts = Format(mail.ReceivedTime, "yyyymmdd_hhnnss")
+    ts = Format$(mail.ReceivedTime, "yyyymmdd_hhnnss")
     tail = Right$(CleanId(mail.entryId), 18)
     If tail = "" Then tail = "NOENTRYID"
     BuildIngestionId = ts & "_" & tail
@@ -355,8 +565,3 @@ Private Function EnsureUniquePath(ByVal fullPath As String) As String
         i = i + 1
     Loop
 End Function
-' Alias legado para mantener compatibilidad con macros anteriores.
-Public Sub DescargarAdjuntos_FACTURAS_RECIBIDAS_Enero2026()
-    DescargarAdjuntos_FACTURAS_RECIBIDAS_RangoFecha
-End Sub
-

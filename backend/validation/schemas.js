@@ -90,6 +90,7 @@ const upsertContabilizacionSchema = Joi.object({
   cuenta_contable: Joi.string().allow('', null),
   proyecto: Joi.string().allow('', null),
   orden_compra: Joi.string().allow('', null),
+  orden_compra_id: Joi.number().integer().positive().allow(null),
   numero_proveedor: Joi.string().allow('', null),
   proveedor_id: Joi.number().integer().positive().allow(null),
   tabla_pago_id: Joi.number().integer().positive().allow(null),
@@ -157,6 +158,99 @@ const createTablaPagoSchema = Joi.object({
   usuario: Joi.string().trim().max(100).allow('', null)
 });
 
+const createOrdenCompraSchema = Joi.object({
+  sociedad_id: Joi.number().integer().positive().required(),
+  proveedor_id: Joi.number().integer().positive().required(),
+  numero_oc: Joi.string().trim().max(255).allow('', null),
+  nombre: Joi.string().trim().max(255).allow('', null),
+  monto: Joi.number().positive().required(),
+  moneda: Joi.string().trim().max(10).required(),
+  fecha: Joi.date().iso().required(),
+  filename: Joi.string().trim().max(255).required(),
+  file_base64: Joi.string().trim().required(),
+  metadata: Joi.any(),
+  usuario: Joi.string().trim().max(100).allow('', null)
+}).or('numero_oc', 'nombre');
+
+const autoImportOrdenCompraSchema = Joi.object({
+  sociedad_id: Joi.number().integer().positive().required(),
+  filename: Joi.string().trim().max(255).required(),
+  file_base64: Joi.string().trim().required(),
+  metadata: Joi.any(),
+  usuario: Joi.string().trim().max(100).allow('', null)
+});
+
+const updateOrdenCompraEstadoSchema = Joi.object({
+  estado: Joi.string().trim().valid('abierta', 'cerrada').required()
+});
+
+const createVentaOperacionSchema = Joi.object({
+  sociedad_id: Joi.number().integer().positive().required(),
+  proyecto_codigo: Joi.string().trim().max(20).required(),
+  unidad_codigo: Joi.string().trim().max(20).required(),
+  cliente_nombre: Joi.string().trim().max(255).required(),
+  cliente_identificacion: Joi.string().trim().max(50).allow('', null),
+  metadata: Joi.any(),
+  usuario: Joi.string().trim().max(100).allow('', null),
+});
+
+const cancelVentaOperacionSchema = Joi.object({
+  motivo: Joi.string().trim().max(1000).allow('', null),
+  usuario: Joi.string().trim().max(100).allow('', null),
+});
+
+const closeVentaOperacionSchema = Joi.object({
+  motivo: Joi.string().trim().max(1000).allow('', null),
+  usuario: Joi.string().trim().max(100).allow('', null),
+});
+
+const transferVentaOperacionSchema = Joi.object({
+  destino_sociedad_id: Joi.number().integer().positive().allow(null),
+  destino_proyecto_codigo: Joi.string().trim().max(20).required(),
+  destino_unidad_codigo: Joi.string().trim().max(20).required(),
+  cliente_nombre: Joi.string().trim().max(255).allow('', null),
+  cliente_identificacion: Joi.string().trim().max(50).allow('', null),
+  motivo: Joi.string().trim().max(1000).allow('', null),
+  usuario: Joi.string().trim().max(100).allow('', null),
+  metadata: Joi.any(),
+});
+
+const upsertVentaOperacionDocumentoSchema = Joi.object({
+  codigo_documento: Joi.string().trim().max(50).required(),
+  nombre_archivo: Joi.string().trim().max(255).required(),
+  ruta_archivo: Joi.string().trim().max(2000).required(),
+  mime_type: Joi.string().trim().max(150).allow('', null),
+  tamanio_bytes: Joi.number().integer().min(0).allow(null),
+  hash_sha256: Joi.string().trim().max(128).allow('', null),
+  metadata: Joi.any(),
+  usuario: Joi.string().trim().max(100).allow('', null),
+});
+
+const syncVentaDocumentoSchema = Joi.object({
+  sociedad_id: Joi.number().integer().positive().allow(null),
+  proyecto_codigo: Joi.string().trim().max(20).required(),
+  unidad_codigo: Joi.string().trim().max(20).required(),
+  cliente_nombre: Joi.string().trim().max(255).required(),
+  cliente_identificacion: Joi.string().trim().max(50).allow('', null),
+  codigo_documento: Joi.string().trim().max(50).required(),
+  nombre_archivo: Joi.string().trim().max(255).required(),
+  ruta_archivo: Joi.string().trim().max(2000).required(),
+  mime_type: Joi.string().trim().max(150).allow('', null),
+  tamanio_bytes: Joi.number().integer().min(0).allow(null),
+  hash_sha256: Joi.string().trim().max(128).allow('', null),
+  metadata: Joi.any(),
+  usuario: Joi.string().trim().max(100).allow('', null),
+});
+
+const replaceVentaOperacionDocumentoSchema = Joi.object({
+  filename: Joi.string().trim().max(255).required(),
+  file_base64: Joi.string().trim().required(),
+  mime_type: Joi.string().trim().max(150).allow('', null),
+  motivo: Joi.string().trim().max(1000).allow('', null),
+  metadata: Joi.any(),
+  usuario: Joi.string().trim().max(100).allow('', null),
+});
+
 module.exports = {
   createComentarioSchema,
   createAuditoriaSchema,
@@ -175,5 +269,15 @@ module.exports = {
   setUsuarioSociedadesSchema,
   createProveedorSchema,
   updateProveedorSchema,
-  createTablaPagoSchema
+  createTablaPagoSchema,
+  createOrdenCompraSchema,
+  autoImportOrdenCompraSchema,
+  updateOrdenCompraEstadoSchema,
+  createVentaOperacionSchema,
+  cancelVentaOperacionSchema,
+  closeVentaOperacionSchema,
+  transferVentaOperacionSchema,
+  upsertVentaOperacionDocumentoSchema,
+  syncVentaDocumentoSchema,
+  replaceVentaOperacionDocumentoSchema,
 };

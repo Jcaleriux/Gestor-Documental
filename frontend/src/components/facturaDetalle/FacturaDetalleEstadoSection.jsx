@@ -1,16 +1,18 @@
 import SectionCard from '../common/SectionCard';
 import { FACTURA_DETALLE_LABELS } from '../../utils/uiLabels';
 
-function FacturaDetalleEstadoSection({
-  estadosDisponibles,
-  estadoUser,
-  setEstadoUser,
-  estadoNuevo,
-  setEstadoNuevo,
-  estadoMotivo,
-  setEstadoMotivo,
-  changeEstado
-}) {
+function FacturaDetalleEstadoSection({ viewModel }) {
+  const {
+    estadosDisponibles,
+    estadoUser,
+    setEstadoUser,
+    estadoNuevo,
+    setEstadoNuevo,
+    estadoMotivo,
+    setEstadoMotivo,
+    changeEstado
+  } = viewModel;
+
   return (
     <SectionCard title={FACTURA_DETALLE_LABELS.cambiarEstado.title} className="mb-3">
       <form onSubmit={changeEstado} className="d-grid gap-2">

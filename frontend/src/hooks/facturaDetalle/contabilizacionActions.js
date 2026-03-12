@@ -1,5 +1,159 @@
 import { getNotaCreditoTotal } from './utils.js';
 
+const requireFacturaSociedadId = ({ factura, setContaError }) => {
+  if (!factura?.sociedad_id) {
+    setContaError('No se encontro la sociedad de la factura.');
+    return null;
+  }
+  return factura.sociedad_id;
+};
+
+const requireProveedorId = ({ conta, setContaError, missingProveedorError }) => {
+  const proveedorId = Number(conta.proveedor_id);
+  if (!Number.isInteger(proveedorId) || proveedorId <= 0) {
+    setContaError(missingProveedorError);
+    return null;
+  }
+  return proveedorId;
+};
+
+const loadAssociationCandidates = async ({
+  fetchItems,
+  setLoading,
+  setError,
+  setItems,
+  setModalOpen,
+  fallbackError
+}) => {
+  try {
+    setLoading(true);
+    setError('');
+    const items = await fetchItems();
+    setItems(items);
+    setModalOpen(true);
+  } catch (err) {
+    const apiError = err.response?.data?.error || fallbackError;
+    setError(apiError);
+  } finally {
+    setLoading(false);
+  }
+};
+
+const associateItem = ({
+  item,
+  setCurrent,
+  setConta,
+  mapContaFields,
+  setModalOpen
+}) => {
+  if (!item) {
+    return;
+  }
+
+  setCurrent(item);
+  setConta((prev) => ({
+    ...prev,
+    ...mapContaFields(item, prev)
+  }));
+  setModalOpen(false);
+};
+
+const createSelectionClearers = ({
+  setTablasPagoProveedor,
+  setTablaPagoActual,
+  setTablasModalOpen,
+  setTablasError,
+  setOrdenesCompraProveedor,
+  setOrdenCompraActual,
+  setOrdenesModalOpen,
+  setOrdenesError,
+  setNotasCreditoProveedor,
+  setNotaCreditoActual,
+  setNotasModalOpen,
+  setNotasError,
+  setConta
+}) => ({
+  clearTablaSelection: () => {
+    setTablasPagoProveedor([]);
+    setTablaPagoActual(null);
+    setTablasModalOpen(false);
+    setTablasError('');
+    setConta((prev) => ({
+      ...prev,
+      tabla_pago_id: ''
+    }));
+  },
+  clearOrdenCompraSelection: () => {
+    setOrdenesCompraProveedor([]);
+    setOrdenCompraActual(null);
+    setOrdenesModalOpen(false);
+    setOrdenesError('');
+    setConta((prev) => ({
+      ...prev,
+      orden_compra_id: '',
+      orden_compra: ''
+    }));
+  },
+  clearNotaCreditoSelection: () => {
+    setNotasCreditoProveedor([]);
+    setNotaCreditoActual(null);
+    setNotasModalOpen(false);
+    setNotasError('');
+    setConta((prev) => ({
+      ...prev,
+      nota_credito_id: '',
+      monto_nota_credito: 0
+    }));
+  }
+});
+
+const buildContabilizacionPayload = ({ conta }) => ({
+  ...conta,
+  proveedor_id: conta.proveedor_id ? Number(conta.proveedor_id) : null,
+  tabla_pago_id: conta.tabla_pago_id ? Number(conta.tabla_pago_id) : null,
+  orden_compra_id: conta.orden_compra_id ? Number(conta.orden_compra_id) : null,
+  nota_credito_id: conta.nota_credito_id ? Number(conta.nota_credito_id) : null,
+  monto_nota_credito: conta.monto_nota_credito === '' || Number.isNaN(Number(conta.monto_nota_credito))
+    ? null
+    : Number(conta.monto_nota_credito),
+  usuario: 'admin'
+});
+
+const buildRetencionPayload = ({
+  monto,
+  retencionPagoFecha,
+  retencionPagoNotas
+}) => ({
+  monto,
+  fecha_pago: retencionPagoFecha || null,
+  notas: retencionPagoNotas || null,
+  usuario: 'admin'
+});
+
+const createHandleContaChangeAction = ({
+  proveedoresSociedad,
+  setConta,
+  clearTablaSelection,
+  clearOrdenCompraSelection,
+  clearNotaCreditoSelection
+}) => (field) => (event) => {
+  const nextValue = event.target.value;
+  if (field === 'proveedor_id') {
+    const proveedor = proveedoresSociedad.find((item) => String(item.id) === String(nextValue));
+    clearTablaSelection();
+    clearOrdenCompraSelection();
+    clearNotaCreditoSelection();
+    setConta((prev) => ({
+      ...prev,
+      proveedor_id: nextValue,
+      numero_proveedor: proveedor?.identificacion_numero || ''
+    }));
+    return;
+  }
+
+  setConta((prev) => ({ ...prev, [field]: nextValue }));
+};
+
 export const createContabilizacionActions = ({
   id,
   factura,
@@ -14,6 +168,11 @@ export const createContabilizacionActions = ({
   setTablasModalOpen,
   setTablasError,
   setTablasLoading,
+  setOrdenesCompraProveedor,
+  setOrdenCompraActual,
+  setOrdenesModalOpen,
+  setOrdenesError,
+  setOrdenesLoading,
   setNotasCreditoProveedor,
   setNotaCreditoActual,
   setNotasModalOpen,
@@ -30,124 +189,158 @@ export const createContabilizacionActions = ({
   fetchAll,
   facturaApi
 }) => {
-  const clearTablaSelection = () => {
-    setTablasPagoProveedor([]);
-    setTablaPagoActual(null);
-    setTablasModalOpen(false);
-    setTablasError('');
-    setConta((prev) => ({
-      ...prev,
-      tabla_pago_id: ''
-    }));
-  };
+  const {
+    clearTablaSelection,
+    clearOrdenCompraSelection,
+    clearNotaCreditoSelection
+  } = createSelectionClearers({
+    setTablasPagoProveedor,
+    setTablaPagoActual,
+    setTablasModalOpen,
+    setTablasError,
+    setOrdenesCompraProveedor,
+    setOrdenCompraActual,
+    setOrdenesModalOpen,
+    setOrdenesError,
+    setNotasCreditoProveedor,
+    setNotaCreditoActual,
+    setNotasModalOpen,
+    setNotasError,
+    setConta
+  });
 
-  const clearNotaCreditoSelection = () => {
-    setNotasCreditoProveedor([]);
-    setNotaCreditoActual(null);
-    setNotasModalOpen(false);
-    setNotasError('');
-    setConta((prev) => ({
-      ...prev,
-      nota_credito_id: '',
-      monto_nota_credito: 0
-    }));
-  };
+  const handleContaChange = createHandleContaChangeAction({
+    proveedoresSociedad,
+    setConta,
+    clearTablaSelection,
+    clearOrdenCompraSelection,
+    clearNotaCreditoSelection
+  });
 
-  const handleContaChange = (field) => (event) => {
-    const nextValue = event.target.value;
-    if (field === 'proveedor_id') {
-      const proveedor = proveedoresSociedad.find((item) => String(item.id) === String(nextValue));
-      clearTablaSelection();
-      clearNotaCreditoSelection();
-      setConta((prev) => ({
-        ...prev,
-        proveedor_id: nextValue,
-        numero_proveedor: proveedor?.identificacion_numero || ''
-      }));
-      return;
+  const resolveAssociationContext = (missingProveedorError) => {
+    const sociedadId = requireFacturaSociedadId({ factura, setContaError });
+    if (!sociedadId) {
+      return null;
     }
 
-    setConta((prev) => ({ ...prev, [field]: nextValue }));
+    const proveedorId = requireProveedorId({
+      conta,
+      setContaError,
+      missingProveedorError
+    });
+    if (!proveedorId) {
+      return null;
+    }
+
+    return { sociedadId, proveedorId };
   };
 
   const abrirAsociarTablaPago = async () => {
-    if (!factura?.sociedad_id) {
-      setContaError('No se encontro la sociedad de la factura.');
+    const context = resolveAssociationContext('Seleccione un proveedor para asociar la tabla de pagos.');
+    if (!context) {
       return;
     }
 
-    const proveedorId = Number(conta.proveedor_id);
-    if (!Number.isInteger(proveedorId) || proveedorId <= 0) {
-      setContaError('Seleccione un proveedor para asociar la tabla de pagos.');
-      return;
-    }
-
-    try {
-      setTablasLoading(true);
-      setTablasError('');
-      const response = await facturaApi.getTablasPago({
-        sociedadId: factura.sociedad_id,
-        proveedorId
-      });
-      setTablasPagoProveedor(response.data?.data || []);
-      setTablasModalOpen(true);
-    } catch (err) {
-      const apiError = err.response?.data?.error || 'No se pudieron cargar las tablas de pago.';
-      setTablasError(apiError);
-    } finally {
-      setTablasLoading(false);
-    }
+    await loadAssociationCandidates({
+      fetchItems: async () => {
+        const response = await facturaApi.getTablasPago({
+          sociedadId: context.sociedadId,
+          proveedorId: context.proveedorId
+        });
+        return response.data?.data || [];
+      },
+      setLoading: setTablasLoading,
+      setError: setTablasError,
+      setItems: setTablasPagoProveedor,
+      setModalOpen: setTablasModalOpen,
+      fallbackError: 'No se pudieron cargar las tablas de pago.'
+    });
   };
 
   const asociarTablaPago = (tabla) => {
-    if (!tabla) return;
-    setTablaPagoActual(tabla);
-    setConta((prev) => ({
-      ...prev,
-      tabla_pago_id: String(tabla.id)
-    }));
-    setTablasModalOpen(false);
+    associateItem({
+      item: tabla,
+      setCurrent: setTablaPagoActual,
+      setConta,
+      mapContaFields: (item) => ({
+        tabla_pago_id: String(item.id)
+      }),
+      setModalOpen: setTablasModalOpen
+    });
+  };
+
+  const abrirAsociarOrdenCompra = async () => {
+    const context = resolveAssociationContext('Seleccione un proveedor para asociar la orden de compra.');
+    if (!context) {
+      return;
+    }
+
+    await loadAssociationCandidates({
+      fetchItems: async () => {
+        const response = await facturaApi.getOrdenesCompra({
+          sociedadId: context.sociedadId,
+          proveedorId: context.proveedorId,
+          estado: 'abierta'
+        });
+        return response.data?.data || [];
+      },
+      setLoading: setOrdenesLoading,
+      setError: setOrdenesError,
+      setItems: setOrdenesCompraProveedor,
+      setModalOpen: setOrdenesModalOpen,
+      fallbackError: 'No se pudieron cargar las ordenes de compra.'
+    });
+  };
+
+  const asociarOrdenCompra = (ordenCompra) => {
+    associateItem({
+      item: ordenCompra,
+      setCurrent: setOrdenCompraActual,
+      setConta,
+      mapContaFields: (item, prev) => ({
+        orden_compra_id: String(item.id),
+        orden_compra: item.nombre || prev.orden_compra
+      }),
+      setModalOpen: setOrdenesModalOpen
+    });
   };
 
   const abrirAsociarNotaCredito = async () => {
-    if (!factura?.sociedad_id) {
-      setContaError('No se encontro la sociedad de la factura.');
+    const context = resolveAssociationContext('Seleccione un proveedor para asociar la nota de credito.');
+    if (!context) {
       return;
     }
 
-    const proveedorId = Number(conta.proveedor_id);
-    if (!Number.isInteger(proveedorId) || proveedorId <= 0) {
-      setContaError('Seleccione un proveedor para asociar la nota de credito.');
-      return;
-    }
-
-    try {
-      setNotasLoading(true);
-      setNotasError('');
-      const response = await facturaApi.getNotasCredito({
-        sociedadId: factura.sociedad_id,
-        proveedorId
-      });
-      setNotasCreditoProveedor(response.data?.data || []);
-      setNotasModalOpen(true);
-    } catch (err) {
-      const apiError = err.response?.data?.error || 'No se pudieron cargar las notas de credito.';
-      setNotasError(apiError);
-    } finally {
-      setNotasLoading(false);
-    }
+    await loadAssociationCandidates({
+      fetchItems: async () => {
+        const response = await facturaApi.getNotasCredito({
+          sociedadId: context.sociedadId,
+          proveedorId: context.proveedorId
+        });
+        return response.data?.data || [];
+      },
+      setLoading: setNotasLoading,
+      setError: setNotasError,
+      setItems: setNotasCreditoProveedor,
+      setModalOpen: setNotasModalOpen,
+      fallbackError: 'No se pudieron cargar las notas de credito.'
+    });
   };
 
   const asociarNotaCredito = (notaCredito) => {
-    if (!notaCredito) return;
-    const montoNota = getNotaCreditoTotal(notaCredito);
-    setNotaCreditoActual(notaCredito);
-    setConta((prev) => ({
-      ...prev,
-      nota_credito_id: String(notaCredito.id),
-      monto_nota_credito: montoNota ?? prev.monto_nota_credito
-    }));
-    setNotasModalOpen(false);
+    associateItem({
+      item: notaCredito,
+      setCurrent: setNotaCreditoActual,
+      setConta,
+      mapContaFields: (item, prev) => {
+        const montoNota = getNotaCreditoTotal(item);
+        return {
+          nota_credito_id: String(item.id),
+          monto_nota_credito: montoNota ?? prev.monto_nota_credito
+        };
+      },
+      setModalOpen: setNotasModalOpen
+    });
   };
 
   const guardarContabilizacion = async (event) => {
@@ -156,16 +349,7 @@ export const createContabilizacionActions = ({
       setContaSaving(true);
       setContaError('');
       setContaMessage('');
-      await facturaApi.saveContabilizacion(id, {
-        ...conta,
-        proveedor_id: conta.proveedor_id ? Number(conta.proveedor_id) : null,
-        tabla_pago_id: conta.tabla_pago_id ? Number(conta.tabla_pago_id) : null,
-        nota_credito_id: conta.nota_credito_id ? Number(conta.nota_credito_id) : null,
-        monto_nota_credito: conta.monto_nota_credito === '' || Number.isNaN(Number(conta.monto_nota_credito))
-          ? null
-          : Number(conta.monto_nota_credito),
-        usuario: 'admin'
-      });
+      await facturaApi.saveContabilizacion(id, buildContabilizacionPayload({ conta }));
       setContaMessage('Contabilizacion guardada y estado actualizado.');
       await fetchAll();
     } catch (err) {
@@ -188,12 +372,11 @@ export const createContabilizacionActions = ({
       setRetencionPagoSaving(true);
       setRetencionPagoError('');
       setRetencionPagoMessage('');
-      await facturaApi.registrarPagoRetencion(id, {
+      await facturaApi.registrarPagoRetencion(id, buildRetencionPayload({
         monto,
-        fecha_pago: retencionPagoFecha || null,
-        notas: retencionPagoNotas || null,
-        usuario: 'admin'
-      });
+        retencionPagoFecha,
+        retencionPagoNotas
+      }));
       setRetencionPagoMonto('');
       setRetencionPagoNotas('');
       setRetencionPagoMessage('Pago de retencion registrado.');
@@ -210,6 +393,8 @@ export const createContabilizacionActions = ({
     handleContaChange,
     abrirAsociarTablaPago,
     asociarTablaPago,
+    abrirAsociarOrdenCompra,
+    asociarOrdenCompra,
     abrirAsociarNotaCredito,
     asociarNotaCredito,
     guardarContabilizacion,

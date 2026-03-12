@@ -1,20 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { facturasApi } from '../services/facturasApi';
 
 export const useTiquetesElectronicos = ({ sociedadId }) => {
   const [tiquetes, setTiquetes] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!sociedadId) {
-      setTiquetes([]);
-      setLoading(false);
-      return;
-    }
-    fetchTiquetes();
-  }, [sociedadId]);
-
-  const fetchTiquetes = async () => {
+  const fetchTiquetes = useCallback(async () => {
     try {
       setLoading(true);
       const res = await facturasApi.listTiquetesElectronicos({ sociedadId });
@@ -26,7 +17,16 @@ export const useTiquetesElectronicos = ({ sociedadId }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [sociedadId]);
+
+  useEffect(() => {
+    if (!sociedadId) {
+      setTiquetes([]);
+      setLoading(false);
+      return;
+    }
+    fetchTiquetes();
+  }, [sociedadId, fetchTiquetes]);
 
   return { tiquetes, loading };
 };

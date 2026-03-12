@@ -4,10 +4,11 @@ const DOCUMENTS_DIR_NAME = 'documentos';
 const RECEIVED_DIR_NAME = 'facturas recibidas';
 const PROCESSED_DIR_NAME = 'facturas procesadas';
 const PAYMENT_TABLES_DIR_NAME = 'tablas_pago';
+const PURCHASE_ORDERS_DIR_NAME = 'ordenes_compra';
 
-const LEGACY_DOCUMENTS_DIR_NAME = 'facturas';
-const LEGACY_RECEIVED_DIR_NAME = 'recibidas';
-const LEGACY_PROCESSED_DIR_NAME = 'procesadas';
+const LEGACY_DOCUMENTS_ALIAS = 'facturas';
+const LEGACY_RECEIVED_ALIAS = 'recibidas';
+const LEGACY_PROCESSED_ALIAS = 'procesadas';
 
 const toPosix = (value) => String(value || '').replace(/\\/g, '/');
 
@@ -28,73 +29,42 @@ const toCurrentRelativePath = (rawPath) => {
 
   normalized = replacePrefix(
     normalized,
-    `${DOCUMENTS_DIR_NAME}/${LEGACY_RECEIVED_DIR_NAME}`,
+    `${DOCUMENTS_DIR_NAME}/${LEGACY_RECEIVED_ALIAS}`,
     `${DOCUMENTS_DIR_NAME}/${RECEIVED_DIR_NAME}`
   );
   normalized = replacePrefix(
     normalized,
-    `${DOCUMENTS_DIR_NAME}/${LEGACY_PROCESSED_DIR_NAME}`,
+    `${DOCUMENTS_DIR_NAME}/${LEGACY_PROCESSED_ALIAS}`,
     `${DOCUMENTS_DIR_NAME}/${PROCESSED_DIR_NAME}`
   );
   normalized = replacePrefix(
     normalized,
-    `${LEGACY_DOCUMENTS_DIR_NAME}/${LEGACY_RECEIVED_DIR_NAME}`,
+    `${LEGACY_DOCUMENTS_ALIAS}/${LEGACY_RECEIVED_ALIAS}`,
     `${DOCUMENTS_DIR_NAME}/${RECEIVED_DIR_NAME}`
   );
   normalized = replacePrefix(
     normalized,
-    `${LEGACY_DOCUMENTS_DIR_NAME}/${LEGACY_PROCESSED_DIR_NAME}`,
+    `${LEGACY_DOCUMENTS_ALIAS}/${LEGACY_PROCESSED_ALIAS}`,
     `${DOCUMENTS_DIR_NAME}/${PROCESSED_DIR_NAME}`
   );
   normalized = replacePrefix(
     normalized,
-    `${LEGACY_DOCUMENTS_DIR_NAME}/${PAYMENT_TABLES_DIR_NAME}`,
+    `${LEGACY_DOCUMENTS_ALIAS}/${PAYMENT_TABLES_DIR_NAME}`,
     `${DOCUMENTS_DIR_NAME}/${PAYMENT_TABLES_DIR_NAME}`
   );
-  normalized = replacePrefix(normalized, LEGACY_DOCUMENTS_DIR_NAME, DOCUMENTS_DIR_NAME);
-
-  return normalized;
-};
-
-const toLegacyRelativePath = (rawPath) => {
-  let normalized = stripLeadingSlash(toPosix(rawPath));
-
   normalized = replacePrefix(
     normalized,
-    `${DOCUMENTS_DIR_NAME}/${LEGACY_RECEIVED_DIR_NAME}`,
-    `${LEGACY_DOCUMENTS_DIR_NAME}/${LEGACY_RECEIVED_DIR_NAME}`
+    `${LEGACY_DOCUMENTS_ALIAS}/${PURCHASE_ORDERS_DIR_NAME}`,
+    `${DOCUMENTS_DIR_NAME}/${PURCHASE_ORDERS_DIR_NAME}`
   );
-  normalized = replacePrefix(
-    normalized,
-    `${DOCUMENTS_DIR_NAME}/${LEGACY_PROCESSED_DIR_NAME}`,
-    `${LEGACY_DOCUMENTS_DIR_NAME}/${LEGACY_PROCESSED_DIR_NAME}`
-  );
-  normalized = replacePrefix(
-    normalized,
-    `${DOCUMENTS_DIR_NAME}/${RECEIVED_DIR_NAME}`,
-    `${LEGACY_DOCUMENTS_DIR_NAME}/${LEGACY_RECEIVED_DIR_NAME}`
-  );
-  normalized = replacePrefix(
-    normalized,
-    `${DOCUMENTS_DIR_NAME}/${PROCESSED_DIR_NAME}`,
-    `${LEGACY_DOCUMENTS_DIR_NAME}/${LEGACY_PROCESSED_DIR_NAME}`
-  );
-  normalized = replacePrefix(
-    normalized,
-    `${DOCUMENTS_DIR_NAME}/${PAYMENT_TABLES_DIR_NAME}`,
-    `${LEGACY_DOCUMENTS_DIR_NAME}/${PAYMENT_TABLES_DIR_NAME}`
-  );
-  normalized = replacePrefix(normalized, DOCUMENTS_DIR_NAME, LEGACY_DOCUMENTS_DIR_NAME);
+  normalized = replacePrefix(normalized, LEGACY_DOCUMENTS_ALIAS, DOCUMENTS_DIR_NAME);
 
   return normalized;
 };
 
 const getRelativePathVariants = (rawPath) => {
-  const normalized = stripLeadingSlash(toPosix(rawPath));
-  const current = toCurrentRelativePath(normalized);
-  const legacy = toLegacyRelativePath(normalized);
-
-  return [...new Set([current, normalized, legacy].filter(Boolean))];
+  const current = toCurrentRelativePath(rawPath);
+  return current ? [current] : [];
 };
 
 const resolveDocumentPaths = (baseDir) => {
@@ -106,22 +76,7 @@ const resolveDocumentPaths = (baseDir) => {
     facturasRecibidasDir: path.join(resolvedBaseDir, DOCUMENTS_DIR_NAME, RECEIVED_DIR_NAME),
     facturasProcesadasDir: path.join(resolvedBaseDir, DOCUMENTS_DIR_NAME, PROCESSED_DIR_NAME),
     tablasPagoDir: path.join(resolvedBaseDir, DOCUMENTS_DIR_NAME, PAYMENT_TABLES_DIR_NAME),
-    legacyDocumentsRootDir: path.join(resolvedBaseDir, LEGACY_DOCUMENTS_DIR_NAME),
-    legacyFacturasRecibidasDir: path.join(
-      resolvedBaseDir,
-      LEGACY_DOCUMENTS_DIR_NAME,
-      LEGACY_RECEIVED_DIR_NAME
-    ),
-    legacyFacturasProcesadasDir: path.join(
-      resolvedBaseDir,
-      LEGACY_DOCUMENTS_DIR_NAME,
-      LEGACY_PROCESSED_DIR_NAME
-    ),
-    legacyTablasPagoDir: path.join(
-      resolvedBaseDir,
-      LEGACY_DOCUMENTS_DIR_NAME,
-      PAYMENT_TABLES_DIR_NAME
-    )
+    ordenesCompraDir: path.join(resolvedBaseDir, DOCUMENTS_DIR_NAME, PURCHASE_ORDERS_DIR_NAME)
   };
 };
 
@@ -130,11 +85,8 @@ module.exports = {
   RECEIVED_DIR_NAME,
   PROCESSED_DIR_NAME,
   PAYMENT_TABLES_DIR_NAME,
-  LEGACY_DOCUMENTS_DIR_NAME,
-  LEGACY_RECEIVED_DIR_NAME,
-  LEGACY_PROCESSED_DIR_NAME,
+  PURCHASE_ORDERS_DIR_NAME,
   toCurrentRelativePath,
-  toLegacyRelativePath,
   getRelativePathVariants,
   resolveDocumentPaths
 };

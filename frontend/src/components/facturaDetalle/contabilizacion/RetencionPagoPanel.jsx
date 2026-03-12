@@ -2,21 +2,23 @@ import ActionAlerts from '../../common/ActionAlerts';
 import { FACTURA_DETALLE_LABELS } from '../../../utils/uiLabels';
 import { formatAmount } from '../../../utils/formatters';
 
-function RetencionPagoPanel({
-  retencionTotal,
-  retencionPendiente,
-  retencionPagoMonto,
-  setRetencionPagoMonto,
-  retencionPagoFecha,
-  setRetencionPagoFecha,
-  retencionPagoNotas,
-  setRetencionPagoNotas,
-  retencionPagoSaving,
-  retencionPagoError,
-  retencionPagoMessage,
-  registrarPagoRetencion,
-  retencionPagos
-}) {
+function RetencionPagoPanel({ viewModel }) {
+  const {
+    retencionTotal,
+    retencionPendiente,
+    retencionPagoMonto,
+    setRetencionPagoMonto,
+    retencionPagoFecha,
+    setRetencionPagoFecha,
+    retencionPagoNotas,
+    setRetencionPagoNotas,
+    retencionPagoSaving,
+    retencionPagoError,
+    retencionPagoMessage,
+    registrarPagoRetencion,
+    retencionPagos
+  } = viewModel;
+
   if (retencionTotal <= 0) {
     return null;
   }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { tramitesApi } from '../services/tramitesApi';
 import { facturasApi } from '../services/facturasApi';
 
@@ -11,18 +11,7 @@ export const useTramites = ({ sociedadId }) => {
   const [actionMessage, setActionMessage] = useState('');
   const [actionError, setActionError] = useState('');
 
-  useEffect(() => {
-    if (!sociedadId) {
-      setTramites([]);
-      setFacturasDisponibles([]);
-      setRetencionesDisponibles([]);
-      setLoading(false);
-      return;
-    }
-    fetchTramites();
-  }, [sociedadId]);
-
-  const fetchTramites = async (estado) => {
+  const fetchTramites = useCallback(async (estado) => {
     try {
       setLoading(true);
       const params = { sociedadId };
@@ -36,7 +25,18 @@ export const useTramites = ({ sociedadId }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [sociedadId]);
+
+  useEffect(() => {
+    if (!sociedadId) {
+      setTramites([]);
+      setFacturasDisponibles([]);
+      setRetencionesDisponibles([]);
+      setLoading(false);
+      return;
+    }
+    fetchTramites();
+  }, [sociedadId, fetchTramites]);
 
   const fetchFacturasDisponibles = async () => {
     setLoadingDocs(true);

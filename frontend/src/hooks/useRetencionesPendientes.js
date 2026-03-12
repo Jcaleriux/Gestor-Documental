@@ -1,21 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { facturasApi } from '../services/facturasApi';
 
 export const useRetencionesPendientes = ({ sociedadId }) => {
   const [retenciones, setRetenciones] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!sociedadId) {
-      setRetenciones([]);
-      setLoading(false);
-      return;
-    }
-
-    fetchRetenciones();
-  }, [sociedadId]);
-
-  const fetchRetenciones = async () => {
+  const fetchRetenciones = useCallback(async () => {
     try {
       setLoading(true);
       const res = await facturasApi.listRetencionesPendientes({ sociedadId });
@@ -30,7 +20,17 @@ export const useRetencionesPendientes = ({ sociedadId }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [sociedadId]);
+
+  useEffect(() => {
+    if (!sociedadId) {
+      setRetenciones([]);
+      setLoading(false);
+      return;
+    }
+
+    fetchRetenciones();
+  }, [sociedadId, fetchRetenciones]);
 
   return {
     retenciones,

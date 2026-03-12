@@ -11,6 +11,11 @@ const getContabilizacionByFacturaId = async (facturaId, client) => {
       fc.*,
       tp.nombre AS tabla_pago_nombre,
       tp.ruta_pdf AS tabla_pago_ruta_pdf,
+      oc.nombre AS orden_compra_nombre,
+      oc.ruta_pdf AS orden_compra_ruta_pdf,
+      oc.monto AS orden_compra_monto,
+      oc.moneda AS orden_compra_moneda,
+      oc.estado AS orden_compra_estado,
       nc.clave AS nota_credito_clave,
       nc.ruta_pdf AS nota_credito_ruta_pdf,
       nc.ruta_xml AS nota_credito_ruta_xml,
@@ -22,6 +27,7 @@ const getContabilizacionByFacturaId = async (facturaId, client) => {
       GREATEST(COALESCE(fc.retencion, 0) - COALESCE(fc.retencion_pagada, 0), 0) AS retencion_pendiente
     FROM facturas_contabilizacion fc
     LEFT JOIN tablas_pago tp ON tp.id = fc.tabla_pago_id
+    LEFT JOIN ordenes_compra oc ON oc.id = fc.orden_compra_id
     LEFT JOIN notas_credito nc ON nc.id = fc.nota_credito_id
     WHERE fc.factura_id = $1
     `,
@@ -55,7 +61,7 @@ const listRetencionPagosByFacturaId = async (facturaId, client) => {
 
 const getFacturaById = async (facturaId, client) => {
   const { rows } = await getDb(client).query(
-    'SELECT id, estado, sociedad_id, emisor FROM facturas WHERE id = $1',
+    'SELECT id, estado, sociedad_id, emisor, resumen FROM facturas WHERE id = $1',
     [facturaId]
   );
 
@@ -94,6 +100,25 @@ const getTablaPagoById = async (tablaPagoId, client) => {
      FROM tablas_pago
      WHERE id = $1`,
     [tablaPagoId]
+  );
+
+  return rows[0] || null;
+};
+
+const getOrdenCompraById = async (ordenCompraId, client) => {
+  const { rows } = await getDb(client).query(
+    `SELECT
+       id,
+       sociedad_id,
+       proveedor_id,
+       nombre,
+       monto,
+       moneda,
+       estado,
+       ruta_pdf
+     FROM ordenes_compra
+     WHERE id = $1`,
+    [ordenCompraId]
   );
 
   return rows[0] || null;
@@ -194,6 +219,7 @@ const upsertContabilizacion = async ({
   cuenta_contable,
   proyecto,
   orden_compra,
+  orden_compra_id,
   numero_proveedor,
   proveedor_id,
   tabla_pago_id,
@@ -224,6 +250,7 @@ const upsertContabilizacion = async ({
       cuenta_contable,
       proyecto,
       orden_compra,
+      orden_compra_id,
       numero_proveedor,
       proveedor_id,
       tabla_pago_id,
@@ -232,7 +259,7 @@ const upsertContabilizacion = async ({
       metadata,
       creado_por
     )
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
     ON CONFLICT (factura_id)
     DO UPDATE SET
       fecha_documento = EXCLUDED.fecha_documento,
@@ -247,6 +274,7 @@ const upsertContabilizacion = async ({
       cuenta_contable = EXCLUDED.cuenta_contable,
       proyecto = EXCLUDED.proyecto,
       orden_compra = EXCLUDED.orden_compra,
+      orden_compra_id = EXCLUDED.orden_compra_id,
       numero_proveedor = EXCLUDED.numero_proveedor,
       proveedor_id = EXCLUDED.proveedor_id,
       tabla_pago_id = EXCLUDED.tabla_pago_id,
@@ -271,6 +299,7 @@ const upsertContabilizacion = async ({
       toNullable(cuenta_contable),
       toNullable(proyecto),
       toNullable(orden_compra),
+      toNullable(orden_compra_id),
       toNullable(numero_proveedor),
       toNullable(proveedor_id),
       toNullable(tabla_pago_id),
@@ -373,6 +402,41 @@ const insertEstadoDocumento = async ({
   );
 };
 
+const refreshEstadoOrdenCompraById = async (ordenCompraId, client) => {
+  const { rows } = await getDb(client).query(
+    `
+    UPDATE ordenes_compra oc
+    SET
+      estado = CASE
+        WHEN COALESCE(consumo.total_consumido, 0) >= COALESCE(oc.monto, 0)
+          THEN 'cerrada'
+        ELSE 'abierta'
+      END,
+      actualizado_en = CURRENT_TIMESTAMP
+    FROM (
+      SELECT COALESCE(SUM(
+        CASE
+          WHEN COALESCE(f.resumen->>'TotalComprobante', '') ~ '^-?[0-9]+(\\.[0-9]+)?$'
+            THEN (f.resumen->>'TotalComprobante')::numeric
+          ELSE 0
+        END
+      ), 0) AS total_consumido
+      FROM facturas_contabilizacion fc
+      JOIN facturas f ON f.id = fc.factura_id
+      WHERE fc.orden_compra_id = $1
+    ) consumo
+    WHERE oc.id = $1
+    RETURNING
+      oc.id,
+      oc.estado,
+      oc.monto
+    `,
+    [ordenCompraId]
+  );
+
+  return rows[0] || null;
+};
+
 module.exports = {
   getClient,
   getContabilizacionByFacturaId,
@@ -381,6 +445,7 @@ module.exports = {
   getProveedorById,
   getProveedorBySociedadAndIdentificacion,
   getTablaPagoById,
+  getOrdenCompraById,
   getNotaCreditoById,
   getContabilizacionRetencionByFacturaIdForUpdate,
   normalizeRetencionStateByFacturaId,
@@ -388,5 +453,6 @@ module.exports = {
   insertRetencionPago,
   applyRetencionPago,
   updateFacturaEstado,
-  insertEstadoDocumento
+  insertEstadoDocumento,
+  refreshEstadoOrdenCompraById
 };

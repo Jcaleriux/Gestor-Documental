@@ -14,7 +14,10 @@ const PERMISSIONS = Object.freeze({
   DOCUMENTOS_APROBAR_GERENCIA_FINANCIERA: 'documentos_aprobar_gerencia_financiera',
   DOCUMENTOS_FIRMAR_AUTORIZAR: 'documentos_firmar_autorizar',
   DOCUMENTOS_MARCAR_PAGADO: 'documentos_marcar_pagado',
-  AUDITORIA_VER: 'auditoria_ver'
+  AUDITORIA_VER: 'auditoria_ver',
+  VENTAS_VER: 'ventas_ver',
+  VENTAS_CREAR: 'ventas_crear',
+  VENTAS_GESTIONAR: 'ventas_gestionar'
 });
 
 const WORKFLOW_PERMISSIONS = Object.freeze([

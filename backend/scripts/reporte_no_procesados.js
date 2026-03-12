@@ -4,9 +4,7 @@ const { resolveDocumentPaths } = require("../utils/documentPaths");
 
 const baseDir = process.env.FACTURAS_BASE_DIR || path.resolve(__dirname, "..", "..");
 const documentPaths = resolveDocumentPaths(baseDir);
-const recibidasDir = fs.existsSync(documentPaths.legacyFacturasRecibidasDir)
-  ? documentPaths.legacyFacturasRecibidasDir
-  : documentPaths.facturasRecibidasDir;
+const recibidasDir = documentPaths.facturasRecibidasDir;
 const salidaDir = path.join(__dirname, "salidas");
 
 function ensureDir(dir) {

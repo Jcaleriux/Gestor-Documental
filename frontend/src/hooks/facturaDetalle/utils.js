@@ -13,6 +13,7 @@ export const createInitialContaState = () => ({
   cuenta_contable: '',
   proyecto: '',
   orden_compra: '',
+  orden_compra_id: '',
   numero_proveedor: '',
   proveedor_id: '',
   tabla_pago_id: '',
@@ -105,6 +106,21 @@ export const buildNotaCreditoActual = (contaData) => {
   };
 };
 
+export const buildOrdenCompraActual = (contaData) => {
+  if (!contaData?.orden_compra_id) {
+    return null;
+  }
+
+  return {
+    id: contaData.orden_compra_id,
+    nombre: contaData.orden_compra_nombre || contaData.orden_compra || `OC #${contaData.orden_compra_id}`,
+    ruta_pdf: contaData.orden_compra_ruta_pdf || '',
+    estado: contaData.orden_compra_estado || '',
+    monto: contaData.orden_compra_monto ?? null,
+    moneda: contaData.orden_compra_moneda || ''
+  };
+};
+
 export const buildContaState = ({
   contaData = {},
   facturaData = null,
@@ -128,6 +144,7 @@ export const buildContaState = ({
     cuenta_contable: contaData.cuenta_contable ?? '',
     proyecto: contaData.proyecto ?? '',
     orden_compra: contaData.orden_compra ?? '',
+    orden_compra_id: contaData.orden_compra_id ? String(contaData.orden_compra_id) : '',
     numero_proveedor: contaData.numero_proveedor ?? proveedorInferido?.identificacion_numero ?? '',
     proveedor_id: contaData.proveedor_id
       ? String(contaData.proveedor_id)

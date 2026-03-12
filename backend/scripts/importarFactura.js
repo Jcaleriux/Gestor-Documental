@@ -112,16 +112,8 @@ function ensureDir(dir) {
 function resolveDirectories(options = {}) {
   const baseDir = options.baseDir || process.env.FACTURAS_BASE_DIR || path.resolve(__dirname, "..", "..");
   const documentPaths = resolveDocumentPaths(baseDir);
-  const carpetaEntrada = options.carpetaEntrada || (
-    fs.existsSync(documentPaths.legacyFacturasRecibidasDir)
-      ? documentPaths.legacyFacturasRecibidasDir
-      : documentPaths.facturasRecibidasDir
-  );
-  const carpetaProcesados = options.carpetaProcesados || (
-    fs.existsSync(documentPaths.legacyFacturasProcesadasDir)
-      ? documentPaths.legacyFacturasProcesadasDir
-      : documentPaths.facturasProcesadasDir
-  );
+  const carpetaEntrada = options.carpetaEntrada || documentPaths.facturasRecibidasDir;
+  const carpetaProcesados = options.carpetaProcesados || documentPaths.facturasProcesadasDir;
 
   return {
     baseDir,

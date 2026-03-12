@@ -23,7 +23,8 @@ const createRepoMock = (overrides = {}) => {
     getFacturaById: jest.fn().mockResolvedValue({
       id: 1,
       estado: FACTURA_ESTADOS.EN_REVISION,
-      sociedad_id: 10
+      sociedad_id: 10,
+      resumen: { CodigoTipoMoneda: { CodigoMoneda: 'CRC' } }
     }),
     getProveedorById: jest.fn().mockResolvedValue({
       id: 30,
@@ -36,6 +37,7 @@ const createRepoMock = (overrides = {}) => {
       sociedad_id: 10,
       proveedor_id: 30
     }),
+    getOrdenCompraById: jest.fn().mockResolvedValue(null),
     getNotaCreditoById: jest.fn().mockResolvedValue(null),
     getContabilizacionRetencionByFacturaIdForUpdate: jest.fn().mockResolvedValue({
       id: 7,
@@ -48,6 +50,7 @@ const createRepoMock = (overrides = {}) => {
     applyRetencionPago: jest.fn().mockResolvedValue({}),
     updateFacturaEstado: jest.fn().mockResolvedValue(undefined),
     insertEstadoDocumento: jest.fn().mockResolvedValue(undefined),
+    refreshEstadoOrdenCompraById: jest.fn().mockResolvedValue(null),
     ...overrides
   };
 
@@ -99,5 +102,48 @@ describe('contabilizacionUseCases', () => {
     expect(client.query).toHaveBeenCalledWith('ROLLBACK');
     expect(client.query).not.toHaveBeenCalledWith('COMMIT');
     expect(client.release).toHaveBeenCalled();
+  });
+
+  test('upsertContabilizacion recalcula estado de orden de compra asociada', async () => {
+    const { repo } = createRepoMock({
+      getOrdenCompraById: jest.fn().mockResolvedValue({
+        id: 40,
+        sociedad_id: 10,
+        proveedor_id: 30,
+        moneda: 'CRC',
+        estado: 'abierta',
+        nombre: 'OC-40'
+      }),
+      getContabilizacionByFacturaId: jest
+        .fn()
+        .mockResolvedValueOnce({
+          factura_id: 1,
+          orden_compra_id: null
+        })
+        .mockResolvedValue({
+          factura_id: 1,
+          orden_compra_id: 40,
+          retencion: 0,
+          descuento: 0,
+          anticipo_aplicado: 0,
+          monto_nota_credito: 0,
+          retencion_pagada: 0,
+          retencion_pendiente: 0
+        })
+    });
+    const useCases = createContabilizacionUseCases({ contabilizacionRepo: repo });
+
+    await useCases.upsertContabilizacion({
+      facturaId: 1,
+      proveedor_id: 30,
+      orden_compra_id: 40,
+      usuario: 'qa'
+    });
+
+    expect(repo.refreshEstadoOrdenCompraById).toHaveBeenCalledWith(40, expect.anything());
+    expect(repo.upsertContabilizacion).toHaveBeenCalledWith(expect.objectContaining({
+      orden_compra_id: 40,
+      orden_compra: 'OC-40'
+    }), expect.anything());
   });
 });

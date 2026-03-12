@@ -9,6 +9,7 @@ const REQUIRED_REPO_METHODS = [
   'getProveedorById',
   'getProveedorBySociedadAndIdentificacion',
   'getTablaPagoById',
+  'getOrdenCompraById',
   'getNotaCreditoById',
   'getContabilizacionRetencionByFacturaIdForUpdate',
   'normalizeRetencionStateByFacturaId',
@@ -16,7 +17,8 @@ const REQUIRED_REPO_METHODS = [
   'insertRetencionPago',
   'applyRetencionPago',
   'updateFacturaEstado',
-  'insertEstadoDocumento'
+  'insertEstadoDocumento',
+  'refreshEstadoOrdenCompraById'
 ];
 
 const normalizeIdentification = (value) => String(value || '')

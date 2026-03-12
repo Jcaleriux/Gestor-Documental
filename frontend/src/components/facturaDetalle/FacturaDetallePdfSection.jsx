@@ -1,11 +1,58 @@
-import { useEffect, useState } from 'react';
+import { useReducer } from 'react';
 import ActionAlerts from '../common/ActionAlerts';
 import EmptyState from '../common/EmptyState';
 import SectionCard from '../common/SectionCard';
 import { FACTURA_DETALLE_LABELS } from '../../utils/uiLabels';
 
-function FacturaDetallePdfSection({
-  id,
+const buildResetKey = ({ id, tablaPagoActual, ordenCompraActual, notaCreditoActual }) => (
+  [
+    id || '',
+    tablaPagoActual?.id || '',
+    ordenCompraActual?.id || '',
+    notaCreditoActual?.id || ''
+  ].join('|')
+);
+
+const initialPdfPanelState = {
+  tablaPagoOptionsOpen: false,
+  tablaPagoInlineOpen: false,
+  ordenCompraOptionsOpen: false,
+  ordenCompraInlineOpen: false,
+  notaCreditoOptionsOpen: false,
+  notaCreditoInlineOpen: false
+};
+
+const pdfPanelKeysBySection = {
+  tablaPago: { options: 'tablaPagoOptionsOpen', inline: 'tablaPagoInlineOpen' },
+  ordenCompra: { options: 'ordenCompraOptionsOpen', inline: 'ordenCompraInlineOpen' },
+  notaCredito: { options: 'notaCreditoOptionsOpen', inline: 'notaCreditoInlineOpen' }
+};
+
+const pdfPanelReducer = (state, action) => {
+  const sectionKeys = pdfPanelKeysBySection[action.section];
+  if (!sectionKeys) return state;
+
+  if (action.type === 'toggleOptions') {
+    const nextOptions = !state[sectionKeys.options];
+    return {
+      ...state,
+      [sectionKeys.options]: nextOptions,
+      [sectionKeys.inline]: nextOptions ? state[sectionKeys.inline] : false
+    };
+  }
+
+  if (action.type === 'toggleInline') {
+    return {
+      ...state,
+      [sectionKeys.options]: true,
+      [sectionKeys.inline]: !state[sectionKeys.inline]
+    };
+  }
+
+  return state;
+};
+
+function FacturaDetallePdfSectionContent({
   pdfUrl,
   xmlUrl,
   mhLoading,
@@ -18,51 +65,46 @@ function FacturaDetallePdfSection({
   tablaPagoActual,
   tablaPagoPdfUrl,
   verTablaPagoAsociada,
+  ordenCompraActual,
+  ordenCompraPdfUrl,
+  verOrdenCompraAsociada,
   notaCreditoActual,
   notaCreditoPdfUrl,
   notaCreditoXmlUrl,
   verNotaCreditoAsociada
 }) {
-  const [tablaPagoOptionsOpen, setTablaPagoOptionsOpen] = useState(false);
-  const [tablaPagoInlineOpen, setTablaPagoInlineOpen] = useState(false);
-  const [notaCreditoOptionsOpen, setNotaCreditoOptionsOpen] = useState(false);
-  const [notaCreditoInlineOpen, setNotaCreditoInlineOpen] = useState(false);
-
-  useEffect(() => {
-    setTablaPagoOptionsOpen(false);
-    setTablaPagoInlineOpen(false);
-    setNotaCreditoOptionsOpen(false);
-    setNotaCreditoInlineOpen(false);
-  }, [id, tablaPagoActual?.id, notaCreditoActual?.id]);
+  const [pdfPanelState, dispatchPdfPanel] = useReducer(pdfPanelReducer, initialPdfPanelState);
+  const {
+    tablaPagoOptionsOpen,
+    tablaPagoInlineOpen,
+    ordenCompraOptionsOpen,
+    ordenCompraInlineOpen,
+    notaCreditoOptionsOpen,
+    notaCreditoInlineOpen
+  } = pdfPanelState;
 
   const toggleTablaPagoOptions = () => {
-    setTablaPagoOptionsOpen((prev) => {
-      const next = !prev;
-      if (!next) {
-        setTablaPagoInlineOpen(false);
-      }
-      return next;
-    });
+    dispatchPdfPanel({ type: 'toggleOptions', section: 'tablaPago' });
   };
 
   const toggleTablaPagoInline = () => {
-    setTablaPagoOptionsOpen(true);
-    setTablaPagoInlineOpen((prev) => !prev);
+    dispatchPdfPanel({ type: 'toggleInline', section: 'tablaPago' });
+  };
+
+  const toggleOrdenCompraOptions = () => {
+    dispatchPdfPanel({ type: 'toggleOptions', section: 'ordenCompra' });
+  };
+
+  const toggleOrdenCompraInline = () => {
+    dispatchPdfPanel({ type: 'toggleInline', section: 'ordenCompra' });
   };
 
   const toggleNotaCreditoOptions = () => {
-    setNotaCreditoOptionsOpen((prev) => {
-      const next = !prev;
-      if (!next) {
-        setNotaCreditoInlineOpen(false);
-      }
-      return next;
-    });
+    dispatchPdfPanel({ type: 'toggleOptions', section: 'notaCredito' });
   };
 
   const toggleNotaCreditoInline = () => {
-    setNotaCreditoOptionsOpen(true);
-    setNotaCreditoInlineOpen((prev) => !prev);
+    dispatchPdfPanel({ type: 'toggleInline', section: 'notaCredito' });
   };
 
   return (
@@ -169,6 +211,48 @@ function FacturaDetallePdfSection({
         </div>
       )}
 
+      {ordenCompraActual?.ruta_pdf && (
+        <div className="mt-3">
+          <button
+            className="btn btn-outline-success w-100"
+            type="button"
+            onClick={toggleOrdenCompraOptions}
+          >
+            Ver orden de compra
+          </button>
+          {ordenCompraOptionsOpen && (
+            <div className="d-flex flex-wrap gap-2 mt-2">
+              <button
+                className="btn btn-outline-success btn-sm"
+                type="button"
+                onClick={verOrdenCompraAsociada}
+              >
+                Abrir en pestana nueva
+              </button>
+              <button
+                className={`btn btn-sm ${ordenCompraInlineOpen ? 'btn-success' : 'btn-outline-success'}`}
+                type="button"
+                onClick={toggleOrdenCompraInline}
+              >
+                {ordenCompraInlineOpen ? 'Ocultar' : 'Expandir'}
+              </button>
+            </div>
+          )}
+          {ordenCompraInlineOpen && ordenCompraPdfUrl && (
+            <div className="mt-2">
+              <div className="text-muted small mb-1">
+                OC asociada: {ordenCompraActual.nombre}
+              </div>
+              <iframe
+                title="Orden de compra PDF"
+                src={ordenCompraPdfUrl}
+                style={{ width: '100%', height: '520px', border: '1px solid #e6ebf2' }}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
       {(notaCreditoActual?.ruta_pdf || notaCreditoActual?.ruta_xml) && (
         <div className="mt-3">
           <button
@@ -217,6 +301,28 @@ function FacturaDetallePdfSection({
         </div>
       )}
     </SectionCard>
+  );
+}
+
+function FacturaDetallePdfSection({ viewModel }) {
+  const {
+    id,
+    tablaPagoActual,
+    ordenCompraActual,
+    notaCreditoActual,
+    ...rest
+  } = viewModel;
+
+  const resetKey = buildResetKey({ id, tablaPagoActual, ordenCompraActual, notaCreditoActual });
+
+  return (
+    <FacturaDetallePdfSectionContent
+      key={resetKey}
+      tablaPagoActual={tablaPagoActual}
+      ordenCompraActual={ordenCompraActual}
+      notaCreditoActual={notaCreditoActual}
+      {...rest}
+    />
   );
 }
 

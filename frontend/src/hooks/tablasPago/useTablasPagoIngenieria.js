@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { proveedoresApi } from '../../services/proveedoresApi';
 import { tablasPagoApi } from '../../services/tablasPagoApi';
 import {
@@ -32,7 +32,7 @@ export const useTablasPagoIngenieria = ({ sociedadId }) => {
     return true;
   };
 
-  const loadData = async ({ showLoader = true } = {}) => {
+  const loadData = useCallback(async ({ showLoader = true } = {}) => {
     if (!sociedadId) {
       setProveedores([]);
       setTablasPago([]);
@@ -56,7 +56,7 @@ export const useTablasPagoIngenieria = ({ sociedadId }) => {
     } finally {
       if (showLoader) setLoading(false);
     }
-  };
+  }, [sociedadId]);
 
   useEffect(() => {
     setProveedorQuery('');
@@ -66,7 +66,7 @@ export const useTablasPagoIngenieria = ({ sociedadId }) => {
     setMessage('');
     setError('');
     loadData();
-  }, [sociedadId]);
+  }, [sociedadId, loadData]);
 
   const filteredProveedores = useMemo(() => {
     const term = proveedorQuery.trim().toLowerCase();

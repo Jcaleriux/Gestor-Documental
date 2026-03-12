@@ -21,6 +21,7 @@ const mapContabilizacionRow = (row) => {
     descuento: toNumberOrNull(row.descuento),
     anticipo_aplicado: toNumberOrNull(row.anticipo_aplicado),
     monto_nota_credito: toNumberOrNull(row.monto_nota_credito),
+    orden_compra_monto: toNumberOrNull(row.orden_compra_monto),
     retencion_pagada: toNumberOrNull(row.retencion_pagada),
     retencion_pendiente: toNumberOrNull(row.retencion_pendiente),
     nota_credito_total_comprobante: toNumberOrNull(row.nota_credito_total_comprobante),

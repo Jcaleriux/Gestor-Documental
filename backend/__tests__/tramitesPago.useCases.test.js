@@ -108,6 +108,43 @@ describe('tramitesPagoUseCases', () => {
     expect(client.release).toHaveBeenCalled();
   });
 
+  test('accionTesoreria normaliza accion y destino antes de ejecutar', async () => {
+    const { repo, client } = createRepoMock();
+    const useCases = createTramitesPagoUseCases({ tramitesPagoRepo: repo });
+
+    const result = await useCases.accionTesoreria({
+      id: '1',
+      facturaId: '2',
+      accion: 'REENVIAR',
+      destino: 'EN_APROBACION_GERENCIA',
+      motivo: 'reenvio por prueba',
+      usuario: 'qa'
+    });
+
+    expect(result).toMatchObject({ factura_id: 2 });
+    expect(client.query).toHaveBeenNthCalledWith(1, 'BEGIN');
+    expect(client.query).toHaveBeenCalledWith('COMMIT');
+    expect(repo.getDocumentoTesoreriaEstado).toHaveBeenCalledWith(1, 2, client);
+    expect(repo.updateDocumentoTesoreriaReset).toHaveBeenCalledWith(expect.objectContaining({
+      destino: 'en_aprobacion_gerencia',
+      tramiteId: 1,
+      facturaId: 2
+    }), client);
+  });
+
+  test('cambiarEstado retorna 400 con id invalido sin abrir transaccion', async () => {
+    const { repo } = createRepoMock();
+    const useCases = createTramitesPagoUseCases({ tramitesPagoRepo: repo });
+
+    await expect(useCases.cambiarEstado({
+      id: 'abc',
+      estado: TRAMITE_ESTADOS.PAGADO,
+      usuario: 'qa'
+    })).rejects.toThrow('id invalido');
+
+    expect(repo.getClient).not.toHaveBeenCalled();
+  });
+
   test('crearTramite integra facturas y retenciones con politicas de creacion', async () => {
     const { repo, client } = createRepoMock({
       getFacturasByIds: jest.fn().mockResolvedValue([

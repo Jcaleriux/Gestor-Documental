@@ -26,6 +26,7 @@ const createContabilizacionCrudUseCases = ({ contabilizacionRepo, runInTransacti
     cuenta_contable,
     proyecto,
     orden_compra,
+    orden_compra_id,
     numero_proveedor,
     proveedor_id,
     tabla_pago_id,
@@ -36,11 +37,15 @@ const createContabilizacionCrudUseCases = ({ contabilizacionRepo, runInTransacti
   }) => runInTransaction(async (client) => {
     const factura = await ensureFacturaById({ contabilizacionRepo, facturaId, client });
     const estadoAnterior = factura.estado || null;
+    const existingContabilizacion = await contabilizacionRepo.getContabilizacionByFacturaId(facturaId, client);
 
     const associationContext = await resolveAssociationContext({
       contabilizacionRepo,
       factura,
+      existingContabilizacion,
       input: {
+        orden_compra,
+        orden_compra_id,
         proveedor_id,
         tabla_pago_id,
         nota_credito_id,
@@ -63,7 +68,8 @@ const createContabilizacionCrudUseCases = ({ contabilizacionRepo, runInTransacti
       centro_costo,
       cuenta_contable,
       proyecto,
-      orden_compra,
+      orden_compra: associationContext.ordenCompraTextoFinal,
+      orden_compra_id: associationContext.ordenCompraId,
       numero_proveedor: associationContext.numeroProveedorFinal,
       proveedor_id: associationContext.proveedorId,
       tabla_pago_id: associationContext.tablaPagoId,
@@ -72,6 +78,20 @@ const createContabilizacionCrudUseCases = ({ contabilizacionRepo, runInTransacti
       metadata,
       usuario
     }, client);
+
+    const ordenesAfectadas = new Set(
+      [
+        existingContabilizacion?.orden_compra_id,
+        associationContext.ordenCompraId
+      ]
+        .filter((value) => value != null && value !== '')
+        .map((value) => Number(value))
+        .filter((value) => Number.isInteger(value) && value > 0)
+    );
+
+    for (const ordenCompraIdAfectada of ordenesAfectadas) {
+      await contabilizacionRepo.refreshEstadoOrdenCompraById(ordenCompraIdAfectada, client);
+    }
 
     await contabilizacionRepo.normalizeRetencionStateByFacturaId(facturaId, client);
 

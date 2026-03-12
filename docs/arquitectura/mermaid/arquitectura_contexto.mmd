@@ -1,0 +1,25 @@
+﻿flowchart LR
+  UI[Frontend React]
+  API[Backend API]
+  DOC[Contexto Documentos]
+  EST[Contexto Estados]
+  WF[Contexto Workflow de Pagos]
+  SEC[Contexto Seguridad]
+  REP[Contexto Reportes]
+  DB[(PostgreSQL)]
+
+  UI --> API
+  API --> DOC
+  API --> EST
+  API --> WF
+  API --> SEC
+
+  REP --> DOC
+  REP --> EST
+
+  DOC --> DB
+  EST --> DB
+  WF --> DB
+  SEC --> DB
+
+  WF -. no escribe tablas canonicas .-> DOC

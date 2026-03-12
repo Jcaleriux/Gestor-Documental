@@ -1,7 +1,9 @@
 import SectionCard from '../common/SectionCard';
 import { FACTURA_DETALLE_LABELS } from '../../utils/uiLabels';
 
-function FacturaDetalleSummaryCard({ factura, monedaFactura }) {
+function FacturaDetalleSummaryCard({ viewModel }) {
+  const { factura, monedaFactura } = viewModel;
+
   return (
     <SectionCard title={FACTURA_DETALLE_LABELS.summary.title}>
       <div className="row g-2">

@@ -1,7 +1,62 @@
+const NEW_TAB_TARGET = '_blank';
+const NEW_TAB_FEATURES = 'noopener,noreferrer';
+
+const openUrlInNewTab = ({
+  url,
+  openWindow
+}) => {
+  openWindow(url, NEW_TAB_TARGET, NEW_TAB_FEATURES);
+};
+
+const openApiFilePath = ({
+  endpoint,
+  ruta,
+  buildAuthUrl,
+  openWindow
+}) => {
+  const url = buildAuthUrl(`${endpoint}?path=${encodeURIComponent(ruta)}`);
+  openUrlInNewTab({
+    url,
+    openWindow
+  });
+};
+
+const resolveNotaCreditoFile = ({ notaCreditoActual }) => {
+  if (notaCreditoActual?.ruta_pdf) {
+    return {
+      endpoint: '/api/files/pdf',
+      ruta: notaCreditoActual.ruta_pdf
+    };
+  }
+
+  if (notaCreditoActual?.ruta_xml) {
+    return {
+      endpoint: '/api/files/xml',
+      ruta: notaCreditoActual.ruta_xml
+    };
+  }
+
+  return null;
+};
+
+const hasMensajeHacienda = ({ factura }) => (
+  factura?.has_mensaje_hacienda !== false
+);
+
+const buildManifestUrl = ({ id, buildAuthUrl }) => (
+  buildAuthUrl(`/api/facturas/${id}/manifest`)
+);
+
+const getMensajeHaciendaRutaXml = async ({ id, facturaApi }) => {
+  const response = await facturaApi.getMensajeHacienda(id);
+  return response.data.data?.ruta_xml;
+};
+
 export const createDocumentActions = ({
   id,
   factura,
   tablaPagoActual,
+  ordenCompraActual,
   notaCreditoActual,
   setMhLoading,
   setMhError,
@@ -9,53 +64,64 @@ export const createDocumentActions = ({
   buildAuthUrl,
   openWindow
 }) => {
-  const openPathInNewTab = ({ endpoint, ruta }) => {
-    const url = buildAuthUrl(`${endpoint}?path=${encodeURIComponent(ruta)}`);
-    openWindow(url, '_blank', 'noopener,noreferrer');
-  };
-
   const verTablaPagoAsociada = () => {
     if (!tablaPagoActual?.ruta_pdf) return;
-    openPathInNewTab({
+    openApiFilePath({
       endpoint: '/api/files/pdf',
-      ruta: tablaPagoActual.ruta_pdf
+      ruta: tablaPagoActual.ruta_pdf,
+      buildAuthUrl,
+      openWindow
     });
   };
 
   const verNotaCreditoAsociada = () => {
-    if (notaCreditoActual?.ruta_pdf) {
-      openPathInNewTab({
-        endpoint: '/api/files/pdf',
-        ruta: notaCreditoActual.ruta_pdf
-      });
+    const notaFile = resolveNotaCreditoFile({ notaCreditoActual });
+    if (!notaFile) {
       return;
     }
 
-    if (notaCreditoActual?.ruta_xml) {
-      openPathInNewTab({
-        endpoint: '/api/files/xml',
-        ruta: notaCreditoActual.ruta_xml
-      });
-    }
+    openApiFilePath({
+      ...notaFile,
+      buildAuthUrl,
+      openWindow
+    });
+  };
+
+  const verOrdenCompraAsociada = () => {
+    if (!ordenCompraActual?.ruta_pdf) return;
+    openApiFilePath({
+      endpoint: '/api/files/pdf',
+      ruta: ordenCompraActual.ruta_pdf,
+      buildAuthUrl,
+      openWindow
+    });
   };
 
   const verMensajeHacienda = async () => {
-    if (factura?.has_mensaje_hacienda === false) {
+    if (!hasMensajeHacienda({ factura })) {
       setMhError('Esta factura aun no tiene Mensaje Hacienda registrado.');
       return;
     }
+
     try {
       setMhLoading(true);
       setMhError('');
-      const response = await facturaApi.getMensajeHacienda(id);
-      const rutaXml = response.data.data?.ruta_xml;
+
+      const rutaXml = await getMensajeHaciendaRutaXml({
+        id,
+        facturaApi
+      });
+
       if (!rutaXml) {
         setMhError('Mensaje Hacienda sin XML.');
         return;
       }
-      openPathInNewTab({
+
+      openApiFilePath({
         endpoint: '/api/files/xml',
-        ruta: rutaXml
+        ruta: rutaXml,
+        buildAuthUrl,
+        openWindow
       });
     } catch (err) {
       console.error(err);
@@ -67,12 +133,15 @@ export const createDocumentActions = ({
   };
 
   const verManifest = () => {
-    const url = buildAuthUrl(`/api/facturas/${id}/manifest`);
-    openWindow(url, '_blank', 'noopener,noreferrer');
+    openUrlInNewTab({
+      url: buildManifestUrl({ id, buildAuthUrl }),
+      openWindow
+    });
   };
 
   return {
     verTablaPagoAsociada,
+    verOrdenCompraAsociada,
     verNotaCreditoAsociada,
     verMensajeHacienda,
     verManifest

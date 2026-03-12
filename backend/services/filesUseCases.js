@@ -110,7 +110,7 @@ const createFilesUseCases = ({ baseDir }) => {
     ];
     const documentsRoots = [...new Set(searchBases.flatMap((basePath) => {
       const paths = resolveDocumentPaths(basePath);
-      return [paths.documentsRootDir, paths.legacyDocumentsRootDir];
+      return [paths.documentsRootDir];
     }))];
     const fallbackPath = existingPath ? null : findByBasename(basename, documentsRoots);
     const fullPath = existingPath || fallbackPath || uniqueCandidates[0];

@@ -9,7 +9,9 @@ const {
   resolveTesoreriaActionHandler
 } = require('./tramitesPagoTesoreriaActionHandlers');
 const {
-  loadTramiteEstadoOrFail
+  loadTramiteEstadoOrFail,
+  parsePositiveIntOrThrow,
+  toNormalizedLowerString
 } = require('./tramitesPagoUseCases.helpers');
 
 const createTramitesPagoTesoreriaUseCases = ({ tramitesPagoRepo, runInTransaction, policyRegistry }) => {
@@ -22,6 +24,8 @@ const createTramitesPagoTesoreriaUseCases = ({ tramitesPagoRepo, runInTransactio
     }));
 
   const rechazoTesoreria = async ({ id, facturaId, motivo, usuario }) => {
+    const tramiteId = parsePositiveIntOrThrow(id, 'id');
+    const normalizedFacturaId = parsePositiveIntOrThrow(facturaId, 'facturaId');
     const excludeHandler = resolveActionHandler('exclude');
     if (!excludeHandler) {
       throwIfValidationError({ status: 500, error: 'handler tesoreria exclude no configurado' });
@@ -30,13 +34,13 @@ const createTramitesPagoTesoreriaUseCases = ({ tramitesPagoRepo, runInTransactio
     return runInTransaction(async (client) => {
       const tramite = await loadTramiteEstadoOrFail({
         tramitesPagoRepo,
-        tramiteId: id,
+        tramiteId,
         client
       });
 
       return excludeHandler({
-        id,
-        facturaId,
+        id: tramiteId,
+        facturaId: normalizedFacturaId,
         motivo,
         usuario,
         estadoAnterior: tramite.estado || null,
@@ -46,8 +50,13 @@ const createTramitesPagoTesoreriaUseCases = ({ tramitesPagoRepo, runInTransactio
   };
 
   const accionTesoreria = async ({ id, facturaId, accion, destino, motivo, usuario }) => {
-    throwIfValidationError(validateAccionTesoreriaInput(accion, destino));
-    const actionPolicy = resolveActionPolicy(accion);
+    const tramiteId = parsePositiveIntOrThrow(id, 'id');
+    const normalizedFacturaId = parsePositiveIntOrThrow(facturaId, 'facturaId');
+    const accionNormalizada = toNormalizedLowerString(accion);
+    const destinoNormalizado = destino ? toNormalizedLowerString(destino) : undefined;
+
+    throwIfValidationError(validateAccionTesoreriaInput(accionNormalizada, destinoNormalizado));
+    const actionPolicy = resolveActionPolicy(accionNormalizada);
     const actionHandler = actionPolicy ? resolveActionHandler(actionPolicy.handlerType) : null;
     if (!actionHandler) {
       throwIfValidationError({ status: 400, error: 'accion invalida' });
@@ -56,21 +65,21 @@ const createTramitesPagoTesoreriaUseCases = ({ tramitesPagoRepo, runInTransactio
     return runInTransaction(async (client) => {
       const tramite = await loadTramiteEstadoOrFail({
         tramitesPagoRepo,
-        tramiteId: id,
+        tramiteId,
         client
       });
       const estadoAnterior = tramite.estado;
 
-      const doc = await tramitesPagoRepo.getDocumentoTesoreriaEstado(id, facturaId, client);
+      const doc = await tramitesPagoRepo.getDocumentoTesoreriaEstado(tramiteId, normalizedFacturaId, client);
       assertFound(doc, 'Documento no encontrado en tramite');
       const estadoTesActual = doc.estado_tesoreria;
 
-      throwIfValidationError(validateAccionTesoreriaEstado(accion, estadoTesActual));
+      throwIfValidationError(validateAccionTesoreriaEstado(accionNormalizada, estadoTesActual));
 
       return actionHandler({
-        id,
-        facturaId,
-        destino,
+        id: tramiteId,
+        facturaId: normalizedFacturaId,
+        destino: destinoNormalizado,
         motivo,
         usuario,
         estadoAnterior,

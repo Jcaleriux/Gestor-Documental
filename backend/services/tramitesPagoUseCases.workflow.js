@@ -7,7 +7,9 @@
 const { TRAMITE_ACCIONES } = require('../domain/tramitesPago');
 const { createError, assertFound, throwIfValidationError } = require('../utils/errors');
 const {
-  normalizeUniquePositiveIds
+  normalizeUniquePositiveIds,
+  parsePositiveIntOrThrow,
+  toNormalizedLowerString
 } = require('./tramitesPagoUseCases.helpers');
 const {
   createCambioEstadoPolicies,
@@ -65,13 +67,15 @@ const createTramitesPagoWorkflowUseCases = ({ tramitesPagoRepo, runInTransaction
   };
 
   const cambiarEstado = async ({ id, estado, usuario, motivo, force, pagos_documentos }) => {
-    const estadoCheck = validateCambioEstadoInput(estado, force, motivo);
+    const tramiteId = parsePositiveIntOrThrow(id, 'id');
+    const estadoNormalizadoInput = toNormalizedLowerString(estado);
+    const estadoCheck = validateCambioEstadoInput(estadoNormalizadoInput, force, motivo);
     throwIfValidationError(estadoCheck);
     const { estadoNormalizado } = estadoCheck;
     const estadoPolicy = resolveEstadoPolicy(estadoNormalizado);
 
     return runInTransaction(async (client) => {
-      const tramite = await tramitesPagoRepo.getTramiteById(id, client);
+      const tramite = await tramitesPagoRepo.getTramiteById(tramiteId, client);
       assertFound(tramite, 'Tramite no encontrado');
 
       const actualRaw = tramite.estado;
@@ -86,18 +90,18 @@ const createTramitesPagoWorkflowUseCases = ({ tramitesPagoRepo, runInTransaction
       }
 
       await estadoPolicy.validateBeforeUpdate({
-        tramiteId: id,
+        tramiteId,
         sameNormalized,
         client
       });
 
       const updateRes = await tramitesPagoRepo.updateTramiteEstado({
-        tramiteId: id,
+        tramiteId,
         estado: estadoNormalizado
       }, client);
 
       await tramitesPagoRepo.insertHistorialConEstados({
-        tramiteId: id,
+        tramiteId,
         accion: force ? TRAMITE_ACCIONES.OVERRIDE_ESTADO : TRAMITE_ACCIONES.CAMBIAR_ESTADO,
         estadoAnterior: actualRaw,
         estadoNuevo: estadoNormalizado,
@@ -106,7 +110,7 @@ const createTramitesPagoWorkflowUseCases = ({ tramitesPagoRepo, runInTransaction
       }, client);
 
       await estadoPolicy.runAfterUpdate({
-        tramiteId: id,
+        tramiteId,
         usuario,
         pagosDocumentos: pagos_documentos,
         client
@@ -117,40 +121,48 @@ const createTramitesPagoWorkflowUseCases = ({ tramitesPagoRepo, runInTransaction
   };
 
   const decisionDocumento = async ({ id, facturaId, etapa, decision, motivo, usuario }) => {
-    throwIfValidationError(validateDecisionDocumentoInput(etapa, decision));
+    const tramiteId = parsePositiveIntOrThrow(id, 'id');
+    const normalizedFacturaId = parsePositiveIntOrThrow(facturaId, 'facturaId');
+    const etapaNormalizada = toNormalizedLowerString(etapa);
+    const decisionNormalizada = toNormalizedLowerString(decision);
 
-    const etapaPolicy = resolveEtapaPolicy(etapa);
+    throwIfValidationError(validateDecisionDocumentoInput(etapaNormalizada, decisionNormalizada));
+
+    const etapaPolicy = resolveEtapaPolicy(etapaNormalizada);
     if (!etapaPolicy) {
       throwIfValidationError({ status: 400, error: 'etapa invalida' });
     }
 
     const columnas = etapaPolicy.columnas;
-    const decisionPolicy = resolveDecisionPolicy({ decision, etapa });
+    const decisionPolicy = resolveDecisionPolicy({
+      decision: decisionNormalizada,
+      etapa: etapaNormalizada
+    });
 
     return runInTransaction(async (client) => {
       const result = await tramitesPagoRepo.updateDocumentoDecision({
-        tramiteId: id,
-        facturaId,
+        tramiteId,
+        facturaId: normalizedFacturaId,
         columnas,
-        decision,
+        decision: decisionNormalizada,
         motivo
       }, client);
 
       assertFound(result, 'Documento no encontrado en tramite');
 
       await tramitesPagoRepo.insertHistorialDocumento({
-        tramiteId: id,
-        facturaId,
+        tramiteId,
+        facturaId: normalizedFacturaId,
         accion: etapaPolicy.historialAccion,
         usuario,
         motivo
       }, client);
 
-      await tramitesPagoRepo.touchTramite(id, client);
+      await tramitesPagoRepo.touchTramite(tramiteId, client);
 
       await decisionPolicy.runAfterDecision({
-        tramiteId: id,
-        facturaId,
+        tramiteId,
+        facturaId: normalizedFacturaId,
         usuario,
         motivo,
         client

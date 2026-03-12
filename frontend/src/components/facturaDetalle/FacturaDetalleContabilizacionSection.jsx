@@ -7,51 +7,25 @@ import ContaAssociationsActions from './contabilizacion/ContaAssociationsActions
 import ContaTotalsSummary from './contabilizacion/ContaTotalsSummary';
 import RetencionPagoPanel from './contabilizacion/RetencionPagoPanel';
 
-function FacturaDetalleContabilizacionSection({
-  conta,
-  proveedoresSociedad,
-  tablasPagoProveedor,
-  tablaPagoActual,
-  tablasModalOpen,
-  setTablasModalOpen,
-  tablasLoading,
-  tablasError,
-  notasCreditoProveedor,
-  notaCreditoActual,
-  notasModalOpen,
-  setNotasModalOpen,
-  notasLoading,
-  notasError,
-  retencionPagos,
-  contaSaving,
-  contaMessage,
-  contaError,
-  retencionPagoMonto,
-  setRetencionPagoMonto,
-  retencionPagoFecha,
-  setRetencionPagoFecha,
-  retencionPagoNotas,
-  setRetencionPagoNotas,
-  retencionPagoSaving,
-  retencionPagoError,
-  retencionPagoMessage,
-  handleContaChange,
-  abrirAsociarTablaPago,
-  asociarTablaPago,
-  abrirAsociarNotaCredito,
-  asociarNotaCredito,
-  verTablaPagoAsociada,
-  verNotaCreditoAsociada,
-  guardarContabilizacion,
-  registrarPagoRetencion,
-  totalFactura,
-  rebajosAplicados,
-  retencionTotal,
-  totalPagoPrincipal,
-  retencionPagada,
-  retencionPendiente,
-  totalPendienteGlobal
-}) {
+function FacturaDetalleContabilizacionSection({ viewModel }) {
+  const {
+    form,
+    associations,
+    modals,
+    retencion,
+    totals
+  } = viewModel;
+
+  const {
+    conta,
+    proveedoresSociedad,
+    contaSaving,
+    contaMessage,
+    contaError,
+    handleContaChange,
+    guardarContabilizacion
+  } = form;
+
   return (
     <SectionCard title={FACTURA_DETALLE_LABELS.contabilizacion.title} className="mb-3">
       <form onSubmit={guardarContabilizacion} className="row g-2">
@@ -62,65 +36,56 @@ function FacturaDetalleContabilizacionSection({
         />
 
         <ContaAssociationsActions
-          conta={conta}
-          tablasLoading={tablasLoading}
-          notasLoading={notasLoading}
-          tablaPagoActual={tablaPagoActual}
-          notaCreditoActual={notaCreditoActual}
-          abrirAsociarTablaPago={abrirAsociarTablaPago}
-          abrirAsociarNotaCredito={abrirAsociarNotaCredito}
-          verTablaPagoAsociada={verTablaPagoAsociada}
-          verNotaCreditoAsociada={verNotaCreditoAsociada}
+          viewModel={{
+            conta,
+            ...associations
+          }}
         />
 
         <ContaTotalsSummary
-          conta={conta}
-          totalFactura={totalFactura}
-          rebajosAplicados={rebajosAplicados}
-          retencionTotal={retencionTotal}
-          totalPagoPrincipal={totalPagoPrincipal}
-          retencionPagada={retencionPagada}
-          retencionPendiente={retencionPendiente}
-          totalPendienteGlobal={totalPendienteGlobal}
+          viewModel={{
+            conta,
+            ...totals
+          }}
         />
 
         <RetencionPagoPanel
-          retencionTotal={retencionTotal}
-          retencionPendiente={retencionPendiente}
-          retencionPagoMonto={retencionPagoMonto}
-          setRetencionPagoMonto={setRetencionPagoMonto}
-          retencionPagoFecha={retencionPagoFecha}
-          setRetencionPagoFecha={setRetencionPagoFecha}
-          retencionPagoNotas={retencionPagoNotas}
-          setRetencionPagoNotas={setRetencionPagoNotas}
-          retencionPagoSaving={retencionPagoSaving}
-          retencionPagoError={retencionPagoError}
-          retencionPagoMessage={retencionPagoMessage}
-          registrarPagoRetencion={registrarPagoRetencion}
-          retencionPagos={retencionPagos}
+          viewModel={retencion}
         />
 
-        {tablasModalOpen && (
+        {modals.tablas.isOpen && (
           <SelectionListModal
             title="Seleccionar tabla de pagos"
-            error={tablasError}
-            items={tablasPagoProveedor}
+            error={modals.tablas.error}
+            items={modals.tablas.items}
             emptyMessage="No hay tablas de pago para este proveedor."
-            onClose={() => setTablasModalOpen(false)}
-            onSelect={asociarTablaPago}
-            renderLabel={(tabla) => tabla.nombre}
+            onClose={modals.tablas.onClose}
+            onSelect={modals.tablas.onSelect}
+            renderLabel={modals.tablas.renderLabel}
           />
         )}
 
-        {notasModalOpen && (
+        {modals.notas.isOpen && (
           <SelectionListModal
             title="Seleccionar nota de credito"
-            error={notasError}
-            items={notasCreditoProveedor}
+            error={modals.notas.error}
+            items={modals.notas.items}
             emptyMessage="No hay notas de credito para este proveedor."
-            onClose={() => setNotasModalOpen(false)}
-            onSelect={asociarNotaCredito}
-            renderLabel={(nota) => nota.clave || `Nota #${nota.id}`}
+            onClose={modals.notas.onClose}
+            onSelect={modals.notas.onSelect}
+            renderLabel={modals.notas.renderLabel}
+          />
+        )}
+
+        {modals.ordenes.isOpen && (
+          <SelectionListModal
+            title="Seleccionar orden de compra"
+            error={modals.ordenes.error}
+            items={modals.ordenes.items}
+            emptyMessage="No hay ordenes de compra abiertas para este proveedor."
+            onClose={modals.ordenes.onClose}
+            onSelect={modals.ordenes.onSelect}
+            renderLabel={modals.ordenes.renderLabel}
           />
         )}
 

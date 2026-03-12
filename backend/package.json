@@ -12,6 +12,8 @@
         "db:migrate:retenciones": "node db/migrate_retenciones.js",
         "db:migrate:tramites-retenciones": "node db/migrate_tramites_retenciones.js",
         "db:migrate:pagos-parciales": "node db/migrate_facturas_pagos_parciales.js",
+        "db:migrate:ordenes-compra": "node db/migrate_ordenes_compra.js",
+        "db:migrate:ventas": "node db/migrate_ventas.js",
         "importar": "node scripts/importarFactura.js",
         "watcher": "node scripts/watcher.js",
         "proveedores:backfill": "node scripts/backfill_proveedores.js",

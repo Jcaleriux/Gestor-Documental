@@ -44,7 +44,10 @@ VALUES
   ('documentos_aprobar_gerencia_financiera', 'Puede aprobar/rechazar en etapa de gerencia financiera.'),
   ('documentos_firmar_autorizar', 'Puede firmar y autorizar documentos.'),
   ('documentos_marcar_pagado', 'Puede marcar documentos como pagados.'),
-  ('auditoria_ver', 'Puede consultar el log de auditoria.')
+  ('auditoria_ver', 'Puede consultar el log de auditoria.'),
+  ('ventas_ver', 'Puede consultar operaciones de ventas por sociedad.'),
+  ('ventas_crear', 'Puede crear nuevas operaciones de venta.'),
+  ('ventas_gestionar', 'Puede cancelar, cerrar y trasladar operaciones de venta.')
 ON CONFLICT (nombre) DO UPDATE
 SET descripcion = EXCLUDED.descripcion;
 
@@ -227,6 +230,40 @@ SELECT r.id, p.id
 FROM roles r
 JOIN permisos p ON p.nombre = 'acceso_total'
 WHERE r.codigo = 'admin'
+ON CONFLICT (rol_id, permiso_id) DO NOTHING;
+
+-- Ventas
+INSERT INTO roles_permisos (rol_id, permiso_id)
+SELECT r.id, p.id
+FROM roles r
+JOIN permisos p ON p.nombre = 'ventas_ver'
+WHERE r.codigo IN (
+  'admin', 'gerencia_financiera', 'gerencia_contable', 'gerencia_construccion',
+  'gerencia_presupuesto', 'gerencia_mercadeo', 'gerencia_ventas',
+  'gerencia_infraestructura', 'gerencia_proyectos', 'contabilidad_jefe',
+  'contabilidad_asistente', 'tesoreria_encargado', 'tesoreria_auxiliar',
+  'asistencia', 'personalizado'
+)
+ON CONFLICT (rol_id, permiso_id) DO NOTHING;
+
+INSERT INTO roles_permisos (rol_id, permiso_id)
+SELECT r.id, p.id
+FROM roles r
+JOIN permisos p ON p.nombre = 'ventas_crear'
+WHERE r.codigo IN (
+  'admin', 'gerencia_financiera', 'gerencia_contable', 'gerencia_ventas',
+  'gerencia_proyectos', 'contabilidad_jefe', 'contabilidad_asistente',
+  'tesoreria_encargado', 'tesoreria_auxiliar', 'asistencia'
+)
+ON CONFLICT (rol_id, permiso_id) DO NOTHING;
+
+INSERT INTO roles_permisos (rol_id, permiso_id)
+SELECT r.id, p.id
+FROM roles r
+JOIN permisos p ON p.nombre = 'ventas_gestionar'
+WHERE r.codigo IN (
+  'admin', 'gerencia_financiera', 'gerencia_contable', 'gerencia_ventas', 'gerencia_proyectos'
+)
 ON CONFLICT (rol_id, permiso_id) DO NOTHING;
 
 -- Seed usuarios base: 1 usuario por rol (excepto personalizado)

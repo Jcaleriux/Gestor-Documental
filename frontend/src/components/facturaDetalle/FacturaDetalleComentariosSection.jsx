@@ -2,14 +2,16 @@ import EmptyState from '../common/EmptyState';
 import SectionCard from '../common/SectionCard';
 import { FACTURA_DETALLE_LABELS } from '../../utils/uiLabels';
 
-function FacturaDetalleComentariosSection({
-  commentUser,
-  setCommentUser,
-  commentText,
-  setCommentText,
-  addComment,
-  comentarios
-}) {
+function FacturaDetalleComentariosSection({ viewModel }) {
+  const {
+    commentUser,
+    setCommentUser,
+    commentText,
+    setCommentText,
+    addComment,
+    comentarios
+  } = viewModel;
+
   return (
     <SectionCard title={FACTURA_DETALLE_LABELS.comentarios.title}>
       <form onSubmit={addComment} className="d-grid gap-2 mb-3">

@@ -1,83 +1,77 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { tramitesApi } from '../services/tramitesApi';
+import { useTramiteDetalleState } from './tramiteDetalle/useTramiteDetalleState.js';
+import {
+  fetchTramiteDetalleData,
+  fetchTramiteHistorialData,
+  fetchTramiteSociedadInfo
+} from './tramiteDetalle/tramiteDetalleLoaders.js';
+import { buildTramiteDetalleOutputContract } from './tramiteDetalle/tramiteDetalleOutputBuilders.js';
 
-export const useTramiteDetalle = ({ id, sociedadId }) => {
-  const [tramite, setTramite] = useState(null);
-  const [documentos, setDocumentos] = useState([]);
-  const [retenciones, setRetenciones] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [actionMessage, setActionMessage] = useState('');
-  const [actionError, setActionError] = useState('');
-  const [historial, setHistorial] = useState([]);
-  const [historialError, setHistorialError] = useState('');
-  const [sociedadInfo, setSociedadInfo] = useState(null);
+export const useTramiteDetalle = ({ id, sociedadId, dependencies = {} }) => {
+  const { api = tramitesApi } = dependencies;
+  const state = useTramiteDetalleState();
 
-  useEffect(() => {
-    if (!id) return;
-    fetchDetalle();
-  }, [id]);
+  const {
+    setTramite,
+    setDocumentos,
+    setRetenciones,
+    setLoading,
+    setActionError,
+    setHistorial,
+    setHistorialError,
+    setSociedadInfo
+  } = state;
 
-  useEffect(() => {
-    if (!sociedadId) return;
-    fetchSociedad();
-  }, [sociedadId]);
-
-  const fetchDetalle = async () => {
+  const fetchDetalle = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await tramitesApi.getDetalle(id);
-      if (res.data.success) {
-        setTramite(res.data.data.tramite);
-        setDocumentos(res.data.data.documentos || []);
-        setRetenciones(res.data.data.retenciones || []);
-      }
+      const data = await fetchTramiteDetalleData({ api, id });
+      setTramite(data.tramite);
+      setDocumentos(data.documentos);
+      setRetenciones(data.retenciones);
     } catch (err) {
       console.error(err);
       setActionError('No se pudo cargar el tramite.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [api, id, setActionError, setDocumentos, setLoading, setRetenciones, setTramite]);
 
-  const fetchHistorial = async () => {
+  const fetchSociedad = useCallback(async () => {
     try {
-      setHistorialError('');
-      const res = await tramitesApi.getHistorial(id);
-      if (res.data.success) {
-        setHistorial(res.data.data || []);
-      }
-    } catch (err) {
-      console.error(err);
-      setHistorialError('No se pudo cargar el historial.');
-    }
-  };
-
-  const fetchSociedad = async () => {
-    try {
-      const res = await tramitesApi.getSociedades();
-      if (res.data.success) {
-        const sociedad = (res.data.data || []).find((item) => item.id === Number(sociedadId));
-        setSociedadInfo(sociedad || null);
-      }
+      const sociedad = await fetchTramiteSociedadInfo({ api, sociedadId });
+      setSociedadInfo(sociedad);
     } catch (err) {
       console.error(err);
       setSociedadInfo(null);
     }
-  };
+  }, [api, sociedadId, setSociedadInfo]);
 
-  return {
-    tramite,
-    documentos,
-    retenciones,
-    loading,
-    actionMessage,
-    setActionMessage,
-    actionError,
-    setActionError,
-    historial,
-    historialError,
+  useEffect(() => {
+    if (!id) return;
+    fetchDetalle();
+  }, [id, fetchDetalle]);
+
+  useEffect(() => {
+    if (!sociedadId) return;
+    fetchSociedad();
+  }, [sociedadId, fetchSociedad]);
+
+  const fetchHistorial = useCallback(async () => {
+    try {
+      setHistorialError('');
+      const data = await fetchTramiteHistorialData({ api, id });
+      setHistorial(data);
+    } catch (err) {
+      console.error(err);
+      setHistorialError('No se pudo cargar el historial.');
+    }
+  }, [api, id, setHistorial, setHistorialError]);
+
+  return buildTramiteDetalleOutputContract({
+    state,
     fetchDetalle,
     fetchHistorial,
-    sociedadInfo
-  };
+  });
 };

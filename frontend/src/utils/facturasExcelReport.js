@@ -1,5 +1,6 @@
 const REPORT_COLUMNS = [
   'Fecha Emision',
+  'Fecha received_time',
   'Tipo',
   'Numero',
   'Identificacion Proveedor',
@@ -27,6 +28,7 @@ const REPORT_COLUMNS = [
 
 const TEXT_COLUMNS = new Set([
   'Fecha Emision',
+  'Fecha received_time',
   'Tipo',
   'Numero',
   'Identificacion Proveedor',
@@ -151,6 +153,11 @@ const getMedioPago = (documento) => {
   return String(medioPagoRaw);
 };
 
+const getManifestReceivedTime = (documento) => pickPath(documento, [
+  ['manifest_received_time'],
+  ['received_time']
+], null);
+
 const toReportRow = ({ documento, tipo, estadoByClave }) => {
   const resumen = getResumen(documento);
   const emisor = getEmisor(documento);
@@ -193,11 +200,13 @@ const toReportRow = ({ documento, tipo, estadoByClave }) => {
 
   const estadoHaciendaInfo = clave ? estadoByClave.get(clave) : null;
   const numeroDocumento = documento?.consecutivo || documento?.numero_consecutivo || clave || '-';
+  const manifestReceivedTime = getManifestReceivedTime(documento);
 
   return {
     sortTime: getSortTime(documento?.fecha_emision),
     row: {
       'Fecha Emision': toDateString(documento?.fecha_emision),
+      'Fecha received_time': toDateString(manifestReceivedTime),
       Tipo: tipo,
       Numero: String(numeroDocumento),
       'Identificacion Proveedor': pickPath(emisor, [

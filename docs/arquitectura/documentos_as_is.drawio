@@ -1,0 +1,249 @@
+﻿<mxfile host="app.diagrams.net" modified="2026-03-03T23:10:00.000Z" agent="Codex" version="26.0.14" editor="www.draw.io" type="device">
+  <diagram id="asis-model-01" name="AS-IS Modelo Datos">
+    <mxGraphModel dx="1500" dy="860" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2000" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="10" value="sociedades" style="shape=swimlane;rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="220" height="130" as="geometry"/>
+        </mxCell>
+        <mxCell id="11" value="id (PK)&#xa;codigo&#xa;razon_social" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=8;" vertex="1" parent="10">
+          <mxGeometry x="0" y="30" width="220" height="100" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="20" value="facturas" style="shape=swimlane;rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="320" y="30" width="270" height="240" as="geometry"/>
+        </mxCell>
+        <mxCell id="21" value="id (PK)&#xa;clave (UNIQUE)&#xa;consecutivo&#xa;fecha_emision&#xa;emisor/receptor/resumen/jsonb&#xa;xml_completo jsonb&#xa;estado&#xa;sociedad_id (FK)&#xa;ruta_xml/ruta_pdf" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=8;" vertex="1" parent="20">
+          <mxGeometry x="0" y="30" width="270" height="210" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="30" value="notas_credito" style="shape=swimlane;rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="640" y="30" width="230" height="160" as="geometry"/>
+        </mxCell>
+        <mxCell id="31" value="id (PK)&#xa;clave (UNIQUE)&#xa;sociedad_id (FK)&#xa;factura_id (FK)&#xa;xml_completo" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=8;" vertex="1" parent="30">
+          <mxGeometry x="0" y="30" width="230" height="130" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="40" value="tiquetes_electronicos" style="shape=swimlane;rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="920" y="30" width="240" height="160" as="geometry"/>
+        </mxCell>
+        <mxCell id="41" value="id (PK)&#xa;clave (UNIQUE)&#xa;consecutivo&#xa;sociedad_id (FK)&#xa;xml_completo" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=8;" vertex="1" parent="40">
+          <mxGeometry x="0" y="30" width="240" height="130" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="50" value="mensajes_hacienda" style="shape=swimlane;rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="1210" y="30" width="250" height="170" as="geometry"/>
+        </mxCell>
+        <mxCell id="51" value="id (PK)&#xa;clave (UNIQUE)&#xa;mensaje/estado&#xa;sociedad_id (FK)&#xa;factura_id (FK opcional)&#xa;xml_completo" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=8;" vertex="1" parent="50">
+          <mxGeometry x="0" y="30" width="250" height="140" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="60" value="facturas_contabilizacion" style="shape=swimlane;rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="320" y="320" width="300" height="220" as="geometry"/>
+        </mxCell>
+        <mxCell id="61" value="id (PK)&#xa;factura_id (FK, UNIQUE)&#xa;retencion/retencion_pagada&#xa;estado_retencion&#xa;proveedor_id (FK)&#xa;tabla_pago_id (FK)&#xa;orden_compra_id (FK)&#xa;nota_credito_id (FK)&#xa;monto_nota_credito" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=8;" vertex="1" parent="60">
+          <mxGeometry x="0" y="30" width="300" height="190" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="70" value="facturas_retenciones_pagos" style="shape=swimlane;rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="660" y="340" width="260" height="140" as="geometry"/>
+        </mxCell>
+        <mxCell id="71" value="id (PK)&#xa;factura_id (FK)&#xa;contabilizacion_id (FK)&#xa;monto/fecha_pago" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=8;" vertex="1" parent="70">
+          <mxGeometry x="0" y="30" width="260" height="110" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="80" value="facturas_pagos" style="shape=swimlane;rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="960" y="340" width="220" height="140" as="geometry"/>
+        </mxCell>
+        <mxCell id="81" value="id (PK)&#xa;factura_id (FK)&#xa;tramite_id (FK)&#xa;monto/fecha_pago" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=8;" vertex="1" parent="80">
+          <mxGeometry x="0" y="30" width="220" height="110" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="90" value="tramites_pago" style="shape=swimlane;rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="1210" y="300" width="220" height="130" as="geometry"/>
+        </mxCell>
+        <mxCell id="91" value="id (PK)&#xa;sociedad_id (FK)&#xa;estado" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=8;" vertex="1" parent="90">
+          <mxGeometry x="0" y="30" width="220" height="100" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="100" value="tramites_pago_documentos" style="shape=swimlane;rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="1210" y="460" width="270" height="170" as="geometry"/>
+        </mxCell>
+        <mxCell id="101" value="id (PK)&#xa;tramite_id (FK)&#xa;factura_id (FK)&#xa;estado_gerencia/contable/financiero&#xa;estado_tesoreria" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=8;" vertex="1" parent="100">
+          <mxGeometry x="0" y="30" width="270" height="140" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="110" value="tramites_pago_retenciones" style="shape=swimlane;rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="900" y="520" width="280" height="150" as="geometry"/>
+        </mxCell>
+        <mxCell id="111" value="id (PK)&#xa;tramite_id (FK)&#xa;factura_id (FK)&#xa;proveedor_id (FK)&#xa;monto_retencion" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=8;" vertex="1" parent="110">
+          <mxGeometry x="0" y="30" width="280" height="120" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="120" value="tramites_pago_historial" style="shape=swimlane;rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="580" y="560" width="290" height="150" as="geometry"/>
+        </mxCell>
+        <mxCell id="121" value="id (PK)&#xa;tramite_id (FK)&#xa;factura_id (FK opcional)&#xa;accion&#xa;estado_anterior/nuevo" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=8;" vertex="1" parent="120">
+          <mxGeometry x="0" y="30" width="290" height="120" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="130" value="proveedores" style="shape=swimlane;rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="320" width="240" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="131" value="id (PK)&#xa;sociedad_id (FK)&#xa;identificacion/nombre" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=8;" vertex="1" parent="130">
+          <mxGeometry x="0" y="30" width="240" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="140" value="tablas_pago" style="shape=swimlane;rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="470" width="240" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="141" value="id (PK)&#xa;sociedad_id (FK)&#xa;proveedor_id (FK)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=8;" vertex="1" parent="140">
+          <mxGeometry x="0" y="30" width="240" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="150" value="ordenes_compra" style="shape=swimlane;rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="620" width="240" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="151" value="id (PK)&#xa;sociedad_id (FK)&#xa;proveedor_id (FK)&#xa;monto/moneda/estado" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=8;" vertex="1" parent="150">
+          <mxGeometry x="0" y="30" width="240" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="200" value="FK" edge="1" parent="1" source="10" target="20" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="201" value="FK" edge="1" parent="1" source="10" target="30" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="202" value="FK" edge="1" parent="1" source="10" target="40" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="203" value="FK" edge="1" parent="1" source="10" target="50" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="204" value="FK" edge="1" parent="1" source="20" target="60" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="205" value="FK" edge="1" parent="1" source="20" target="70" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="206" value="FK" edge="1" parent="1" source="20" target="80" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="207" value="FK" edge="1" parent="1" source="20" target="100" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="208" value="FK" edge="1" parent="1" source="20" target="110" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="209" value="FK" edge="1" parent="1" source="20" target="120" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="210" value="FK" edge="1" parent="1" source="20" target="30" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="211" value="FK" edge="1" parent="1" source="20" target="50" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="212" value="FK" edge="1" parent="1" source="10" target="90" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="213" value="FK" edge="1" parent="1" source="90" target="100" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="214" value="FK" edge="1" parent="1" source="90" target="110" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="215" value="FK" edge="1" parent="1" source="90" target="120" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="216" value="FK" edge="1" parent="1" source="90" target="80" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="217" value="FK" edge="1" parent="1" source="10" target="130" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="218" value="FK" edge="1" parent="1" source="130" target="140" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="219" value="FK" edge="1" parent="1" source="130" target="150" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="220" value="FK" edge="1" parent="1" source="130" target="60" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="221" value="FK" edge="1" parent="1" source="140" target="60" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="222" value="FK" edge="1" parent="1" source="150" target="60" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="223" value="FK" edge="1" parent="1" source="30" target="60" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram id="asis-coupling-01" name="AS-IS Acoplamiento Estado">
+    <mxGraphModel dx="1300" dy="760" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="300" value="Modulo Tramites Pago\n(services/repositories)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="180" width="260" height="100" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="301" value="UPDATE facturas\nSET estado = ..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="390" y="190" width="220" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="302" value="Tabla facturas\n(columna estado)" style="shape=swimlane;rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="660" y="170" width="230" height="130" as="geometry"/>
+        </mxCell>
+        <mxCell id="303" value="id\nclave\n...\nestado" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=8;" vertex="1" parent="302">
+          <mxGeometry x="0" y="30" width="230" height="100" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="304" value="Listados / filtros Facturas" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="950" y="120" width="240" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="305" value="Dashboard / metricas" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="950" y="220" width="240" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="306" value="Reportes (Facturas/Notas)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="950" y="320" width="240" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="307" value="Consecuencia: cambios de workflow impactan el estado consumido por consultas y reportes documentales" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="240" y="360" width="720" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="320" edge="1" parent="1" source="300" target="301" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="321" edge="1" parent="1" source="301" target="302" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="322" edge="1" parent="1" source="302" target="304" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="323" edge="1" parent="1" source="302" target="305" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="324" edge="1" parent="1" source="302" target="306" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="asis-gap-01" name="Gaps AS-IS vs TO-BE">
+    <mxGraphModel dx="1300" dy="760" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="400" value="AS-IS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="60" width="220" height="60" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="401" value="TO-BE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="60" width="220" height="60" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="410" value="facturas.estado mezcla\ndocumento + workflow" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="80" y="170" width="320" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="411" value="estado por dominio\n(documento_estado_actual/historial)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="170" width="360" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="420" value="workflow actualiza\nfacturas.estado" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="80" y="290" width="320" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="421" value="workflow desacoplado\nno escribe tabla canonica" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="290" width="360" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="430" value="reportes dependen de\nestado en facturas" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="80" y="410" width="320" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="431" value="reportes consumen\nmodelo documental + estado dominio" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="410" width="360" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="440" value="modelo por tipo separado\n(facturas/notas/tiquetes)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="80" y="530" width="320" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="441" value="modelo canonico +\nespecializacion por tipo" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="530" width="360" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="450" value="Plan: big-bang tecnico\n(sin backfill/dual-write por reinicio)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="690" width="520" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="460" edge="1" parent="1" source="410" target="411" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="461" edge="1" parent="1" source="420" target="421" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="462" edge="1" parent="1" source="430" target="431" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="463" edge="1" parent="1" source="440" target="441" style="endArrow=block;endFill=1;html=1;rounded=0;"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
+

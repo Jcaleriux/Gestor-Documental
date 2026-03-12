@@ -35,6 +35,7 @@ tmp-files-usecases-check-*/
 facturas/
 documentos/
 backend/scripts/salidas/
+backend/backups/
 archivos/resultado_*.csv
 
 ## OS / editor files

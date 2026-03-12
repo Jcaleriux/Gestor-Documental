@@ -4,6 +4,8 @@ import { useFacturaDetalleData } from '../../src/hooks/facturaDetalle/useFactura
 import { createHookHarness } from '../utils/hookHarness.js';
 import { createMockFn } from '../utils/mockFn.js';
 
+const useFacturaDetalleDataHarness = (props) => useFacturaDetalleData(props);
+
 test('useFacturaDetalleData carga datos usando facturaApi inyectado', async () => {
   const now = new Date('2026-02-18T12:00:00.000Z');
   const facturaApi = {
@@ -47,7 +49,7 @@ test('useFacturaDetalleData carga datos usando facturaApi inyectado', async () =
   };
 
   const hook = createHookHarness({
-    hook: (props) => useFacturaDetalleData(props),
+    hook: useFacturaDetalleDataHarness,
     autoRunEffects: false,
     initialProps: {
       id: 77,
@@ -89,7 +91,7 @@ test('useFacturaDetalleData no llama API cuando falta id', async () => {
   };
 
   const hook = createHookHarness({
-    hook: (props) => useFacturaDetalleData(props),
+    hook: useFacturaDetalleDataHarness,
     autoRunEffects: false,
     initialProps: {
       id: null,
@@ -143,7 +145,7 @@ test('useFacturaDetalleData no relanza fetchAll en cada render cuando usa nowPro
   };
 
   const hook = createHookHarness({
-    hook: (props) => useFacturaDetalleData(props),
+    hook: useFacturaDetalleDataHarness,
     initialProps: {
       id: 88,
       sociedadId: 10,

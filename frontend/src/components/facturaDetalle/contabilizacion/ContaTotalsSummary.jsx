@@ -10,16 +10,18 @@ function TotalRow({ label, value }) {
   );
 }
 
-function ContaTotalsSummary({
-  conta,
-  totalFactura,
-  rebajosAplicados,
-  retencionTotal,
-  totalPagoPrincipal,
-  retencionPagada,
-  retencionPendiente,
-  totalPendienteGlobal
-}) {
+function ContaTotalsSummary({ viewModel }) {
+  const {
+    conta,
+    totalFactura,
+    rebajosAplicados,
+    retencionTotal,
+    totalPagoPrincipal,
+    retencionPagada,
+    retencionPendiente,
+    totalPendienteGlobal
+  } = viewModel;
+
   return (
     <div className="col-12">
       <div className="border rounded px-3 py-2 bg-light">

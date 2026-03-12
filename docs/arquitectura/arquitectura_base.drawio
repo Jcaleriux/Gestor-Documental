@@ -1,0 +1,167 @@
+﻿<mxfile host="app.diagrams.net" modified="2026-03-03T18:00:00.000Z" agent="Codex" version="26.0.14" editor="www.draw.io" type="device">
+  <diagram id="arch01" name="Arquitectura">
+    <mxGraphModel dx="1320" dy="740" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="2" value="Frontend React" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="190" width="160" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="3" value="Backend API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="250" y="190" width="170" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="4" value="Contexto Documentos" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="490" y="40" width="190" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="5" value="Contexto Estados" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="490" y="140" width="190" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="6" value="Contexto Workflow Pago" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="490" y="240" width="190" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="7" value="Contexto Seguridad" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="490" y="340" width="190" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="8" value="Contexto Reportes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="740" y="120" width="180" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="9" value="PostgreSQL" style="shape=cylinder;whiteSpace=wrap;html=1;boundedLbl=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="740" y="290" width="180" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="10" edge="1" parent="1" source="2" target="3" style="endArrow=block;endFill=1;html=1;rounded=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="11" edge="1" parent="1" source="3" target="4" style="endArrow=block;endFill=1;html=1;rounded=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="12" edge="1" parent="1" source="3" target="5" style="endArrow=block;endFill=1;html=1;rounded=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="13" edge="1" parent="1" source="3" target="6" style="endArrow=block;endFill=1;html=1;rounded=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="14" edge="1" parent="1" source="3" target="7" style="endArrow=block;endFill=1;html=1;rounded=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="15" edge="1" parent="1" source="8" target="4" style="endArrow=block;endFill=1;html=1;rounded=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="16" edge="1" parent="1" source="8" target="5" style="endArrow=block;endFill=1;html=1;rounded=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="17" edge="1" parent="1" source="4" target="9" style="endArrow=block;endFill=1;html=1;rounded=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="18" edge="1" parent="1" source="5" target="9" style="endArrow=block;endFill=1;html=1;rounded=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="19" edge="1" parent="1" source="6" target="9" style="endArrow=block;endFill=1;html=1;rounded=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="20" edge="1" parent="1" source="7" target="9" style="endArrow=block;endFill=1;html=1;rounded=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="21" value="No escribe tablas canonicas" edge="1" parent="1" source="6" target="4" style="dashed=1;strokeColor=#b85450;fontColor=#b85450;endArrow=open;html=1;rounded=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram id="erd01" name="ERD">
+    <mxGraphModel dx="1320" dy="740" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="100" value="sociedades" style="shape=swimlane;rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="220" height="120" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="101" value="id (PK)&#xa;codigo&#xa;razon_social" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=8;" vertex="1" parent="100">
+          <mxGeometry x="0" y="30" width="220" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="110" value="documentos" style="shape=swimlane;rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="330" y="40" width="260" height="170" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="111" value="id (PK)&#xa;tipo_documento&#xa;sociedad_id (FK)&#xa;clave&#xa;fecha_emision&#xa;payload_json" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=8;" vertex="1" parent="110">
+          <mxGeometry x="0" y="30" width="260" height="140" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="120" value="documento_estado_actual" style="shape=swimlane;rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="650" y="30" width="280" height="140" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="121" value="documento_id (FK)&#xa;dominio&#xa;estado&#xa;actualizado_en" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=8;" vertex="1" parent="120">
+          <mxGeometry x="0" y="30" width="280" height="110" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="130" value="documento_estado_historial" style="shape=swimlane;rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="650" y="210" width="300" height="170" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="131" value="id (PK)&#xa;documento_id (FK)&#xa;dominio&#xa;estado_anterior&#xa;estado_nuevo&#xa;usuario&#xa;motivo&#xa;creado_en" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=8;" vertex="1" parent="130">
+          <mxGeometry x="0" y="30" width="300" height="140" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="140" value="tramites_pago" style="shape=swimlane;rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="330" y="280" width="220" height="120" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="141" value="id (PK)&#xa;sociedad_id (FK)&#xa;estado" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=8;" vertex="1" parent="140">
+          <mxGeometry x="0" y="30" width="220" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="150" value="tramites_pago_documentos" style="shape=swimlane;rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="40" y="270" width="250" height="150" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="151" value="id (PK)&#xa;tramite_id (FK)&#xa;documento_id (FK)&#xa;estados_etapa" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=8;spacingTop=8;" vertex="1" parent="150">
+          <mxGeometry x="0" y="30" width="250" height="120" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="160" value="1..N" edge="1" parent="1" source="100" target="110" style="endArrow=block;html=1;rounded=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="161" value="1..N" edge="1" parent="1" source="110" target="120" style="endArrow=block;html=1;rounded=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="162" value="1..N" edge="1" parent="1" source="110" target="130" style="endArrow=block;html=1;rounded=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="163" value="1..N" edge="1" parent="1" source="140" target="150" style="endArrow=block;html=1;rounded=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="164" value="1..N" edge="1" parent="1" source="110" target="150" style="endArrow=block;html=1;rounded=0;">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
