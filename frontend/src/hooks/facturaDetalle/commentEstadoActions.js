@@ -1,13 +1,12 @@
-const hasCommentData = ({ commentUser, commentText }) => (
-  Boolean(commentUser) && Boolean(commentText)
+const hasCommentData = ({ commentText }) => (
+  Boolean(commentText)
 );
 
 const hasEstadoData = ({ estadoNuevo, estadoUser, factura }) => (
   Boolean(estadoNuevo) && Boolean(estadoUser) && Boolean(factura)
 );
 
-const buildComentarioPayload = ({ commentUser, commentText }) => ({
-  usuario: commentUser,
+const buildComentarioPayload = ({ commentText }) => ({
   texto: commentText
 });
 
@@ -35,7 +34,6 @@ const refreshComentarios = async ({
 export const createCommentEstadoActions = ({
   id,
   factura,
-  commentUser,
   commentText,
   estadoNuevo,
   estadoUser,
@@ -49,13 +47,12 @@ export const createCommentEstadoActions = ({
 }) => {
   const addComment = async (event) => {
     event.preventDefault();
-    if (!hasCommentData({ commentUser, commentText })) {
+    if (!hasCommentData({ commentText })) {
       return;
     }
 
     try {
       await facturaApi.addComentario(id, buildComentarioPayload({
-        commentUser,
         commentText
       }));
       setCommentText('');

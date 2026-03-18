@@ -3,9 +3,11 @@ import { buildPdfViewModel } from './buildPdfViewModel.js';
 import { buildContaViewModel } from './buildContaViewModel.js';
 import { buildEstadoComentariosViewModels } from './buildEstadoComentariosViewModels.js';
 
-export const buildSummarySectionViewModel = ({ factura }) => ({
+export const buildSummarySectionViewModel = ({ factura, detalle = {} }) => ({
   factura,
-  monedaFactura: buildMonedaFactura(factura)
+  monedaFactura: buildMonedaFactura(factura),
+  selectedSociedadName: detalle.selectedSociedadName || '',
+  canEditContabilizacion: Boolean(detalle.canEditContabilizacion)
 });
 
 export const buildPdfSectionViewModel = ({ id, factura, detalle }) => (

@@ -3,7 +3,7 @@ const path = require('path');
 const pool = require('./index');
 
 async function main() {
-  const sqlPath = path.join(__dirname, 'database', 'legacy', '33_ventas.sql');
+  const sqlPath = path.join(__dirname, 'database', 'legacy', '33_reservas.sql');
 
   if (!fs.existsSync(sqlPath)) {
     throw new Error(`No se encontro el script: ${sqlPath}`);
@@ -11,15 +11,18 @@ async function main() {
 
   const sql = fs.readFileSync(sqlPath, 'utf8');
   await pool.query(sql);
-  console.log('Migracion de ventas aplicada correctamente.');
+  console.log('Migracion de reservas aplicada correctamente.');
 }
 
 main()
   .catch((error) => {
-    console.error('Error aplicando migracion de ventas:', error.message);
+    console.error('Error aplicando migracion de reservas:', error.message);
     process.exitCode = 1;
   })
   .finally(async () => {
     await pool.end();
   });
+
+
+
 

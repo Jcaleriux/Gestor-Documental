@@ -60,7 +60,7 @@ const sociedadesRoutes = require('./routes/sociedades');
 const proveedoresRoutes = require('./routes/proveedores');
 const tablasPagoRoutes = require('./routes/tablasPago');
 const ordenesCompraRoutes = require('./routes/ordenesCompra');
-const ventasRoutes = require('./routes/ventas');
+const reservasRoutes = require('./routes/reservas');
 
 [
   comentariosRoutes,
@@ -76,7 +76,7 @@ const ventasRoutes = require('./routes/ventas');
   proveedoresRoutes,
   tablasPagoRoutes,
   ordenesCompraRoutes,
-  ventasRoutes
+  reservasRoutes
 ].forEach((router) => app.use('/api', requireAuth, loadUserPermissions, router));
 
 // Root route: API only
@@ -91,3 +91,5 @@ app.use(notFoundMiddleware);
 app.use(errorMiddleware('Internal server error'));
 
 module.exports = app;
+
+

@@ -92,15 +92,27 @@ const mapNotaCreditoRow = (row) => ({
     || row.xml_completo?.ResumenNotaCredito
     || null,
   monto: Number(
-    row.monto
+    row.monto_total
+    || row.monto
     || row.xml_completo?.ResumenFactura?.TotalComprobante
     || row.xml_completo?.ResumenNotaCredito?.TotalComprobante
     || 0
   ),
+  monto_total: toNumber(
+    row.monto_total
+    || row.monto
+    || row.xml_completo?.ResumenFactura?.TotalComprobante
+    || row.xml_completo?.ResumenNotaCredito?.TotalComprobante
+    || 0,
+    0
+  ),
+  total_aplicado: toNumber(row.total_aplicado, 0),
+  saldo_disponible: toNumber(row.saldo_disponible, 0),
   xml_completo: row.xml_completo,
   ruta_xml: row.ruta_xml,
   ruta_pdf: row.ruta_pdf,
-  estado: 'Procesada',
+  moneda: row.moneda || null,
+  estado: row.estado || 'disponible',
   sociedad_id: row.sociedad_id || null
 });
 
@@ -115,6 +127,11 @@ const mapTiqueteElectronicoRow = (row) => ({
   receptor: row.receptor,
   resumen: row.resumen,
   xml_completo: row.xml_completo,
+  monto_total: toNumber(
+    row.monto_total ?? row.resumen?.TotalComprobante ?? row.resumen?.totalComprobante,
+    0
+  ),
+  moneda: row.moneda || null,
   ruta_xml: row.ruta_xml,
   ruta_pdf: row.ruta_pdf,
   sociedad_id: row.sociedad_id || null

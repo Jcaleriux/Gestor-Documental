@@ -83,6 +83,10 @@ describe('contabilizacionUseCases', () => {
       tabla_pago_id: 20,
       numero_proveedor: '3101122334'
     }), client);
+    expect(repo.updateFacturaEstado).toHaveBeenCalledWith({
+      facturaId: 1,
+      estado: FACTURA_ESTADOS.CONTABILIZADO
+    }, client);
   });
 
   test('registrarPagoRetencion hace rollback cuando falla la aplicacion del pago', async () => {
@@ -145,5 +149,67 @@ describe('contabilizacionUseCases', () => {
       orden_compra_id: 40,
       orden_compra: 'OC-40'
     }), expect.anything());
+  });
+
+  test('upsertContabilizacion guarda borrador en en_revision', async () => {
+    const { repo } = createRepoMock({
+      getFacturaById: jest.fn().mockResolvedValue({
+        id: 1,
+        estado: FACTURA_ESTADOS.NO_CONTABILIZADO,
+        sociedad_id: 10,
+        resumen: { CodigoTipoMoneda: { CodigoMoneda: 'CRC' } }
+      })
+    });
+    const useCases = createContabilizacionUseCases({ contabilizacionRepo: repo });
+
+    await useCases.upsertContabilizacion({
+      facturaId: 1,
+      proveedor_id: 30,
+      workflow_action: 'save_draft',
+      usuario: 'qa'
+    });
+
+    expect(repo.updateFacturaEstado).toHaveBeenCalledWith({
+      facturaId: 1,
+      estado: FACTURA_ESTADOS.EN_REVISION
+    }, expect.anything());
+    expect(repo.insertEstadoDocumento).toHaveBeenCalledWith({
+      facturaId: 1,
+      estadoAnterior: FACTURA_ESTADOS.NO_CONTABILIZADO,
+      estadoNuevo: FACTURA_ESTADOS.EN_REVISION,
+      usuario: 'qa',
+      motivo: 'Borrador de contabilizacion'
+    }, expect.anything());
+  });
+
+  test('upsertContabilizacion mark_in_review persiste y mueve a en_revision', async () => {
+    const { repo } = createRepoMock({
+      getFacturaById: jest.fn().mockResolvedValue({
+        id: 1,
+        estado: FACTURA_ESTADOS.CONTABILIZADO,
+        sociedad_id: 10,
+        resumen: { CodigoTipoMoneda: { CodigoMoneda: 'CRC' } }
+      })
+    });
+    const useCases = createContabilizacionUseCases({ contabilizacionRepo: repo });
+
+    await useCases.upsertContabilizacion({
+      facturaId: 1,
+      proveedor_id: 30,
+      workflow_action: 'mark_in_review',
+      usuario: 'qa'
+    });
+
+    expect(repo.updateFacturaEstado).toHaveBeenCalledWith({
+      facturaId: 1,
+      estado: FACTURA_ESTADOS.EN_REVISION
+    }, expect.anything());
+    expect(repo.insertEstadoDocumento).toHaveBeenCalledWith({
+      facturaId: 1,
+      estadoAnterior: FACTURA_ESTADOS.CONTABILIZADO,
+      estadoNuevo: FACTURA_ESTADOS.EN_REVISION,
+      usuario: 'qa',
+      motivo: 'Contabilizacion en revision'
+    }, expect.anything());
   });
 });

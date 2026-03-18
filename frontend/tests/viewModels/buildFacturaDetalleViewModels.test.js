@@ -27,6 +27,8 @@ const setLocalStorageMock = ({ token = '' } = {}) => {
 const createDetalleFixture = () => ({
   mhLoading: false,
   mhError: '',
+  selectedSociedadName: 'ASF',
+  canEditContabilizacion: true,
   verMensajeHacienda: createMockFn(),
   verManifest: createMockFn(),
   tablaPagoActual: { id: 11, nombre: 'Tabla', ruta_pdf: 'docs/tabla.pdf' },
@@ -44,9 +46,12 @@ const createDetalleFixture = () => ({
   },
   proveedoresSociedad: [{ id: 5, nombre: 'Proveedor X' }],
   contaSaving: false,
+  contaSavingAction: '',
   contaMessage: '',
   contaError: '',
   handleContaChange: createMockFn(),
+  guardarBorrador: createMockFn(),
+  marcarEnRevision: createMockFn(),
   guardarContabilizacion: createMockFn(),
   tablasLoading: false,
   ordenesLoading: false,
@@ -112,6 +117,7 @@ test('buildFacturaDetalleViewModels compone summary/pdf/contabilizacion/estado/c
 
     assert.equal(viewModels.summary.factura.id, 101);
     assert.equal(viewModels.summary.monedaFactura, 'USD');
+    assert.equal(viewModels.summary.selectedSociedadName, 'ASF');
     assert.equal(viewModels.pdf.id, 101);
     assert.equal(viewModels.pdf.mhDisponible, true);
     assert.equal(
@@ -120,6 +126,7 @@ test('buildFacturaDetalleViewModels compone summary/pdf/contabilizacion/estado/c
     );
     assert.equal(viewModels.contabilizacion.totals.totalFactura, 1000);
     assert.equal(viewModels.contabilizacion.totals.rebajosAplicados, 175);
+    assert.equal(viewModels.contabilizacion.form.canEditContabilizacion, true);
     assert.equal(viewModels.estado.estadoUser, 'admin');
     assert.equal(viewModels.historial.estados.length, 1);
     assert.equal(viewModels.comentarios.comentarios.length, 1);
@@ -140,13 +147,14 @@ test('sub-builders de buildFacturaDetalleViewModels conservan contratos por secc
     };
     const detalle = createDetalleFixture();
 
-    const summary = buildSummarySectionViewModel({ factura });
+    const summary = buildSummarySectionViewModel({ factura, detalle });
     const pdf = buildPdfSectionViewModel({ id: 202, factura, detalle });
     const contabilizacion = buildContabilizacionSectionViewModel({ factura, detalle });
     const estadoComentarios = buildEstadoComentariosSectionViewModels({ detalle });
 
     assert.equal(summary.factura.id, 202);
     assert.equal(summary.monedaFactura, 'CRC');
+    assert.equal(summary.selectedSociedadName, 'ASF');
     assert.equal(pdf.id, 202);
     assert.equal(pdf.pdfUrl, '/api/files/pdf?path=docs%2Ffactura-202.pdf&token=token-abc');
     assert.equal(contabilizacion.totals.totalFactura, 500);

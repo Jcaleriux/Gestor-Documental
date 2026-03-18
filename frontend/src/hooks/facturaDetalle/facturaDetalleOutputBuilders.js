@@ -1,9 +1,11 @@
-export const buildFacturaDetalleMetaOutput = (data) => ({
+export const buildFacturaDetalleMetaOutput = (data, options = {}) => ({
   factura: data.factura,
   comentarios: data.comentarios,
   estados: data.estados,
   loading: data.loading,
-  error: data.error
+  error: data.error,
+  selectedSociedadName: options.selectedSociedadName || '',
+  canEditContabilizacion: Boolean(options.canEditContabilizacion)
 });
 
 export const buildFacturaDetalleGeneralStateOutput = (data) => ({
@@ -43,6 +45,7 @@ export const buildFacturaDetalleContabilizacionStateOutput = (data) => ({
   notasLoading: data.notasLoading,
   notasError: data.notasError,
   contaSaving: data.contaSaving,
+  contaSavingAction: data.contaSavingAction,
   contaMessage: data.contaMessage,
   contaError: data.contaError
 });
@@ -73,14 +76,24 @@ export const buildFacturaDetalleActionsOutput = (actions) => ({
   verTablaPagoAsociada: actions.verTablaPagoAsociada,
   verOrdenCompraAsociada: actions.verOrdenCompraAsociada,
   verNotaCreditoAsociada: actions.verNotaCreditoAsociada,
+  guardarBorrador: actions.guardarBorrador,
+  marcarEnRevision: actions.marcarEnRevision,
   guardarContabilizacion: actions.guardarContabilizacion,
   registrarPagoRetencion: actions.registrarPagoRetencion,
   verMensajeHacienda: actions.verMensajeHacienda,
   verManifest: actions.verManifest
 });
 
-export const buildFacturaDetalleOutputContract = ({ data, actions }) => ({
-  meta: buildFacturaDetalleMetaOutput(data),
+export const buildFacturaDetalleOutputContract = ({
+  data,
+  actions,
+  selectedSociedadName,
+  canEditContabilizacion
+}) => ({
+  meta: buildFacturaDetalleMetaOutput(data, {
+    selectedSociedadName,
+    canEditContabilizacion
+  }),
   state: {
     general: buildFacturaDetalleGeneralStateOutput(data),
     contabilizacion: buildFacturaDetalleContabilizacionStateOutput(data),

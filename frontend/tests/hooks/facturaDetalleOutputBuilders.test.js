@@ -51,6 +51,7 @@ const createDataFixture = () => {
     notasLoading: false,
     notasError: '',
     contaSaving: false,
+    contaSavingAction: '',
     contaMessage: '',
     contaError: '',
     retencionPagos: [{ id: 10 }],
@@ -81,6 +82,8 @@ const createActionsFixture = () => {
     verTablaPagoAsociada: noop,
     verOrdenCompraAsociada: noop,
     verNotaCreditoAsociada: noop,
+    guardarBorrador: noop,
+    marcarEnRevision: noop,
     guardarContabilizacion: noop,
     registrarPagoRetencion: noop,
     verMensajeHacienda: noop,
@@ -90,12 +93,17 @@ const createActionsFixture = () => {
 
 test('buildFacturaDetalleMetaOutput conserva datos de lectura del detalle', () => {
   const data = createDataFixture();
-  const output = buildFacturaDetalleMetaOutput(data);
+  const output = buildFacturaDetalleMetaOutput(data, {
+    selectedSociedadName: 'ASF',
+    canEditContabilizacion: true
+  });
 
   assert.equal(output.factura.id, 100);
   assert.equal(output.comentarios.length, 1);
   assert.equal(output.estados.length, 1);
   assert.equal(output.loading, false);
+  assert.equal(output.selectedSociedadName, 'ASF');
+  assert.equal(output.canEditContabilizacion, true);
 });
 
 test('buildFacturaDetalle*StateOutput conserva contratos por seccion', () => {
@@ -108,6 +116,7 @@ test('buildFacturaDetalle*StateOutput conserva contratos por seccion', () => {
   assert.equal(generalOutput.setEstadoMotivo, data.setEstadoMotivo);
 
   assert.equal(contaOutput.conta.proveedor_id, '5');
+  assert.equal(contaOutput.contaSavingAction, '');
   assert.equal(contaOutput.setOrdenesModalOpen, data.setOrdenesModalOpen);
 
   assert.equal(retencionOutput.retencionPagoMonto, '100');
@@ -119,6 +128,7 @@ test('buildFacturaDetalleActionsOutput conserva handlers de acciones', () => {
   const output = buildFacturaDetalleActionsOutput(actions);
 
   assert.equal(output.addComment, actions.addComment);
+  assert.equal(output.guardarBorrador, actions.guardarBorrador);
   assert.equal(output.guardarContabilizacion, actions.guardarContabilizacion);
   assert.equal(output.verManifest, actions.verManifest);
 });
@@ -126,9 +136,15 @@ test('buildFacturaDetalleActionsOutput conserva handlers de acciones', () => {
 test('buildFacturaDetalleOutputContract compone contrato por secciones', () => {
   const data = createDataFixture();
   const actions = createActionsFixture();
-  const output = buildFacturaDetalleOutputContract({ data, actions });
+  const output = buildFacturaDetalleOutputContract({
+    data,
+    actions,
+    selectedSociedadName: 'ASF',
+    canEditContabilizacion: false
+  });
 
   assert.equal(output.meta.factura.id, 100);
+  assert.equal(output.meta.selectedSociedadName, 'ASF');
   assert.equal(output.state.contabilizacion.conta.proveedor_id, '5');
   assert.equal(output.state.retencion.retencionPagoFecha, '2026-02-27');
   assert.equal(output.actions.verMensajeHacienda, actions.verMensajeHacienda);
@@ -137,10 +153,17 @@ test('buildFacturaDetalleOutputContract compone contrato por secciones', () => {
 test('buildFacturaDetalleViewModelInput aplana contrato seccionado para builders de vista', () => {
   const data = createDataFixture();
   const actions = createActionsFixture();
-  const output = buildFacturaDetalleOutputContract({ data, actions });
+  const output = buildFacturaDetalleOutputContract({
+    data,
+    actions,
+    selectedSociedadName: 'ASF',
+    canEditContabilizacion: true
+  });
   const viewModelInput = buildFacturaDetalleViewModelInput(output);
 
   assert.equal(viewModelInput.factura.id, 100);
+  assert.equal(viewModelInput.selectedSociedadName, 'ASF');
+  assert.equal(viewModelInput.canEditContabilizacion, true);
   assert.equal(viewModelInput.conta.proveedor_id, '5');
   assert.equal(viewModelInput.retencionPagoFecha, '2026-02-27');
   assert.equal(viewModelInput.verManifest, actions.verManifest);

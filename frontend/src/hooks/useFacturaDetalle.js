@@ -5,7 +5,14 @@ import {
   buildFacturaDetalleHookOutput
 } from './facturaDetalle/facturaDetalleHookBuilders.js';
 
-export const useFacturaDetalle = ({ id, sociedadId, dataDependencies, actionDependencies }) => {
+export const useFacturaDetalle = ({
+  id,
+  sociedadId,
+  selectedSociedadName,
+  canEditContabilizacion,
+  dataDependencies,
+  actionDependencies
+}) => {
   const data = useFacturaDetalleData({ id, sociedadId, dependencies: dataDependencies });
   const actions = useFacturaDetalleActions(buildFacturaDetalleActionsParams({
     id,
@@ -16,6 +23,8 @@ export const useFacturaDetalle = ({ id, sociedadId, dataDependencies, actionDepe
   return buildFacturaDetalleHookOutput({
     id,
     data,
-    actions
+    actions,
+    selectedSociedadName,
+    canEditContabilizacion
   });
 };

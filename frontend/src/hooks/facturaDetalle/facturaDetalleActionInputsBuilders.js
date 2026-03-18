@@ -20,6 +20,7 @@ export const buildContabilizacionCoreActionInputs = ({ id, data }) => ({
   proveedoresSociedad: data.proveedoresSociedad,
   setConta: data.setConta,
   setContaSaving: data.setContaSaving,
+  setContaSavingAction: data.setContaSavingAction,
   setContaMessage: data.setContaMessage,
   setContaError: data.setContaError,
   fetchAll: data.fetchAll

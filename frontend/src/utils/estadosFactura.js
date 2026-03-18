@@ -1,6 +1,18 @@
 export const estadoLabelFactura = (estado) => {
   if (!estado) return 'No definido';
-  return estado.replace(/_/g, ' ');
+
+  switch (estado) {
+    case 'no_contabilizado':
+      return 'No contabilizado';
+    case 'en_revision':
+      return 'En revision contable';
+    case 'en_tramite_pago':
+      return 'En tramite de pago';
+    case 'pagado_parcialmente':
+      return 'Pagado parcialmente';
+    default:
+      return estado.replace(/_/g, ' ');
+  }
 };
 
 export const estadoClassFactura = (estado) => {

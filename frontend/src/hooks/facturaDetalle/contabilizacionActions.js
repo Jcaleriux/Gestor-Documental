@@ -58,56 +58,7 @@ const associateItem = ({
   setModalOpen(false);
 };
 
-const createSelectionClearers = ({
-  setTablasPagoProveedor,
-  setTablaPagoActual,
-  setTablasModalOpen,
-  setTablasError,
-  setOrdenesCompraProveedor,
-  setOrdenCompraActual,
-  setOrdenesModalOpen,
-  setOrdenesError,
-  setNotasCreditoProveedor,
-  setNotaCreditoActual,
-  setNotasModalOpen,
-  setNotasError,
-  setConta
-}) => ({
-  clearTablaSelection: () => {
-    setTablasPagoProveedor([]);
-    setTablaPagoActual(null);
-    setTablasModalOpen(false);
-    setTablasError('');
-    setConta((prev) => ({
-      ...prev,
-      tabla_pago_id: ''
-    }));
-  },
-  clearOrdenCompraSelection: () => {
-    setOrdenesCompraProveedor([]);
-    setOrdenCompraActual(null);
-    setOrdenesModalOpen(false);
-    setOrdenesError('');
-    setConta((prev) => ({
-      ...prev,
-      orden_compra_id: '',
-      orden_compra: ''
-    }));
-  },
-  clearNotaCreditoSelection: () => {
-    setNotasCreditoProveedor([]);
-    setNotaCreditoActual(null);
-    setNotasModalOpen(false);
-    setNotasError('');
-    setConta((prev) => ({
-      ...prev,
-      nota_credito_id: '',
-      monto_nota_credito: 0
-    }));
-  }
-});
-
-const buildContabilizacionPayload = ({ conta }) => ({
+const buildContabilizacionPayload = ({ conta, workflowAction }) => ({
   ...conta,
   proveedor_id: conta.proveedor_id ? Number(conta.proveedor_id) : null,
   tabla_pago_id: conta.tabla_pago_id ? Number(conta.tabla_pago_id) : null,
@@ -116,6 +67,7 @@ const buildContabilizacionPayload = ({ conta }) => ({
   monto_nota_credito: conta.monto_nota_credito === '' || Number.isNaN(Number(conta.monto_nota_credito))
     ? null
     : Number(conta.monto_nota_credito),
+  workflow_action: workflowAction,
   usuario: 'admin'
 });
 
@@ -130,27 +82,8 @@ const buildRetencionPayload = ({
   usuario: 'admin'
 });
 
-const createHandleContaChangeAction = ({
-  proveedoresSociedad,
-  setConta,
-  clearTablaSelection,
-  clearOrdenCompraSelection,
-  clearNotaCreditoSelection
-}) => (field) => (event) => {
+const createHandleContaChangeAction = ({ setConta }) => (field) => (event) => {
   const nextValue = event.target.value;
-  if (field === 'proveedor_id') {
-    const proveedor = proveedoresSociedad.find((item) => String(item.id) === String(nextValue));
-    clearTablaSelection();
-    clearOrdenCompraSelection();
-    clearNotaCreditoSelection();
-    setConta((prev) => ({
-      ...prev,
-      proveedor_id: nextValue,
-      numero_proveedor: proveedor?.identificacion_numero || ''
-    }));
-    return;
-  }
-
   setConta((prev) => ({ ...prev, [field]: nextValue }));
 };
 
@@ -158,9 +91,9 @@ export const createContabilizacionActions = ({
   id,
   factura,
   conta,
-  proveedoresSociedad,
   setConta,
   setContaSaving,
+  setContaSavingAction,
   setContaMessage,
   setContaError,
   setTablasPagoProveedor,
@@ -189,33 +122,7 @@ export const createContabilizacionActions = ({
   fetchAll,
   facturaApi
 }) => {
-  const {
-    clearTablaSelection,
-    clearOrdenCompraSelection,
-    clearNotaCreditoSelection
-  } = createSelectionClearers({
-    setTablasPagoProveedor,
-    setTablaPagoActual,
-    setTablasModalOpen,
-    setTablasError,
-    setOrdenesCompraProveedor,
-    setOrdenCompraActual,
-    setOrdenesModalOpen,
-    setOrdenesError,
-    setNotasCreditoProveedor,
-    setNotaCreditoActual,
-    setNotasModalOpen,
-    setNotasError,
-    setConta
-  });
-
-  const handleContaChange = createHandleContaChangeAction({
-    proveedoresSociedad,
-    setConta,
-    clearTablaSelection,
-    clearOrdenCompraSelection,
-    clearNotaCreditoSelection
-  });
+  const handleContaChange = createHandleContaChangeAction({ setConta });
 
   const resolveAssociationContext = (missingProveedorError) => {
     const sociedadId = requireFacturaSociedadId({ factura, setContaError });
@@ -236,7 +143,7 @@ export const createContabilizacionActions = ({
   };
 
   const abrirAsociarTablaPago = async () => {
-    const context = resolveAssociationContext('Seleccione un proveedor para asociar la tabla de pagos.');
+    const context = resolveAssociationContext('No se encontro el proveedor de esta factura para asociar la tabla de pagos.');
     if (!context) {
       return;
     }
@@ -270,7 +177,7 @@ export const createContabilizacionActions = ({
   };
 
   const abrirAsociarOrdenCompra = async () => {
-    const context = resolveAssociationContext('Seleccione un proveedor para asociar la orden de compra.');
+    const context = resolveAssociationContext('No se encontro el proveedor de esta factura para asociar la orden de compra.');
     if (!context) {
       return;
     }
@@ -306,7 +213,7 @@ export const createContabilizacionActions = ({
   };
 
   const abrirAsociarNotaCredito = async () => {
-    const context = resolveAssociationContext('Seleccione un proveedor para asociar la nota de credito.');
+    const context = resolveAssociationContext('No se encontro el proveedor de esta factura para asociar la nota de credito.');
     if (!context) {
       return;
     }
@@ -317,7 +224,11 @@ export const createContabilizacionActions = ({
           sociedadId: context.sociedadId,
           proveedorId: context.proveedorId
         });
-        return response.data?.data || [];
+        const payload = response.data?.data;
+        if (Array.isArray(payload)) {
+          return payload;
+        }
+        return Array.isArray(payload?.items) ? payload.items : [];
       },
       setLoading: setNotasLoading,
       setError: setNotasError,
@@ -343,21 +254,49 @@ export const createContabilizacionActions = ({
     });
   };
 
-  const guardarContabilizacion = async (event) => {
-    event.preventDefault();
+  const persistContabilizacion = async ({ workflowAction, successMessage, errorMessage }) => {
     try {
       setContaSaving(true);
+      setContaSavingAction?.(workflowAction);
       setContaError('');
       setContaMessage('');
-      await facturaApi.saveContabilizacion(id, buildContabilizacionPayload({ conta }));
-      setContaMessage('Contabilizacion guardada y estado actualizado.');
+      await facturaApi.saveContabilizacion(id, buildContabilizacionPayload({ conta, workflowAction }));
+      setContaMessage(successMessage);
       await fetchAll();
     } catch (err) {
-      const apiError = err.response?.data?.error || 'No se pudo guardar la contabilizacion.';
+      const apiError = err.response?.data?.error || errorMessage;
       setContaError(apiError);
     } finally {
       setContaSaving(false);
+      setContaSavingAction?.('');
     }
+  };
+
+  const guardarBorrador = async (event) => {
+    event?.preventDefault?.();
+    await persistContabilizacion({
+      workflowAction: 'save_draft',
+      successMessage: 'Borrador guardado en revision contable.',
+      errorMessage: 'No se pudo guardar el borrador.'
+    });
+  };
+
+  const marcarEnRevision = async (event) => {
+    event?.preventDefault?.();
+    await persistContabilizacion({
+      workflowAction: 'mark_in_review',
+      successMessage: 'Documento marcado en revision contable.',
+      errorMessage: 'No se pudo marcar el documento en revision.'
+    });
+  };
+
+  const guardarContabilizacion = async (event) => {
+    event?.preventDefault?.();
+    await persistContabilizacion({
+      workflowAction: 'finalize',
+      successMessage: 'Contabilizacion guardada correctamente.',
+      errorMessage: 'No se pudo guardar la contabilizacion.'
+    });
   };
 
   const registrarPagoRetencion = async (event) => {
@@ -397,6 +336,8 @@ export const createContabilizacionActions = ({
     asociarOrdenCompra,
     abrirAsociarNotaCredito,
     asociarNotaCredito,
+    guardarBorrador,
+    marcarEnRevision,
     guardarContabilizacion,
     registrarPagoRetencion
   };

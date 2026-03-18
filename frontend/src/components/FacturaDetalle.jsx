@@ -7,9 +7,14 @@ import { buildFacturaDetallePageState } from './facturaDetalle/viewModels/buildF
 import { buildFacturaDetalleHeaderViewModel } from './facturaDetalle/viewModels/buildFacturaDetalleHeaderViewModel.js';
 import { buildFacturaDetalleLayoutProps } from './facturaDetalle/viewModels/buildFacturaDetalleLayoutProps.js';
 
-function FacturaDetalle({ sociedadId }) {
+function FacturaDetalle({ sociedadId, selectedSociedadName = '', canEditContabilizacion = false }) {
   const { id } = useParams();
-  const detalle = useFacturaDetalle({ id, sociedadId });
+  const detalle = useFacturaDetalle({
+    id,
+    sociedadId,
+    selectedSociedadName,
+    canEditContabilizacion
+  });
   const pageState = buildFacturaDetallePageState({ sociedadId, meta: detalle.meta });
 
   if (pageState.status === 'loading') {
@@ -21,7 +26,10 @@ function FacturaDetalle({ sociedadId }) {
   }
 
   const viewModels = detalle.viewModels;
-  const headerViewModel = buildFacturaDetalleHeaderViewModel({ factura: detalle.meta.factura });
+  const headerViewModel = buildFacturaDetalleHeaderViewModel({
+    factura: detalle.meta.factura,
+    canEditContabilizacion,
+  });
   const layoutProps = buildFacturaDetalleLayoutProps({ headerViewModel, viewModels });
 
   return <FacturaDetalleLayout layoutProps={layoutProps} />;

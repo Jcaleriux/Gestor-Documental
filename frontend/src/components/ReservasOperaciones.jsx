@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useState } from 'react';
-import { ventasApi } from '../services/ventasApi';
+import { reservasApi } from '../services/reservasApi';
 import { getAuthToken } from '../utils/auth';
 import PageHeader from './common/PageHeader';
 import SectionCard from './common/SectionCard';
@@ -62,7 +62,7 @@ const resolveSellerName = (operation) => {
   return legacyName || '-';
 };
 
-function VentasOperaciones({ sociedadId, canManageDocuments = false }) {
+function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
   const [operations, setOperations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -89,7 +89,7 @@ function VentasOperaciones({ sociedadId, canManageDocuments = false }) {
 
     try {
       if (showLoader) setLoading(true);
-      const res = await ventasApi.listOperaciones({
+      const res = await reservasApi.listOperaciones({
         sociedad_id: sociedadId,
         estado: filterEstado || undefined,
       });
@@ -97,7 +97,7 @@ function VentasOperaciones({ sociedadId, canManageDocuments = false }) {
         setOperations(Array.isArray(res.data.data) ? res.data.data : []);
       }
     } catch (requestError) {
-      setError(requestError.response?.data?.error || 'No se pudo cargar operaciones de ventas.');
+      setError(requestError.response?.data?.error || 'No se pudo cargar reservas.');
     } finally {
       if (showLoader) setLoading(false);
     }
@@ -106,7 +106,7 @@ function VentasOperaciones({ sociedadId, canManageDocuments = false }) {
   const loadOperationDetail = useCallback(async (operationId) => {
     setDetailsLoadingId(operationId);
     try {
-      const res = await ventasApi.getOperacion(operationId);
+      const res = await reservasApi.getOperacion(operationId);
       if (res.data?.success) {
         const detail = res.data.data || {};
         setOperationDetails((previous) => ({
@@ -151,7 +151,7 @@ function VentasOperaciones({ sociedadId, canManageDocuments = false }) {
   const handleCreateOperation = async (event) => {
     event.preventDefault();
     if (!sociedadId) {
-      setError('Seleccione una sociedad para crear operaciones.');
+      setError('Seleccione una sociedad para crear reservas.');
       return;
     }
 
@@ -159,7 +159,7 @@ function VentasOperaciones({ sociedadId, canManageDocuments = false }) {
       setSaving(true);
       setError('');
       setMessage('');
-      await ventasApi.createOperacion({
+      await reservasApi.createOperacion({
         sociedad_id: Number(sociedadId),
         proyecto_codigo: createForm.proyecto_codigo.trim().toUpperCase(),
         unidad_codigo: createForm.unidad_codigo.trim().toUpperCase(),
@@ -168,10 +168,10 @@ function VentasOperaciones({ sociedadId, canManageDocuments = false }) {
       });
       setShowCreatePanel(false);
       setCreateForm(CREATE_FORM_INITIAL);
-      setMessage('Operacion de venta creada correctamente.');
+      setMessage('Reserva creada correctamente.');
       await loadOperations({ showLoader: false });
     } catch (requestError) {
-      setError(requestError.response?.data?.error || 'No se pudo crear la operacion de venta.');
+      setError(requestError.response?.data?.error || 'No se pudo crear la reserva.');
     } finally {
       setSaving(false);
     }
@@ -184,9 +184,9 @@ function VentasOperaciones({ sociedadId, canManageDocuments = false }) {
       setMessage('');
       const reason = window.prompt('Motivo (opcional):', '') || '';
       if (action === 'cancel') {
-        await ventasApi.cancelOperacion(operationId, { motivo: reason || null });
+        await reservasApi.cancelOperacion(operationId, { motivo: reason || null });
       } else if (action === 'close') {
-        await ventasApi.closeOperacion(operationId, { motivo: reason || null });
+        await reservasApi.closeOperacion(operationId, { motivo: reason || null });
       }
       setMessage(successMessage);
       await loadOperations({ showLoader: false });
@@ -219,7 +219,7 @@ function VentasOperaciones({ sociedadId, canManageDocuments = false }) {
       setSaving(true);
       setError('');
       setMessage('');
-      await ventasApi.transferOperacion(transferOperationId, {
+      await reservasApi.transferOperacion(transferOperationId, {
         destino_sociedad_id: transferForm.destino_sociedad_id ? Number(transferForm.destino_sociedad_id) : null,
         destino_proyecto_codigo: transferForm.destino_proyecto_codigo.trim().toUpperCase(),
         destino_unidad_codigo: transferForm.destino_unidad_codigo.trim().toUpperCase(),
@@ -232,7 +232,7 @@ function VentasOperaciones({ sociedadId, canManageDocuments = false }) {
       setMessage('Traslado aplicado correctamente.');
       await loadOperations({ showLoader: false });
     } catch (requestError) {
-      setError(requestError.response?.data?.error || 'No se pudo trasladar la operacion.');
+      setError(requestError.response?.data?.error || 'No se pudo trasladar la reserva.');
     } finally {
       setSaving(false);
     }
@@ -252,7 +252,7 @@ function VentasOperaciones({ sociedadId, canManageDocuments = false }) {
     try {
       await loadOperationDetail(operationId);
     } catch (requestError) {
-      setError(requestError.response?.data?.error || 'No se pudo cargar el detalle de la operacion.');
+      setError(requestError.response?.data?.error || 'No se pudo cargar el detalle de la reserva.');
       setOpenDetailId(null);
     }
   };
@@ -277,7 +277,7 @@ function VentasOperaciones({ sociedadId, canManageDocuments = false }) {
       setError('');
       setMessage('');
       const fileBase64 = await fileToDataUrl(replaceFile);
-      await ventasApi.replaceDocumento(operationId, selectedDoc.id, {
+      await reservasApi.replaceDocumento(operationId, selectedDoc.id, {
         filename: replaceFile.name,
         file_base64: fileBase64,
         mime_type: replaceFile.type || null,
@@ -300,25 +300,25 @@ function VentasOperaciones({ sociedadId, canManageDocuments = false }) {
   if (!sociedadId) {
     return (
       <div className="container-fluid">
-        <EmptyState className="py-2">Seleccione una sociedad para gestionar ventas.</EmptyState>
+        <EmptyState className="py-2">Seleccione una sociedad para gestionar reservas.</EmptyState>
       </div>
     );
   }
 
   if (loading) {
-    return <LoadingState label="Cargando operaciones de ventas..." />;
+    return <LoadingState label="Cargando reservas..." />;
   }
 
   return (
     <div className="container-fluid">
       <PageHeader
-        title="Ventas por unidad"
-        subtitle="Vista de operaciones en ancho completo, con preview y reemplazo de documentos."
+        title="Reservas"
+        subtitle="Gestion de reservas por unidad, con preview y reemplazo de documentos."
       />
       <ActionAlerts error={error} message={message} />
 
       <SectionCard
-        title="Operaciones registradas"
+        title="Reservas registradas"
         actions={(
           <div className="d-flex gap-2 flex-wrap">
             <select
@@ -338,7 +338,7 @@ function VentasOperaciones({ sociedadId, canManageDocuments = false }) {
               className={`btn btn-sm ${showCreatePanel ? 'btn-outline-secondary' : 'btn-primary'}`}
               onClick={() => setShowCreatePanel((previous) => !previous)}
             >
-              {showCreatePanel ? 'Ocultar nueva operacion' : 'Nueva operacion'}
+              {showCreatePanel ? 'Ocultar nueva reserva' : 'Nueva reserva'}
             </button>
           </div>
         )}
@@ -374,7 +374,7 @@ function VentasOperaciones({ sociedadId, canManageDocuments = false }) {
         )}
 
         {operations.length === 0 ? (
-          <EmptyState className="py-2">No hay operaciones para mostrar.</EmptyState>
+          <EmptyState className="py-2">No hay reservas para mostrar.</EmptyState>
         ) : (
           <div className="table-responsive">
             <table className="table table-sm align-middle mb-0">
@@ -401,7 +401,7 @@ function VentasOperaciones({ sociedadId, canManageDocuments = false }) {
                   const selectedId = selectedDocumentByOperation[operation.id];
                   const selectedDoc = documents.find((doc) => doc.id === selectedId) || documents[0] || null;
                   const previewType = inferPreviewType(selectedDoc);
-                  const previewUrl = selectedDoc ? ventasApi.buildPreviewDocumentoUrl({
+                  const previewUrl = selectedDoc ? reservasApi.buildPreviewDocumentoUrl({
                     operacionId: operation.id,
                     documentoId: selectedDoc.id,
                     token: getAuthToken(),
@@ -423,12 +423,12 @@ function VentasOperaciones({ sociedadId, canManageDocuments = false }) {
                               {isDetailOpen ? 'Ocultar detalle' : 'Ver detalle'}
                             </button>
                             {isActive && (
-                              <button type="button" className="btn btn-outline-warning btn-sm" onClick={() => executeStateAction({ operationId: operation.id, action: 'close', successMessage: 'Operacion cerrada correctamente.' })} disabled={saving}>
+                              <button type="button" className="btn btn-outline-warning btn-sm" onClick={() => executeStateAction({ operationId: operation.id, action: 'close', successMessage: 'Reserva cerrada correctamente.' })} disabled={saving}>
                                 Cerrar
                               </button>
                             )}
                             {isActive && (
-                              <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => executeStateAction({ operationId: operation.id, action: 'cancel', successMessage: 'Operacion cancelada correctamente.' })} disabled={saving}>
+                              <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => executeStateAction({ operationId: operation.id, action: 'cancel', successMessage: 'Reserva cancelada correctamente.' })} disabled={saving}>
                                 Cancelar
                               </button>
                             )}
@@ -480,7 +480,7 @@ function VentasOperaciones({ sociedadId, canManageDocuments = false }) {
                                       ) : history.slice(0, 25).map((item) => (
                                         <div key={item.id} className="small border-bottom py-1">
                                           <strong>{item.accion}</strong>
-                                          <div className="text-muted">{formatDateTime(item.creado_en)}{item.usuario ? ` · ${item.usuario}` : ''}</div>
+                                          <div className="text-muted">{formatDateTime(item.creado_en)}{item.usuario ? ` Â· ${item.usuario}` : ''}</div>
                                           {item.motivo && <div className="text-muted">Motivo: {item.motivo}</div>}
                                         </div>
                                       ))}
@@ -560,4 +560,21 @@ function VentasOperaciones({ sociedadId, canManageDocuments = false }) {
   );
 }
 
-export default VentasOperaciones;
+export default ReservasOperaciones;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

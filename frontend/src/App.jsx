@@ -1,5 +1,13 @@
-import { useCallback, useEffect, useMemo, useReducer } from 'react';
-import { BrowserRouter as Router, Routes, Route, NavLink, Navigate } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  NavLink,
+  Navigate,
+  useLocation,
+  useParams,
+} from 'react-router-dom';
 import axios from 'axios';
 import Dashboard from './components/Dashboard';
 import Usuarios from './components/Usuarios';
@@ -14,7 +22,7 @@ import TramiteDetalle from './components/TramiteDetalle';
 import Proveedores from './components/Proveedores';
 import TablasPagoIngenieria from './components/TablasPagoIngenieria';
 import OrdenesCompraIngenieria from './components/OrdenesCompraIngenieria';
-import VentasOperaciones from './components/VentasOperaciones';
+import ReservasOperaciones from './components/ReservasOperaciones';
 import {
   clearAuthSession,
   getAuthToken,
@@ -22,6 +30,10 @@ import {
   saveAuthSession
 } from './utils/auth';
 import './App.css';
+
+const SIDEBAR_COLLAPSED_KEY = 'novogar.sidebar.collapsed';
+const SIDEBAR_SECTIONS_KEY = 'novogar.sidebar.sections';
+const MOBILE_MEDIA_QUERY = '(max-width: 991.98px)';
 
 const setAxiosAuthHeader = (token) => {
   if (token) {
@@ -40,6 +52,195 @@ const initialsFromName = (name) => {
     .map((chunk) => chunk[0]?.toUpperCase() || '')
     .join('') || 'US';
 };
+
+const pathMatches = (pathname, target) => {
+  if (target === '/') {
+    return pathname === '/';
+  }
+
+  return pathname === target || pathname.startsWith(`${target}/`);
+};
+
+const parseJsonStorage = (key, fallback) => {
+  if (typeof window === 'undefined') {
+    return fallback;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const readCollapsedPreference = () => parseJsonStorage(SIDEBAR_COLLAPSED_KEY, false) === true;
+
+const buildExpandedSectionsState = (sections, storedValue = {}) => {
+  const defaults = Object.fromEntries(sections.map((section) => [section.id, true]));
+
+  if (!storedValue || typeof storedValue !== 'object') {
+    return defaults;
+  }
+
+  return Object.keys(defaults).reduce((result, sectionId) => {
+    result[sectionId] = storedValue[sectionId] !== undefined
+      ? Boolean(storedValue[sectionId])
+      : defaults[sectionId];
+    return result;
+  }, {});
+};
+
+const readExpandedSectionsPreference = (sections) =>
+  buildExpandedSectionsState(sections, parseJsonStorage(SIDEBAR_SECTIONS_KEY, {}));
+
+const ICONS = Object.freeze({
+  menu: (
+    <>
+      <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
+    </>
+  ),
+  collapse: (
+    <>
+      <path d="M9 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M21 5v14" strokeLinecap="round" />
+    </>
+  ),
+  expand: (
+    <>
+      <path d="M15 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3 5v14" strokeLinecap="round" />
+    </>
+  ),
+  close: (
+    <>
+      <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+    </>
+  ),
+  chevronDown: (
+    <>
+      <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
+  chevronRight: (
+    <>
+      <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
+  general: (
+    <>
+      <path d="M4 11l8-6 8 6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6 10v9h12v-9" strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
+  compras: (
+    <>
+      <path d="M3 6h2l2.4 9.5a1 1 0 0 0 1 .75h8.6a1 1 0 0 0 .96-.73L21 8H7" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="10" cy="19" r="1.5" />
+      <circle cx="17" cy="19" r="1.5" />
+    </>
+  ),
+  facturas: (
+    <>
+      <path d="M7 3h7l5 5v13H7z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M14 3v5h5M10 13h6M10 17h6" strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
+  retenciones: (
+    <>
+      <path d="M19 5L5 19" strokeLinecap="round" />
+      <circle cx="7.5" cy="7.5" r="2.5" />
+      <circle cx="16.5" cy="16.5" r="2.5" />
+    </>
+  ),
+  notas: (
+    <>
+      <path d="M7 4h10v16l-5-3-5 3z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 9h4M10 12h4" strokeLinecap="round" />
+    </>
+  ),
+  tiquetes: (
+    <>
+      <path d="M4 8a2 2 0 0 0 2-2h12a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H6a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 6v12" strokeLinecap="round" strokeDasharray="2.5 2.5" />
+    </>
+  ),
+  tesoreria: (
+    <>
+      <path d="M4 7h16v10H4z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 10h16M16 15h2" strokeLinecap="round" />
+    </>
+  ),
+  tramites: (
+    <>
+      <path d="M7 7h10M7 12h10M7 17h6" strokeLinecap="round" />
+      <path d="M5 7l-1 1 1 1M19 16l1 1-1 1" strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
+  ventas: (
+    <>
+      <path d="M5 19V9l7-4 7 4v10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 19v-4h6v4" strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
+  reservas: (
+    <>
+      <path d="M7 11a5 5 0 1 1 9.4 2.4L21 18l-3 3-4.6-4.6A5 5 0 0 1 7 11z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 9v3l2 1" strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
+  ingenieria: (
+    <>
+      <path d="M14 4l6 6-3 3-6-6z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M13 11l-8 8H2v-3l8-8" strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
+  tablasPago: (
+    <>
+      <rect x="4" y="5" width="16" height="14" rx="2" />
+      <path d="M4 10h16M9 5v14M15 5v14" strokeLinecap="round" />
+    </>
+  ),
+  ordenesCompra: (
+    <>
+      <path d="M8 4h8l3 3v13H5V7z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8 4v4h8V4M9 13h6M9 17h4" strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
+  administracion: (
+    <>
+      <path d="M12 3l7 4v5c0 4.5-2.7 7-7 9-4.3-2-7-4.5-7-9V7z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9.5 12l1.5 1.5 3.5-3.5" strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
+  usuarios: (
+    <>
+      <path d="M16 19a4 4 0 0 0-8 0" strokeLinecap="round" />
+      <circle cx="12" cy="9" r="3" />
+      <path d="M20 18a3 3 0 0 0-2.5-2.95M4 18a3 3 0 0 1 2.5-2.95" strokeLinecap="round" />
+    </>
+  ),
+  proveedores: (
+    <>
+      <path d="M3 8h11v8H3zM14 11h3l3 3v2h-6z" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="7.5" cy="18" r="1.5" />
+      <circle cx="17.5" cy="18" r="1.5" />
+    </>
+  ),
+});
+
+const AppIcon = ({ name, className = '' }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    className={['app-icon', className].filter(Boolean).join(' ')}
+    aria-hidden="true"
+  >
+    {ICONS[name] || ICONS.general}
+  </svg>
+);
 
 const initialAppState = {
   sociedades: [],
@@ -92,6 +293,436 @@ const appReducer = (state, action) => {
   }
 };
 
+function AuthenticatedAppShell({
+  sociedades,
+  sociedadId,
+  selectedSociedad,
+  dispatch,
+  handleLogout,
+  userInitials,
+  userName,
+  userRole,
+  canManageUsers,
+  canUseTablasPago,
+  canUseOrdenesCompra,
+  canTramitarPago,
+  canUseReservas,
+  canManageReservasDocumentos,
+  canEditContabilizacion,
+}) {
+  const location = useLocation();
+  const [isMobileView, setIsMobileView] = useState(() => {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    return window.matchMedia(MOBILE_MEDIA_QUERY).matches;
+  });
+
+  const navigationSections = useMemo(() => {
+    const sections = [
+      {
+        id: 'general',
+        label: 'General',
+        icon: 'general',
+        items: [
+          { id: 'dashboard', label: 'Dashboard', to: '/', icon: 'general', visible: true },
+        ],
+      },
+      {
+        id: 'compras',
+        label: 'Compras',
+        icon: 'compras',
+        items: [
+          { id: 'facturas', label: 'Facturas', to: '/facturas', icon: 'facturas', visible: true },
+          {
+            id: 'retenciones-pendientes',
+            label: 'Retenciones pendientes',
+            to: '/retenciones-pendientes',
+            icon: 'retenciones',
+            visible: true,
+          },
+          {
+            id: 'notas-credito',
+            label: 'Notas de credito',
+            to: '/notas-credito',
+            icon: 'notas',
+            visible: true,
+          },
+          {
+            id: 'tiquetes-electronicos',
+            label: 'Tiquetes electronicos',
+            to: '/tiquetes-electronicos',
+            icon: 'tiquetes',
+            visible: true,
+          },
+        ],
+      },
+      {
+        id: 'tesoreria',
+        label: 'Tesoreria',
+        icon: 'tesoreria',
+        items: [
+          {
+            id: 'tramites',
+            label: 'Tramites de pago',
+            to: '/tramites',
+            icon: 'tramites',
+            visible: canTramitarPago,
+          },
+        ],
+      },
+      {
+        id: 'ventas',
+        label: 'Ventas',
+        icon: 'ventas',
+        items: [
+          {
+            id: 'reservas',
+            label: 'Reservas',
+            to: '/reservas',
+            icon: 'reservas',
+            visible: canUseReservas,
+          },
+        ],
+      },
+      {
+        id: 'ingenieria',
+        label: 'Ingenieria',
+        icon: 'ingenieria',
+        items: [
+          {
+            id: 'tablas-pago',
+            label: 'Tablas de pago',
+            to: '/tablas-pago',
+            icon: 'tablasPago',
+            visible: canUseTablasPago,
+          },
+          {
+            id: 'ordenes-compra',
+            label: 'Ordenes de compra',
+            to: '/ordenes-compra',
+            icon: 'ordenesCompra',
+            visible: canUseOrdenesCompra,
+          },
+        ],
+      },
+      {
+        id: 'administracion',
+        label: 'Administracion',
+        icon: 'administracion',
+        items: [
+          { id: 'usuarios', label: 'Usuarios', to: '/usuarios', icon: 'usuarios', visible: canManageUsers },
+          {
+            id: 'proveedores',
+            label: 'Proveedores',
+            to: '/proveedores',
+            icon: 'proveedores',
+            visible: canManageUsers,
+          },
+        ],
+      },
+    ];
+
+    return sections
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) => item.visible),
+      }))
+      .filter((section) => section.items.length > 0);
+  }, [
+    canManageUsers,
+    canTramitarPago,
+    canUseOrdenesCompra,
+    canUseReservas,
+    canUseTablasPago,
+  ]);
+
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(readCollapsedPreference);
+  const [expandedSections, setExpandedSections] = useState(() => readExpandedSectionsPreference(navigationSections));
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const media = window.matchMedia(MOBILE_MEDIA_QUERY);
+    const handleMediaChange = (event) => {
+      setIsMobileView(event.matches);
+    };
+
+    setIsMobileView(media.matches);
+
+    if (typeof media.addEventListener === 'function') {
+      media.addEventListener('change', handleMediaChange);
+      return () => media.removeEventListener('change', handleMediaChange);
+    }
+
+    media.addListener(handleMediaChange);
+    return () => media.removeListener(handleMediaChange);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobileView) {
+      setMobileSidebarOpen(false);
+    }
+  }, [isMobileView]);
+
+  useEffect(() => {
+    setExpandedSections((previous) => buildExpandedSectionsState(navigationSections, previous));
+  }, [navigationSections]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, JSON.stringify(sidebarCollapsed));
+  }, [sidebarCollapsed]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.localStorage.setItem(SIDEBAR_SECTIONS_KEY, JSON.stringify(expandedSections));
+  }, [expandedSections]);
+
+  const activeSectionId = useMemo(() => {
+    const activeSection = navigationSections.find((section) =>
+      section.items.some((item) => pathMatches(location.pathname, item.to))
+    );
+
+    return activeSection?.id || null;
+  }, [location.pathname, navigationSections]);
+
+  useEffect(() => {
+    if (activeSectionId) {
+      setExpandedSections((previous) => {
+        if (previous[activeSectionId] === true) {
+          return previous;
+        }
+
+        return {
+          ...previous,
+          [activeSectionId]: true,
+        };
+      });
+    }
+
+    setMobileSidebarOpen(false);
+  }, [activeSectionId, location.pathname]);
+
+  const toggleSidebar = useCallback(() => {
+    if (isMobileView) {
+      setMobileSidebarOpen((previous) => !previous);
+      return;
+    }
+
+    setSidebarCollapsed((previous) => !previous);
+  }, [isMobileView]);
+
+  const toggleSection = useCallback((sectionId) => {
+    setExpandedSections((previous) => ({
+      ...previous,
+      [sectionId]: !(previous[sectionId] ?? true),
+    }));
+  }, []);
+
+  return (
+    <div className="app-shell">
+      {mobileSidebarOpen && (
+        <button
+          type="button"
+          className="sidebar-overlay"
+          aria-label="Cerrar menu lateral"
+          onClick={() => setMobileSidebarOpen(false)}
+        />
+      )}
+
+      <aside className={`sidebar${sidebarCollapsed ? ' collapsed' : ''}${mobileSidebarOpen ? ' mobile-open' : ''}`}>
+        <div className="sidebar-header">
+          <div className="brand">
+            <div className="brand-icon">N</div>
+            <div className="brand-copy">
+              <div className="brand-title">Proyecto Novogar</div>
+              <div className="brand-sub">Sistema de Gestion</div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="sidebar-toggle"
+            aria-label={isMobileView ? 'Cerrar menu lateral' : sidebarCollapsed ? 'Expandir menu lateral' : 'Contraer menu lateral'}
+            title={isMobileView ? 'Cerrar menu lateral' : sidebarCollapsed ? 'Expandir menu lateral' : 'Contraer menu lateral'}
+            onClick={toggleSidebar}
+          >
+            <AppIcon name={isMobileView ? 'close' : sidebarCollapsed ? 'expand' : 'collapse'} />
+          </button>
+        </div>
+
+        <div className="sidebar-scroll">
+          {navigationSections.map((section) => {
+            const isOpen = expandedSections[section.id] ?? true;
+            const isActiveSection = activeSectionId === section.id;
+
+            return (
+              <section
+                key={section.id}
+                className={`sidebar-section${isOpen ? ' is-open' : ''}${isActiveSection ? ' active-section' : ''}`}
+              >
+                <button
+                  type="button"
+                  className="section-toggle"
+                  aria-expanded={isOpen}
+                  title={sidebarCollapsed && !isMobileView ? section.label : undefined}
+                  onClick={() => toggleSection(section.id)}
+                >
+                  <span className="section-toggle-main">
+                    <span className="menu-link-icon" aria-hidden="true">
+                      <AppIcon name={section.icon} />
+                    </span>
+                    <span className="section-label">{section.label}</span>
+                  </span>
+                  <span className="section-chevron" aria-hidden="true">
+                    <AppIcon name={isOpen ? 'chevronDown' : 'chevronRight'} />
+                  </span>
+                </button>
+
+                {isOpen && (
+                  <nav className="section-items">
+                    {section.items.map((item) => (
+                      <NavLink
+                        key={item.id}
+                        to={item.to}
+                        end={item.to === '/'}
+                        title={sidebarCollapsed && !isMobileView ? item.label : undefined}
+                        className={({ isActive }) => ['menu-link', isActive ? 'active' : ''].filter(Boolean).join(' ')}
+                      >
+                        <span className="menu-link-icon" aria-hidden="true">
+                          <AppIcon name={item.icon} />
+                        </span>
+                        <span className="menu-link-label">{item.label}</span>
+                      </NavLink>
+                    ))}
+                  </nav>
+                )}
+              </section>
+            );
+          })}
+        </div>
+
+        <div
+          className="sidebar-footer"
+          title={sidebarCollapsed && !isMobileView ? `${userName} · ${userRole}` : undefined}
+        >
+          <div className="avatar">{userInitials}</div>
+          <div className="sidebar-footer-copy">
+            <div className="user-name">{userName}</div>
+            <div className="user-role">{userRole}</div>
+          </div>
+        </div>
+      </aside>
+
+      <div className="main-area">
+        <header className="topbar">
+          <div className="topbar-leading">
+            <button
+              className="mobile-menu-btn"
+              type="button"
+              aria-label="Abrir menu lateral"
+              onClick={() => setMobileSidebarOpen(true)}
+            >
+              <AppIcon name="menu" />
+            </button>
+            <div className="company">
+              {selectedSociedad ? selectedSociedad.cedula_juridica : 'Seleccione sociedad'}
+            </div>
+          </div>
+
+          <div className="topbar-actions">
+            <div className="sociedad-picker">
+              <label className="sociedad-label" htmlFor="sociedad-select">Sociedad</label>
+              <select
+                id="sociedad-select"
+                className="sociedad-select"
+                value={sociedadId}
+                onChange={(event) => dispatch({ type: 'setSociedadId', value: event.target.value })}
+              >
+                <option value="">Seleccionar</option>
+                {sociedades.map((sociedad) => (
+                  <option key={sociedad.id} value={sociedad.id}>
+                    {sociedad.nombre_proyecto || sociedad.razon_social}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button className="icon-btn" type="button" aria-label="Notificaciones">
+              <span className="badge">1</span>
+              N
+            </button>
+            <button className="btn btn-sm btn-outline-secondary" type="button" onClick={handleLogout}>
+              Cerrar sesion
+            </button>
+            <div className="user-chip">
+              <div className="avatar small">{userInitials}</div>
+              <div>
+                <div className="user-name">{userName}</div>
+                <div className="user-role">{userRole}</div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="content">
+          <Routes>
+            <Route path="/" element={<Dashboard sociedadId={sociedadId} />} />
+            <Route path="/usuarios" element={canManageUsers ? <Usuarios /> : <Navigate to="/" replace />} />
+            <Route
+              path="/facturas"
+              element={<Facturas sociedadId={sociedadId} canEditContabilizacion={canEditContabilizacion} />}
+            />
+            <Route path="/retenciones-pendientes" element={<RetencionesPendientes sociedadId={sociedadId} />} />
+            <Route path="/facturas/:id" element={<LegacyFacturaDetalleRedirect />} />
+            <Route
+              path="/facturas/:id/contabilizacion"
+              element={(
+                <FacturaDetalle
+                  sociedadId={sociedadId}
+                  selectedSociedadName={selectedSociedad?.nombre_proyecto || selectedSociedad?.razon_social || ''}
+                  canEditContabilizacion={canEditContabilizacion}
+                />
+              )}
+            />
+            <Route path="/notas-credito" element={<NotasCredito sociedadId={sociedadId} />} />
+            <Route path="/tiquetes-electronicos" element={<TiquetesElectronicos sociedadId={sociedadId} />} />
+            <Route path="/tramites" element={<Tramites sociedadId={sociedadId} canCreateTramite={canTramitarPago} />} />
+            <Route path="/tramites/:id" element={<TramiteDetalle sociedadId={sociedadId} />} />
+            <Route path="/ventas" element={<Navigate to="/reservas" replace />} />
+            <Route
+              path="/reservas"
+              element={canUseReservas
+                ? <ReservasOperaciones sociedadId={sociedadId} canManageDocuments={canManageReservasDocumentos} />
+                : <Navigate to="/" replace />}
+            />
+            <Route path="/proveedores" element={canManageUsers ? <Proveedores sociedadId={sociedadId} /> : <Navigate to="/" replace />} />
+            <Route path="/tablas-pago" element={canUseTablasPago ? <TablasPagoIngenieria sociedadId={sociedadId} /> : <Navigate to="/" replace />} />
+            <Route path="/ordenes-compra" element={canUseOrdenesCompra ? <OrdenesCompraIngenieria sociedadId={sociedadId} /> : <Navigate to="/" replace />} />
+            <Route path="/login" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function LegacyFacturaDetalleRedirect() {
+  const { id } = useParams();
+  return <Navigate to={`/facturas/${id}/contabilizacion`} replace />;
+}
+
 function App() {
   const [{
     sociedades,
@@ -101,7 +732,7 @@ function App() {
     authLoading
   }, dispatch] = useReducer(appReducer, initialAppState);
 
-  const selectedSociedad = sociedades.find((s) => String(s.id) === String(sociedadId));
+  const selectedSociedad = sociedades.find((sociedad) => String(sociedad.id) === String(sociedadId));
   const isAuthenticated = Boolean(authToken);
   const userPermissions = useMemo(
     () => (Array.isArray(authUser?.permissions) ? authUser.permissions : []),
@@ -116,12 +747,14 @@ function App() {
   const canUseOrdenesCompra = canUseTablasPago;
   const canTramitarPago = userPermissions.includes('acceso_total')
     || userPermissions.includes('documentos_tramitar_pago');
-  const canUseVentas = userPermissions.includes('acceso_total')
-    || userPermissions.includes('ventas_ver')
-    || userPermissions.includes('ventas_crear')
-    || userPermissions.includes('ventas_gestionar');
-  const canManageVentasDocumentos = userPermissions.includes('acceso_total')
-    || userPermissions.includes('ventas_gestionar');
+  const canEditContabilizacion = userPermissions.includes('acceso_total')
+    || userPermissions.includes('documentos_contabilizar');
+  const canUseReservas = userPermissions.includes('acceso_total')
+    || userPermissions.includes('reservas_ver')
+    || userPermissions.includes('reservas_crear')
+    || userPermissions.includes('reservas_gestionar');
+  const canManageReservasDocumentos = userPermissions.includes('acceso_total')
+    || userPermissions.includes('reservas_gestionar');
 
   const userName = authUser?.nombre || 'Usuario';
   const userRole = authUser?.rol != null ? `Rol ${authUser.rol}` : 'Usuario';
@@ -215,123 +848,23 @@ function App() {
 
   return (
     <Router>
-      <div className="app-shell">
-        <aside className="sidebar">
-          <div className="brand">
-            <div className="brand-icon">N</div>
-            <div>
-              <div className="brand-title">Proyecto Novogar</div>
-              <div className="brand-sub">Sistema de Gestion</div>
-            </div>
-          </div>
-
-          <div className="menu-group">
-            <div className="menu-title">Menu Principal</div>
-            <nav className="menu">
-              <NavLink to="/" className="menu-link">Dashboard</NavLink>
-              <NavLink to="/facturas" className="menu-link">Facturas</NavLink>
-              <NavLink to="/retenciones-pendientes" className="menu-link">Retenciones pendientes</NavLink>
-              <NavLink to="/notas-credito" className="menu-link">Notas de credito</NavLink>
-              <NavLink to="/tiquetes-electronicos" className="menu-link">Tiquetes electronicos</NavLink>
-              <NavLink to="/tramites" className="menu-link">Tramites de pago</NavLink>
-              {canUseVentas && <NavLink to="/ventas" className="menu-link">Ventas</NavLink>}
-            </nav>
-          </div>
-
-          <div className="menu-group">
-            <div className="menu-title">Ingenieria</div>
-            <nav className="menu">
-              {canUseTablasPago && <NavLink to="/tablas-pago" className="menu-link">Tablas de pago</NavLink>}
-              {canUseOrdenesCompra && <NavLink to="/ordenes-compra" className="menu-link">Ordenes de compra</NavLink>}
-            </nav>
-          </div>
-
-          <div className="menu-group">
-            <div className="menu-title">Administracion</div>
-            <nav className="menu">
-              {canManageUsers && <NavLink to="/usuarios" className="menu-link">Usuarios</NavLink>}
-              {canManageUsers && <NavLink to="/proveedores" className="menu-link">Proveedores</NavLink>}
-              <span className="menu-link muted">Empresas</span>
-              <span className="menu-link muted">Roles &amp; Permisos</span>
-              <span className="menu-link muted">Auditoria</span>
-              <span className="menu-link muted">Analiticas</span>
-            </nav>
-          </div>
-
-          <div className="sidebar-footer">
-            <div className="avatar">{userInitials}</div>
-            <div>
-              <div className="user-name">{userName}</div>
-              <div className="user-role">{userRole}</div>
-            </div>
-          </div>
-        </aside>
-
-        <div className="main-area">
-          <header className="topbar">
-            <div className="company">
-              {selectedSociedad ? selectedSociedad.cedula_juridica : 'Seleccione sociedad'}
-            </div>
-            <div className="topbar-actions">
-              <div className="sociedad-picker">
-                <label className="sociedad-label" htmlFor="sociedad-select">Sociedad</label>
-                <select
-                  id="sociedad-select"
-                  className="sociedad-select"
-                  value={sociedadId}
-                  onChange={(e) => dispatch({ type: 'setSociedadId', value: e.target.value })}
-                >
-                  <option value="">Seleccionar</option>
-                  {sociedades.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.nombre_proyecto || s.razon_social}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <button className="icon-btn" type="button" aria-label="Notificaciones">
-                <span className="badge">1</span>
-                N
-              </button>
-              <button className="btn btn-sm btn-outline-secondary" type="button" onClick={handleLogout}>
-                Cerrar sesion
-              </button>
-              <div className="user-chip">
-                <div className="avatar small">{userInitials}</div>
-                <div>
-                  <div className="user-name">{userName}</div>
-                  <div className="user-role">{userRole}</div>
-                </div>
-              </div>
-            </div>
-          </header>
-
-          <main className="content">
-            <Routes>
-              <Route path="/" element={<Dashboard sociedadId={sociedadId} />} />
-              <Route path="/usuarios" element={canManageUsers ? <Usuarios /> : <Navigate to="/" replace />} />
-              <Route path="/facturas" element={<Facturas sociedadId={sociedadId} />} />
-              <Route path="/retenciones-pendientes" element={<RetencionesPendientes sociedadId={sociedadId} />} />
-              <Route path="/facturas/:id" element={<FacturaDetalle sociedadId={sociedadId} />} />
-              <Route path="/notas-credito" element={<NotasCredito sociedadId={sociedadId} />} />
-              <Route path="/tiquetes-electronicos" element={<TiquetesElectronicos sociedadId={sociedadId} />} />
-              <Route path="/tramites" element={<Tramites sociedadId={sociedadId} canCreateTramite={canTramitarPago} />} />
-              <Route path="/tramites/:id" element={<TramiteDetalle sociedadId={sociedadId} />} />
-              <Route
-                path="/ventas"
-                element={canUseVentas
-                  ? <VentasOperaciones sociedadId={sociedadId} canManageDocuments={canManageVentasDocumentos} />
-                  : <Navigate to="/" replace />}
-              />
-              <Route path="/proveedores" element={canManageUsers ? <Proveedores sociedadId={sociedadId} /> : <Navigate to="/" replace />} />
-              <Route path="/tablas-pago" element={canUseTablasPago ? <TablasPagoIngenieria sociedadId={sociedadId} /> : <Navigate to="/" replace />} />
-              <Route path="/ordenes-compra" element={canUseOrdenesCompra ? <OrdenesCompraIngenieria sociedadId={sociedadId} /> : <Navigate to="/" replace />} />
-              <Route path="/login" element={<Navigate to="/" replace />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </main>
-        </div>
-      </div>
+      <AuthenticatedAppShell
+        sociedades={sociedades}
+        sociedadId={sociedadId}
+        selectedSociedad={selectedSociedad}
+        dispatch={dispatch}
+        handleLogout={handleLogout}
+        userInitials={userInitials}
+        userName={userName}
+        userRole={userRole}
+        canManageUsers={canManageUsers}
+        canUseTablasPago={canUseTablasPago}
+        canUseOrdenesCompra={canUseOrdenesCompra}
+        canTramitarPago={canTramitarPago}
+        canUseReservas={canUseReservas}
+        canManageReservasDocumentos={canManageReservasDocumentos}
+        canEditContabilizacion={canEditContabilizacion}
+      />
     </Router>
   );
 }

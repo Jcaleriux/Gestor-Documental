@@ -36,6 +36,7 @@ const createBaseModuleInputs = () => {
       proveedoresSociedad: [{ id: 5, identificacion_numero: '3101122334' }],
       setConta: createNoop,
       setContaSaving: createNoop,
+      setContaSavingAction: createNoop,
       setContaMessage: createNoop,
       setContaError: createNoop,
       setTablasPagoProveedor: createNoop,
@@ -112,6 +113,7 @@ test('useFacturaDetalleActions usa dependencias inyectadas para guardar contabil
   assert.equal(fetchAll.calls.length, 1);
   assert.equal(saveContabilizacion.calls[0][0], 42);
   assert.equal(saveContabilizacion.calls[0][1].proveedor_id, 5);
+  assert.equal(saveContabilizacion.calls[0][1].workflow_action, 'finalize');
 });
 
 test('useFacturaDetalleActions usa buildAuthUrl/openWindow inyectados para ver manifiesto', () => {

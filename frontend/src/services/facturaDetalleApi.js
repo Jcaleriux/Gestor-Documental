@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { facturasApi } from './facturasApi.js';
 
 const getFactura = (id) => axios.get(`/api/facturas/${id}`);
 const getComentarios = (id) => axios.get(`/api/documentos/${id}/comentarios`);
@@ -23,9 +24,20 @@ const getOrdenesCompra = ({ sociedadId, proveedorId, estado }) => axios.get('/ap
     estado: estado || undefined
   }
 });
-const getNotasCredito = ({ sociedadId, proveedorId }) => axios.get('/api/notas-credito', {
-  params: { sociedadId, proveedorId }
-});
+const getNotasCredito = async ({ sociedadId, proveedorId }) => {
+  const items = await facturasApi.listAllNotasCredito({
+    sociedadId,
+    proveedorId,
+    estado: 'disponible',
+  });
+
+  return {
+    data: {
+      success: true,
+      data: items,
+    },
+  };
+};
 
 export const facturaDetalleApi = {
   getFactura,

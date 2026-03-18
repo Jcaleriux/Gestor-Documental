@@ -12,12 +12,17 @@ import {
 } from '../../src/components/facturaDetalle/viewModels/buildContaSubViewModels.js';
 
 const createDetalleFixture = () => ({
+  canEditContabilizacion: true,
+  factura: { estado: 'no_contabilizado' },
   conta: { proveedor_id: '5', notas: 'ok' },
   proveedoresSociedad: [{ id: 5, nombre: 'Proveedor X' }],
   contaSaving: false,
+  contaSavingAction: '',
   contaMessage: 'guardado',
   contaError: '',
   handleContaChange: createMockFn(),
+  guardarBorrador: createMockFn(),
+  marcarEnRevision: createMockFn(),
   guardarContabilizacion: createMockFn(),
   tablasLoading: false,
   ordenesLoading: true,
@@ -64,7 +69,7 @@ test('buildContaFormViewModel conserva estado y handlers del formulario', () => 
   const form = buildContaFormViewModel({ detalle });
 
   assert.equal(form.conta, detalle.conta);
-  assert.equal(form.proveedoresSociedad, detalle.proveedoresSociedad);
+  assert.equal(form.canEditContabilizacion, true);
   assert.equal(form.guardarContabilizacion, detalle.guardarContabilizacion);
 });
 
@@ -72,6 +77,7 @@ test('buildContaAssociationsViewModel conserva asociaciones y acciones', () => {
   const detalle = createDetalleFixture();
   const associations = buildContaAssociationsViewModel({ detalle });
 
+  assert.equal(associations.canEditContabilizacion, true);
   assert.equal(associations.tablaPagoActual.id, 11);
   assert.equal(associations.ordenCompraActual.id, 21);
   assert.equal(associations.abrirAsociarNotaCredito, detalle.abrirAsociarNotaCredito);
@@ -100,6 +106,7 @@ test('buildContaRetencionViewModel combina totales con estado de retencion', () 
   const totals = { retencionTotal: 100, retencionPendiente: 40 };
   const retencion = buildContaRetencionViewModel({ detalle, totals });
 
+  assert.equal(retencion.canEditContabilizacion, true);
   assert.equal(retencion.retencionTotal, 100);
   assert.equal(retencion.retencionPendiente, 40);
   assert.equal(retencion.registrarPagoRetencion, detalle.registrarPagoRetencion);

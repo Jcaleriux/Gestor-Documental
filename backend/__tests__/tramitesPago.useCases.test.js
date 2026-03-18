@@ -148,8 +148,8 @@ describe('tramitesPagoUseCases', () => {
   test('crearTramite integra facturas y retenciones con politicas de creacion', async () => {
     const { repo, client } = createRepoMock({
       getFacturasByIds: jest.fn().mockResolvedValue([
-        { id: 11, sociedad_id: 10 },
-        { id: 12, sociedad_id: 10 }
+        { id: 11, sociedad_id: 10, estado: FACTURA_ESTADOS.CONTABILIZADO },
+        { id: 12, sociedad_id: 10, estado: FACTURA_ESTADOS.PAGADO_PARCIALMENTE }
       ]),
       getRetencionesPendientesByFacturaIds: jest.fn().mockResolvedValue([
         { id: 21, sociedad_id: 10, proveedor_id: 30, monto_retencion_pendiente: 55.5 }
@@ -191,5 +191,19 @@ describe('tramitesPagoUseCases', () => {
         }
       ]
     }, client);
+  });
+
+  test('crearTramite rechaza facturas en revision contable', async () => {
+    const { repo } = createRepoMock({
+      getFacturasByIds: jest.fn().mockResolvedValue([
+        { id: 11, sociedad_id: 10, estado: FACTURA_ESTADOS.EN_REVISION }
+      ])
+    });
+    const useCases = createTramitesPagoUseCases({ tramitesPagoRepo: repo });
+
+    await expect(useCases.crearTramite({
+      factura_ids: [11],
+      usuario: 'qa'
+    })).rejects.toThrow('Solo se pueden tramitar facturas contabilizadas o con pago parcial');
   });
 });

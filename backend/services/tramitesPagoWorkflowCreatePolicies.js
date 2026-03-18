@@ -6,6 +6,11 @@ const {
   resolveSociedadFinal
 } = require('./tramitesPagoRules');
 
+const FACTURA_ESTADOS_DISPONIBLES_PARA_TRAMITE = new Set([
+  FACTURA_ESTADOS.CONTABILIZADO,
+  FACTURA_ESTADOS.PAGADO_PARCIALMENTE
+]);
+
 const CREATE_TRAMITE_ITEM_POLICIES = Object.freeze({
   facturas: Object.freeze({
     fetchRows: async ({ tramitesPagoRepo, ids, client }) => (
@@ -23,6 +28,17 @@ const CREATE_TRAMITE_ITEM_POLICIES = Object.freeze({
           facturasExistError.status,
           facturasExistError.error,
           facturasExistError.data
+        );
+      }
+
+      const invalidRows = rows.filter(
+        (row) => !FACTURA_ESTADOS_DISPONIBLES_PARA_TRAMITE.has(row.estado)
+      );
+      if (invalidRows.length > 0) {
+        throw createError(
+          400,
+          'Solo se pueden tramitar facturas contabilizadas o con pago parcial',
+          invalidRows.map((row) => Number(row.id))
         );
       }
     },

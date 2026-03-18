@@ -45,9 +45,9 @@ VALUES
   ('documentos_firmar_autorizar', 'Puede firmar y autorizar documentos.'),
   ('documentos_marcar_pagado', 'Puede marcar documentos como pagados.'),
   ('auditoria_ver', 'Puede consultar el log de auditoria.'),
-  ('ventas_ver', 'Puede consultar operaciones de ventas por sociedad.'),
-  ('ventas_crear', 'Puede crear nuevas operaciones de venta.'),
-  ('ventas_gestionar', 'Puede cancelar, cerrar y trasladar operaciones de venta.')
+  ('reservas_ver', 'Puede consultar reservas por sociedad.'),
+  ('reservas_crear', 'Puede crear nuevas reservas.'),
+  ('reservas_gestionar', 'Puede cancelar, cerrar y trasladar reservas.')
 ON CONFLICT (nombre) DO UPDATE
 SET descripcion = EXCLUDED.descripcion;
 
@@ -232,11 +232,11 @@ JOIN permisos p ON p.nombre = 'acceso_total'
 WHERE r.codigo = 'admin'
 ON CONFLICT (rol_id, permiso_id) DO NOTHING;
 
--- Ventas
+-- Reservas
 INSERT INTO roles_permisos (rol_id, permiso_id)
 SELECT r.id, p.id
 FROM roles r
-JOIN permisos p ON p.nombre = 'ventas_ver'
+JOIN permisos p ON p.nombre = 'reservas_ver'
 WHERE r.codigo IN (
   'admin', 'gerencia_financiera', 'gerencia_contable', 'gerencia_construccion',
   'gerencia_presupuesto', 'gerencia_mercadeo', 'gerencia_ventas',
@@ -249,7 +249,7 @@ ON CONFLICT (rol_id, permiso_id) DO NOTHING;
 INSERT INTO roles_permisos (rol_id, permiso_id)
 SELECT r.id, p.id
 FROM roles r
-JOIN permisos p ON p.nombre = 'ventas_crear'
+JOIN permisos p ON p.nombre = 'reservas_crear'
 WHERE r.codigo IN (
   'admin', 'gerencia_financiera', 'gerencia_contable', 'gerencia_ventas',
   'gerencia_proyectos', 'contabilidad_jefe', 'contabilidad_asistente',
@@ -260,7 +260,7 @@ ON CONFLICT (rol_id, permiso_id) DO NOTHING;
 INSERT INTO roles_permisos (rol_id, permiso_id)
 SELECT r.id, p.id
 FROM roles r
-JOIN permisos p ON p.nombre = 'ventas_gestionar'
+JOIN permisos p ON p.nombre = 'reservas_gestionar'
 WHERE r.codigo IN (
   'admin', 'gerencia_financiera', 'gerencia_contable', 'gerencia_ventas', 'gerencia_proyectos'
 )
@@ -321,3 +321,10 @@ SELECT uo.usuario_id, sb.id
 FROM usuarios_objetivo uo
 CROSS JOIN sociedades_base sb
 ON CONFLICT (usuario_id, sociedad_id) DO NOTHING;
+
+
+
+
+
+
+

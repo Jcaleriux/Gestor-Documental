@@ -15,9 +15,9 @@ const PERMISSIONS = Object.freeze({
   DOCUMENTOS_FIRMAR_AUTORIZAR: 'documentos_firmar_autorizar',
   DOCUMENTOS_MARCAR_PAGADO: 'documentos_marcar_pagado',
   AUDITORIA_VER: 'auditoria_ver',
-  VENTAS_VER: 'ventas_ver',
-  VENTAS_CREAR: 'ventas_crear',
-  VENTAS_GESTIONAR: 'ventas_gestionar'
+  RESERVAS_VER: 'reservas_ver',
+  RESERVAS_CREAR: 'reservas_crear',
+  RESERVAS_GESTIONAR: 'reservas_gestionar'
 });
 
 const WORKFLOW_PERMISSIONS = Object.freeze([
@@ -39,3 +39,6 @@ module.exports = {
   WORKFLOW_PERMISSIONS,
   SOCIEDADES_ACCESS_PERMISSIONS
 };
+
+
+

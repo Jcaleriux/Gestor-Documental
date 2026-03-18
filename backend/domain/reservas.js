@@ -1,11 +1,11 @@
-const VENTA_OPERACION_ESTADOS = Object.freeze({
+const RESERVA_OPERACION_ESTADOS = Object.freeze({
   ACTIVA: 'activa',
   CANCELADA: 'cancelada',
   TRASLADADA: 'trasladada',
   CERRADA: 'cerrada'
 });
 
-const VENTA_HISTORIAL_ACCIONES = Object.freeze({
+const RESERVA_HISTORIAL_ACCIONES = Object.freeze({
   CREADA: 'creada',
   CANCELADA: 'cancelada',
   CERRADA: 'cerrada',
@@ -16,6 +16,8 @@ const VENTA_HISTORIAL_ACCIONES = Object.freeze({
 });
 
 module.exports = {
-  VENTA_OPERACION_ESTADOS,
-  VENTA_HISTORIAL_ACCIONES
+  RESERVA_OPERACION_ESTADOS,
+  RESERVA_HISTORIAL_ACCIONES
 };
+
+

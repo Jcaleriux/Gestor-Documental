@@ -4,15 +4,21 @@ const formatOrdenLabel = (orden) => (
 
 export const buildContaFormViewModel = ({ detalle }) => ({
   conta: detalle.conta,
-  proveedoresSociedad: detalle.proveedoresSociedad,
+  canEditContabilizacion: Boolean(detalle.canEditContabilizacion),
+  isReadOnly: !detalle.canEditContabilizacion,
+  facturaEstado: detalle.factura?.estado || '',
   contaSaving: detalle.contaSaving,
+  contaSavingAction: detalle.contaSavingAction,
   contaMessage: detalle.contaMessage,
   contaError: detalle.contaError,
   handleContaChange: detalle.handleContaChange,
+  guardarBorrador: detalle.guardarBorrador,
+  marcarEnRevision: detalle.marcarEnRevision,
   guardarContabilizacion: detalle.guardarContabilizacion
 });
 
 export const buildContaAssociationsViewModel = ({ detalle }) => ({
+  canEditContabilizacion: Boolean(detalle.canEditContabilizacion),
   tablasLoading: detalle.tablasLoading,
   ordenesLoading: detalle.ordenesLoading,
   notasLoading: detalle.notasLoading,
@@ -61,6 +67,7 @@ export const buildContaModalsViewModel = ({ detalle }) => ({
 });
 
 export const buildContaRetencionViewModel = ({ detalle, totals }) => ({
+  canEditContabilizacion: Boolean(detalle.canEditContabilizacion),
   retencionTotal: totals.retencionTotal,
   retencionPendiente: totals.retencionPendiente,
   retencionPagoMonto: detalle.retencionPagoMonto,

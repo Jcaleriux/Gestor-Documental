@@ -5,6 +5,37 @@ const {
 } = require('./contabilizacionUseCases.helpers');
 const { resolveAssociationContext } = require('./contabilizacionUseCases.associations');
 
+const CONTABILIZACION_WORKFLOW_ACTIONS = Object.freeze({
+  SAVE_DRAFT: 'save_draft',
+  MARK_IN_REVIEW: 'mark_in_review',
+  FINALIZE: 'finalize'
+});
+
+const normalizeWorkflowAction = (workflowAction) => (
+  workflowAction === CONTABILIZACION_WORKFLOW_ACTIONS.SAVE_DRAFT
+  || workflowAction === CONTABILIZACION_WORKFLOW_ACTIONS.MARK_IN_REVIEW
+    ? workflowAction
+    : CONTABILIZACION_WORKFLOW_ACTIONS.FINALIZE
+);
+
+const resolveWorkflowState = (workflowAction) => (
+  workflowAction === CONTABILIZACION_WORKFLOW_ACTIONS.FINALIZE
+    ? FACTURA_ESTADOS.CONTABILIZADO
+    : FACTURA_ESTADOS.EN_REVISION
+);
+
+const resolveWorkflowMotivo = (workflowAction) => {
+  switch (workflowAction) {
+    case CONTABILIZACION_WORKFLOW_ACTIONS.SAVE_DRAFT:
+      return 'Borrador de contabilizacion';
+    case CONTABILIZACION_WORKFLOW_ACTIONS.MARK_IN_REVIEW:
+      return 'Contabilizacion en revision';
+    case CONTABILIZACION_WORKFLOW_ACTIONS.FINALIZE:
+    default:
+      return 'Contabilizacion finalizada';
+  }
+};
+
 const createContabilizacionCrudUseCases = ({ contabilizacionRepo, runInTransaction }) => {
   const getContabilizacion = async ({ facturaId }) => mapContabilizacionWithPayments({
     contabilizacionRepo,
@@ -32,11 +63,15 @@ const createContabilizacionCrudUseCases = ({ contabilizacionRepo, runInTransacti
     tabla_pago_id,
     nota_credito_id,
     notas,
+    workflow_action,
     metadata,
     usuario
   }) => runInTransaction(async (client) => {
     const factura = await ensureFacturaById({ contabilizacionRepo, facturaId, client });
     const estadoAnterior = factura.estado || null;
+    const workflowAction = normalizeWorkflowAction(workflow_action);
+    const estadoDestino = resolveWorkflowState(workflowAction);
+    const motivoTransicion = resolveWorkflowMotivo(workflowAction);
     const existingContabilizacion = await contabilizacionRepo.getContabilizacionByFacturaId(facturaId, client);
 
     const associationContext = await resolveAssociationContext({
@@ -97,16 +132,16 @@ const createContabilizacionCrudUseCases = ({ contabilizacionRepo, runInTransacti
 
     await contabilizacionRepo.updateFacturaEstado({
       facturaId,
-      estado: FACTURA_ESTADOS.CONTABILIZADO
+      estado: estadoDestino
     }, client);
 
-    if (estadoAnterior !== FACTURA_ESTADOS.CONTABILIZADO) {
+    if (estadoAnterior !== estadoDestino) {
       await contabilizacionRepo.insertEstadoDocumento({
         facturaId,
         estadoAnterior,
-        estadoNuevo: FACTURA_ESTADOS.CONTABILIZADO,
+        estadoNuevo: estadoDestino,
         usuario,
-        motivo: 'Contabilizacion'
+        motivo: motivoTransicion
       }, client);
     }
 
@@ -123,4 +158,7 @@ const createContabilizacionCrudUseCases = ({ contabilizacionRepo, runInTransacti
   };
 };
 
-module.exports = { createContabilizacionCrudUseCases };
+module.exports = {
+  createContabilizacionCrudUseCases,
+  CONTABILIZACION_WORKFLOW_ACTIONS
+};

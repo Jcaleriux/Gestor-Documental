@@ -9,10 +9,10 @@ import {
 
 const createInput = () => ({
   headerViewModel: {
-    title: 'Documento #101',
-    subtitle: 'Detalle del documento',
+    title: 'Contabilizacion de factura',
+    subtitle: 'Factura #00100001010000001606',
     backTo: '/facturas',
-    backLabel: 'Volver a documentos'
+    backLabel: 'Volver a facturas'
   },
   viewModels: {
     summary: { factura: { id: 101 } },
@@ -28,11 +28,10 @@ test('buildFacturaDetalleLayoutProps compone header y columnas', () => {
   const input = createInput();
   const layoutProps = buildFacturaDetalleLayoutProps(input);
 
-  assert.equal(layoutProps.header.title, 'Documento #101');
-  assert.equal(layoutProps.leftColumn.summary.factura.id, 101);
-  assert.equal(layoutProps.leftColumn.pdf.id, 101);
-  assert.equal(layoutProps.rightColumn.contabilizacion.totals.totalFactura, 1000);
-  assert.equal(layoutProps.rightColumn.estado.estadoUser, 'admin');
+  assert.equal(layoutProps.header.title, 'Contabilizacion de factura');
+  assert.equal(layoutProps.summary.factura.id, 101);
+  assert.equal(layoutProps.leftColumn.contabilizacion.totals.totalFactura, 1000);
+  assert.equal(layoutProps.rightColumn.pdf.id, 101);
   assert.equal(layoutProps.rightColumn.historial.estados.length, 1);
   assert.equal(layoutProps.rightColumn.comentarios.comentarios.length, 1);
 });
@@ -44,8 +43,7 @@ test('sub-builders de FacturaDetalleLayoutProps conservan contratos por seccion'
   const rightColumn = buildFacturaDetalleRightColumnLayoutProps(input);
 
   assert.equal(header.backTo, '/facturas');
-  assert.equal(leftColumn.summary.factura.id, 101);
-  assert.equal(leftColumn.pdf.id, 101);
-  assert.equal(rightColumn.contabilizacion.totals.totalFactura, 1000);
+  assert.equal(leftColumn.contabilizacion.totals.totalFactura, 1000);
+  assert.equal(rightColumn.pdf.id, 101);
   assert.equal(rightColumn.comentarios.comentarios.length, 1);
 });

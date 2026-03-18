@@ -6,7 +6,7 @@ import {
 } from './buildFacturaDetalleViewModelSections.js';
 
 export const buildFacturaDetalleViewModels = ({ id, factura, detalle }) => ({
-  summary: buildSummarySectionViewModel({ factura }),
+  summary: buildSummarySectionViewModel({ factura, detalle }),
   pdf: buildPdfSectionViewModel({ id, factura, detalle }),
   contabilizacion: buildContabilizacionSectionViewModel({ factura, detalle }),
   ...buildEstadoComentariosSectionViewModels({ detalle })

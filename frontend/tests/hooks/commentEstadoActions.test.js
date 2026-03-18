@@ -40,7 +40,6 @@ test('createCommentEstadoActions.addComment guarda comentario y refresca lista',
   assert.equal(facturaApi.addComentario.calls.length, 1);
   assert.equal(facturaApi.addComentario.calls[0][0], 42);
   assert.deepEqual(facturaApi.addComentario.calls[0][1], {
-    usuario: 'admin',
     texto: 'nuevo comentario'
   });
   assert.equal(facturaApi.getComentarios.calls.length, 1);

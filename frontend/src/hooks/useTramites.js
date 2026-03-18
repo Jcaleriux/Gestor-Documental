@@ -44,14 +44,13 @@ export const useTramites = ({ sociedadId }) => {
     setActionError('');
 
     const [facturasResult, retencionesResult] = await Promise.allSettled([
-      facturasApi.listFacturas({ sociedadId }),
+      facturasApi.listAllFacturas({ sociedadId }),
       tramitesApi.getRetencionesDisponibles({ sociedadId })
     ]);
 
-    if (facturasResult.status === 'fulfilled' && facturasResult.value?.data?.success) {
-      const disponibles = (facturasResult.value.data.data || []).filter(
+    if (facturasResult.status === 'fulfilled') {
+      const disponibles = (facturasResult.value || []).filter(
         (f) => f.estado === 'contabilizado'
-          || f.estado === 'en_revision'
           || f.estado === 'pagado_parcialmente'
       );
       setFacturasDisponibles(disponibles);

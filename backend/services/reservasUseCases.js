@@ -5,9 +5,9 @@ const { withTransaction } = require('../db/withTransaction');
 const { createError } = require('../utils/errors');
 const { ensureSociedadAccess, toPositiveInt } = require('./sociedadAccessService');
 const {
-  VENTA_OPERACION_ESTADOS,
-  VENTA_HISTORIAL_ACCIONES,
-} = require('../domain/ventas');
+  RESERVA_OPERACION_ESTADOS,
+  RESERVA_HISTORIAL_ACCIONES,
+} = require('../domain/reservas');
 
 const ALLOWED_UPLOAD_MIME_TYPES = Object.freeze({
   'application/pdf': 'pdf',
@@ -18,13 +18,17 @@ const ALLOWED_UPLOAD_MIME_TYPES = Object.freeze({
 
 const ALLOWED_UPLOAD_EXTENSIONS = new Set(Object.values(ALLOWED_UPLOAD_MIME_TYPES));
 
-const parseMaxVentasDocMb = () => {
-  const raw = Number(process.env.VENTAS_DOC_MAX_FILE_MB);
+const parseMaxReservasDocMb = () => {
+  const raw = Number(process.env.RESERVAS_DOC_MAX_FILE_MB);
   return Number.isFinite(raw) && raw > 0 ? raw : 15;
 };
 
-const MAX_VENTAS_DOC_MB = parseMaxVentasDocMb();
-const MAX_VENTAS_DOC_BYTES = MAX_VENTAS_DOC_MB * 1024 * 1024;
+const MAX_RESERVAS_DOC_MB = parseMaxReservasDocMb();
+const MAX_RESERVAS_DOC_BYTES = MAX_RESERVAS_DOC_MB * 1024 * 1024;
+const DOCUMENT_DIRECTORY_ALIASES = Object.freeze([
+  ['reservas_operaciones', 'ventas_operaciones'],
+  ['ventas_operaciones', 'reservas_operaciones'],
+]);
 
 const normalizeCode = (value, fieldName) => {
   const normalized = String(value || '').trim().toUpperCase();
@@ -116,8 +120,8 @@ const decodeUploadFile = ({ fileBase64, fileName, mimeType }) => {
     throw createError(400, 'Archivo vacio');
   }
 
-  if (buffer.length > MAX_VENTAS_DOC_BYTES) {
-    throw createError(400, `El archivo excede el tamano maximo permitido (${MAX_VENTAS_DOC_MB} MB).`);
+  if (buffer.length > MAX_RESERVAS_DOC_BYTES) {
+    throw createError(400, `El archivo excede el tamano maximo permitido (${MAX_RESERVAS_DOC_MB} MB).`);
   }
 
   const extension = ALLOWED_UPLOAD_MIME_TYPES[finalMime];
@@ -137,14 +141,14 @@ const withSchemaGuard = async (handler) => {
     return await handler();
   } catch (error) {
     if (error?.code === '42P01' || error?.code === '42703') {
-      throw createError(500, 'Falta la migracion de ventas. Ejecute: npm run db:migrate:ventas');
+      throw createError(500, 'Falta la migracion de reservas. Ejecute: npm run db:migrate:reservas');
     }
 
     throw error;
   }
 };
 
-const assertRepoContract = (ventasRepo) => {
+const assertRepoContract = (reservasRepo) => {
   const requiredMethods = [
     'getClient',
     'getSociedadByCodigo',
@@ -161,28 +165,28 @@ const assertRepoContract = (ventasRepo) => {
     'upsertOperacionDocumento',
   ];
 
-  const missing = requiredMethods.filter((method) => typeof ventasRepo[method] !== 'function');
+  const missing = requiredMethods.filter((method) => typeof reservasRepo[method] !== 'function');
   if (missing.length > 0) {
-    throw new Error(`ventasRepo incompleto: faltan ${missing.join(', ')}`);
+    throw new Error(`reservasRepo incompleto: faltan ${missing.join(', ')}`);
   }
 };
 
-const createVentasUseCases = ({ ventasRepo, baseDir }) => {
-  if (!ventasRepo) {
-    throw new Error('ventasRepo requerido');
+const createReservasUseCases = ({ reservasRepo, baseDir }) => {
+  if (!reservasRepo) {
+    throw new Error('reservasRepo requerido');
   }
-  assertRepoContract(ventasRepo);
+  assertRepoContract(reservasRepo);
   if (!baseDir) {
     throw new Error('baseDir requerido');
   }
 
   const normalizedBaseDir = path.resolve(baseDir);
-  const runInTransaction = (handler) => withTransaction(() => ventasRepo.getClient(), handler);
+  const runInTransaction = (handler) => withTransaction(() => reservasRepo.getClient(), handler);
 
   const resolveOperacionWithAccess = async ({ user, operacionId, client }) => {
-    const operation = await ventasRepo.getOperacionById(operacionId, client);
+    const operation = await reservasRepo.getOperacionById(operacionId, client);
     if (!operation) {
-      throw createError(404, 'Operacion de venta no encontrada');
+      throw createError(404, 'Reserva no encontrada');
     }
 
     await ensureSociedadAccess({
@@ -200,9 +204,9 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
     client,
   }) => {
     const operation = await resolveOperacionWithAccess({ user, operacionId, client });
-    const document = await ventasRepo.getOperacionDocumentoById(documentoId, client);
+    const document = await reservasRepo.getOperacionDocumentoById(documentoId, client);
     if (!document || Number(document.operacion_id) !== Number(operation.id)) {
-      throw createError(404, 'Documento de venta no encontrado');
+      throw createError(404, 'Documento de reserva no encontrado');
     }
 
     return {
@@ -212,17 +216,31 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
   };
 
   const resolveStoredDocumentPath = (storedPath) => {
-    const normalizedStoredPath = normalizeRequiredText(storedPath, 'ruta_archivo');
+    const normalizedStoredPath = path.normalize(normalizeRequiredText(storedPath, 'ruta_archivo'));
+    const candidateSet = new Set();
+    const addCandidate = (candidatePath) => {
+      const normalizedCandidate = path.normalize(candidatePath);
+      candidateSet.add(normalizedCandidate);
 
-    const candidates = path.isAbsolute(normalizedStoredPath)
-      ? [path.normalize(normalizedStoredPath)]
-      : [
-          path.resolve(normalizedBaseDir, normalizedStoredPath),
-          path.resolve(normalizedBaseDir, '..', normalizedStoredPath),
-          path.resolve(process.cwd(), normalizedStoredPath),
-        ];
+      for (const [fromSegment, toSegment] of DOCUMENT_DIRECTORY_ALIASES) {
+        const fromPattern = `${path.sep}${fromSegment}${path.sep}`;
+        const toPattern = `${path.sep}${toSegment}${path.sep}`;
 
-    const existingPath = candidates.find((candidate) => fs.existsSync(candidate));
+        if (normalizedCandidate.includes(fromPattern)) {
+          candidateSet.add(normalizedCandidate.replace(fromPattern, toPattern));
+        }
+      }
+    };
+
+    if (path.isAbsolute(normalizedStoredPath)) {
+      addCandidate(normalizedStoredPath);
+    } else {
+      addCandidate(path.resolve(normalizedBaseDir, normalizedStoredPath));
+      addCandidate(path.resolve(normalizedBaseDir, '..', normalizedStoredPath));
+      addCandidate(path.resolve(process.cwd(), normalizedStoredPath));
+    }
+
+    const existingPath = Array.from(candidateSet).find((candidate) => fs.existsSync(candidate));
     if (!existingPath) {
       throw createError(404, 'Ruta no encontrada');
     }
@@ -241,7 +259,7 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
     }
 
     const normalizedProjectCode = normalizeCode(proyectoCodigo, 'proyecto_codigo');
-    const sociedad = await ventasRepo.getSociedadByCodigo(normalizedProjectCode, client);
+    const sociedad = await reservasRepo.getSociedadByCodigo(normalizedProjectCode, client);
 
     if (!sociedad || !sociedad.id) {
       throw createError(
@@ -264,7 +282,7 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
   }) => {
     const normalizedSociedadId = await ensureSociedadAccess({ user, sociedadId });
     const normalizedEstado = normalizeOptionalText(estado)?.toLowerCase() || null;
-    const validStatuses = new Set(Object.values(VENTA_OPERACION_ESTADOS));
+    const validStatuses = new Set(Object.values(RESERVA_OPERACION_ESTADOS));
 
     if (normalizedEstado && !validStatuses.has(normalizedEstado)) {
       throw createError(400, 'estado invalido');
@@ -273,7 +291,7 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
     const normalizedLimit = limit == null ? 200 : Math.min(toPositiveInt(limit, 'limit'), 500);
 
     return withSchemaGuard(() =>
-      ventasRepo.listOperaciones({
+      reservasRepo.listOperaciones({
         sociedadId: normalizedSociedadId,
         estado: normalizedEstado,
         proyectoCodigo: normalizeOptionalText(proyectoCodigo)?.toUpperCase() || null,
@@ -289,8 +307,8 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
     return withSchemaGuard(async () => {
       const operation = await resolveOperacionWithAccess({ user, operacionId: id });
       const [historial, documentos] = await Promise.all([
-        ventasRepo.listOperacionHistorial(id),
-        ventasRepo.listOperacionDocumentos(id),
+        reservasRepo.listOperacionHistorial(id),
+        reservasRepo.listOperacionDocumentos(id),
       ]);
 
       return {
@@ -322,7 +340,7 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
 
     return withSchemaGuard(() =>
       runInTransaction(async (client) => {
-        const unit = await ventasRepo.upsertUnidad(
+        const unit = await reservasRepo.upsertUnidad(
           {
             sociedadId: normalizedSociedadId,
             proyectoCodigo: normalizedProyectoCode,
@@ -331,27 +349,27 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
           client,
         );
 
-        const activeOperation = await ventasRepo.findActiveOperacionByUnidadId(unit.id, client);
+        const activeOperation = await reservasRepo.findActiveOperacionByUnidadId(unit.id, client);
         if (activeOperation) {
-          throw createError(409, 'La unidad ya tiene una operacion activa');
+          throw createError(409, 'La unidad ya tiene una reserva activa');
         }
 
-        const operation = await ventasRepo.createOperacion(
+        const operation = await reservasRepo.createOperacion(
           {
             unidadId: unit.id,
             clienteNombre: normalizedClienteName,
             clienteIdentificacion: normalizeOptionalText(cliente_identificacion),
-            estado: VENTA_OPERACION_ESTADOS.ACTIVA,
+            estado: RESERVA_OPERACION_ESTADOS.ACTIVA,
             creadoPor: actor,
             metadata: metadata || null,
           },
           client,
         );
 
-        await ventasRepo.insertOperacionHistorial(
+        await reservasRepo.insertOperacionHistorial(
           {
             operacionId: operation.id,
-            accion: VENTA_HISTORIAL_ACCIONES.CREADA,
+            accion: RESERVA_HISTORIAL_ACCIONES.CREADA,
             estadoAnterior: null,
             estadoNuevo: operation.estado,
             usuario: actor,
@@ -379,24 +397,24 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
           client,
         });
 
-        if (current.estado !== VENTA_OPERACION_ESTADOS.ACTIVA) {
-          throw createError(409, 'Solo una operacion activa puede cancelarse');
+        if (current.estado !== RESERVA_OPERACION_ESTADOS.ACTIVA) {
+          throw createError(409, 'Solo una reserva activa puede cancelarse');
         }
 
-        const updated = await ventasRepo.updateOperacionEstado(
+        const updated = await reservasRepo.updateOperacionEstado(
           {
             id,
-            estado: VENTA_OPERACION_ESTADOS.CANCELADA,
+            estado: RESERVA_OPERACION_ESTADOS.CANCELADA,
             motivo: reason,
             cerradoEn: new Date().toISOString(),
           },
           client,
         );
 
-        await ventasRepo.insertOperacionHistorial(
+        await reservasRepo.insertOperacionHistorial(
           {
             operacionId: id,
-            accion: VENTA_HISTORIAL_ACCIONES.CANCELADA,
+            accion: RESERVA_HISTORIAL_ACCIONES.CANCELADA,
             estadoAnterior: current.estado,
             estadoNuevo: updated.estado,
             usuario: actor,
@@ -424,24 +442,24 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
           client,
         });
 
-        if (current.estado !== VENTA_OPERACION_ESTADOS.ACTIVA) {
-          throw createError(409, 'Solo una operacion activa puede cerrarse');
+        if (current.estado !== RESERVA_OPERACION_ESTADOS.ACTIVA) {
+          throw createError(409, 'Solo una reserva activa puede cerrarse');
         }
 
-        const updated = await ventasRepo.updateOperacionEstado(
+        const updated = await reservasRepo.updateOperacionEstado(
           {
             id,
-            estado: VENTA_OPERACION_ESTADOS.CERRADA,
+            estado: RESERVA_OPERACION_ESTADOS.CERRADA,
             motivo: reason,
             cerradoEn: new Date().toISOString(),
           },
           client,
         );
 
-        await ventasRepo.insertOperacionHistorial(
+        await reservasRepo.insertOperacionHistorial(
           {
             operacionId: id,
-            accion: VENTA_HISTORIAL_ACCIONES.CERRADA,
+            accion: RESERVA_HISTORIAL_ACCIONES.CERRADA,
             estadoAnterior: current.estado,
             estadoNuevo: updated.estado,
             usuario: actor,
@@ -482,8 +500,8 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
           client,
         });
 
-        if (source.estado !== VENTA_OPERACION_ESTADOS.ACTIVA) {
-          throw createError(409, 'Solo una operacion activa puede trasladarse');
+        if (source.estado !== RESERVA_OPERACION_ESTADOS.ACTIVA) {
+          throw createError(409, 'Solo una reserva activa puede trasladarse');
         }
 
         const targetSociedadId = destino_sociedad_id
@@ -498,7 +516,7 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
           throw createError(400, 'El destino debe ser diferente a la unidad origen');
         }
 
-        const targetUnit = await ventasRepo.upsertUnidad(
+        const targetUnit = await reservasRepo.upsertUnidad(
           {
             sociedadId: targetSociedadId,
             proyectoCodigo: targetProjectCode,
@@ -507,28 +525,28 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
           client,
         );
 
-        const existingTargetActive = await ventasRepo.findActiveOperacionByUnidadId(targetUnit.id, client);
+        const existingTargetActive = await reservasRepo.findActiveOperacionByUnidadId(targetUnit.id, client);
         if (existingTargetActive) {
-          throw createError(409, 'La unidad destino ya tiene una operacion activa');
+          throw createError(409, 'La unidad destino ya tiene una reserva activa');
         }
 
-        const sourceUpdated = await ventasRepo.updateOperacionEstado(
+        const sourceUpdated = await reservasRepo.updateOperacionEstado(
           {
             id: source.id,
-            estado: VENTA_OPERACION_ESTADOS.TRASLADADA,
+            estado: RESERVA_OPERACION_ESTADOS.TRASLADADA,
             motivo: reason,
             cerradoEn: new Date().toISOString(),
           },
           client,
         );
 
-        const targetOperation = await ventasRepo.createOperacion(
+        const targetOperation = await reservasRepo.createOperacion(
           {
             unidadId: targetUnit.id,
             clienteNombre: normalizeOptionalText(cliente_nombre) || source.cliente_nombre,
             clienteIdentificacion:
               normalizeOptionalText(cliente_identificacion) || source.cliente_identificacion,
-            estado: VENTA_OPERACION_ESTADOS.ACTIVA,
+            estado: RESERVA_OPERACION_ESTADOS.ACTIVA,
             origenOperacionId: source.id,
             motivo: reason,
             creadoPor: actor,
@@ -537,10 +555,10 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
           client,
         );
 
-        await ventasRepo.insertOperacionHistorial(
+        await reservasRepo.insertOperacionHistorial(
           {
             operacionId: source.id,
-            accion: VENTA_HISTORIAL_ACCIONES.TRASLADO_SALIDA,
+            accion: RESERVA_HISTORIAL_ACCIONES.TRASLADO_SALIDA,
             estadoAnterior: source.estado,
             estadoNuevo: sourceUpdated.estado,
             usuario: actor,
@@ -555,10 +573,10 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
           client,
         );
 
-        await ventasRepo.insertOperacionHistorial(
+        await reservasRepo.insertOperacionHistorial(
           {
             operacionId: targetOperation.id,
-            accion: VENTA_HISTORIAL_ACCIONES.TRASLADO_ENTRADA,
+            accion: RESERVA_HISTORIAL_ACCIONES.TRASLADO_ENTRADA,
             estadoAnterior: null,
             estadoNuevo: targetOperation.estado,
             usuario: actor,
@@ -607,7 +625,7 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
           client,
         });
 
-        const document = await ventasRepo.upsertOperacionDocumento(
+        const document = await reservasRepo.upsertOperacionDocumento(
           {
             operacionId: id,
             codigoDocumento: documentCode,
@@ -622,10 +640,10 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
           client,
         );
 
-        await ventasRepo.insertOperacionHistorial(
+        await reservasRepo.insertOperacionHistorial(
           {
             operacionId: id,
-            accion: VENTA_HISTORIAL_ACCIONES.DOCUMENTO_REGISTRADO,
+            accion: RESERVA_HISTORIAL_ACCIONES.DOCUMENTO_REGISTRADO,
             estadoAnterior: operation.estado,
             estadoNuevo: operation.estado,
             usuario: actor,
@@ -638,7 +656,7 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
           client,
         );
 
-        const refreshedOperation = await ventasRepo.getOperacionById(id, client);
+        const refreshedOperation = await reservasRepo.getOperacionById(id, client);
         return {
           operacion: refreshedOperation || operation,
           documento: document,
@@ -680,7 +698,7 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
           client,
         });
 
-        const unit = await ventasRepo.upsertUnidad(
+        const unit = await reservasRepo.upsertUnidad(
           {
             sociedadId,
             proyectoCodigo: projectCode,
@@ -689,16 +707,16 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
           client,
         );
 
-        let operation = await ventasRepo.findActiveOperacionByUnidadId(unit.id, client);
+        let operation = await reservasRepo.findActiveOperacionByUnidadId(unit.id, client);
         let operationCreated = false;
 
         if (!operation) {
-          operation = await ventasRepo.createOperacion(
+          operation = await reservasRepo.createOperacion(
             {
               unidadId: unit.id,
               clienteNombre: clientName,
               clienteIdentificacion: normalizeOptionalText(cliente_identificacion),
-              estado: VENTA_OPERACION_ESTADOS.ACTIVA,
+              estado: RESERVA_OPERACION_ESTADOS.ACTIVA,
               creadoPor: actor,
               metadata: metadata || null,
             },
@@ -707,10 +725,10 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
 
           operationCreated = true;
 
-          await ventasRepo.insertOperacionHistorial(
+          await reservasRepo.insertOperacionHistorial(
             {
               operacionId: operation.id,
-              accion: VENTA_HISTORIAL_ACCIONES.CREADA,
+              accion: RESERVA_HISTORIAL_ACCIONES.CREADA,
               estadoAnterior: null,
               estadoNuevo: operation.estado,
               usuario: actor,
@@ -723,7 +741,7 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
           );
         }
 
-        const document = await ventasRepo.upsertOperacionDocumento(
+        const document = await reservasRepo.upsertOperacionDocumento(
           {
             operacionId: operation.id,
             codigoDocumento: documentCode,
@@ -738,10 +756,10 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
           client,
         );
 
-        await ventasRepo.insertOperacionHistorial(
+        await reservasRepo.insertOperacionHistorial(
           {
             operacionId: operation.id,
-            accion: VENTA_HISTORIAL_ACCIONES.DOCUMENTO_REGISTRADO,
+            accion: RESERVA_HISTORIAL_ACCIONES.DOCUMENTO_REGISTRADO,
             estadoAnterior: operation.estado,
             estadoNuevo: operation.estado,
             usuario: actor,
@@ -755,7 +773,7 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
           client,
         );
 
-        const refreshedOperation = await ventasRepo.getOperacionById(operation.id, client);
+        const refreshedOperation = await reservasRepo.getOperacionById(operation.id, client);
 
         return {
           operacion: refreshedOperation || operation,
@@ -826,7 +844,7 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
         const fileDir = path.join(
           normalizedBaseDir,
           'documentos',
-          'ventas_operaciones',
+          'reservas_operaciones',
           String(operation.id),
         );
         fs.mkdirSync(fileDir, { recursive: true });
@@ -850,7 +868,7 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
           },
         };
 
-        const updatedDocument = await ventasRepo.upsertOperacionDocumento(
+        const updatedDocument = await reservasRepo.upsertOperacionDocumento(
           {
             operacionId: operation.id,
             codigoDocumento: previousDocument.codigo_documento,
@@ -865,10 +883,10 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
           client,
         );
 
-        await ventasRepo.insertOperacionHistorial(
+        await reservasRepo.insertOperacionHistorial(
           {
             operacionId: operation.id,
-            accion: VENTA_HISTORIAL_ACCIONES.DOCUMENTO_REEMPLAZADO,
+            accion: RESERVA_HISTORIAL_ACCIONES.DOCUMENTO_REEMPLAZADO,
             estadoAnterior: operation.estado,
             estadoNuevo: operation.estado,
             usuario: actor,
@@ -883,7 +901,7 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
           client,
         );
 
-        const refreshedOperation = await ventasRepo.getOperacionById(operation.id, client);
+        const refreshedOperation = await reservasRepo.getOperacionById(operation.id, client);
 
         return {
           operacion: refreshedOperation || operation,
@@ -909,5 +927,21 @@ const createVentasUseCases = ({ ventasRepo, baseDir }) => {
 };
 
 module.exports = {
-  createVentasUseCases,
+  createReservasUseCases,
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

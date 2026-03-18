@@ -1,32 +1,109 @@
-import { useCallback, useEffect, useState } from 'react';
-import { facturasApi } from '../services/facturasApi';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  extractFacturasPagePayload,
+  facturasApi,
+} from '../services/facturasApi.js';
 
-export const useFacturas = ({ sociedadId }) => {
-  const [facturas, setFacturas] = useState([]);
+const createEmptyMeta = (query = {}) => ({
+  page: Number(query?.page) || 1,
+  pageSize: Number(query?.pageSize) || 50,
+  totalItems: 0,
+  totalPages: 0,
+  hasNext: false,
+  hasPrev: false,
+  sortBy: query?.sortBy || 'fecha_emision',
+  sortDir: query?.sortDir || 'desc',
+});
+
+const createEmptySummary = () => ({
+  totalItems: 0,
+  totalAmount: 0,
+  byEstado: [],
+  byMoneda: [],
+});
+
+export const useFacturas = ({
+  sociedadId,
+  query,
+  dependencies = {},
+}) => {
+  const {
+    api = facturasApi,
+  } = dependencies;
+
+  const [items, setItems] = useState([]);
+  const [meta, setMeta] = useState(() => createEmptyMeta(query));
+  const [summary, setSummary] = useState(() => createEmptySummary());
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const requestIdRef = useRef(0);
 
   const fetchFacturas = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await facturasApi.listFacturas({ sociedadId });
-      if (res.data.success) {
-        setFacturas(res.data.data);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [sociedadId]);
-
-  useEffect(() => {
     if (!sociedadId) {
-      setFacturas([]);
+      setItems([]);
+      setMeta(createEmptyMeta(query));
+      setSummary(createEmptySummary());
+      setError('');
       setLoading(false);
       return;
     }
-    fetchFacturas();
-  }, [sociedadId, fetchFacturas]);
 
-  return { facturas, loading };
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+
+    try {
+      setLoading(true);
+      setError('');
+
+      const response = await api.listFacturas({
+        sociedadId,
+        ...(query || {}),
+      });
+
+      if (requestIdRef.current !== requestId) {
+        return;
+      }
+
+      const payload = extractFacturasPagePayload(response);
+
+      setItems(payload.items);
+      setMeta({
+        ...createEmptyMeta(query),
+        ...(payload.meta || {}),
+      });
+      setSummary({
+        ...createEmptySummary(),
+        ...(payload.summary || {}),
+        byEstado: Array.isArray(payload.summary?.byEstado) ? payload.summary.byEstado : [],
+        byMoneda: Array.isArray(payload.summary?.byMoneda) ? payload.summary.byMoneda : [],
+      });
+    } catch (err) {
+      if (requestIdRef.current !== requestId) {
+        return;
+      }
+
+      const apiError = err?.response?.data?.error || err?.message || 'No se pudieron cargar las facturas.';
+      setError(apiError);
+      setItems([]);
+      setMeta(createEmptyMeta(query));
+      setSummary(createEmptySummary());
+    } finally {
+      if (requestIdRef.current === requestId) {
+        setLoading(false);
+      }
+    }
+  }, [api, query, sociedadId]);
+
+  useEffect(() => {
+    fetchFacturas();
+  }, [fetchFacturas]);
+
+  return {
+    items,
+    meta,
+    summary,
+    loading,
+    error,
+    refetch: fetchFacturas,
+  };
 };

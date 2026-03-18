@@ -25,11 +25,12 @@ router.get(
 router.post(
   '/documentos/:facturaId/comentarios',
   requirePermission(PERMISSIONS.DOCUMENTOS_COMENTAR),
-  validateBody(createComentarioSchema, { message: 'usuario y texto requeridos' }),
+  validateBody(createComentarioSchema, { message: 'texto requerido' }),
   handleRequest(async (req) => {
     const { facturaId } = req.params;
     const { usuario, texto } = req.body || {};
-    return useCases.crearComentario({ facturaId, usuario, texto });
+    const actorUsuario = req.user?.nombre || req.user?.email || usuario || 'system';
+    return useCases.crearComentario({ facturaId, usuario: actorUsuario, texto });
   }, 'Error creating comment:', 'Error creating comment')
 );
 

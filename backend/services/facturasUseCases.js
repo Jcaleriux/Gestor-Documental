@@ -1,4 +1,4 @@
-﻿const path = require('path');
+const path = require('path');
 const { assertFound, createError } = require('../utils/errors');
 const {
   mapFacturaRow,
@@ -8,6 +8,30 @@ const {
   mapMensajeHaciendaRow
 } = require('../mappers/facturasMapper');
 const { createFacturasManifestResolver } = require('./facturasManifestResolver');
+
+const FACTURAS_SORT_FIELDS = new Set([
+  'fecha_emision',
+  'emisor',
+  'estado',
+  'total_factura',
+]);
+const NOTAS_CREDITO_SORT_FIELDS = new Set([
+  'fecha_emision',
+  'emisor',
+  'estado',
+  'monto',
+]);
+const TIQUETES_SORT_FIELDS = new Set([
+  'fecha_emision',
+  'emisor',
+  'monto',
+]);
+
+const FACTURAS_SORT_DIRS = new Set(['asc', 'desc']);
+const DEFAULT_FACTURAS_PAGE = 1;
+const DEFAULT_FACTURAS_PAGE_SIZE = 50;
+const MAX_FACTURAS_PAGE_SIZE = 200;
+const DATE_INPUT_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 const toOptionalPositiveInt = (value, fieldName) => {
   if (value === undefined || value === null || value === '') {
@@ -22,6 +46,330 @@ const toOptionalPositiveInt = (value, fieldName) => {
   return parsed;
 };
 
+const normalizeOptionalText = (value) => {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  const normalized = String(value).trim();
+  return normalized || null;
+};
+
+const toOptionalNonNegativeNumber = (value, fieldName) => {
+  if (value === undefined || value === null || value === '') {
+    return null;
+  }
+
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw createError(400, `${fieldName} invalido`);
+  }
+
+  return parsed;
+};
+
+const toBoundedPositiveInt = (value, fieldName, { defaultValue, max } = {}) => {
+  if (value === undefined || value === null || value === '') {
+    return defaultValue;
+  }
+
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw createError(400, `${fieldName} invalido`);
+  }
+
+  if (Number.isInteger(max) && parsed > max) {
+    throw createError(400, `${fieldName} excede el maximo permitido (${max})`);
+  }
+
+  return parsed;
+};
+
+const normalizeDateInput = (value, fieldName) => {
+  const normalized = normalizeOptionalText(value);
+  if (!normalized) {
+    return null;
+  }
+
+  const match = DATE_INPUT_PATTERN.exec(normalized);
+  if (!match) {
+    throw createError(400, `${fieldName} invalida`);
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+
+  if (
+    parsed.getUTCFullYear() !== year
+    || parsed.getUTCMonth() !== month - 1
+    || parsed.getUTCDate() !== day
+  ) {
+    throw createError(400, `${fieldName} invalida`);
+  }
+
+  return normalized;
+};
+
+const normalizeSortField = (value) => {
+  const normalized = normalizeOptionalText(value) || 'fecha_emision';
+  if (!FACTURAS_SORT_FIELDS.has(normalized)) {
+    throw createError(400, 'sortBy invalido');
+  }
+  return normalized;
+};
+
+const normalizeSortDir = (value) => {
+  const normalized = (normalizeOptionalText(value) || 'desc').toLowerCase();
+  if (!FACTURAS_SORT_DIRS.has(normalized)) {
+    throw createError(400, 'sortDir invalido');
+  }
+  return normalized;
+};
+
+const toNumber = (value, fallback = 0) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const mapFacturasListSummary = (summary = {}) => ({
+  totalItems: toNumber(summary.totalItems, 0),
+  totalAmount: toNumber(summary.totalAmount, 0),
+  byEstado: Array.isArray(summary.byEstado)
+    ? summary.byEstado.map((entry) => ({
+      estado: entry.estado || 'no_contabilizado',
+      totalItems: toNumber(entry.totalItems, 0),
+      totalAmount: toNumber(entry.totalAmount, 0),
+    }))
+    : [],
+  byMoneda: Array.isArray(summary.byMoneda)
+    ? summary.byMoneda.map((entry) => ({
+      moneda: entry.moneda || 'CRC',
+      totalItems: toNumber(entry.totalItems, 0),
+      totalAmount: toNumber(entry.totalAmount, 0),
+    }))
+    : [],
+});
+
+const mapNotasCreditoListSummary = (summary = {}) => ({
+  totalItems: toNumber(summary.totalItems, 0),
+  totalAmount: toNumber(summary.totalAmount, 0),
+  totalSaldoDisponible: toNumber(summary.totalSaldoDisponible, 0),
+  byEstado: Array.isArray(summary.byEstado)
+    ? summary.byEstado.map((entry) => ({
+      estado: entry.estado || 'disponible',
+      totalItems: toNumber(entry.totalItems, 0),
+      totalAmount: toNumber(entry.totalAmount, 0),
+      totalSaldoDisponible: toNumber(entry.totalSaldoDisponible, 0),
+    }))
+    : [],
+  byMoneda: Array.isArray(summary.byMoneda)
+    ? summary.byMoneda.map((entry) => ({
+      moneda: entry.moneda || 'CRC',
+      totalItems: toNumber(entry.totalItems, 0),
+      totalAmount: toNumber(entry.totalAmount, 0),
+      totalSaldoDisponible: toNumber(entry.totalSaldoDisponible, 0),
+    }))
+    : [],
+});
+
+const mapTiquetesListSummary = (summary = {}) => ({
+  totalItems: toNumber(summary.totalItems, 0),
+  totalAmount: toNumber(summary.totalAmount, 0),
+  byMoneda: Array.isArray(summary.byMoneda)
+    ? summary.byMoneda.map((entry) => ({
+      moneda: entry.moneda || 'CRC',
+      totalItems: toNumber(entry.totalItems, 0),
+      totalAmount: toNumber(entry.totalAmount, 0),
+    }))
+    : [],
+});
+
+const normalizeFacturasListParams = ({
+  sociedadId,
+  search,
+  estado,
+  emisor,
+  moneda,
+  fechaDesde,
+  fechaHasta,
+  montoMin,
+  montoMax,
+  sortBy,
+  sortDir,
+  page,
+  pageSize,
+} = {}) => {
+  const normalizedFechaDesde = normalizeDateInput(fechaDesde, 'fechaDesde');
+  const normalizedFechaHasta = normalizeDateInput(fechaHasta, 'fechaHasta');
+  const normalizedMontoMin = toOptionalNonNegativeNumber(montoMin, 'montoMin');
+  const normalizedMontoMax = toOptionalNonNegativeNumber(montoMax, 'montoMax');
+
+  if (
+    normalizedFechaDesde
+    && normalizedFechaHasta
+    && normalizedFechaDesde > normalizedFechaHasta
+  ) {
+    throw createError(400, 'fechaDesde no puede ser mayor que fechaHasta');
+  }
+
+  if (
+    normalizedMontoMin !== null
+    && normalizedMontoMax !== null
+    && normalizedMontoMin > normalizedMontoMax
+  ) {
+    throw createError(400, 'montoMin no puede ser mayor que montoMax');
+  }
+
+  return {
+    sociedadId: toOptionalPositiveInt(sociedadId, 'sociedadId'),
+    search: normalizeOptionalText(search),
+    estado: normalizeOptionalText(estado),
+    emisor: normalizeOptionalText(emisor),
+    moneda: normalizeOptionalText(moneda)?.toUpperCase() || null,
+    fechaDesde: normalizedFechaDesde,
+    fechaHasta: normalizedFechaHasta,
+    montoMin: normalizedMontoMin,
+    montoMax: normalizedMontoMax,
+    sortBy: normalizeSortField(sortBy),
+    sortDir: normalizeSortDir(sortDir),
+    page: toBoundedPositiveInt(page, 'page', { defaultValue: DEFAULT_FACTURAS_PAGE }),
+    pageSize: toBoundedPositiveInt(pageSize, 'pageSize', {
+      defaultValue: DEFAULT_FACTURAS_PAGE_SIZE,
+      max: MAX_FACTURAS_PAGE_SIZE,
+    }),
+  };
+};
+
+const normalizeNotasCreditoSortField = (value) => {
+  const normalized = normalizeOptionalText(value) || 'fecha_emision';
+  if (!NOTAS_CREDITO_SORT_FIELDS.has(normalized)) {
+    throw createError(400, 'sortBy invalido');
+  }
+  return normalized;
+};
+
+const normalizeTiquetesSortField = (value) => {
+  const normalized = normalizeOptionalText(value) || 'fecha_emision';
+  if (!TIQUETES_SORT_FIELDS.has(normalized)) {
+    throw createError(400, 'sortBy invalido');
+  }
+  return normalized;
+};
+
+const normalizeNotasCreditoListParams = ({
+  sociedadId,
+  proveedorId,
+  search,
+  estado,
+  emisor,
+  moneda,
+  fechaDesde,
+  fechaHasta,
+  montoMin,
+  montoMax,
+  sortBy,
+  sortDir,
+  page,
+  pageSize,
+} = {}) => {
+  const normalizedFechaDesde = normalizeDateInput(fechaDesde, 'fechaDesde');
+  const normalizedFechaHasta = normalizeDateInput(fechaHasta, 'fechaHasta');
+  const normalizedMontoMin = toOptionalNonNegativeNumber(montoMin, 'montoMin');
+  const normalizedMontoMax = toOptionalNonNegativeNumber(montoMax, 'montoMax');
+
+  if (
+    normalizedFechaDesde
+    && normalizedFechaHasta
+    && normalizedFechaDesde > normalizedFechaHasta
+  ) {
+    throw createError(400, 'fechaDesde no puede ser mayor que fechaHasta');
+  }
+
+  if (
+    normalizedMontoMin !== null
+    && normalizedMontoMax !== null
+    && normalizedMontoMin > normalizedMontoMax
+  ) {
+    throw createError(400, 'montoMin no puede ser mayor que montoMax');
+  }
+
+  return {
+    sociedadId: toOptionalPositiveInt(sociedadId, 'sociedadId'),
+    proveedorId: toOptionalPositiveInt(proveedorId, 'proveedorId'),
+    search: normalizeOptionalText(search),
+    estado: normalizeOptionalText(estado)?.toLowerCase() || null,
+    emisor: normalizeOptionalText(emisor),
+    moneda: normalizeOptionalText(moneda)?.toUpperCase() || null,
+    fechaDesde: normalizedFechaDesde,
+    fechaHasta: normalizedFechaHasta,
+    montoMin: normalizedMontoMin,
+    montoMax: normalizedMontoMax,
+    sortBy: normalizeNotasCreditoSortField(sortBy),
+    sortDir: normalizeSortDir(sortDir),
+    page: toBoundedPositiveInt(page, 'page', { defaultValue: DEFAULT_FACTURAS_PAGE }),
+    pageSize: toBoundedPositiveInt(pageSize, 'pageSize', {
+      defaultValue: DEFAULT_FACTURAS_PAGE_SIZE,
+      max: MAX_FACTURAS_PAGE_SIZE,
+    }),
+  };
+};
+
+const normalizeTiquetesListParams = ({
+  sociedadId,
+  search,
+  emisor,
+  moneda,
+  fechaDesde,
+  fechaHasta,
+  montoMin,
+  montoMax,
+  sortBy,
+  sortDir,
+  page,
+  pageSize,
+} = {}) => {
+  const normalizedFechaDesde = normalizeDateInput(fechaDesde, 'fechaDesde');
+  const normalizedFechaHasta = normalizeDateInput(fechaHasta, 'fechaHasta');
+  const normalizedMontoMin = toOptionalNonNegativeNumber(montoMin, 'montoMin');
+  const normalizedMontoMax = toOptionalNonNegativeNumber(montoMax, 'montoMax');
+
+  if (
+    normalizedFechaDesde
+    && normalizedFechaHasta
+    && normalizedFechaDesde > normalizedFechaHasta
+  ) {
+    throw createError(400, 'fechaDesde no puede ser mayor que fechaHasta');
+  }
+
+  if (
+    normalizedMontoMin !== null
+    && normalizedMontoMax !== null
+    && normalizedMontoMin > normalizedMontoMax
+  ) {
+    throw createError(400, 'montoMin no puede ser mayor que montoMax');
+  }
+
+  return {
+    sociedadId: toOptionalPositiveInt(sociedadId, 'sociedadId'),
+    search: normalizeOptionalText(search),
+    emisor: normalizeOptionalText(emisor),
+    moneda: normalizeOptionalText(moneda)?.toUpperCase() || null,
+    fechaDesde: normalizedFechaDesde,
+    fechaHasta: normalizedFechaHasta,
+    montoMin: normalizedMontoMin,
+    montoMax: normalizedMontoMax,
+    sortBy: normalizeTiquetesSortField(sortBy),
+    sortDir: normalizeSortDir(sortDir),
+    page: toBoundedPositiveInt(page, 'page', { defaultValue: DEFAULT_FACTURAS_PAGE }),
+    pageSize: toBoundedPositiveInt(pageSize, 'pageSize', {
+      defaultValue: DEFAULT_FACTURAS_PAGE_SIZE,
+      max: MAX_FACTURAS_PAGE_SIZE,
+    }),
+  };
+};
+
 const createFacturasUseCases = ({ facturasRepo }) => {
   if (!facturasRepo) {
     throw new Error('facturasRepo requerido');
@@ -31,9 +379,36 @@ const createFacturasUseCases = ({ facturasRepo }) => {
     baseDir: process.env.FACTURAS_BASE_DIR || path.resolve(__dirname, '..', '..')
   });
 
-  const listFacturas = async ({ sociedadId }) => {
-    const rows = await facturasRepo.listFacturas({ sociedadId });
-    return rows.map(mapFacturaRow);
+  const listFacturas = async (params) => {
+    const normalizedParams = normalizeFacturasListParams(params);
+    const result = await facturasRepo.listFacturas(normalizedParams);
+
+    const items = Array.isArray(result?.items)
+      ? result.items.map(mapFacturaRow)
+      : [];
+
+    const totalItems = toNumber(result?.meta?.totalItems, 0);
+    const page = toNumber(result?.meta?.page, normalizedParams.page);
+    const pageSize = toNumber(result?.meta?.pageSize, normalizedParams.pageSize);
+    const totalPages = toNumber(
+      result?.meta?.totalPages,
+      totalItems > 0 ? Math.ceil(totalItems / Math.max(pageSize, 1)) : 0
+    );
+
+    return {
+      items,
+      meta: {
+        page,
+        pageSize,
+        totalItems,
+        totalPages,
+        hasNext: Boolean(result?.meta?.hasNext),
+        hasPrev: Boolean(result?.meta?.hasPrev),
+        sortBy: result?.meta?.sortBy || normalizedParams.sortBy,
+        sortDir: result?.meta?.sortDir || normalizedParams.sortDir,
+      },
+      summary: mapFacturasListSummary(result?.summary),
+    };
   };
 
   const listRetencionesPendientes = async ({ sociedadId }) => {
@@ -84,19 +459,68 @@ const createFacturasUseCases = ({ facturasRepo }) => {
     manifestNotFoundMessage: 'Manifiesto no encontrado para esta nota de credito'
   });
 
-  const listNotasCredito = async ({ sociedadId, proveedorId }) => {
-    const normalizedSociedadId = toOptionalPositiveInt(sociedadId, 'sociedadId');
-    const normalizedProveedorId = toOptionalPositiveInt(proveedorId, 'proveedorId');
-    const rows = await facturasRepo.listNotasCredito({
-      sociedadId: normalizedSociedadId,
-      proveedorId: normalizedProveedorId
-    });
-    return rows.map(mapNotaCreditoRow);
+  const listNotasCredito = async (params) => {
+    const normalizedParams = normalizeNotasCreditoListParams(params);
+    const result = await facturasRepo.listNotasCredito(normalizedParams);
+
+    const items = Array.isArray(result?.items)
+      ? result.items.map(mapNotaCreditoRow)
+      : [];
+
+    const totalItems = toNumber(result?.meta?.totalItems, 0);
+    const page = toNumber(result?.meta?.page, normalizedParams.page);
+    const pageSize = toNumber(result?.meta?.pageSize, normalizedParams.pageSize);
+    const totalPages = toNumber(
+      result?.meta?.totalPages,
+      totalItems > 0 ? Math.ceil(totalItems / Math.max(pageSize, 1)) : 0
+    );
+
+    return {
+      items,
+      meta: {
+        page,
+        pageSize,
+        totalItems,
+        totalPages,
+        hasNext: Boolean(result?.meta?.hasNext),
+        hasPrev: Boolean(result?.meta?.hasPrev),
+        sortBy: result?.meta?.sortBy || normalizedParams.sortBy,
+        sortDir: result?.meta?.sortDir || normalizedParams.sortDir,
+      },
+      summary: mapNotasCreditoListSummary(result?.summary),
+    };
   };
 
-  const listTiquetesElectronicos = async ({ sociedadId }) => {
-    const rows = await facturasRepo.listTiquetesElectronicos({ sociedadId });
-    return rows.map(mapTiqueteElectronicoRow);
+  const listTiquetesElectronicos = async (params) => {
+    const normalizedParams = normalizeTiquetesListParams(params);
+    const result = await facturasRepo.listTiquetesElectronicos(normalizedParams);
+
+    const items = Array.isArray(result?.items)
+      ? result.items.map(mapTiqueteElectronicoRow)
+      : [];
+
+    const totalItems = toNumber(result?.meta?.totalItems, 0);
+    const page = toNumber(result?.meta?.page, normalizedParams.page);
+    const pageSize = toNumber(result?.meta?.pageSize, normalizedParams.pageSize);
+    const totalPages = toNumber(
+      result?.meta?.totalPages,
+      totalItems > 0 ? Math.ceil(totalItems / Math.max(pageSize, 1)) : 0
+    );
+
+    return {
+      items,
+      meta: {
+        page,
+        pageSize,
+        totalItems,
+        totalPages,
+        hasNext: Boolean(result?.meta?.hasNext),
+        hasPrev: Boolean(result?.meta?.hasPrev),
+        sortBy: result?.meta?.sortBy || normalizedParams.sortBy,
+        sortDir: result?.meta?.sortDir || normalizedParams.sortDir,
+      },
+      summary: mapTiquetesListSummary(result?.summary),
+    };
   };
 
   const listMensajesHacienda = async ({ sociedadId }) => {

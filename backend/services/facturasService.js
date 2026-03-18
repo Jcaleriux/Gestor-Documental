@@ -5,8 +5,7 @@ const { handleRequest } = require('../utils/http');
 const useCases = createFacturasUseCases({ facturasRepo });
 
 const listFacturas = handleRequest((req) => {
-  const { sociedadId } = req.query || {};
-  return useCases.listFacturas({ sociedadId });
+  return useCases.listFacturas(req.query || {});
 }, 'Error fetching facturas:', 'Error fetching facturas');
 
 const listRetencionesPendientes = handleRequest((req) => {
@@ -45,20 +44,15 @@ const getNotaCreditoManifest = handleRequest(async (req, res) => {
 }, 'Error fetching nota credito manifest:', 'Error fetching nota credito manifest');
 
 const listNotasCredito = handleRequest((req) => {
-  const {
-    sociedadId,
-    proveedorId,
-    proveedor_id: proveedorIdSnake
-  } = req.query || {};
-  return useCases.listNotasCredito({
-    sociedadId,
-    proveedorId: proveedorId || proveedorIdSnake
-  });
+  const query = { ...(req.query || {}) };
+  if (query.proveedor_id && !query.proveedorId) {
+    query.proveedorId = query.proveedor_id;
+  }
+  return useCases.listNotasCredito(query);
 }, 'Error fetching notas de credito:', 'Error fetching notas de credito');
 
 const listTiquetesElectronicos = handleRequest((req) => {
-  const { sociedadId } = req.query || {};
-  return useCases.listTiquetesElectronicos({ sociedadId });
+  return useCases.listTiquetesElectronicos(req.query || {});
 }, 'Error fetching tiquetes electronicos:', 'Error fetching tiquetes electronicos');
 
 const listMensajesHacienda = handleRequest((req) => {

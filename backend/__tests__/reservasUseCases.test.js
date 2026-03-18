@@ -1,6 +1,8 @@
-const { createVentasUseCases } = require('../services/ventasUseCases');
-const { VENTA_OPERACION_ESTADOS } = require('../domain/ventas');
+const fs = require('fs');
+const os = require('os');
 const path = require('path');
+const { createReservasUseCases } = require('../services/reservasUseCases');
+const { RESERVA_OPERACION_ESTADOS } = require('../domain/reservas');
 
 const createClientMock = () => ({
   query: jest.fn().mockResolvedValue({}),
@@ -22,7 +24,7 @@ const createRepoMock = (overrides = {}) => {
       unidad_codigo: 'A01',
       cliente_nombre: 'CLIENTE BASE',
       cliente_identificacion: '123',
-      estado: VENTA_OPERACION_ESTADOS.ACTIVA,
+      estado: RESERVA_OPERACION_ESTADOS.ACTIVA,
       origen_operacion_id: null,
       motivo: null,
       creado_por: 'qa',
@@ -37,7 +39,7 @@ const createRepoMock = (overrides = {}) => {
       unidad_codigo: 'A01',
       cliente_nombre: 'CLIENTE BASE',
       cliente_identificacion: '123',
-      estado: VENTA_OPERACION_ESTADOS.ACTIVA,
+      estado: RESERVA_OPERACION_ESTADOS.ACTIVA,
       origen_operacion_id: null,
       motivo: null,
       creado_por: 'qa',
@@ -51,7 +53,7 @@ const createRepoMock = (overrides = {}) => {
       unidad_codigo: 'A01',
       cliente_nombre: 'CLIENTE BASE',
       cliente_identificacion: '123',
-      estado: VENTA_OPERACION_ESTADOS.TRASLADADA,
+      estado: RESERVA_OPERACION_ESTADOS.TRASLADADA,
       origen_operacion_id: null,
       motivo: 'traslado',
       creado_por: 'qa',
@@ -74,15 +76,15 @@ const createRepoMock = (overrides = {}) => {
   return { repo, client };
 };
 
-describe('ventasUseCases', () => {
+describe('reservasUseCases', () => {
   test('valida contrato minimo del repositorio', () => {
-    expect(() => createVentasUseCases({ ventasRepo: {}, baseDir: path.resolve(__dirname, '..', '..') }))
-      .toThrow('ventasRepo incompleto');
+    expect(() => createReservasUseCases({ reservasRepo: {}, baseDir: path.resolve(__dirname, '..', '..') }))
+      .toThrow('reservasRepo incompleto');
   });
 
   test('createOperacion crea operacion activa e historial en transaccion', async () => {
     const { repo, client } = createRepoMock();
-    const useCases = createVentasUseCases({ ventasRepo: repo, baseDir: path.resolve(__dirname, '..', '..') });
+    const useCases = createReservasUseCases({ reservasRepo: repo, baseDir: path.resolve(__dirname, '..', '..') });
 
     const result = await useCases.createOperacion({
       user: { id: 1, email: 'qa@novogar.local', permissions: ['acceso_total'] },
@@ -110,7 +112,7 @@ describe('ventasUseCases', () => {
     expect(repo.createOperacion).toHaveBeenCalledWith(
       expect.objectContaining({
         unidadId: 10,
-        estado: VENTA_OPERACION_ESTADOS.ACTIVA,
+        estado: RESERVA_OPERACION_ESTADOS.ACTIVA,
         clienteNombre: 'Cliente QA',
       }),
       client,
@@ -118,7 +120,7 @@ describe('ventasUseCases', () => {
     expect(repo.insertOperacionHistorial).toHaveBeenCalledWith(
       expect.objectContaining({
         operacionId: result.id,
-        estadoNuevo: VENTA_OPERACION_ESTADOS.ACTIVA,
+        estadoNuevo: RESERVA_OPERACION_ESTADOS.ACTIVA,
       }),
       client,
     );
@@ -136,7 +138,7 @@ describe('ventasUseCases', () => {
           unidad_codigo: 'A01',
           cliente_nombre: 'CLIENTE BASE',
           cliente_identificacion: '123',
-          estado: VENTA_OPERACION_ESTADOS.ACTIVA,
+          estado: RESERVA_OPERACION_ESTADOS.ACTIVA,
           metadata: null,
         }),
       upsertUnidad: jest
@@ -150,7 +152,7 @@ describe('ventasUseCases', () => {
         proyecto_codigo: 'EDE',
         unidad_codigo: 'A01',
         cliente_nombre: 'CLIENTE BASE',
-        estado: VENTA_OPERACION_ESTADOS.TRASLADADA,
+        estado: RESERVA_OPERACION_ESTADOS.TRASLADADA,
       }),
       createOperacion: jest.fn().mockResolvedValue({
         id: 201,
@@ -159,11 +161,11 @@ describe('ventasUseCases', () => {
         proyecto_codigo: 'ASF',
         unidad_codigo: 'B02',
         cliente_nombre: 'CLIENTE BASE',
-        estado: VENTA_OPERACION_ESTADOS.ACTIVA,
+        estado: RESERVA_OPERACION_ESTADOS.ACTIVA,
         origen_operacion_id: 100,
       }),
     });
-    const useCases = createVentasUseCases({ ventasRepo: repo, baseDir: path.resolve(__dirname, '..', '..') });
+    const useCases = createReservasUseCases({ reservasRepo: repo, baseDir: path.resolve(__dirname, '..', '..') });
 
     const result = await useCases.transferOperacion({
       user: { id: 1, email: 'qa@novogar.local', permissions: ['acceso_total'] },
@@ -181,14 +183,14 @@ describe('ventasUseCases', () => {
     expect(repo.updateOperacionEstado).toHaveBeenCalledWith(
       expect.objectContaining({
         id: 100,
-        estado: VENTA_OPERACION_ESTADOS.TRASLADADA,
+        estado: RESERVA_OPERACION_ESTADOS.TRASLADADA,
       }),
       client,
     );
     expect(repo.createOperacion).toHaveBeenCalledWith(
       expect.objectContaining({
         unidadId: 20,
-        estado: VENTA_OPERACION_ESTADOS.ACTIVA,
+        estado: RESERVA_OPERACION_ESTADOS.ACTIVA,
         origenOperacionId: 100,
       }),
       client,
@@ -209,7 +211,7 @@ describe('ventasUseCases', () => {
         proyecto_codigo: 'ASF',
         unidad_codigo: 'A01',
         cliente_nombre: 'CLIENTE NUEVO',
-        estado: VENTA_OPERACION_ESTADOS.ACTIVA,
+        estado: RESERVA_OPERACION_ESTADOS.ACTIVA,
       }),
       getOperacionById: jest.fn().mockResolvedValue({
         id: 301,
@@ -218,7 +220,7 @@ describe('ventasUseCases', () => {
         proyecto_codigo: 'ASF',
         unidad_codigo: 'A01',
         cliente_nombre: 'CLIENTE NUEVO',
-        estado: VENTA_OPERACION_ESTADOS.ACTIVA,
+        estado: RESERVA_OPERACION_ESTADOS.ACTIVA,
       }),
       upsertOperacionDocumento: jest.fn().mockResolvedValue({
         id: 55,
@@ -226,7 +228,7 @@ describe('ventasUseCases', () => {
         codigo_documento: 'PAGO_RESERVA',
       }),
     });
-    const useCases = createVentasUseCases({ ventasRepo: repo, baseDir: path.resolve(__dirname, '..', '..') });
+    const useCases = createReservasUseCases({ reservasRepo: repo, baseDir: path.resolve(__dirname, '..', '..') });
 
     const result = await useCases.syncOperacionDocumento({
       user: { id: 1, email: 'qa@novogar.local', permissions: ['acceso_total'] },
@@ -255,4 +257,48 @@ describe('ventasUseCases', () => {
       operacion_creada: true,
     });
   });
+
+  test('getOperacionDocumentoPreview resuelve rutas historicas entre reservas y ventas', async () => {
+    const tempBaseDir = fs.mkdtempSync(path.join(os.tmpdir(), 'novogar-reservas-preview-'));
+    const legacyDocumentDir = path.join(tempBaseDir, 'documentos', 'ventas_operaciones', '100');
+    const legacyDocumentPath = path.join(legacyDocumentDir, 'PAGO_RESERVA.pdf');
+
+    fs.mkdirSync(legacyDocumentDir, { recursive: true });
+    fs.writeFileSync(legacyDocumentPath, 'pdf-test');
+
+    try {
+      const { repo } = createRepoMock({
+        getOperacionDocumentoById: jest.fn().mockResolvedValue({
+          id: 88,
+          operacion_id: 100,
+          codigo_documento: 'PAGO_RESERVA',
+          nombre_archivo: 'PAGO_RESERVA.pdf',
+          ruta_archivo: legacyDocumentPath.replace('ventas_operaciones', 'reservas_operaciones'),
+        }),
+      });
+      const useCases = createReservasUseCases({ reservasRepo: repo, baseDir: tempBaseDir });
+
+      const result = await useCases.getOperacionDocumentoPreview({
+        user: { id: 1, email: 'qa@novogar.local', permissions: ['acceso_total'] },
+        operacionId: 100,
+        documentoId: 88,
+      });
+
+      expect(result.fullPath).toBe(legacyDocumentPath);
+      expect(result.documento).toMatchObject({
+        id: 88,
+        codigo_documento: 'PAGO_RESERVA',
+      });
+    } finally {
+      fs.rmSync(tempBaseDir, { recursive: true, force: true });
+    }
+  });
 });
+
+
+
+
+
+
+
+

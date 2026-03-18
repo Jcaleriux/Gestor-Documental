@@ -31,6 +31,7 @@ const createDataFixture = () => {
     proveedoresSociedad: [{ id: 55 }],
     setConta: noop,
     setContaSaving: noop,
+    setContaSavingAction: noop,
     setContaMessage: noop,
     setContaError: noop,
     setTablasPagoProveedor: noop,

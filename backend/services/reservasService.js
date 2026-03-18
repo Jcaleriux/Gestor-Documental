@@ -1,14 +1,14 @@
 const path = require('path');
 const { handleRequest } = require('../utils/http');
 const { sendFile } = require('./filesService');
-const { createVentasUseCases } = require('./ventasUseCases');
-const ventasRepo = require('../repositories/ventasRepository');
+const { createReservasUseCases } = require('./reservasUseCases');
+const reservasRepo = require('../repositories/reservasRepository');
 
 const defaultBaseDir = path.resolve(__dirname, '..', '..');
 const baseDir = process.env.FACTURAS_BASE_DIR || defaultBaseDir;
-const useCases = createVentasUseCases({ ventasRepo, baseDir });
+const useCases = createReservasUseCases({ reservasRepo, baseDir });
 
-const listOperacionesVenta = handleRequest(async (req) => {
+const listOperacionesReserva = handleRequest(async (req) => {
   const {
     sociedad_id,
     estado,
@@ -27,24 +27,24 @@ const listOperacionesVenta = handleRequest(async (req) => {
     cliente,
     limit,
   });
-}, 'Error fetching ventas operations:', 'Error fetching ventas operations');
+}, 'Error fetching reservas:', 'Error fetching reservas');
 
-const getOperacionVenta = handleRequest(async (req) => {
+const getOperacionReserva = handleRequest(async (req) => {
   const { operacionId } = req.params;
   return useCases.getOperacion({
     user: req.user,
     operacionId,
   });
-}, 'Error fetching ventas operation:', 'Error fetching ventas operation');
+}, 'Error fetching reserva:', 'Error fetching reserva');
 
-const createOperacionVenta = handleRequest(async (req) => {
+const createOperacionReserva = handleRequest(async (req) => {
   return useCases.createOperacion({
     user: req.user,
     ...(req.body || {}),
   });
-}, 'Error creating ventas operation:', 'Error creating ventas operation');
+}, 'Error creating reserva:', 'Error creating reserva');
 
-const cancelOperacionVenta = handleRequest(async (req) => {
+const cancelOperacionReserva = handleRequest(async (req) => {
   const { operacionId } = req.params;
   const { motivo, usuario } = req.body || {};
 
@@ -54,9 +54,9 @@ const cancelOperacionVenta = handleRequest(async (req) => {
     motivo,
     usuario,
   });
-}, 'Error canceling ventas operation:', 'Error canceling ventas operation');
+}, 'Error canceling reserva:', 'Error canceling reserva');
 
-const closeOperacionVenta = handleRequest(async (req) => {
+const closeOperacionReserva = handleRequest(async (req) => {
   const { operacionId } = req.params;
   const { motivo, usuario } = req.body || {};
 
@@ -66,9 +66,9 @@ const closeOperacionVenta = handleRequest(async (req) => {
     motivo,
     usuario,
   });
-}, 'Error closing ventas operation:', 'Error closing ventas operation');
+}, 'Error closing reserva:', 'Error closing reserva');
 
-const transferOperacionVenta = handleRequest(async (req) => {
+const transferOperacionReserva = handleRequest(async (req) => {
   const { operacionId } = req.params;
 
   return useCases.transferOperacion({
@@ -76,9 +76,9 @@ const transferOperacionVenta = handleRequest(async (req) => {
     operacionId,
     ...(req.body || {}),
   });
-}, 'Error transferring ventas operation:', 'Error transferring ventas operation');
+}, 'Error transferring reserva:', 'Error transferring reserva');
 
-const upsertOperacionDocumentoVenta = handleRequest(async (req) => {
+const upsertOperacionDocumentoReserva = handleRequest(async (req) => {
   const { operacionId } = req.params;
 
   return useCases.upsertOperacionDocumento({
@@ -86,16 +86,16 @@ const upsertOperacionDocumentoVenta = handleRequest(async (req) => {
     operacionId,
     ...(req.body || {}),
   });
-}, 'Error upserting ventas operation document:', 'Error upserting ventas operation document');
+}, 'Error upserting reserva document:', 'Error upserting reserva document');
 
-const syncOperacionDocumentoVenta = handleRequest(async (req) => {
+const syncOperacionDocumentoReserva = handleRequest(async (req) => {
   return useCases.syncOperacionDocumento({
     user: req.user,
     ...(req.body || {}),
   });
-}, 'Error syncing ventas operation document:', 'Error syncing ventas operation document');
+}, 'Error syncing reserva document:', 'Error syncing reserva document');
 
-const previewOperacionDocumentoVenta = handleRequest(async (req, res) => {
+const previewOperacionDocumentoReserva = handleRequest(async (req, res) => {
   const { operacionId, documentoId } = req.params;
   const result = await useCases.getOperacionDocumentoPreview({
     user: req.user,
@@ -104,13 +104,13 @@ const previewOperacionDocumentoVenta = handleRequest(async (req, res) => {
   });
 
   await sendFile(res, result.fullPath, {
-    logMessage: 'Error sending ventas operation document preview:',
+    logMessage: 'Error sending reserva document preview:',
     contentType: result.documento?.mime_type || undefined,
     contentDisposition: `inline; filename="${result.documento?.nombre_archivo || `doc_${documentoId}`}"`,
   });
-}, 'Error previewing ventas operation document:', 'Error previewing ventas operation document');
+}, 'Error previewing reserva document:', 'Error previewing reserva document');
 
-const replaceOperacionDocumentoVenta = handleRequest(async (req) => {
+const replaceOperacionDocumentoReserva = handleRequest(async (req) => {
   const { operacionId, documentoId } = req.params;
 
   return useCases.replaceOperacionDocumento({
@@ -119,17 +119,33 @@ const replaceOperacionDocumentoVenta = handleRequest(async (req) => {
     documentoId,
     ...(req.body || {}),
   });
-}, 'Error replacing ventas operation document:', 'Error replacing ventas operation document');
+}, 'Error replacing reserva document:', 'Error replacing reserva document');
 
 module.exports = {
-  listOperacionesVenta,
-  getOperacionVenta,
-  createOperacionVenta,
-  cancelOperacionVenta,
-  closeOperacionVenta,
-  transferOperacionVenta,
-  upsertOperacionDocumentoVenta,
-  syncOperacionDocumentoVenta,
-  previewOperacionDocumentoVenta,
-  replaceOperacionDocumentoVenta,
+  listOperacionesReserva,
+  getOperacionReserva,
+  createOperacionReserva,
+  cancelOperacionReserva,
+  closeOperacionReserva,
+  transferOperacionReserva,
+  upsertOperacionDocumentoReserva,
+  syncOperacionDocumentoReserva,
+  previewOperacionDocumentoReserva,
+  replaceOperacionDocumentoReserva,
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

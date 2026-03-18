@@ -71,6 +71,7 @@ const createDataFixture = () => {
     notasError: '',
     retencionPagos: [],
     contaSaving: false,
+    contaSavingAction: '',
     contaMessage: '',
     contaError: '',
     retencionPagoMonto: '',
@@ -86,6 +87,7 @@ const createDataFixture = () => {
     setComentarios: noop,
     setConta: noop,
     setContaSaving: noop,
+    setContaSavingAction: noop,
     setContaMessage: noop,
     setContaError: noop,
     setTablasPagoProveedor: noop,
@@ -123,6 +125,8 @@ const createActionsFixture = () => {
     verTablaPagoAsociada: noop,
     verOrdenCompraAsociada: noop,
     verNotaCreditoAsociada: noop,
+    guardarBorrador: noop,
+    marcarEnRevision: noop,
     guardarContabilizacion: noop,
     registrarPagoRetencion: noop,
     verMensajeHacienda: noop,
@@ -155,15 +159,19 @@ test('buildFacturaDetalleHookOutput compone contrato seccionado + viewModels cua
     const output = buildFacturaDetalleHookOutput({
       id: 101,
       data,
-      actions
+      actions,
+      selectedSociedadName: 'ASF',
+      canEditContabilizacion: true
     });
 
     assert.equal(output.meta.factura.id, 101);
     assert.equal(output.meta.loading, false);
+    assert.equal(output.meta.canEditContabilizacion, true);
     assert.equal(output.state.contabilizacion.conta.proveedor_id, '5');
     assert.equal(output.state.retencion.retencionPagoFecha, '2026-02-27');
     assert.equal(output.actions.addComment, actions.addComment);
     assert.equal(output.viewModels.summary.factura.id, 101);
+    assert.equal(output.viewModels.summary.selectedSociedadName, 'ASF');
     assert.equal(output.viewModels.pdf.id, 101);
   } finally {
     restore();
@@ -178,7 +186,9 @@ test('buildFacturaDetalleHookOutput retorna viewModels null cuando no hay factur
   const output = buildFacturaDetalleHookOutput({
     id: 101,
     data,
-    actions
+    actions,
+    selectedSociedadName: '',
+    canEditContabilizacion: false
   });
 
   assert.equal(output.meta.factura, null);

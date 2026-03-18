@@ -1,7 +1,7 @@
 const Joi = require('joi');
 
 const createComentarioSchema = Joi.object({
-  usuario: Joi.string().trim().required(),
+  usuario: Joi.string().trim().allow('', null).optional(),
   texto: Joi.string().trim().required()
 });
 
@@ -96,6 +96,7 @@ const upsertContabilizacionSchema = Joi.object({
   tabla_pago_id: Joi.number().integer().positive().allow(null),
   nota_credito_id: Joi.number().integer().positive().allow(null),
   notas: Joi.string().allow('', null),
+  workflow_action: Joi.string().trim().valid('save_draft', 'mark_in_review', 'finalize').optional(),
   metadata: Joi.any(),
   usuario: Joi.string().allow('', null)
 });
@@ -184,7 +185,7 @@ const updateOrdenCompraEstadoSchema = Joi.object({
   estado: Joi.string().trim().valid('abierta', 'cerrada').required()
 });
 
-const createVentaOperacionSchema = Joi.object({
+const createReservaOperacionSchema = Joi.object({
   sociedad_id: Joi.number().integer().positive().required(),
   proyecto_codigo: Joi.string().trim().max(20).required(),
   unidad_codigo: Joi.string().trim().max(20).required(),
@@ -194,17 +195,17 @@ const createVentaOperacionSchema = Joi.object({
   usuario: Joi.string().trim().max(100).allow('', null),
 });
 
-const cancelVentaOperacionSchema = Joi.object({
+const cancelReservaOperacionSchema = Joi.object({
   motivo: Joi.string().trim().max(1000).allow('', null),
   usuario: Joi.string().trim().max(100).allow('', null),
 });
 
-const closeVentaOperacionSchema = Joi.object({
+const closeReservaOperacionSchema = Joi.object({
   motivo: Joi.string().trim().max(1000).allow('', null),
   usuario: Joi.string().trim().max(100).allow('', null),
 });
 
-const transferVentaOperacionSchema = Joi.object({
+const transferReservaOperacionSchema = Joi.object({
   destino_sociedad_id: Joi.number().integer().positive().allow(null),
   destino_proyecto_codigo: Joi.string().trim().max(20).required(),
   destino_unidad_codigo: Joi.string().trim().max(20).required(),
@@ -215,7 +216,7 @@ const transferVentaOperacionSchema = Joi.object({
   metadata: Joi.any(),
 });
 
-const upsertVentaOperacionDocumentoSchema = Joi.object({
+const upsertReservaOperacionDocumentoSchema = Joi.object({
   codigo_documento: Joi.string().trim().max(50).required(),
   nombre_archivo: Joi.string().trim().max(255).required(),
   ruta_archivo: Joi.string().trim().max(2000).required(),
@@ -226,7 +227,7 @@ const upsertVentaOperacionDocumentoSchema = Joi.object({
   usuario: Joi.string().trim().max(100).allow('', null),
 });
 
-const syncVentaDocumentoSchema = Joi.object({
+const syncReservaDocumentoSchema = Joi.object({
   sociedad_id: Joi.number().integer().positive().allow(null),
   proyecto_codigo: Joi.string().trim().max(20).required(),
   unidad_codigo: Joi.string().trim().max(20).required(),
@@ -242,7 +243,7 @@ const syncVentaDocumentoSchema = Joi.object({
   usuario: Joi.string().trim().max(100).allow('', null),
 });
 
-const replaceVentaOperacionDocumentoSchema = Joi.object({
+const replaceReservaOperacionDocumentoSchema = Joi.object({
   filename: Joi.string().trim().max(255).required(),
   file_base64: Joi.string().trim().required(),
   mime_type: Joi.string().trim().max(150).allow('', null),
@@ -273,11 +274,18 @@ module.exports = {
   createOrdenCompraSchema,
   autoImportOrdenCompraSchema,
   updateOrdenCompraEstadoSchema,
-  createVentaOperacionSchema,
-  cancelVentaOperacionSchema,
-  closeVentaOperacionSchema,
-  transferVentaOperacionSchema,
-  upsertVentaOperacionDocumentoSchema,
-  syncVentaDocumentoSchema,
-  replaceVentaOperacionDocumentoSchema,
+  createReservaOperacionSchema,
+  cancelReservaOperacionSchema,
+  closeReservaOperacionSchema,
+  transferReservaOperacionSchema,
+  upsertReservaOperacionDocumentoSchema,
+  syncReservaDocumentoSchema,
+  replaceReservaOperacionDocumentoSchema,
 };
+
+
+
+
+
+
+

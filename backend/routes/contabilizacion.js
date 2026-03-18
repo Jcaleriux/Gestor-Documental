@@ -50,6 +50,7 @@ router.post(
     tabla_pago_id,
     nota_credito_id,
     notas,
+    workflow_action,
     metadata,
     usuario
   } = req.body || {};
@@ -75,6 +76,7 @@ router.post(
     tabla_pago_id,
     nota_credito_id,
     notas,
+    workflow_action,
     metadata,
     usuario: actorUsuario
   });

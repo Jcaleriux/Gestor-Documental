@@ -4,8 +4,6 @@ import { FACTURA_DETALLE_LABELS } from '../../utils/uiLabels';
 
 function FacturaDetalleComentariosSection({ viewModel }) {
   const {
-    commentUser,
-    setCommentUser,
     commentText,
     setCommentText,
     addComment,
@@ -15,12 +13,6 @@ function FacturaDetalleComentariosSection({ viewModel }) {
   return (
     <SectionCard title={FACTURA_DETALLE_LABELS.comentarios.title}>
       <form onSubmit={addComment} className="d-grid gap-2 mb-3">
-        <input
-          className="form-control"
-          value={commentUser}
-          onChange={(event) => setCommentUser(event.target.value)}
-          placeholder={FACTURA_DETALLE_LABELS.comentarios.usuarioPlaceholder}
-        />
         <textarea
           className="form-control"
           rows="3"

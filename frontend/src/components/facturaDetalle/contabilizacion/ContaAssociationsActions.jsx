@@ -1,6 +1,7 @@
 function ContaAssociationsActions({ viewModel }) {
   const {
     conta,
+    canEditContabilizacion,
     tablasLoading,
     ordenesLoading,
     notasLoading,
@@ -17,31 +18,36 @@ function ContaAssociationsActions({ viewModel }) {
 
   return (
     <>
+      {canEditContabilizacion ? (
+        <div className="col-12 d-flex flex-wrap gap-2">
+          <button
+            className="btn btn-outline-primary btn-sm"
+            type="button"
+            onClick={abrirAsociarTablaPago}
+            disabled={tablasLoading || !conta.proveedor_id}
+          >
+            {tablasLoading ? 'Cargando tablas...' : 'Asociar tabla de pagos'}
+          </button>
+          <button
+            className="btn btn-outline-primary btn-sm"
+            type="button"
+            onClick={abrirAsociarOrdenCompra}
+            disabled={ordenesLoading || !conta.proveedor_id}
+          >
+            {ordenesLoading ? 'Cargando OCs...' : 'Asociar orden de compra'}
+          </button>
+          <button
+            className="btn btn-outline-primary btn-sm"
+            type="button"
+            onClick={abrirAsociarNotaCredito}
+            disabled={notasLoading || !conta.proveedor_id}
+          >
+            {notasLoading ? 'Cargando notas...' : 'Asociar nota de credito'}
+          </button>
+        </div>
+      ) : null}
+
       <div className="col-12 d-flex flex-wrap gap-2">
-        <button
-          className="btn btn-outline-primary btn-sm"
-          type="button"
-          onClick={abrirAsociarTablaPago}
-          disabled={tablasLoading || !conta.proveedor_id}
-        >
-          {tablasLoading ? 'Cargando tablas...' : 'Asociar tabla de pagos'}
-        </button>
-        <button
-          className="btn btn-outline-primary btn-sm"
-          type="button"
-          onClick={abrirAsociarOrdenCompra}
-          disabled={ordenesLoading || !conta.proveedor_id}
-        >
-          {ordenesLoading ? 'Cargando OCs...' : 'Asociar orden de compra'}
-        </button>
-        <button
-          className="btn btn-outline-primary btn-sm"
-          type="button"
-          onClick={abrirAsociarNotaCredito}
-          disabled={notasLoading || !conta.proveedor_id}
-        >
-          {notasLoading ? 'Cargando notas...' : 'Asociar nota de credito'}
-        </button>
         {tablaPagoActual?.ruta_pdf && (
           <button
             className="btn btn-outline-success btn-sm"

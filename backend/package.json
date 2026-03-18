@@ -13,12 +13,13 @@
         "db:migrate:tramites-retenciones": "node db/migrate_tramites_retenciones.js",
         "db:migrate:pagos-parciales": "node db/migrate_facturas_pagos_parciales.js",
         "db:migrate:ordenes-compra": "node db/migrate_ordenes_compra.js",
-        "db:migrate:ventas": "node db/migrate_ventas.js",
+        "db:migrate:reservas": "node db/migrate_reservas.js",
         "importar": "node scripts/importarFactura.js",
         "watcher": "node scripts/watcher.js",
         "proveedores:backfill": "node scripts/backfill_proveedores.js",
         "reindex": "node scripts/reindex_rutas.js",
         "diagnostico": "node scripts/diagnostico_docs.js",
+        "smoke:facturas": "node scripts/smoke_facturas_list.js",
         "reporte-duplicados": "node scripts/reporte_duplicados.js",
         "reset-docs": "node scripts/reset_documentos.js",
         "server": "node server.js",
@@ -43,3 +44,5 @@
         "supertest": "^7.1.3"
     }
 }
+
+

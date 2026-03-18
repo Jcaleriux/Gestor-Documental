@@ -3,13 +3,13 @@ import PageHeader from '../common/PageHeader';
 import FacturaDetalleSummaryCard from './FacturaDetalleSummaryCard';
 import FacturaDetallePdfSection from './FacturaDetallePdfSection';
 import FacturaDetalleContabilizacionSection from './FacturaDetalleContabilizacionSection';
-import FacturaDetalleEstadoSection from './FacturaDetalleEstadoSection';
 import FacturaDetalleHistorialSection from './FacturaDetalleHistorialSection';
 import FacturaDetalleComentariosSection from './FacturaDetalleComentariosSection';
 
 function FacturaDetalleLayout({ layoutProps }) {
   const {
     header,
+    summary,
     leftColumn,
     rightColumn
   } = layoutProps;
@@ -26,17 +26,17 @@ function FacturaDetalleLayout({ layoutProps }) {
         )}
       />
 
-      <div className="row g-3">
-        <div className="col-12 col-lg-7">
-          <FacturaDetalleSummaryCard viewModel={leftColumn.summary} />
+      <FacturaDetalleSummaryCard viewModel={summary} />
 
-          <FacturaDetallePdfSection viewModel={leftColumn.pdf} />
+      <div className="row g-3">
+        <div className="col-12 col-lg-5">
+          <div className="factura-conta-sticky">
+            <FacturaDetalleContabilizacionSection viewModel={leftColumn.contabilizacion} />
+          </div>
         </div>
 
-        <div className="col-12 col-lg-5">
-          <FacturaDetalleContabilizacionSection viewModel={rightColumn.contabilizacion} />
-
-          <FacturaDetalleEstadoSection viewModel={rightColumn.estado} />
+        <div className="col-12 col-lg-7">
+          <FacturaDetallePdfSection viewModel={rightColumn.pdf} />
 
           <FacturaDetalleHistorialSection viewModel={rightColumn.historial} />
 

@@ -413,7 +413,7 @@ CREATE TABLE IF NOT EXISTS public.versiones_documento
     CONSTRAINT versiones_documento_factura_numero_key UNIQUE (factura_id, numero)
 );
 
-CREATE TABLE IF NOT EXISTS public.ventas_unidades
+CREATE TABLE IF NOT EXISTS public.reservas_unidades
 (
     id serial NOT NULL,
     sociedad_id integer NOT NULL,
@@ -422,11 +422,11 @@ CREATE TABLE IF NOT EXISTS public.ventas_unidades
     activo boolean DEFAULT true,
     creado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     actualizado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT ventas_unidades_pkey PRIMARY KEY (id),
-    CONSTRAINT ventas_unidades_sociedad_id_proyecto_codigo_unidad_codigo_key UNIQUE (sociedad_id, proyecto_codigo, unidad_codigo)
+    CONSTRAINT reservas_unidades_pkey PRIMARY KEY (id),
+    CONSTRAINT reservas_unidades_sociedad_id_proyecto_codigo_unidad_codigo_key UNIQUE (sociedad_id, proyecto_codigo, unidad_codigo)
 );
 
-CREATE TABLE IF NOT EXISTS public.ventas_operaciones
+CREATE TABLE IF NOT EXISTS public.reservas_operaciones
 (
     id serial NOT NULL,
     unidad_id integer NOT NULL,
@@ -440,8 +440,8 @@ CREATE TABLE IF NOT EXISTS public.ventas_operaciones
     creado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     actualizado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     cerrado_en timestamp without time zone,
-    CONSTRAINT ventas_operaciones_pkey PRIMARY KEY (id),
-    CONSTRAINT ventas_operaciones_estado_check CHECK (estado IN (
+    CONSTRAINT reservas_operaciones_pkey PRIMARY KEY (id),
+    CONSTRAINT reservas_operaciones_estado_check CHECK (estado IN (
       'activa',
       'cancelada',
       'trasladada',
@@ -449,7 +449,7 @@ CREATE TABLE IF NOT EXISTS public.ventas_operaciones
     ))
 );
 
-CREATE TABLE IF NOT EXISTS public.ventas_operaciones_historial
+CREATE TABLE IF NOT EXISTS public.reservas_operaciones_historial
 (
     id serial NOT NULL,
     operacion_id integer NOT NULL,
@@ -460,10 +460,10 @@ CREATE TABLE IF NOT EXISTS public.ventas_operaciones_historial
     motivo text,
     detalles jsonb,
     creado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT ventas_operaciones_historial_pkey PRIMARY KEY (id)
+    CONSTRAINT reservas_operaciones_historial_pkey PRIMARY KEY (id)
 );
 
-CREATE TABLE IF NOT EXISTS public.ventas_operaciones_documentos
+CREATE TABLE IF NOT EXISTS public.reservas_operaciones_documentos
 (
     id serial NOT NULL,
     operacion_id integer NOT NULL,
@@ -477,8 +477,8 @@ CREATE TABLE IF NOT EXISTS public.ventas_operaciones_documentos
     creado_por character varying(100),
     creado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     actualizado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT ventas_operaciones_documentos_pkey PRIMARY KEY (id),
-    CONSTRAINT ventas_operaciones_documentos_operacion_id_codigo_documento_key UNIQUE (operacion_id, codigo_documento)
+    CONSTRAINT reservas_operaciones_documentos_pkey PRIMARY KEY (id),
+    CONSTRAINT reservas_operaciones_documentos_operacion_id_codigo_documento_key UNIQUE (operacion_id, codigo_documento)
 );
 
 ALTER TABLE IF EXISTS public.auditoria
@@ -792,58 +792,65 @@ ALTER TABLE IF EXISTS public.versiones_documento
 CREATE INDEX IF NOT EXISTS idx_versiones_factura
     ON public.versiones_documento(factura_id);
 
-ALTER TABLE IF EXISTS public.ventas_unidades
-    ADD CONSTRAINT ventas_unidades_sociedad_id_fkey FOREIGN KEY (sociedad_id)
+ALTER TABLE IF EXISTS public.reservas_unidades
+    ADD CONSTRAINT reservas_unidades_sociedad_id_fkey FOREIGN KEY (sociedad_id)
     REFERENCES public.sociedades (id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE NO ACTION;
-CREATE INDEX IF NOT EXISTS idx_ventas_unidades_sociedad
-    ON public.ventas_unidades(sociedad_id);
-CREATE INDEX IF NOT EXISTS idx_ventas_unidades_proyecto
-    ON public.ventas_unidades(proyecto_codigo);
-CREATE INDEX IF NOT EXISTS idx_ventas_unidades_unidad
-    ON public.ventas_unidades(unidad_codigo);
+CREATE INDEX IF NOT EXISTS idx_reservas_unidades_sociedad
+    ON public.reservas_unidades(sociedad_id);
+CREATE INDEX IF NOT EXISTS idx_reservas_unidades_proyecto
+    ON public.reservas_unidades(proyecto_codigo);
+CREATE INDEX IF NOT EXISTS idx_reservas_unidades_unidad
+    ON public.reservas_unidades(unidad_codigo);
 
-ALTER TABLE IF EXISTS public.ventas_operaciones
-    ADD CONSTRAINT ventas_operaciones_unidad_id_fkey FOREIGN KEY (unidad_id)
-    REFERENCES public.ventas_unidades (id) MATCH SIMPLE
+ALTER TABLE IF EXISTS public.reservas_operaciones
+    ADD CONSTRAINT reservas_operaciones_unidad_id_fkey FOREIGN KEY (unidad_id)
+    REFERENCES public.reservas_unidades (id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE CASCADE;
-ALTER TABLE IF EXISTS public.ventas_operaciones
-    ADD CONSTRAINT ventas_operaciones_origen_operacion_id_fkey FOREIGN KEY (origen_operacion_id)
-    REFERENCES public.ventas_operaciones (id) MATCH SIMPLE
+ALTER TABLE IF EXISTS public.reservas_operaciones
+    ADD CONSTRAINT reservas_operaciones_origen_operacion_id_fkey FOREIGN KEY (origen_operacion_id)
+    REFERENCES public.reservas_operaciones (id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE SET NULL;
-CREATE INDEX IF NOT EXISTS idx_ventas_operaciones_unidad
-    ON public.ventas_operaciones(unidad_id);
-CREATE INDEX IF NOT EXISTS idx_ventas_operaciones_estado
-    ON public.ventas_operaciones(estado);
-CREATE INDEX IF NOT EXISTS idx_ventas_operaciones_creado_en
-    ON public.ventas_operaciones(creado_en DESC);
-CREATE UNIQUE INDEX IF NOT EXISTS ux_ventas_operaciones_unidad_activa
-    ON public.ventas_operaciones(unidad_id)
+CREATE INDEX IF NOT EXISTS idx_reservas_operaciones_unidad
+    ON public.reservas_operaciones(unidad_id);
+CREATE INDEX IF NOT EXISTS idx_reservas_operaciones_estado
+    ON public.reservas_operaciones(estado);
+CREATE INDEX IF NOT EXISTS idx_reservas_operaciones_creado_en
+    ON public.reservas_operaciones(creado_en DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_reservas_operaciones_unidad_activa
+    ON public.reservas_operaciones(unidad_id)
     WHERE estado = 'activa';
 
-ALTER TABLE IF EXISTS public.ventas_operaciones_historial
-    ADD CONSTRAINT ventas_operaciones_historial_operacion_id_fkey FOREIGN KEY (operacion_id)
-    REFERENCES public.ventas_operaciones (id) MATCH SIMPLE
+ALTER TABLE IF EXISTS public.reservas_operaciones_historial
+    ADD CONSTRAINT reservas_operaciones_historial_operacion_id_fkey FOREIGN KEY (operacion_id)
+    REFERENCES public.reservas_operaciones (id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE CASCADE;
-CREATE INDEX IF NOT EXISTS idx_ventas_operaciones_historial_operacion
-    ON public.ventas_operaciones_historial(operacion_id);
-CREATE INDEX IF NOT EXISTS idx_ventas_operaciones_historial_creado_en
-    ON public.ventas_operaciones_historial(creado_en DESC);
+CREATE INDEX IF NOT EXISTS idx_reservas_operaciones_historial_operacion
+    ON public.reservas_operaciones_historial(operacion_id);
+CREATE INDEX IF NOT EXISTS idx_reservas_operaciones_historial_creado_en
+    ON public.reservas_operaciones_historial(creado_en DESC);
 
-ALTER TABLE IF EXISTS public.ventas_operaciones_documentos
-    ADD CONSTRAINT ventas_operaciones_documentos_operacion_id_fkey FOREIGN KEY (operacion_id)
-    REFERENCES public.ventas_operaciones (id) MATCH SIMPLE
+ALTER TABLE IF EXISTS public.reservas_operaciones_documentos
+    ADD CONSTRAINT reservas_operaciones_documentos_operacion_id_fkey FOREIGN KEY (operacion_id)
+    REFERENCES public.reservas_operaciones (id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE CASCADE;
-CREATE INDEX IF NOT EXISTS idx_ventas_operaciones_documentos_operacion
-    ON public.ventas_operaciones_documentos(operacion_id);
-CREATE INDEX IF NOT EXISTS idx_ventas_operaciones_documentos_codigo
-    ON public.ventas_operaciones_documentos(codigo_documento);
-CREATE INDEX IF NOT EXISTS idx_ventas_operaciones_documentos_creado_en
-    ON public.ventas_operaciones_documentos(creado_en DESC);
+CREATE INDEX IF NOT EXISTS idx_reservas_operaciones_documentos_operacion
+    ON public.reservas_operaciones_documentos(operacion_id);
+CREATE INDEX IF NOT EXISTS idx_reservas_operaciones_documentos_codigo
+    ON public.reservas_operaciones_documentos(codigo_documento);
+CREATE INDEX IF NOT EXISTS idx_reservas_operaciones_documentos_creado_en
+    ON public.reservas_operaciones_documentos(creado_en DESC);
 
 COMMIT;
+
+
+
+
+
+
+

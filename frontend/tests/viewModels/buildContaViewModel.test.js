@@ -9,6 +9,8 @@ import {
 } from '../../src/components/facturaDetalle/viewModels/buildContaViewModel.js';
 
 const createDetalleFixture = () => ({
+  canEditContabilizacion: true,
+  factura: { estado: 'no_contabilizado' },
   conta: {
     descuento: 100,
     anticipo_aplicado: 50,
@@ -18,9 +20,12 @@ const createDetalleFixture = () => ({
   },
   proveedoresSociedad: [{ id: 5, nombre: 'Proveedor X' }],
   contaSaving: false,
+  contaSavingAction: '',
   contaMessage: '',
   contaError: '',
   handleContaChange: createMockFn(),
+  guardarBorrador: createMockFn(),
+  marcarEnRevision: createMockFn(),
   guardarContabilizacion: createMockFn(),
   tablasLoading: false,
   ordenesLoading: false,
@@ -73,6 +78,7 @@ test('sub-builders de buildContaViewModel conservan contrato por seccion', () =>
   assert.equal(totals.totalFactura, 1000);
   assert.equal(totals.rebajosAplicados, 175);
   assert.equal(main.form.conta, detalle.conta);
+  assert.equal(main.form.canEditContabilizacion, true);
   assert.equal(main.associations.tablaPagoActual.id, 11);
   assert.equal(main.modals.tablas.items.length, 1);
   assert.equal(retencion.retencionTotal, 75);
@@ -86,6 +92,7 @@ test('buildContaViewModel compone form/associations/modals/retencion/totals', ()
   const viewModel = buildContaViewModel({ factura, detalle });
 
   assert.equal(viewModel.form.conta, detalle.conta);
+  assert.equal(viewModel.form.guardarBorrador, detalle.guardarBorrador);
   assert.equal(viewModel.associations.ordenCompraActual.id, 21);
   assert.equal(viewModel.modals.ordenes.items.length, 1);
   assert.equal(viewModel.retencion.retencionPendiente, 50);

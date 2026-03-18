@@ -22,7 +22,7 @@ const OPERACION_SELECT = `
   vo.cerrado_en,
   (
     SELECT COUNT(*)::int
-    FROM ventas_operaciones_documentos vod
+    FROM reservas_operaciones_documentos vod
     WHERE vod.operacion_id = vo.id
   ) AS total_documentos
 `;
@@ -31,7 +31,7 @@ const getUnidadByNaturalKey = async ({ sociedadId, proyectoCodigo, unidadCodigo 
   const { rows } = await getDb(client).query(
     `
     SELECT *
-    FROM ventas_unidades
+    FROM reservas_unidades
     WHERE sociedad_id = $1
       AND proyecto_codigo = $2
       AND unidad_codigo = $3
@@ -60,7 +60,7 @@ const getSociedadByCodigo = async (codigo, client) => {
 const upsertUnidad = async ({ sociedadId, proyectoCodigo, unidadCodigo }, client) => {
   const { rows } = await getDb(client).query(
     `
-    INSERT INTO ventas_unidades (
+    INSERT INTO reservas_unidades (
       sociedad_id,
       proyecto_codigo,
       unidad_codigo,
@@ -83,8 +83,8 @@ const findActiveOperacionByUnidadId = async (unidadId, client) => {
   const { rows } = await getDb(client).query(
     `
     SELECT ${OPERACION_SELECT}
-    FROM ventas_operaciones vo
-    JOIN ventas_unidades vu ON vu.id = vo.unidad_id
+    FROM reservas_operaciones vo
+    JOIN reservas_unidades vu ON vu.id = vo.unidad_id
     WHERE vo.unidad_id = $1
       AND vo.estado = 'activa'
     ORDER BY vo.creado_en DESC, vo.id DESC
@@ -100,8 +100,8 @@ const getOperacionById = async (id, client) => {
   const { rows } = await getDb(client).query(
     `
     SELECT ${OPERACION_SELECT}
-    FROM ventas_operaciones vo
-    JOIN ventas_unidades vu ON vu.id = vo.unidad_id
+    FROM reservas_operaciones vo
+    JOIN reservas_unidades vu ON vu.id = vo.unidad_id
     WHERE vo.id = $1
     `,
     [id]
@@ -155,8 +155,8 @@ const listOperaciones = async (
   const { rows } = await getDb(client).query(
     `
     SELECT ${OPERACION_SELECT}
-    FROM ventas_operaciones vo
-    JOIN ventas_unidades vu ON vu.id = vo.unidad_id
+    FROM reservas_operaciones vo
+    JOIN reservas_unidades vu ON vu.id = vo.unidad_id
     ${whereClause}
     ORDER BY vo.creado_en DESC, vo.id DESC
     LIMIT $${params.length}
@@ -182,7 +182,7 @@ const createOperacion = async (
 ) => {
   const { rows } = await getDb(client).query(
     `
-    INSERT INTO ventas_operaciones (
+    INSERT INTO reservas_operaciones (
       unidad_id,
       cliente_nombre,
       cliente_identificacion,
@@ -226,7 +226,7 @@ const updateOperacionEstado = async (
 ) => {
   const { rows } = await getDb(client).query(
     `
-    UPDATE ventas_operaciones
+    UPDATE reservas_operaciones
     SET estado = $1,
         motivo = COALESCE($2, motivo),
         origen_operacion_id = COALESCE($3, origen_operacion_id),
@@ -259,7 +259,7 @@ const insertOperacionHistorial = async (
 ) => {
   await getDb(client).query(
     `
-    INSERT INTO ventas_operaciones_historial (
+    INSERT INTO reservas_operaciones_historial (
       operacion_id,
       accion,
       estado_anterior,
@@ -286,7 +286,7 @@ const listOperacionHistorial = async (operacionId, client) => {
   const { rows } = await getDb(client).query(
     `
     SELECT *
-    FROM ventas_operaciones_historial
+    FROM reservas_operaciones_historial
     WHERE operacion_id = $1
     ORDER BY creado_en DESC, id DESC
     `,
@@ -300,7 +300,7 @@ const listOperacionDocumentos = async (operacionId, client) => {
   const { rows } = await getDb(client).query(
     `
     SELECT *
-    FROM ventas_operaciones_documentos
+    FROM reservas_operaciones_documentos
     WHERE operacion_id = $1
     ORDER BY creado_en DESC, id DESC
     `,
@@ -314,7 +314,7 @@ const getOperacionDocumentoById = async (documentoId, client) => {
   const { rows } = await getDb(client).query(
     `
     SELECT *
-    FROM ventas_operaciones_documentos
+    FROM reservas_operaciones_documentos
     WHERE id = $1
     `,
     [documentoId]
@@ -339,7 +339,7 @@ const upsertOperacionDocumento = async (
 ) => {
   const { rows } = await getDb(client).query(
     `
-    INSERT INTO ventas_operaciones_documentos (
+    INSERT INTO reservas_operaciones_documentos (
       operacion_id,
       codigo_documento,
       nombre_archivo,
@@ -395,3 +395,4 @@ module.exports = {
   getOperacionDocumentoById,
   upsertOperacionDocumento,
 };
+

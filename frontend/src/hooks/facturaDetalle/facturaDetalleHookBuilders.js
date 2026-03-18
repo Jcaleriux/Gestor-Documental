@@ -17,9 +17,16 @@ export const buildFacturaDetalleActionsParams = ({
 export const buildFacturaDetalleHookOutput = ({
   id,
   data,
-  actions
+  actions,
+  selectedSociedadName,
+  canEditContabilizacion
 }) => {
-  const outputContract = buildFacturaDetalleOutputContract({ data, actions });
+  const outputContract = buildFacturaDetalleOutputContract({
+    data,
+    actions,
+    selectedSociedadName,
+    canEditContabilizacion
+  });
   const viewModelInput = buildFacturaDetalleViewModelInput(outputContract);
 
   return {

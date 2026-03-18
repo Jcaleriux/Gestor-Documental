@@ -1,11 +1,24 @@
 import ActionAlerts from '../common/ActionAlerts';
 import SectionCard from '../common/SectionCard';
+import StatusBadge from '../common/StatusBadge';
 import { FACTURA_DETALLE_LABELS } from '../../utils/uiLabels';
 import SelectionListModal from './contabilizacion/SelectionListModal';
 import ContaMainFields from './contabilizacion/ContaMainFields';
 import ContaAssociationsActions from './contabilizacion/ContaAssociationsActions';
 import ContaTotalsSummary from './contabilizacion/ContaTotalsSummary';
 import RetencionPagoPanel from './contabilizacion/RetencionPagoPanel';
+
+const resolveSavingLabel = (contaSavingAction) => {
+  switch (contaSavingAction) {
+    case 'save_draft':
+      return FACTURA_DETALLE_LABELS.contabilizacion.saveDraftSaving;
+    case 'mark_in_review':
+      return FACTURA_DETALLE_LABELS.contabilizacion.markInReviewSaving;
+    case 'finalize':
+    default:
+      return FACTURA_DETALLE_LABELS.contabilizacion.finalizeSaving;
+  }
+};
 
 function FacturaDetalleContabilizacionSection({ viewModel }) {
   const {
@@ -18,21 +31,45 @@ function FacturaDetalleContabilizacionSection({ viewModel }) {
 
   const {
     conta,
-    proveedoresSociedad,
+    canEditContabilizacion,
+    isReadOnly,
+    facturaEstado,
     contaSaving,
+    contaSavingAction,
     contaMessage,
     contaError,
     handleContaChange,
+    guardarBorrador,
+    marcarEnRevision,
     guardarContabilizacion
   } = form;
 
+  const showMarkInReview = canEditContabilizacion && facturaEstado !== 'en_revision';
+
   return (
-    <SectionCard title={FACTURA_DETALLE_LABELS.contabilizacion.title} className="mb-3">
-      <form onSubmit={guardarContabilizacion} className="row g-2">
+    <SectionCard
+      title={FACTURA_DETALLE_LABELS.contabilizacion.title}
+      className="mb-3 factura-conta-panel"
+      actions={(
+        <StatusBadge
+          label={isReadOnly
+            ? FACTURA_DETALLE_LABELS.header.modeReadOnly
+            : FACTURA_DETALLE_LABELS.header.modeEditable}
+          className={isReadOnly ? 'badge-soft-secondary' : 'badge-soft-success'}
+        />
+      )}
+    >
+      <div className="factura-conta-mode-copy mb-3">
+        {isReadOnly
+          ? FACTURA_DETALLE_LABELS.contabilizacion.modeHelpReadOnly
+          : FACTURA_DETALLE_LABELS.contabilizacion.modeHelpEditable}
+      </div>
+
+      <form className="row g-2">
         <ContaMainFields
           conta={conta}
           handleContaChange={handleContaChange}
-          proveedoresSociedad={proveedoresSociedad}
+          disabled={isReadOnly}
         />
 
         <ContaAssociationsActions
@@ -42,6 +79,10 @@ function FacturaDetalleContabilizacionSection({ viewModel }) {
           }}
         />
 
+        <div className="col-12">
+          <div className="factura-conta-group-title">{FACTURA_DETALLE_LABELS.contabilizacion.totales}</div>
+        </div>
+
         <ContaTotalsSummary
           viewModel={{
             conta,
@@ -49,11 +90,9 @@ function FacturaDetalleContabilizacionSection({ viewModel }) {
           }}
         />
 
-        <RetencionPagoPanel
-          viewModel={retencion}
-        />
+        <RetencionPagoPanel viewModel={retencion} />
 
-        {modals.tablas.isOpen && (
+        {canEditContabilizacion && modals.tablas.isOpen && (
           <SelectionListModal
             title="Seleccionar tabla de pagos"
             error={modals.tablas.error}
@@ -65,7 +104,7 @@ function FacturaDetalleContabilizacionSection({ viewModel }) {
           />
         )}
 
-        {modals.notas.isOpen && (
+        {canEditContabilizacion && modals.notas.isOpen && (
           <SelectionListModal
             title="Seleccionar nota de credito"
             error={modals.notas.error}
@@ -77,7 +116,7 @@ function FacturaDetalleContabilizacionSection({ viewModel }) {
           />
         )}
 
-        {modals.ordenes.isOpen && (
+        {canEditContabilizacion && modals.ordenes.isOpen && (
           <SelectionListModal
             title="Seleccionar orden de compra"
             error={modals.ordenes.error}
@@ -90,22 +129,71 @@ function FacturaDetalleContabilizacionSection({ viewModel }) {
         )}
 
         <div className="col-12">
-          <label className="form-label">{FACTURA_DETALLE_LABELS.contabilizacion.notas}</label>
+          <div className="factura-field-label-row">
+            <label className="form-label mb-0">{FACTURA_DETALLE_LABELS.contabilizacion.notas}</label>
+            <button
+              type="button"
+              className="factura-help-icon"
+              title={FACTURA_DETALLE_LABELS.contabilizacion.notasTooltip}
+              aria-label={FACTURA_DETALLE_LABELS.contabilizacion.notasTooltip}
+            >
+              i
+            </button>
+          </div>
           <textarea
             className="form-control"
-            rows="2"
+            rows="3"
             value={conta.notas}
             onChange={handleContaChange('notas')}
+            disabled={isReadOnly}
           />
+          <div className="factura-field-help">
+            {FACTURA_DETALLE_LABELS.contabilizacion.notasHelp}
+          </div>
         </div>
 
         <ActionAlerts error={contaError} message={contaMessage} className="small" />
 
-        <div className="col-12">
-          <button className="btn btn-success w-100" type="submit" disabled={contaSaving}>
-            {contaSaving ? FACTURA_DETALLE_LABELS.contabilizacion.saving : FACTURA_DETALLE_LABELS.contabilizacion.submit}
-          </button>
-        </div>
+        {canEditContabilizacion ? (
+          <div className="col-12">
+            <div className="factura-conta-actions">
+              <button
+                className="btn btn-outline-secondary"
+                type="button"
+                onClick={guardarBorrador}
+                disabled={contaSaving}
+              >
+                {contaSaving && contaSavingAction === 'save_draft'
+                  ? resolveSavingLabel(contaSavingAction)
+                  : FACTURA_DETALLE_LABELS.contabilizacion.saveDraft}
+              </button>
+
+              {showMarkInReview ? (
+                <button
+                  className="btn btn-outline-primary"
+                  type="button"
+                  onClick={marcarEnRevision}
+                  disabled={contaSaving}
+                >
+                  {contaSaving && contaSavingAction === 'mark_in_review'
+                    ? resolveSavingLabel(contaSavingAction)
+                    : FACTURA_DETALLE_LABELS.contabilizacion.markInReview}
+                </button>
+              ) : null}
+
+              <button
+                className="btn btn-success"
+                type="button"
+                onClick={guardarContabilizacion}
+                disabled={contaSaving}
+              >
+                {contaSaving && contaSavingAction === 'finalize'
+                  ? resolveSavingLabel(contaSavingAction)
+                  : FACTURA_DETALLE_LABELS.contabilizacion.finalize}
+              </button>
+            </div>
+          </div>
+        ) : null}
       </form>
     </SectionCard>
   );

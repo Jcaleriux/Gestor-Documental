@@ -21,6 +21,7 @@ export const useFacturaDetalleContabilizacionState = () => {
   const [retencionPagos, setRetencionPagos] = useState([]);
   const [conta, setConta] = useState(createInitialContaState);
   const [contaSaving, setContaSaving] = useState(false);
+  const [contaSavingAction, setContaSavingAction] = useState('');
   const [contaMessage, setContaMessage] = useState('');
   const [contaError, setContaError] = useState('');
   const [retencionPagoMonto, setRetencionPagoMonto] = useState('');
@@ -69,6 +70,8 @@ export const useFacturaDetalleContabilizacionState = () => {
     setConta,
     contaSaving,
     setContaSaving,
+    contaSavingAction,
+    setContaSavingAction,
     contaMessage,
     setContaMessage,
     contaError,
