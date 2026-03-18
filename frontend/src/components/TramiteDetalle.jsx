@@ -9,7 +9,7 @@ import { buildTramiteDetallePageState } from './tramiteDetalle/viewModels/buildT
 import { buildTramiteDetalleHeaderViewModel } from './tramiteDetalle/viewModels/buildTramiteDetalleHeaderViewModel.js';
 import { buildTramiteDetalleLayoutProps } from './tramiteDetalle/viewModels/buildTramiteDetalleLayoutProps.js';
 
-function TramiteDetalle({ sociedadId }) {
+function TramiteDetalle({ sociedadId, authUser = null, userPermissions = [] }) {
   const { id } = useParams();
   const {
     tramite,
@@ -33,6 +33,7 @@ function TramiteDetalle({ sociedadId }) {
     id,
     tramite,
     documentosActivos,
+    actorUsuario: authUser?.email || authUser?.nombre || 'system',
     fetchDetalle,
     fetchHistorial,
     setActionMessage,
@@ -40,8 +41,6 @@ function TramiteDetalle({ sociedadId }) {
   };
 
   const {
-    rolActivo,
-    setRolActivo,
     historialVisible,
     setHistorialVisible,
     overrideEstado,
@@ -92,8 +91,7 @@ function TramiteDetalle({ sociedadId }) {
     handleAccionSiguiente,
     historialVisible,
     setHistorialVisible,
-    rolActivo,
-    setRolActivo,
+    userPermissions,
     activeTab,
     setActiveTab,
     actionError,
@@ -114,7 +112,8 @@ function TramiteDetalle({ sociedadId }) {
     handleTesoreriaDestinoChange,
     handleDecision,
     handleAccionTesoreria,
-    sociedadLabel
+    sociedadLabel,
+    sociedadId
   });
 
   return <TramiteDetalleLayout layoutProps={layoutProps} />;

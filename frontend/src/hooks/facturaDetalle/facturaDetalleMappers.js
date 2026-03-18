@@ -12,6 +12,7 @@ export const mapFacturaDetalleDataToViewState = ({
   comentariosData,
   estadosData,
   contaData,
+  centrosCostoCatalogo,
   proveedoresData,
   now
 }) => {
@@ -26,6 +27,7 @@ export const mapFacturaDetalleDataToViewState = ({
     estados: estadosData,
     retencionPagos: Array.isArray(contaData?.retencion_pagos) ? contaData.retencion_pagos : [],
     proveedoresSociedad: proveedoresData,
+    centrosCostoCatalogo: Array.isArray(centrosCostoCatalogo) ? centrosCostoCatalogo : [],
     tablaPagoActual: tablaActual,
     ordenCompraActual: ordenActual,
     notaCreditoActual: notaActual,

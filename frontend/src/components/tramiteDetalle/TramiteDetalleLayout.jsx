@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useState } from 'react';
 import { formatAmount } from '../../utils/formatters';
 import { estadoLabelTramite, estadoClassTramite } from '../../utils/estadosTramite';
 import { withAuthToken } from '../../utils/auth';
@@ -10,7 +11,6 @@ import TramiteDocumentoUnificado from '../TramiteDocumentoUnificado';
 import TramiteUnificadaHeader from '../TramiteUnificadaHeader';
 import TramiteDocumentosTable from '../TramiteDocumentosTable';
 import TramiteHistorial from '../TramiteHistorial';
-import TramiteOverrideForm from '../TramiteOverrideForm';
 import TramiteHeaderActions from '../TramiteHeaderActions';
 import TramiteTabs from '../TramiteTabs';
 import TramitePagosSection from './TramitePagosSection';
@@ -29,17 +29,57 @@ function TramiteDetalleLayout({ layoutProps }) {
     meta,
     pagos,
     retenciones,
-    override,
     table
   } = layoutProps;
 
   const { tramite, resumenTotales, resumenMoneda } = meta;
   const {
+    enEtapaGerencia,
+    puedeVerGerencia,
     puedeGerencia,
     puedeGerenciaContable,
     puedeFinanciera,
     puedeTesoreria
   } = table.permisos;
+  const documentosActivosIdsKey = table.documentosActivos
+    .map((doc) => Number(doc.factura_id))
+    .join('|');
+  const [expandedDocIds, setExpandedDocIds] = useState(() => new Set());
+
+  useEffect(() => {
+    setExpandedDocIds((previous) => {
+      const availableIds = new Set(table.documentosActivos.map((doc) => Number(doc.factura_id)));
+      const next = new Set(
+        [...previous].filter((facturaId) => availableIds.has(Number(facturaId)))
+      );
+
+      if (table.activeTab === 'unificada' && next.size === 0 && table.documentosActivos.length > 0) {
+        next.add(Number(table.documentosActivos[0].factura_id));
+      }
+
+      return next;
+    });
+  }, [table.activeTab, documentosActivosIdsKey]);
+
+  const handleToggleExpandedDoc = useCallback((facturaId) => {
+    setExpandedDocIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(facturaId)) {
+        next.delete(facturaId);
+      } else {
+        next.add(facturaId);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleExpandAllDocs = useCallback(() => {
+    setExpandedDocIds(new Set(table.documentosActivos.map((doc) => Number(doc.factura_id))));
+  }, [table.documentosActivos]);
+
+  const handleCollapseAllDocs = useCallback(() => {
+    setExpandedDocIds(new Set());
+  }, []);
 
   return (
     <div className="documents-page">
@@ -53,9 +93,6 @@ function TramiteDetalleLayout({ layoutProps }) {
             onAccionSiguiente={header.onAccionSiguiente}
             historialVisible={header.historialVisible}
             onToggleHistorial={header.onToggleHistorial}
-            rolActivo={header.rolActivo}
-            onRolChange={header.onRolChange}
-            roles={header.roles}
             labels={header.labels}
           />
         )}
@@ -92,30 +129,22 @@ function TramiteDetalleLayout({ layoutProps }) {
         onPagoFacturaChange={pagos.onPagoFacturaChange}
       />
 
-      <TramiteRetencionesSection retencionesActivas={retenciones.retencionesActivas} />
-
-      <TramiteOverrideForm
-        estados={override.estados}
-        overrideUser={override.overrideUser}
-        overrideEstado={override.overrideEstado}
-        overrideMotivo={override.overrideMotivo}
-        overrideError={override.overrideError}
-        onUserChange={override.onUserChange}
-        onEstadoChange={override.onEstadoChange}
-        onMotivoChange={override.onMotivoChange}
-        onSubmit={override.onSubmit}
-        labels={override.labels}
-      />
+      {retenciones.retencionesActivas.length > 0 && (
+        <TramiteRetencionesSection retencionesActivas={retenciones.retencionesActivas} />
+      )}
 
       <SectionCard className="table-card" bodyClassName="p-0">
         <div className="table-responsive">
           {table.activeTab === 'individual' && (
             <TramiteDocumentosTable
               documentos={table.documentos}
+              enEtapaGerencia={enEtapaGerencia}
+              puedeVerGerencia={puedeVerGerencia}
               puedeGerencia={puedeGerencia}
               puedeGerenciaContable={puedeGerenciaContable}
               puedeFinanciera={puedeFinanciera}
               puedeTesoreria={puedeTesoreria}
+              sociedadId={table.sociedadId}
               destinosTesoreria={table.destinosTesoreria}
               tesoreriaDestino={table.tesoreriaDestino}
               onDestinoChange={table.onDestinoChange}
@@ -132,19 +161,34 @@ function TramiteDetalleLayout({ layoutProps }) {
                 totalDocs={table.resumenTotales.totalDocs}
                 totalMonto={formatAmount(table.resumenTotales.suma)}
                 resumenMoneda={table.resumenMoneda}
+                actions={table.documentosActivos.length > 0 ? (
+                  <>
+                    <button type="button" className="btn btn-sm btn-outline-secondary" onClick={handleExpandAllDocs}>
+                      Expandir todo
+                    </button>
+                    <button type="button" className="btn btn-sm btn-outline-secondary" onClick={handleCollapseAllDocs}>
+                      Colapsar todo
+                    </button>
+                  </>
+                ) : null}
                 labels={table.labelsUnificada}
               />
-              <div className="p-3">
+              <div className="p-3 tramite-unificada-list">
                 {table.documentosActivos.map((doc, index) => (
                   <TramiteDocumentoUnificado
                     key={doc.factura_id}
                     doc={doc}
                     pdfUrl={getPdfUrl(doc.ruta_pdf)}
-                    offset={index * 14}
+                    sequenceNumber={index + 1}
+                    expanded={expandedDocIds.has(Number(doc.factura_id))}
+                    onToggleExpanded={() => handleToggleExpandedDoc(Number(doc.factura_id))}
+                    enEtapaGerencia={enEtapaGerencia}
+                    puedeVerGerencia={puedeVerGerencia}
                     puedeGerencia={puedeGerencia}
                     puedeGerenciaContable={puedeGerenciaContable}
                     puedeFinanciera={puedeFinanciera}
                     puedeTesoreria={puedeTesoreria}
+                    sociedadId={table.sociedadId}
                     destinosTesoreria={table.destinosTesoreria}
                     destinoSeleccionado={table.tesoreriaDestino[doc.factura_id]}
                     onDestinoChange={table.onDestinoChange}

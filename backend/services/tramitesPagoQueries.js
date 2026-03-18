@@ -1,7 +1,7 @@
 const { TESORERIA_ESTADOS, DOCUMENTO_ESTADOS, TRAMITE_ESTADOS } = require('../domain/tramitesPago');
 
 const tesoreriaActivaSql = (columnRef) =>
-  `COALESCE(NULLIF(TRIM(LOWER(${columnRef})), ''), '${TESORERIA_ESTADOS.PENDIENTE}') <> '${TESORERIA_ESTADOS.EXCLUIDO}'`;
+  `COALESCE(NULLIF(TRIM(LOWER(${columnRef})), ''), '${TESORERIA_ESTADOS.PENDIENTE}') NOT IN ('${TESORERIA_ESTADOS.EXCLUIDO}', '${TESORERIA_ESTADOS.DEVUELTO_CONTABILIDAD}')`;
 
 const buildTesoreriaResetQuery = (destino) => {
   if (destino === TRAMITE_ESTADOS.EN_APROBACION_GERENCIA) {

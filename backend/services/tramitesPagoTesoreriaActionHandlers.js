@@ -1,8 +1,11 @@
 const { FACTURA_ESTADOS } = require('../domain/facturas');
+const { TRAMITE_ESTADOS } = require('../domain/tramitesPago');
 const { assertFound } = require('../utils/errors');
 const {
   ensureFacturaNoPagadaForTesoreria,
-  excludeDocumentoEnTesoreria
+  resolveFacturaEstadoOrigen,
+  excludeDocumentoEnTesoreria,
+  devolverDocumentoAContabilidad
 } = require('./tramitesPagoUseCases.helpers');
 
 const createTesoreriaActionHandlers = ({ tramitesPagoRepo }) => {
@@ -20,7 +23,45 @@ const createTesoreriaActionHandlers = ({ tramitesPagoRepo }) => {
       client
     });
 
+    const documento = await tramitesPagoRepo.getTramiteDocumentoByFacturaIdForUpdate({
+      tramiteId: id,
+      facturaId
+    }, client);
+    assertFound(documento, 'Documento no encontrado en tramite');
+
     return excludeDocumentoEnTesoreria({
+      tramitesPagoRepo,
+      tramiteId: id,
+      facturaId,
+      motivo,
+      usuario,
+      estadoAnterior,
+      estadoFacturaDestino: resolveFacturaEstadoOrigen(documento),
+      client
+    });
+  };
+
+  const returnToAccounting = async ({
+    id,
+    facturaId,
+    motivo,
+    usuario,
+    estadoAnterior,
+    client
+  }) => {
+    await ensureFacturaNoPagadaForTesoreria({
+      tramitesPagoRepo,
+      facturaId,
+      client
+    });
+
+    const documento = await tramitesPagoRepo.getTramiteDocumentoByFacturaIdForUpdate({
+      tramiteId: id,
+      facturaId
+    }, client);
+    assertFound(documento, 'Documento no encontrado en tramite');
+
+    return devolverDocumentoAContabilidad({
       tramitesPagoRepo,
       tramiteId: id,
       facturaId,
@@ -51,6 +92,13 @@ const createTesoreriaActionHandlers = ({ tramitesPagoRepo }) => {
 
     assertFound(result, 'Documento no encontrado en tramite');
 
+    if (destino === TRAMITE_ESTADOS.EN_APROBACION_GERENCIA) {
+      await tramitesPagoRepo.resetTramiteDocumentoAprobadores({
+        tramiteId: id,
+        facturaId
+      }, client);
+    }
+
     await tramitesPagoRepo.updateFacturaEstado({
       facturaId,
       estado: FACTURA_ESTADOS.EN_TRAMITE_PAGO
@@ -76,6 +124,7 @@ const createTesoreriaActionHandlers = ({ tramitesPagoRepo }) => {
 
   return Object.freeze({
     exclude,
+    returnToAccounting,
     reset
   });
 };

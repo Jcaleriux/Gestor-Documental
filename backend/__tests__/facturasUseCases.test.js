@@ -125,6 +125,7 @@ describe('facturasUseCases', () => {
       fechaHasta: '2026-03-31',
       montoMin: 100,
       montoMax: 1000,
+      dashboardPreset: null,
       sortBy: 'emisor',
       sortDir: 'asc',
       page: 2,
@@ -176,6 +177,34 @@ describe('facturasUseCases', () => {
       fechaHasta: null,
       montoMin: null,
       montoMax: null,
+      dashboardPreset: null,
+      sortBy: 'fecha_emision',
+      sortDir: 'desc',
+      page: 1,
+      pageSize: 50,
+    });
+  });
+
+  test('listFacturas acepta dashboardPreset pagadas y lo pasa al repositorio', async () => {
+    const repo = createRepoMock();
+    const useCases = createFacturasUseCases({ facturasRepo: repo });
+
+    await useCases.listFacturas({
+      sociedadId: '7',
+      dashboardPreset: 'pagadas',
+    });
+
+    expect(repo.listFacturas).toHaveBeenCalledWith({
+      sociedadId: 7,
+      search: null,
+      estado: null,
+      emisor: null,
+      moneda: null,
+      fechaDesde: null,
+      fechaHasta: null,
+      montoMin: null,
+      montoMax: null,
+      dashboardPreset: 'pagadas',
       sortBy: 'fecha_emision',
       sortDir: 'desc',
       page: 1,
@@ -213,6 +242,17 @@ describe('facturasUseCases', () => {
       montoMin: '200',
       montoMax: '100',
     })).rejects.toThrow('montoMin no puede ser mayor que montoMax');
+
+    expect(repo.listFacturas).not.toHaveBeenCalled();
+  });
+
+  test('listFacturas rechaza dashboardPreset invalido', async () => {
+    const repo = createRepoMock();
+    const useCases = createFacturasUseCases({ facturasRepo: repo });
+
+    await expect(useCases.listFacturas({
+      dashboardPreset: 'urgentes',
+    })).rejects.toThrow('dashboardPreset invalido');
 
     expect(repo.listFacturas).not.toHaveBeenCalled();
   });

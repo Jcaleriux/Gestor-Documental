@@ -1,5 +1,5 @@
 const { validateFacturaNoPagada } = require('./tramitesPagoRules');
-const { DOCUMENTO_ACCIONES } = require('../domain/tramitesPago');
+const { DOCUMENTO_ACCIONES, TESORERIA_ESTADOS } = require('../domain/tramitesPago');
 const { FACTURA_ESTADOS } = require('../domain/facturas');
 const { createError, assertFound, throwIfValidationError } = require('../utils/errors');
 
@@ -61,11 +61,15 @@ const REQUIRED_REPO_METHODS = [
   'getClient',
   'getTramiteEstado',
   'getTramiteById',
+  'getTramiteByIdForUpdate',
   'getFacturaEstado',
   'getDocumentoTesoreriaEstado',
+  'getTramiteDocumentoByFacturaIdForUpdate',
   'updateDocumentoTesoreriaExcluido',
   'updateDocumentoTesoreriaReset',
   'updateDocumentoTesoreriaPendiente',
+  'updateDocumentosTesoreriaEstadoByTramite',
+  'updateRetencionesTesoreriaEstadoByTramite',
   'updateDocumentoDecision',
   'updateFacturaEstado',
   'updateFacturasEstadoByIds',
@@ -83,13 +87,20 @@ const REQUIRED_REPO_METHODS = [
   'listRetencionesByTramite',
   'listHistorialByTramite',
   'getFacturasByIds',
+  'listCentroCostoAprobadoresByFacturaIds',
   'getRetencionesPendientesByFacturaIds',
   'findDuplicadosActivos',
   'findRetencionesDuplicadasActivas',
   'insertTramite',
   'insertTramiteDocumentos',
+  'insertTramiteDocumentoAprobadores',
+  'listTramiteDocumentoAprobadores',
+  'listTramiteDocumentoAprobadoresForUpdate',
+  'updateTramiteDocumentoAprobadorEstado',
+  'resetTramiteDocumentoAprobadores',
   'insertTramiteRetenciones',
   'countRechazadosActivos',
+  'getResumenEtapaDocumentos',
   'listSaldosPagoPrincipalByTramite',
   'applyRetencionesPagadasByTramite'
 ];
@@ -113,6 +124,19 @@ const ensureFacturaNoPagadaForTesoreria = async ({ tramitesPagoRepo, facturaId, 
   throwIfValidationError(validateFacturaNoPagada(factura.estado));
 };
 
+const ESTADOS_FACTURA_RESTAURABLES = new Set([
+  FACTURA_ESTADOS.CONTABILIZADO,
+  FACTURA_ESTADOS.PAGADO_PARCIALMENTE
+]);
+
+const resolveFacturaEstadoOrigen = (documentoRow) => {
+  const estadoFacturaOrigen = toNormalizedLowerString(documentoRow?.estado_factura_origen);
+  if (ESTADOS_FACTURA_RESTAURABLES.has(estadoFacturaOrigen)) {
+    return estadoFacturaOrigen;
+  }
+  return FACTURA_ESTADOS.CONTABILIZADO;
+};
+
 const excludeDocumentoEnTesoreria = async ({
   tramitesPagoRepo,
   tramiteId,
@@ -120,6 +144,7 @@ const excludeDocumentoEnTesoreria = async ({
   motivo,
   usuario,
   estadoAnterior,
+  estadoFacturaDestino,
   client
 }) => {
   const result = await tramitesPagoRepo.updateDocumentoTesoreriaExcluido({
@@ -132,13 +157,51 @@ const excludeDocumentoEnTesoreria = async ({
 
   await tramitesPagoRepo.updateFacturaEstado({
     facturaId,
-    estado: FACTURA_ESTADOS.EN_REVISION
+    estado: estadoFacturaDestino
   }, client);
 
   await tramitesPagoRepo.insertHistorialDocumentoConEstados({
     tramiteId,
     facturaId,
     accion: DOCUMENTO_ACCIONES.TESORERIA_EXCLUIR,
+    estadoAnterior,
+    estadoNuevo: estadoAnterior,
+    usuario,
+    motivo
+  }, client);
+
+  await tramitesPagoRepo.touchTramite(tramiteId, client);
+
+  return result;
+};
+
+const devolverDocumentoAContabilidad = async ({
+  tramitesPagoRepo,
+  tramiteId,
+  facturaId,
+  motivo,
+  usuario,
+  estadoAnterior,
+  client
+}) => {
+  const result = await tramitesPagoRepo.updateDocumentoTesoreriaExcluido({
+    tramiteId,
+    facturaId,
+    motivo,
+    estadoTesoreria: TESORERIA_ESTADOS.DEVUELTO_CONTABILIDAD
+  }, client);
+
+  assertFound(result, 'Documento no encontrado en tramite');
+
+  await tramitesPagoRepo.updateFacturaEstado({
+    facturaId,
+    estado: FACTURA_ESTADOS.EN_REVISION
+  }, client);
+
+  await tramitesPagoRepo.insertHistorialDocumentoConEstados({
+    tramiteId,
+    facturaId,
+    accion: DOCUMENTO_ACCIONES.TESORERIA_DEVOLVER_CONTABILIDAD,
     estadoAnterior,
     estadoNuevo: estadoAnterior,
     usuario,
@@ -217,7 +280,9 @@ module.exports = {
   assertRepoContract,
   loadTramiteEstadoOrFail,
   ensureFacturaNoPagadaForTesoreria,
+  resolveFacturaEstadoOrigen,
   excludeDocumentoEnTesoreria,
+  devolverDocumentoAContabilidad,
   buildSaldosByFactura,
   validatePagosInputBySaldos,
   registrarPagosPrincipales

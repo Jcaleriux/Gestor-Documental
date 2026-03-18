@@ -28,7 +28,14 @@ const mapDocumentoRow = (row) => ({
   total_rebajos: toNumberOrNull(row.total_rebajos),
   total_pagado_principal: toNumberOrNull(row.total_pagado_principal),
   total_a_pagar: toNumberOrNull(row.total_a_pagar),
-  total_pendiente_global: toNumberOrNull(row.total_pendiente_global)
+  total_pendiente_global: toNumberOrNull(row.total_pendiente_global),
+  gerencia_aprobadores_total: toNumberOrNull(row.gerencia_aprobadores_total) ?? 0,
+  gerencia_aprobadores_aprobados: toNumberOrNull(row.gerencia_aprobadores_aprobados) ?? 0,
+  gerencia_aprobadores_pendientes: toNumberOrNull(row.gerencia_aprobadores_pendientes) ?? 0,
+  gerencia_aprobadores_rechazados: toNumberOrNull(row.gerencia_aprobadores_rechazados) ?? 0,
+  gerencia_puede_aprobar_usuario_actual: row.gerencia_puede_aprobar_usuario_actual === true,
+  gerencia_ya_aprobo_usuario_actual: row.gerencia_ya_aprobo_usuario_actual === true,
+  gerencia_aprobadores: Array.isArray(row.gerencia_aprobadores) ? row.gerencia_aprobadores : []
 });
 
 const mapRetencionRow = (row) => ({

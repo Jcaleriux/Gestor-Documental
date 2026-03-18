@@ -5,13 +5,13 @@ export const useTramiteWorkflowState = ({
   id,
   tramite,
   documentosActivos,
+  actorUsuario,
   fetchHistorial
 }) => {
-  const [rolActivo, setRolActivo] = useState('gerencia');
   const [historialVisible, setHistorialVisible] = useState(false);
   const [overrideEstado, setOverrideEstado] = useState('');
   const [overrideMotivo, setOverrideMotivo] = useState('');
-  const [overrideUser, setOverrideUser] = useState('admin');
+  const [overrideUser, setOverrideUser] = useState(() => actorUsuario || 'system');
   const [overrideError, setOverrideError] = useState('');
   const [tesoreriaDestino, setTesoreriaDestino] = useState({});
   const [pagosFacturas, setPagosFacturas] = useState({});
@@ -27,6 +27,12 @@ export const useTramiteWorkflowState = ({
       fetchHistorial();
     }
   }, [historialVisible, id, fetchHistorial]);
+
+  useEffect(() => {
+    if (actorUsuario) {
+      setOverrideUser(actorUsuario);
+    }
+  }, [actorUsuario]);
 
   const pagosFacturasConPendiente = useMemo(() => {
     const next = {};
@@ -56,8 +62,6 @@ export const useTramiteWorkflowState = ({
   };
 
   return {
-    rolActivo,
-    setRolActivo,
     historialVisible,
     setHistorialVisible,
     overrideEstado,

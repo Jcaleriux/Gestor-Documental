@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useFacturaDetalle } from '../hooks/useFacturaDetalle';
 import LoadingState from './common/LoadingState';
 import { LOADING_LABELS } from '../utils/uiLabels';
@@ -9,11 +9,14 @@ import { buildFacturaDetalleLayoutProps } from './facturaDetalle/viewModels/buil
 
 function FacturaDetalle({ sociedadId, selectedSociedadName = '', canEditContabilizacion = false }) {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const isReadOnlyMode = searchParams.get('readonly') === '1';
+  const canEditCurrentView = canEditContabilizacion && !isReadOnlyMode;
   const detalle = useFacturaDetalle({
     id,
     sociedadId,
     selectedSociedadName,
-    canEditContabilizacion
+    canEditContabilizacion: canEditCurrentView
   });
   const pageState = buildFacturaDetallePageState({ sociedadId, meta: detalle.meta });
 
@@ -28,7 +31,7 @@ function FacturaDetalle({ sociedadId, selectedSociedadName = '', canEditContabil
   const viewModels = detalle.viewModels;
   const headerViewModel = buildFacturaDetalleHeaderViewModel({
     factura: detalle.meta.factura,
-    canEditContabilizacion,
+    canEditContabilizacion: canEditCurrentView,
   });
   const layoutProps = buildFacturaDetalleLayoutProps({ headerViewModel, viewModels });
 

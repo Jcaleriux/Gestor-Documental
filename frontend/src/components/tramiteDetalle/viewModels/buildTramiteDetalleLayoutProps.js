@@ -2,7 +2,6 @@ import { estadoLabelTramite } from '../../../utils/estadosTramite.js';
 import TRAMITE_LABELS from '../../../utils/tramiteLabels.js';
 import {
   ESTADOS_TRAMITE,
-  ROLES_ADMIN,
   DESTINOS_TESORERIA
 } from '../../../utils/tramiteConfig.js';
 import getPermisosTramite from '../../../utils/tramitePermissions.js';
@@ -20,17 +19,13 @@ export const buildHeaderLayoutProps = ({
   handleAccionSiguiente,
   historialVisible,
   setHistorialVisible,
-  rolActivo,
-  setRolActivo
+  permisosTramite
 }) => ({
   ...headerViewModel,
-  accionSiguiente,
+  accionSiguiente: permisosTramite?.puedeAccionSiguiente ? accionSiguiente : null,
   onAccionSiguiente: handleAccionSiguiente,
   historialVisible,
   onToggleHistorial: () => setHistorialVisible((prev) => !prev),
-  rolActivo,
-  onRolChange: setRolActivo,
-  roles: ROLES_ADMIN,
   labels: TRAMITE_LABELS.headerActions
 });
 
@@ -104,20 +99,21 @@ export const buildTableLayoutProps = ({
   activeTab,
   documentos,
   documentosActivos,
-  rolActivo,
   tramite,
+  userPermissions,
   tesoreriaDestino,
   handleTesoreriaDestinoChange,
   handleDecision,
   handleAccionTesoreria,
   resumenTotales,
   resumenMoneda,
-  sociedadLabel
+  sociedadLabel,
+  sociedadId
 }) => ({
   activeTab,
   documentos,
   documentosActivos,
-  permisos: getPermisosTramite({ rolActivo, estado: tramite.estado }),
+  permisos: getPermisosTramite({ userPermissions, estado: tramite.estado }),
   destinosTesoreria: DESTINOS_TESORERIA,
   tesoreriaDestino,
   onDestinoChange: handleTesoreriaDestinoChange,
@@ -126,18 +122,29 @@ export const buildTableLayoutProps = ({
   resumenTotales,
   resumenMoneda,
   sociedadLabel,
+  sociedadId,
   labelsDocumentos: TRAMITE_LABELS.documentos,
   labelsUnificada: TRAMITE_LABELS.unificada
 });
 
-export const buildTramiteDetalleLayoutProps = (input) => ({
-  header: buildHeaderLayoutProps(input),
-  tabs: buildTabsLayoutProps(input),
-  alerts: buildAlertsLayoutProps(input),
-  historial: buildHistorialLayoutProps(input),
-  meta: buildMetaLayoutProps(input),
-  pagos: buildPagosLayoutProps(input),
-  retenciones: buildRetencionesLayoutProps(input),
-  override: buildOverrideLayoutProps(input),
-  table: buildTableLayoutProps(input)
-});
+export const buildTramiteDetalleLayoutProps = (input) => {
+  const permisosTramite = getPermisosTramite({
+    userPermissions: input.userPermissions,
+    estado: input.tramite?.estado
+  });
+
+  return {
+    header: buildHeaderLayoutProps({
+      ...input,
+      permisosTramite
+    }),
+    tabs: buildTabsLayoutProps(input),
+    alerts: buildAlertsLayoutProps(input),
+    historial: buildHistorialLayoutProps(input),
+    meta: buildMetaLayoutProps(input),
+    pagos: buildPagosLayoutProps(input),
+    retenciones: buildRetencionesLayoutProps(input),
+    override: buildOverrideLayoutProps(input),
+    table: buildTableLayoutProps(input)
+  };
+};

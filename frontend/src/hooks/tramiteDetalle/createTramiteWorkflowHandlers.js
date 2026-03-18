@@ -1,5 +1,4 @@
 import { tramitesApi } from '../../services/tramitesApi.js';
-import { getRoleByEstado } from '../../utils/tramiteConfig.js';
 import { promptMotivo } from '../../utils/promptUtils.js';
 import { PROMPT_LABELS, TRAMITE_ALERT_LABELS } from '../../utils/uiLabels.js';
 import TRAMITE_LABELS from '../../utils/tramiteLabels.js';
@@ -53,8 +52,8 @@ export const createTramiteWorkflowHandlers = ({
     promptMotivoFn = promptMotivo,
     promptLabels = PROMPT_LABELS,
     alertLabels = TRAMITE_ALERT_LABELS,
-    getRoleByEstadoFn = getRoleByEstado,
-    overrideLabels = TRAMITE_LABELS.override
+    overrideLabels = TRAMITE_LABELS.override,
+    actorUsuario = workflowInputs?.actorUsuario || 'system'
   } = dependencies;
 
   const {
@@ -72,7 +71,6 @@ export const createTramiteWorkflowHandlers = ({
     setOverrideEstado,
     setOverrideMotivo,
     setOverrideError,
-    setRolActivo,
     tesoreriaDestino,
     pagosFacturas
   } = workflowState;
@@ -86,7 +84,7 @@ export const createTramiteWorkflowHandlers = ({
         etapa,
         decision,
         motivo: motivo || null,
-        usuario: 'admin'
+        usuario: actorUsuario
       });
       setActionMessage(alertLabels.decisionSuccess);
       fetchDetalle();
@@ -100,7 +98,7 @@ export const createTramiteWorkflowHandlers = ({
     estado,
     forceOverride = false,
     motivoOverride = null,
-    usuarioOverride = 'admin',
+    usuarioOverride = actorUsuario,
     extraPayload = {}
   ) => {
     try {
@@ -134,13 +132,19 @@ export const createTramiteWorkflowHandlers = ({
       }
       const motivo = accion === 'excluir'
         ? promptMotivoFn(promptLabels.exclusionMotivo)
-        : promptMotivoFn(promptLabels.motivoOpcional);
+        : accion === 'devolver_contabilidad'
+          ? promptMotivoFn(promptLabels.devolucionContabilidadMotivo)
+          : promptMotivoFn(promptLabels.motivoOpcional);
+      if (accion === 'devolver_contabilidad' && !`${motivo ?? ''}`.trim()) {
+        setActionError(alertLabels.tesoreriaMotivoRequired);
+        return;
+      }
 
       await api.accionTesoreria(id, facturaId, {
         accion,
         destino: destino || null,
         motivo: motivo || null,
-        usuario: 'admin'
+        usuario: actorUsuario
       });
       setActionMessage(alertLabels.tesoreriaSuccess);
       fetchDetalle();
@@ -157,12 +161,8 @@ export const createTramiteWorkflowHandlers = ({
       return;
     }
     setOverrideError('');
-    const nextRole = getRoleByEstadoFn(overrideEstado);
     const ok = await handleCambiarEstado(overrideEstado, true, overrideMotivo, overrideUser);
     if (ok) {
-      if (nextRole) {
-        setRolActivo(nextRole);
-      }
       setOverrideEstado('');
       setOverrideMotivo('');
     }
@@ -183,7 +183,7 @@ export const createTramiteWorkflowHandlers = ({
       return;
     }
 
-    await handleCambiarEstado(estado, false, null, 'admin', {
+    await handleCambiarEstado(estado, false, null, actorUsuario, {
       pagos_documentos: pagos
     });
   };

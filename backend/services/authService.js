@@ -11,7 +11,9 @@ const buildUserPayload = (user) => ({
   id: user.id,
   nombre: user.nombre,
   email: user.email,
-  rol: user.rol_id
+  rol: user.rol_id,
+  rol_codigo: user.rol_codigo || '',
+  rol_nombre: user.rol_nombre || ''
 });
 
 const login = async ({ email, password }) => {

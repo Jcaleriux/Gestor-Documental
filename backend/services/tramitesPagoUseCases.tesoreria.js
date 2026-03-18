@@ -55,7 +55,7 @@ const createTramitesPagoTesoreriaUseCases = ({ tramitesPagoRepo, runInTransactio
     const accionNormalizada = toNormalizedLowerString(accion);
     const destinoNormalizado = destino ? toNormalizedLowerString(destino) : undefined;
 
-    throwIfValidationError(validateAccionTesoreriaInput(accionNormalizada, destinoNormalizado));
+    throwIfValidationError(validateAccionTesoreriaInput(accionNormalizada, destinoNormalizado, motivo));
     const actionPolicy = resolveActionPolicy(accionNormalizada);
     const actionHandler = actionPolicy ? resolveActionHandler(actionPolicy.handlerType) : null;
     if (!actionHandler) {

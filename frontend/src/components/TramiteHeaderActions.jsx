@@ -5,9 +5,6 @@ function TramiteHeaderActions({
   onAccionSiguiente,
   historialVisible,
   onToggleHistorial,
-  rolActivo,
-  onRolChange,
-  roles,
   labels
 }) {
   const headerLabels = labels || {
@@ -15,8 +12,7 @@ function TramiteHeaderActions({
     toggleHistory: {
       show: 'Ver historial',
       hide: 'Ocultar historial'
-    },
-    roleLabel: 'Actuar como'
+    }
   };
 
   return (
@@ -42,20 +38,6 @@ function TramiteHeaderActions({
       >
         {historialVisible ? headerLabels.toggleHistory.hide : headerLabels.toggleHistory.show}
       </button>
-      <div className="tramite-role-select">
-        <label className="form-label">{headerLabels.roleLabel}</label>
-        <select
-          className="form-select"
-          value={rolActivo}
-          onChange={(e) => onRolChange(e.target.value)}
-        >
-          {roles.map((rol) => (
-            <option key={rol.value} value={rol.value}>
-              {rol.label}
-            </option>
-          ))}
-        </select>
-      </div>
     </>
   );
 }

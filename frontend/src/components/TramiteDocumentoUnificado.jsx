@@ -2,7 +2,9 @@ import { formatAmount, formatDate, getMoneda, getMontoDocumento } from '../utils
 import {
   estadoClassTramite,
   decisionLabel,
-  decisionClass
+  decisionClass,
+  tesoreriaLabel,
+  tesoreriaClass
 } from '../utils/estadosTramite';
 import EmptyState from './common/EmptyState';
 import StatusBadge from './common/StatusBadge';
@@ -13,65 +15,122 @@ import { TRAMITES_ACTION_LABELS } from '../utils/uiLabels';
 function TramiteDocumentoUnificado({
   doc,
   pdfUrl,
-  offset = 0,
+  sequenceNumber,
+  expanded = false,
+  onToggleExpanded,
+  enEtapaGerencia,
+  puedeVerGerencia,
   puedeGerencia,
   puedeGerenciaContable,
   puedeFinanciera,
   puedeTesoreria,
+  sociedadId,
   destinosTesoreria,
   destinoSeleccionado,
   onDestinoChange,
   onDecision,
   onAccionTesoreria
 }) {
+  const totalAprobadoresGerencia = Number(doc.gerencia_aprobadores_total || 0);
+  const gerenciaGestionadaPorCentro = totalAprobadoresGerencia > 0;
+  const gerenciaPendientes = Array.isArray(doc.gerencia_aprobadores)
+    ? doc.gerencia_aprobadores
+      .filter((item) => item?.estado === 'pendiente')
+      .map((item) => item?.usuario_aprobador_nombre || item?.usuario_aprobador_email || '')
+      .filter(Boolean)
+    : [];
+  const puedeGerenciaDocumento = enEtapaGerencia && (
+    gerenciaGestionadaPorCentro
+      ? doc.gerencia_puede_aprobar_usuario_actual
+        && !doc.gerencia_ya_aprobo_usuario_actual
+        && doc.estado_gerencia === 'pendiente'
+      : puedeGerencia
+  );
+  const puedeGerenciaContableDocumento =
+    puedeGerenciaContable && doc.estado_gerencia_contable === 'pendiente';
+  const puedeFinancieraDocumento =
+    puedeFinanciera && doc.estado_financiero === 'pendiente';
+  const gerenciaSummary = gerenciaGestionadaPorCentro
+    ? [
+      `${Number(doc.gerencia_aprobadores_aprobados || 0)}/${totalAprobadoresGerencia} aprobadores`,
+      ...(doc.gerencia_ya_aprobo_usuario_actual ? ['Tu aprobacion ya fue registrada.'] : []),
+      ...(gerenciaPendientes.length > 0
+        ? [`Pendientes: ${gerenciaPendientes.slice(0, 2).join(', ')}${gerenciaPendientes.length > 2 ? '...' : ''}`]
+        : [])
+    ]
+    : [];
+
   return (
-    <div style={{ marginLeft: `${offset}px` }}>
-      <SectionCard className="mb-3">
-        <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
-          <div>
+    <SectionCard className="tramite-unificada-card">
+      <div className="tramite-unificada-summary">
+        <div className="tramite-unificada-summary-main">
+          <div className="d-flex align-items-center gap-2 flex-wrap">
             <div className="fw-semibold">Factura #{doc.consecutivo || doc.clave}</div>
-            <div className="text-muted small">
-              {doc.emisor?.Nombre || doc.emisor?.nombre || '-'}
-            </div>
-            <div className="text-muted small">
-              {getMoneda(doc)} - {formatAmount(getMontoDocumento(doc, { preferAjustado: true }))}
-            </div>
+            <span className="badge text-bg-light border">Documento {sequenceNumber}</span>
           </div>
+          <div className="text-muted small">
+            {doc.emisor?.Nombre || doc.emisor?.nombre || '-'}
+          </div>
+          <div className="text-muted small">
+            {getMoneda(doc)} - {formatAmount(getMontoDocumento(doc, { preferAjustado: true }))}
+          </div>
+        </div>
+        <div className="tramite-unificada-summary-actions">
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-secondary"
+            onClick={onToggleExpanded}
+          >
+            {expanded ? 'Ocultar detalle' : 'Ver detalle'}
+          </button>
           <TramiteActions
             facturaId={doc.factura_id}
-            puedeGerencia={puedeGerencia}
-            puedeGerenciaContable={puedeGerenciaContable}
-            puedeFinanciera={puedeFinanciera}
+            puedeGerencia={puedeGerenciaDocumento}
+            puedeGerenciaContable={puedeGerenciaContableDocumento}
+            puedeFinanciera={puedeFinancieraDocumento}
             puedeTesoreria={puedeTesoreria}
+            sociedadId={sociedadId}
             destinosTesoreria={destinosTesoreria}
             destinoSeleccionado={destinoSeleccionado}
             onDestinoChange={onDestinoChange}
             onDecision={onDecision}
             onAccionTesoreria={onAccionTesoreria}
             isExcluido={doc.estado_tesoreria === 'excluido'}
+            isDevueltoContabilidad={doc.estado_tesoreria === 'devuelto_contabilidad'}
             showReincluir={false}
             className="d-flex flex-wrap gap-2"
             labels={TRAMITES_ACTION_LABELS}
           />
         </div>
-        <div className="d-flex flex-wrap gap-2 mt-2">
-          <StatusBadge
-            label={`Estado: ${doc.estado ? doc.estado.replace(/_/g, ' ') : 'sin estado'}`}
-            className={estadoClassTramite(doc.estado)}
-          />
-          <StatusBadge
-            label={`Gerencia: ${decisionLabel(doc.estado_gerencia)}`}
-            className={decisionClass(doc.estado_gerencia)}
-          />
-          <StatusBadge
-            label={`G. Contable: ${decisionLabel(doc.estado_gerencia_contable)}`}
-            className={decisionClass(doc.estado_gerencia_contable)}
-          />
-          <StatusBadge
-            label={`Financiera: ${decisionLabel(doc.estado_financiero)}`}
-            className={decisionClass(doc.estado_financiero)}
-          />
-        </div>
+      </div>
+      <div className="d-flex flex-wrap gap-2 mt-2">
+        <StatusBadge
+          label={`Estado: ${doc.estado ? doc.estado.replace(/_/g, ' ') : 'sin estado'}`}
+          className={estadoClassTramite(doc.estado)}
+        />
+        <StatusBadge
+          label={`Gerencia: ${decisionLabel(doc.estado_gerencia)}`}
+          className={decisionClass(doc.estado_gerencia)}
+        />
+        {puedeVerGerencia && gerenciaSummary.map((summaryLine) => (
+          <span key={`${doc.factura_id}-${summaryLine}`} className="small text-muted">
+            {summaryLine}
+          </span>
+        ))}
+        <StatusBadge
+          label={`G. Contable: ${decisionLabel(doc.estado_gerencia_contable)}`}
+          className={decisionClass(doc.estado_gerencia_contable)}
+        />
+        <StatusBadge
+          label={`Financiera: ${decisionLabel(doc.estado_financiero)}`}
+          className={decisionClass(doc.estado_financiero)}
+        />
+        <StatusBadge
+          label={`Gestion tesoreria: ${tesoreriaLabel(doc.estado_tesoreria)}`}
+          className={tesoreriaClass(doc.estado_tesoreria)}
+        />
+      </div>
+      {expanded && (
         <div className="row g-3 mt-1">
           <div className="col-12 col-lg-4">
             <div className="small text-muted">Centro de costo</div>
@@ -121,8 +180,8 @@ function TramiteDocumentoUnificado({
             )}
           </div>
         </div>
-      </SectionCard>
-    </div>
+      )}
+    </SectionCard>
   );
 }
 

@@ -1,5 +1,23 @@
 const { createError } = require('../utils/errors');
-const { mapAuditoriaRow, mapEstadoDocumentoRow } = require('../mappers/auditoriaMapper');
+const {
+  mapAuditoriaRow,
+  mapEstadoDocumentoRow,
+  mapEstadoDocumentoTimelineRow,
+  mapTramiteHistorialTimelineRow,
+  mapGerenciaAprobacionTimelineRow,
+  mapTramiteDocumentoLinkTimelineRow,
+  mapPagoFacturaTimelineRow,
+  mapRetencionPagoTimelineRow
+} = require('../mappers/auditoriaMapper');
+
+const toSortableTime = (value) => {
+  if (!value) {
+    return 0;
+  }
+
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+};
 
 const createAuditoriaUseCases = ({ auditoriaRepo }) => {
   if (!auditoriaRepo) {
@@ -29,8 +47,36 @@ const createAuditoriaUseCases = ({ auditoriaRepo }) => {
   };
 
   const listEstados = async ({ facturaId }) => {
-    const rows = await auditoriaRepo.listEstadosByFacturaId(facturaId);
-    return rows.map(mapEstadoDocumentoRow);
+    const [
+      estadosRows,
+      tramiteHistorialRows,
+      gerenciaAprobacionesRows,
+      tramiteDocumentoLinksRows,
+      pagosFacturaRows,
+      retencionPagosRows
+    ] = await Promise.all([
+      auditoriaRepo.listEstadosByFacturaId(facturaId),
+      auditoriaRepo.listTramiteHistorialByFacturaId(facturaId),
+      auditoriaRepo.listGerenciaAprobacionesByFacturaId(facturaId),
+      auditoriaRepo.listTramiteDocumentoLinksByFacturaId(facturaId),
+      auditoriaRepo.listPagosFacturaByFacturaId(facturaId),
+      auditoriaRepo.listRetencionPagosByFacturaId(facturaId)
+    ]);
+
+    return [
+      ...estadosRows.map(mapEstadoDocumentoTimelineRow),
+      ...tramiteHistorialRows.map(mapTramiteHistorialTimelineRow),
+      ...gerenciaAprobacionesRows.map(mapGerenciaAprobacionTimelineRow),
+      ...tramiteDocumentoLinksRows.map(mapTramiteDocumentoLinkTimelineRow),
+      ...pagosFacturaRows.map(mapPagoFacturaTimelineRow),
+      ...retencionPagosRows.map(mapRetencionPagoTimelineRow)
+    ]
+      .filter(Boolean)
+      .sort(
+        (left, right) => toSortableTime(right?.sort_at || right?.creado_en)
+          - toSortableTime(left?.sort_at || left?.creado_en)
+      )
+      .map(({ sort_at, ...event }) => event);
   };
 
   const crearEstado = async ({ facturaId, estado_anterior, estado_nuevo, usuario, motivo }) => {

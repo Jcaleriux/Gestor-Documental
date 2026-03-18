@@ -28,13 +28,13 @@ const createTramitesPagoReadUseCases = ({ tramitesPagoRepo }) => {
     return rows.map(mapRetencionRow);
   };
 
-  const getTramite = async ({ id }) => {
+  const getTramite = async ({ id, actorUserId }) => {
     const tramiteId = parsePositiveIntOrThrow(id, 'id');
     const tramite = await tramitesPagoRepo.getTramiteById(tramiteId);
     assertFound(tramite, 'Tramite no encontrado');
 
     const [documentos, retenciones] = await Promise.all([
-      tramitesPagoRepo.listDocumentosByTramite(tramiteId),
+      tramitesPagoRepo.listDocumentosByTramite(tramiteId, null, { currentUserId: actorUserId }),
       tramitesPagoRepo.listRetencionesByTramite(tramiteId)
     ]);
 

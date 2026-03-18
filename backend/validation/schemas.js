@@ -159,6 +159,41 @@ const createTablaPagoSchema = Joi.object({
   usuario: Joi.string().trim().max(100).allow('', null)
 });
 
+const centroCostoBaseSchema = {
+  codigo: Joi.string().trim().max(50).required(),
+  nombre: Joi.string().trim().max(255).required(),
+  centro_padre_id: Joi.number().integer().positive().allow(null),
+  codigo_padre: Joi.string().trim().max(50).allow('', null),
+  centro_padre_codigo: Joi.string().trim().max(50).allow('', null),
+  usuario_aprobador_id: Joi.number().integer().positive().required(),
+  seleccionable_en_contabilizacion: Joi.boolean().optional(),
+  activo: Joi.boolean().optional(),
+  orden: Joi.number().integer().min(0).allow(null),
+  metadata: Joi.any(),
+};
+
+const createCentroCostoSchema = Joi.object({
+  sociedad_id: Joi.number().integer().positive().required(),
+  ...centroCostoBaseSchema,
+});
+
+const updateCentroCostoSchema = Joi.object({
+  ...centroCostoBaseSchema,
+});
+
+const bulkUpsertCentrosCostoSchema = Joi.object({
+  sociedad_id: Joi.number().integer().positive().required(),
+  centros: Joi.array().items(
+    Joi.object({
+      id: Joi.alternatives().try(
+        Joi.number().integer().positive(),
+        Joi.string().trim().allow('', null)
+      ).optional(),
+      ...centroCostoBaseSchema,
+    })
+  ).required(),
+});
+
 const createOrdenCompraSchema = Joi.object({
   sociedad_id: Joi.number().integer().positive().required(),
   proveedor_id: Joi.number().integer().positive().required(),
@@ -270,6 +305,9 @@ module.exports = {
   setUsuarioSociedadesSchema,
   createProveedorSchema,
   updateProveedorSchema,
+  createCentroCostoSchema,
+  updateCentroCostoSchema,
+  bulkUpsertCentrosCostoSchema,
   createTablaPagoSchema,
   createOrdenCompraSchema,
   autoImportOrdenCompraSchema,

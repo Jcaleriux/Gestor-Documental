@@ -81,3 +81,25 @@ test('useFacturasFilters incluye todo el dia seleccionado en fecha hasta para no
     [1, 2]
   );
 });
+
+test('useFacturasFilters incorpora dashboardPreset en query y lo considera filtro activo', async () => {
+  const hook = createHookHarness({
+    hook: useFacturasFiltersHarness,
+    initialProps: {
+      debounceMs: 0,
+      dashboardPreset: 'vencidas'
+    }
+  });
+
+  await hook.flush();
+
+  assert.equal(hook.result.dashboardPreset, 'vencidas');
+  assert.equal(hook.result.hasActiveFilters, true);
+  assert.deepEqual(hook.result.query, {
+    page: 1,
+    pageSize: 50,
+    sortBy: 'fecha_emision',
+    sortDir: 'desc',
+    dashboardPreset: 'vencidas'
+  });
+});

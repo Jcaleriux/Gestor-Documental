@@ -7,11 +7,23 @@ export const buildContaFormViewModel = ({ detalle }) => ({
   canEditContabilizacion: Boolean(detalle.canEditContabilizacion),
   isReadOnly: !detalle.canEditContabilizacion,
   facturaEstado: detalle.factura?.estado || '',
+  factura: detalle.factura,
   contaSaving: detalle.contaSaving,
   contaSavingAction: detalle.contaSavingAction,
   contaMessage: detalle.contaMessage,
   contaError: detalle.contaError,
+  centrosCostoCatalogo: detalle.centrosCostoCatalogo,
+  centrosCostoModalOpen: detalle.centrosCostoModalOpen,
+  centrosCostoTargetLineId: detalle.centrosCostoTargetLineId,
+  centrosCostoLoading: detalle.centrosCostoLoading,
+  centrosCostoError: detalle.centrosCostoError,
   handleContaChange: detalle.handleContaChange,
+  addCentroCostoLinea: detalle.addCentroCostoLinea,
+  removeCentroCostoLinea: detalle.removeCentroCostoLinea,
+  actualizarMontoCentroCosto: detalle.actualizarMontoCentroCosto,
+  abrirSelectorCentrosCosto: detalle.abrirSelectorCentrosCosto,
+  cerrarSelectorCentrosCosto: detalle.cerrarSelectorCentrosCosto,
+  seleccionarCentroCostoEnLinea: detalle.seleccionarCentroCostoEnLinea,
   guardarBorrador: detalle.guardarBorrador,
   marcarEnRevision: detalle.marcarEnRevision,
   guardarContabilizacion: detalle.guardarContabilizacion
@@ -63,7 +75,18 @@ export const buildOrdenesModalViewModel = ({ detalle }) => ({
 export const buildContaModalsViewModel = ({ detalle }) => ({
   tablas: buildTablasModalViewModel({ detalle }),
   notas: buildNotasModalViewModel({ detalle }),
-  ordenes: buildOrdenesModalViewModel({ detalle })
+  ordenes: buildOrdenesModalViewModel({ detalle }),
+  centrosCosto: {
+    isOpen: detalle.centrosCostoModalOpen,
+    error: detalle.centrosCostoError,
+    loading: detalle.centrosCostoLoading,
+    items: detalle.centrosCostoCatalogo,
+    targetLineId: detalle.centrosCostoTargetLineId,
+    onClose: () => {
+      detalle.cerrarSelectorCentrosCosto();
+    },
+    onSelect: (lineId, centro) => detalle.seleccionarCentroCostoEnLinea(lineId, centro),
+  }
 });
 
 export const buildContaRetencionViewModel = ({ detalle, totals }) => ({

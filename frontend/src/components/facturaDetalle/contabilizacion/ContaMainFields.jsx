@@ -1,4 +1,5 @@
 import { FACTURA_DETALLE_LABELS } from '../../../utils/uiLabels';
+import CentrosCostoDistributionField from './CentrosCostoDistributionField.jsx';
 
 function SectionTitle({ children }) {
   return (
@@ -10,7 +11,12 @@ function SectionTitle({ children }) {
 
 function ContaMainFields({
   conta,
+  centrosCostoCatalogo,
   handleContaChange,
+  addCentroCostoLinea,
+  removeCentroCostoLinea,
+  abrirSelectorCentrosCosto,
+  seleccionarCentroCostoEnLinea,
   disabled = false
 }) {
   return (
@@ -95,15 +101,16 @@ function ContaMainFields({
 
       <SectionTitle>{FACTURA_DETALLE_LABELS.contabilizacion.clasificacionContable}</SectionTitle>
 
-      <div className="col-6">
-        <label className="form-label">{FACTURA_DETALLE_LABELS.contabilizacion.centroCosto}</label>
-        <input
-          className="form-control"
-          value={conta.centro_costo}
-          onChange={handleContaChange('centro_costo')}
-          disabled={disabled}
-        />
-      </div>
+      <CentrosCostoDistributionField
+        conta={conta}
+        centrosCostoCatalogo={centrosCostoCatalogo}
+        disabled={disabled}
+        onAddLine={addCentroCostoLinea}
+        onRemoveLine={removeCentroCostoLinea}
+        onOpenModal={abrirSelectorCentrosCosto}
+        onSelectLine={seleccionarCentroCostoEnLinea}
+      />
+
       <div className="col-6">
         <label className="form-label">{FACTURA_DETALLE_LABELS.contabilizacion.cuentaContable}</label>
         <input

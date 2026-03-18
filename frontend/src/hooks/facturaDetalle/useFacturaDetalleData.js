@@ -1,5 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { facturaDetalleApi } from '../../services/facturaDetalleApi.js';
+import { centrosCostoApi } from '../../services/centrosCostoApi.js';
 import { useFacturaDetalleGeneralState } from './useFacturaDetalleGeneralState.js';
 import { useFacturaDetalleContabilizacionState } from './useFacturaDetalleContabilizacionState.js';
 import { fetchFacturaDetalleData } from './facturaDetalleLoaders.js';
@@ -21,6 +22,7 @@ const applyFetchedDetalleState = ({
   contabilizacionSetters.setTablaPagoActual(stateData.tablaPagoActual);
   contabilizacionSetters.setOrdenCompraActual(stateData.ordenCompraActual);
   contabilizacionSetters.setNotaCreditoActual(stateData.notaCreditoActual);
+  contabilizacionSetters.setCentrosCostoCatalogo(stateData.centrosCostoCatalogo);
   contabilizacionSetters.setConta(stateData.conta);
   contabilizacionSetters.setRetencionPagoFecha(stateData.retencionPagoFecha);
 };
@@ -28,6 +30,7 @@ const applyFetchedDetalleState = ({
 export const useFacturaDetalleData = ({ id, sociedadId, dependencies = {} }) => {
   const {
     facturaApi = facturaDetalleApi,
+    centrosApi = centrosCostoApi,
     nowProvider = defaultNowProvider
   } = dependencies;
 
@@ -48,6 +51,7 @@ export const useFacturaDetalleData = ({ id, sociedadId, dependencies = {} }) => 
     setTablaPagoActual,
     setOrdenCompraActual,
     setNotaCreditoActual,
+    setCentrosCostoCatalogo,
     setConta,
     setRetencionPagoFecha
   } = contabilizacionState;
@@ -67,8 +71,13 @@ export const useFacturaDetalleData = ({ id, sociedadId, dependencies = {} }) => 
         facturaApi
       });
 
+      const centrosCostoCatalogo = await centrosApi.listCentros({
+        sociedadId: remoteData.facturaData?.sociedad_id || sociedadId
+      });
+
       const mappedState = mapFacturaDetalleDataToViewState({
         ...remoteData,
+        centrosCostoCatalogo,
         now: nowProvider()
       });
 
@@ -85,6 +94,7 @@ export const useFacturaDetalleData = ({ id, sociedadId, dependencies = {} }) => 
           setTablaPagoActual,
           setOrdenCompraActual,
           setNotaCreditoActual,
+          setCentrosCostoCatalogo,
           setConta,
           setRetencionPagoFecha
         }
@@ -98,7 +108,9 @@ export const useFacturaDetalleData = ({ id, sociedadId, dependencies = {} }) => 
   }, [
     id,
     facturaApi,
+    centrosApi,
     nowProvider,
+    sociedadId,
     setLoading,
     setError,
     setFactura,
@@ -109,6 +121,7 @@ export const useFacturaDetalleData = ({ id, sociedadId, dependencies = {} }) => 
     setTablaPagoActual,
     setOrdenCompraActual,
     setNotaCreditoActual,
+    setCentrosCostoCatalogo,
     setConta,
     setRetencionPagoFecha
   ]);

@@ -3,6 +3,7 @@ export const normalizeTramiteWorkflowInputs = ({
   id,
   tramite,
   documentosActivos,
+  actorUsuario,
   fetchDetalle,
   fetchHistorial,
   setActionMessage,
@@ -16,6 +17,7 @@ export const normalizeTramiteWorkflowInputs = ({
     id,
     tramite,
     documentosActivos,
+    actorUsuario,
     fetchDetalle,
     fetchHistorial,
     setActionMessage,
@@ -27,6 +29,7 @@ export const buildTramiteWorkflowStateInputs = (workflowInputs) => ({
   id: workflowInputs.id,
   tramite: workflowInputs.tramite,
   documentosActivos: workflowInputs.documentosActivos,
+  actorUsuario: workflowInputs.actorUsuario,
   fetchHistorial: workflowInputs.fetchHistorial
 });
 
@@ -34,8 +37,6 @@ export const buildTramiteWorkflowActionsOutput = ({
   workflowState,
   handlers
 }) => ({
-  rolActivo: workflowState.rolActivo,
-  setRolActivo: workflowState.setRolActivo,
   historialVisible: workflowState.historialVisible,
   setHistorialVisible: workflowState.setHistorialVisible,
   overrideEstado: workflowState.overrideEstado,

@@ -6,7 +6,9 @@ import TramiteCreatePanel from './tramites/TramiteCreatePanel';
 import TramitesTableSection from './tramites/TramitesTableSection';
 import { TRAMITES_LABELS, LOADING_LABELS } from '../utils/uiLabels';
 
-function Tramites({ sociedadId, canCreateTramite = true }) {
+function Tramites({ sociedadId, canCreateTramite = true, authUser = null }) {
+  const actorUsuario = authUser?.email || authUser?.nombre || 'system';
+
   const {
     tramites,
     loading,
@@ -43,12 +45,15 @@ function Tramites({ sociedadId, canCreateTramite = true }) {
     totalRetencionesSeleccionadas,
     totalSeleccionado,
     totalPorMoneda,
-    monedasDisponibles
+    monedasDisponibles,
+    marcarTodosVisibles,
+    desmarcarTodos
   } = useTramitesViewModel({
     tramites,
     facturasDisponibles,
     retencionesDisponibles,
     canCreateTramite,
+    actorUsuario,
     fetchFacturasDisponibles,
     crearTramiteApi,
     setActionMessage,
@@ -82,9 +87,11 @@ function Tramites({ sociedadId, canCreateTramite = true }) {
       <TramiteCreatePanel
         showCreate={showCreate}
         canCreateTramite={canCreateTramite}
+        sociedadId={sociedadId}
         closeCreate={closeCreate}
         actionError={actionError}
         actionMessage={actionMessage}
+        setActionError={setActionError}
         loadingDocs={loadingDocs}
         createFilters={createFilters}
         updateCreateFilter={updateCreateFilter}
@@ -99,6 +106,8 @@ function Tramites({ sociedadId, canCreateTramite = true }) {
         totalRetencionesSeleccionadas={totalRetencionesSeleccionadas}
         totalSeleccionado={totalSeleccionado}
         totalPorMoneda={totalPorMoneda}
+        marcarTodosVisibles={marcarTodosVisibles}
+        desmarcarTodos={desmarcarTodos}
         crearTramite={crearTramite}
       />
 

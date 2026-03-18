@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useFacturas } from '../hooks/useFacturas';
 import {
   useFacturasFilters,
@@ -22,11 +22,80 @@ import ActionAlerts from './common/ActionAlerts';
 import { FACTURAS_LABELS, LOADING_LABELS } from '../utils/uiLabels';
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100];
+const DASHBOARD_PRESET_LABELS = Object.freeze({
+  no_contabilizadas: 'No contabilizadas',
+  por_pagar: 'Total por pagar',
+  vencidas: 'Vencidas',
+  por_vencer_7: 'Por vencer (7 dias)',
+  pagadas: 'Pagadas'
+});
 
 const formatLabel = (template, values) => Object.entries(values).reduce(
   (label, [key, value]) => label.replace(`{${key}}`, String(value)),
   template,
 );
+
+const parseDashboardPresetFromSearch = (search) => {
+  const params = new URLSearchParams(search || '');
+  const preset = String(params.get('dashboardPreset') || '').trim();
+  return DASHBOARD_PRESET_LABELS[preset] ? preset : '';
+};
+
+const normalizeReturnTo = (value) => {
+  const normalized = String(value || '').trim();
+  if (!normalized || !normalized.startsWith('/') || normalized.startsWith('//')) {
+    return '';
+  }
+
+  return normalized;
+};
+
+const parseReturnContextFromSearch = (search) => {
+  const params = new URLSearchParams(search || '');
+  const returnTo = normalizeReturnTo(params.get('returnTo'));
+  const returnLabel = String(params.get('returnLabel') || '').trim();
+
+  return {
+    returnTo,
+    returnLabel: returnTo ? (returnLabel || 'origen') : ''
+  };
+};
+
+const buildFacturasRoute = ({
+  dashboardPreset = '',
+  returnTo = '',
+  returnLabel = ''
+} = {}) => {
+  const params = new URLSearchParams();
+
+  if (dashboardPreset) {
+    params.set('dashboardPreset', dashboardPreset);
+  }
+
+  if (returnTo) {
+    params.set('returnTo', returnTo);
+  }
+
+  if (returnLabel) {
+    params.set('returnLabel', returnLabel);
+  }
+
+  const search = params.toString();
+  return search ? `/facturas?${search}` : '/facturas';
+};
+
+const getReturnActionLabel = (returnLabel) => {
+  const normalized = String(returnLabel || '').trim();
+  if (!normalized) {
+    return 'Volver';
+  }
+
+  if (normalized.toLowerCase() === 'dashboard') {
+    return 'Volver al dashboard';
+  }
+
+  return `Volver a ${normalized}`;
+};
 
 const getDocumentoPrincipal = (factura) => (
   factura.consecutivo
@@ -85,6 +154,7 @@ const buildVisiblePages = (currentPage, totalPages) => {
 };
 
 const buildFilterChips = ({
+  dashboardPreset,
   search,
   estado,
   fechaDesde,
@@ -96,6 +166,12 @@ const buildFilterChips = ({
 }) => {
   const chips = [];
 
+  if (dashboardPreset) {
+    chips.push({
+      key: 'dashboardPreset',
+      label: `Vista dashboard: ${DASHBOARD_PRESET_LABELS[dashboardPreset]}`
+    });
+  }
   if (search.trim()) {
     chips.push({ key: 'search', label: `Busqueda: ${search.trim()}` });
   }
@@ -233,6 +309,16 @@ function FacturaRowActions({
 }
 
 function Facturas({ sociedadId, canEditContabilizacion = false }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const dashboardPreset = useMemo(
+    () => parseDashboardPresetFromSearch(location.search),
+    [location.search]
+  );
+  const returnContext = useMemo(
+    () => parseReturnContextFromSearch(location.search),
+    [location.search]
+  );
   const [showFilters, setShowFilters] = useState(false);
   const [openMenuId, setOpenMenuId] = useState(null);
   const [mhLoadingId, setMhLoadingId] = useState(null);
@@ -261,13 +347,14 @@ function Facturas({ sociedadId, canEditContabilizacion = false }) {
     setPage,
     pageSize,
     setPageSize,
+    dashboardPreset: activeDashboardPreset,
     query,
     hasActiveFilters,
     resetFilters,
     resetPaginationAndSort,
     toggleSort,
     filterNotaCreditoForReport,
-  } = useFacturasFilters();
+  } = useFacturasFilters({ dashboardPreset });
 
   const {
     items,
@@ -297,7 +384,7 @@ function Facturas({ sociedadId, canEditContabilizacion = false }) {
     setOpenMenuId(null);
     setMhLoadingId(null);
     setActionError('');
-  }, [sociedadId]);
+  }, [sociedadId, dashboardPreset]);
 
   useEffect(() => {
     setOpenMenuId(null);
@@ -360,6 +447,7 @@ function Facturas({ sociedadId, canEditContabilizacion = false }) {
   }, [openMenuId]);
 
   const activeFilterChips = useMemo(() => buildFilterChips({
+    dashboardPreset: activeDashboardPreset,
     search,
     estado,
     fechaDesde,
@@ -369,6 +457,7 @@ function Facturas({ sociedadId, canEditContabilizacion = false }) {
     montoMin,
     montoMax,
   }), [
+    activeDashboardPreset,
     emisorNombre,
     estado,
     fechaDesde,
@@ -420,6 +509,9 @@ function Facturas({ sociedadId, canEditContabilizacion = false }) {
 
   const clearFilterChip = (chipKey) => {
     switch (chipKey) {
+      case 'dashboardPreset':
+        navigate(buildFacturasRoute(returnContext));
+        break;
       case 'search':
         setSearch('');
         break;
@@ -457,6 +549,13 @@ function Facturas({ sociedadId, canEditContabilizacion = false }) {
     toggleSort(nextSortBy);
   };
 
+  const handleResetAllFilters = () => {
+    resetFilters();
+    if (dashboardPreset) {
+      navigate(buildFacturasRoute(returnContext));
+    }
+  };
+
   const isInitialLoading = loading && items.length === 0 && !error;
   const hasBlockingError = !sociedadId || (error && items.length === 0);
 
@@ -471,6 +570,11 @@ function Facturas({ sociedadId, canEditContabilizacion = false }) {
         subtitle={FACTURAS_LABELS.pageSubtitle}
         actions={(
           <div className="d-flex gap-2">
+            {returnContext.returnTo ? (
+              <Link className="btn btn-outline-secondary" to={returnContext.returnTo}>
+                {getReturnActionLabel(returnContext.returnLabel)}
+              </Link>
+            ) : null}
             <button
               className="btn btn-outline-secondary"
               type="button"
@@ -510,7 +614,7 @@ function Facturas({ sociedadId, canEditContabilizacion = false }) {
               <button
                 className="btn btn-outline-secondary"
                 type="button"
-                onClick={resetFilters}
+                onClick={handleResetAllFilters}
                 disabled={!hasActiveFilters}
               >
                 {FACTURAS_LABELS.resetFiltersButton}

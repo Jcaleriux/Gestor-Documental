@@ -1,4 +1,5 @@
 const pool = require('../db');
+const { FACTURA_ESTADOS } = require('../domain/facturas');
 const {
   createTotalFacturaExpression,
   createRebajosAplicadosExpression,
@@ -16,6 +17,13 @@ const retencionPagadaExpression = createRetencionPagadaExpression({ contaAlias: 
 const retencionPendienteExpression = createRetencionPendienteExpression({ contaAlias: 'fc' });
 const totalPagoPrincipalExpression = createTotalPagoPrincipalExpression({ facturaAlias: 'f', contaAlias: 'fc' });
 const totalPendienteGlobalExpression = createTotalPendienteGlobalExpression({ facturaAlias: 'f', contaAlias: 'fc' });
+const estadosFlujoPagoFacturasExpression = `
+  (
+    '${FACTURA_ESTADOS.CONTABILIZADO}',
+    '${FACTURA_ESTADOS.EN_TRAMITE_PAGO}',
+    '${FACTURA_ESTADOS.PAGADO_PARCIALMENTE}'
+  )
+`;
 const estadoRetencionExpression = `
   CASE
     WHEN ${retencionPendienteExpression} <= 0 THEN 'pagada'
@@ -161,6 +169,7 @@ const buildFacturasListBaseCte = () => `
       ${monedaFacturaExpression} AS moneda,
       ${emisorNombreExpression} AS emisor_nombre,
       ${receptorNombreExpression} AS receptor_nombre,
+      fc.fecha_vencimiento AS fecha_vencimiento,
       COALESCE(f.consecutivo::text, '') AS numero_documento,
       COALESCE(f.clave::text, '') AS clave_text,
       ${hasMensajeHaciendaExpression} AS has_mensaje_hacienda
@@ -179,6 +188,7 @@ const buildFacturasListWhere = ({
   fechaHasta,
   montoMin,
   montoMax,
+  dashboardPreset,
 } = {}) => {
   const params = [];
   const clauses = [];
@@ -235,6 +245,44 @@ const buildFacturasListWhere = ({
     clauses.push(`fe.total_factura <= $${params.length}`);
   }
 
+  if (dashboardPreset === 'no_contabilizadas') {
+    clauses.push(`
+      COALESCE(fe.estado, '${FACTURA_ESTADOS.NO_CONTABILIZADO}') IN (
+        '${FACTURA_ESTADOS.NO_CONTABILIZADO}',
+        '${FACTURA_ESTADOS.EN_REVISION}'
+      )
+    `);
+  }
+
+  if (dashboardPreset === 'por_pagar') {
+    clauses.push(`
+      COALESCE(fe.estado, '${FACTURA_ESTADOS.NO_CONTABILIZADO}') IN ${estadosFlujoPagoFacturasExpression}
+    `);
+  }
+
+  if (dashboardPreset === 'vencidas') {
+    clauses.push(`
+      COALESCE(fe.estado, '${FACTURA_ESTADOS.NO_CONTABILIZADO}') IN ${estadosFlujoPagoFacturasExpression}
+    `);
+    clauses.push('fe.fecha_vencimiento IS NOT NULL');
+    clauses.push('fe.fecha_vencimiento < CURRENT_DATE');
+  }
+
+  if (dashboardPreset === 'por_vencer_7') {
+    clauses.push(`
+      COALESCE(fe.estado, '${FACTURA_ESTADOS.NO_CONTABILIZADO}') IN ${estadosFlujoPagoFacturasExpression}
+    `);
+    clauses.push('fe.fecha_vencimiento IS NOT NULL');
+    clauses.push('fe.fecha_vencimiento >= CURRENT_DATE');
+    clauses.push("fe.fecha_vencimiento <= (CURRENT_DATE + INTERVAL '7 days')");
+  }
+
+  if (dashboardPreset === 'pagadas') {
+    clauses.push(`
+      COALESCE(fe.estado, '${FACTURA_ESTADOS.NO_CONTABILIZADO}') = '${FACTURA_ESTADOS.PAGADO}'
+    `);
+  }
+
   return {
     params,
     whereClause: clauses.length > 0
@@ -267,6 +315,7 @@ const listFacturas = async ({
   fechaHasta,
   montoMin,
   montoMax,
+  dashboardPreset,
   sortBy = 'fecha_emision',
   sortDir = 'desc',
   page = 1,
@@ -283,6 +332,7 @@ const listFacturas = async ({
     fechaHasta,
     montoMin,
     montoMax,
+    dashboardPreset,
   });
   const orderByClause = buildFacturasOrderBy(sortBy, sortDir);
   const offset = (page - 1) * pageSize;

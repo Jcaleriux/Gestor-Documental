@@ -45,12 +45,20 @@ describe('tramitesPagoPolicyRegistry', () => {
     expect(typeof decisionNoConfig.runAfterDecision).toBe('function');
 
     const accionExcluir = registry.tesoreria.resolveActionPolicy(TESORERIA_ACCIONES.EXCLUIR);
+    const accionDevolverContabilidad = registry.tesoreria.resolveActionPolicy(TESORERIA_ACCIONES.DEVOLVER_CONTABILIDAD);
     expect(accionExcluir).toMatchObject({ handlerType: 'exclude', requiresDestino: false });
+    expect(accionDevolverContabilidad).toMatchObject({
+      handlerType: 'returnToAccounting',
+      requiresDestino: false,
+      requiresMotivo: true
+    });
     expect(registry.tesoreria.resolveActionPolicy('accion_no_registrada')).toBeNull();
 
     const handlerExclude = registry.tesoreria.resolveActionHandler('exclude');
+    const handlerReturnToAccounting = registry.tesoreria.resolveActionHandler('returnToAccounting');
     const handlerReset = registry.tesoreria.resolveActionHandler('reset');
     expect(typeof handlerExclude).toBe('function');
+    expect(typeof handlerReturnToAccounting).toBe('function');
     expect(typeof handlerReset).toBe('function');
     expect(registry.tesoreria.resolveActionHandler('handler_no_registrado')).toBeNull();
 

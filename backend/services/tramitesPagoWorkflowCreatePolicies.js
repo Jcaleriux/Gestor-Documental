@@ -56,14 +56,25 @@ const CREATE_TRAMITE_ITEM_POLICIES = Object.freeze({
       }
     },
     toSociedadRows: ({ rows }) => rows,
-    attachToTramite: async ({ tramitesPagoRepo, tramiteId, ids, client }) => {
+    attachToTramite: async ({ tramitesPagoRepo, tramiteId, ids, rows, client }) => {
       if (ids.length === 0) {
         return;
       }
       await tramitesPagoRepo.insertTramiteDocumentos({
         tramiteId,
-        facturaIds: ids
+        facturaEntries: rows.map((row) => ({
+          facturaId: Number(row.id),
+          estadoFacturaOrigen: row.estado || FACTURA_ESTADOS.CONTABILIZADO
+        }))
       }, client);
+
+      const aprobadores = await tramitesPagoRepo.listCentroCostoAprobadoresByFacturaIds(ids, client);
+      if (aprobadores.length > 0) {
+        await tramitesPagoRepo.insertTramiteDocumentoAprobadores({
+          tramiteId,
+          aprobadores
+        }, client);
+      }
 
       await tramitesPagoRepo.updateFacturasEstadoByIds({
         facturaIds: ids,

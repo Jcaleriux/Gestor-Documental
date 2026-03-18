@@ -1,8 +1,26 @@
+import {
+  buildCentroCostoResumen,
+  createCentroCostoLinea,
+  ensureCentrosCostoMetadata,
+} from '../../utils/centrosCosto.js';
+
+const DEFAULT_PLAZO_CREDITO_DIAS = 30;
+
+const ensureEditableCentrosCostoMetadata = (metadata = {}) => {
+  const nextMetadata = ensureCentrosCostoMetadata(metadata, { preserveEmpty: true });
+
+  if (!Array.isArray(nextMetadata.centros_costo_lineas) || nextMetadata.centros_costo_lineas.length === 0) {
+    nextMetadata.centros_costo_lineas = [createCentroCostoLinea()];
+  }
+
+  return nextMetadata;
+};
+
 export const createInitialContaState = () => ({
   fecha_documento: '',
   fecha_vencimiento: '',
   fecha_contabilizacion: '',
-  plazo_credito: '',
+  plazo_credito: DEFAULT_PLAZO_CREDITO_DIAS,
   retencion: 0,
   retencion_pagada: '',
   estado_retencion: '',
@@ -18,7 +36,8 @@ export const createInitialContaState = () => ({
   proveedor_id: '',
   tabla_pago_id: '',
   nota_credito_id: '',
-  notas: ''
+  notas: '',
+  metadata: ensureEditableCentrosCostoMetadata(),
 });
 
 export const toInputDate = (value) => {
@@ -26,6 +45,21 @@ export const toInputDate = (value) => {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
   return date.toISOString().slice(0, 10);
+};
+
+const addDaysToInputDate = (value, days) => {
+  const normalizedDate = toInputDate(value);
+  if (!normalizedDate) {
+    return '';
+  }
+
+  const baseDate = new Date(`${normalizedDate}T00:00:00Z`);
+  if (Number.isNaN(baseDate.getTime())) {
+    return '';
+  }
+
+  baseDate.setUTCDate(baseDate.getUTCDate() + Number(days || 0));
+  return baseDate.toISOString().slice(0, 10);
 };
 
 export const normalizarIdentificacion = (value) => String(value || '')
@@ -128,19 +162,27 @@ export const buildContaState = ({
   notaActual = null
 }) => {
   const montoNotaInicial = contaData.monto_nota_credito ?? getNotaCreditoTotal(notaActual);
+  const metadata = ensureEditableCentrosCostoMetadata(contaData.metadata);
+  const centroCostoResumen = buildCentroCostoResumen(metadata.centros_costo_lineas);
+  const plazoCredito = contaData.plazo_credito === '' || contaData.plazo_credito == null
+    ? DEFAULT_PLAZO_CREDITO_DIAS
+    : contaData.plazo_credito;
+  const fechaDocumento = toInputDate(contaData.fecha_documento) || toInputDate(facturaData?.fecha_emision);
+  const fechaVencimiento = toInputDate(contaData.fecha_vencimiento)
+    || addDaysToInputDate(facturaData?.fecha_emision, plazoCredito);
 
   return {
-    fecha_documento: toInputDate(contaData.fecha_documento) || toInputDate(facturaData?.fecha_emision),
-    fecha_vencimiento: toInputDate(contaData.fecha_vencimiento),
+    fecha_documento: fechaDocumento,
+    fecha_vencimiento: fechaVencimiento,
     fecha_contabilizacion: toInputDate(contaData.fecha_contabilizacion) || toInputDate(new Date()),
-    plazo_credito: contaData.plazo_credito ?? '',
+    plazo_credito: plazoCredito,
     retencion: contaData.retencion ?? 0,
     retencion_pagada: contaData.retencion_pagada ?? '',
     estado_retencion: contaData.estado_retencion ?? '',
     descuento: contaData.descuento ?? 0,
     anticipo_aplicado: contaData.anticipo_aplicado ?? 0,
     monto_nota_credito: montoNotaInicial ?? 0,
-    centro_costo: contaData.centro_costo ?? '',
+    centro_costo: (centroCostoResumen || contaData.centro_costo) ?? '',
     cuenta_contable: contaData.cuenta_contable ?? '',
     proyecto: contaData.proyecto ?? '',
     orden_compra: contaData.orden_compra ?? '',
@@ -151,6 +193,7 @@ export const buildContaState = ({
       : (proveedorInferido?.id ? String(proveedorInferido.id) : ''),
     tabla_pago_id: contaData.tabla_pago_id ? String(contaData.tabla_pago_id) : '',
     nota_credito_id: contaData.nota_credito_id ? String(contaData.nota_credito_id) : '',
-    notas: contaData.notas ?? ''
+    notas: contaData.notas ?? '',
+    metadata,
   };
 };

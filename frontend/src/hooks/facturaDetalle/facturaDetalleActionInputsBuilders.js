@@ -18,6 +18,7 @@ export const buildContabilizacionCoreActionInputs = ({ id, data }) => ({
   factura: data.factura,
   conta: data.conta,
   proveedoresSociedad: data.proveedoresSociedad,
+  centrosCostoCatalogo: data.centrosCostoCatalogo,
   setConta: data.setConta,
   setContaSaving: data.setContaSaving,
   setContaSavingAction: data.setContaSavingAction,
@@ -50,6 +51,13 @@ export const buildContabilizacionNotasActionInputs = ({ data }) => ({
   setNotasLoading: data.setNotasLoading
 });
 
+export const buildContabilizacionCentrosCostoActionInputs = ({ data }) => ({
+  setCentrosCostoModalOpen: data.setCentrosCostoModalOpen,
+  setCentrosCostoTargetLineId: data.setCentrosCostoTargetLineId,
+  setCentrosCostoError: data.setCentrosCostoError,
+  setCentrosCostoLoading: data.setCentrosCostoLoading
+});
+
 export const buildContabilizacionRetencionActionInputs = ({ data }) => ({
   retencionPagoMonto: data.retencionPagoMonto,
   retencionPagoFecha: data.retencionPagoFecha,
@@ -66,6 +74,7 @@ export const buildContabilizacionModuleInputs = ({ id, data }) => ({
   ...buildContabilizacionTablasActionInputs({ data }),
   ...buildContabilizacionOrdenesActionInputs({ data }),
   ...buildContabilizacionNotasActionInputs({ data }),
+  ...buildContabilizacionCentrosCostoActionInputs({ data }),
   ...buildContabilizacionRetencionActionInputs({ data })
 });
 

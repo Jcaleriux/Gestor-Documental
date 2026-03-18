@@ -6,12 +6,14 @@ function TramiteActions({
   puedeGerenciaContable,
   puedeFinanciera,
   puedeTesoreria,
+  sociedadId,
   destinosTesoreria,
   destinoSeleccionado,
   onDestinoChange,
   onDecision,
   onAccionTesoreria,
   isExcluido = false,
+  isDevueltoContabilidad = false,
   showReincluir = true,
   className = '',
   labels
@@ -21,13 +23,25 @@ function TramiteActions({
     rechazar: 'Rechazar',
     reenviar: 'Reenviar',
     excluir: 'Excluir',
+    devolverContabilidad: 'Devolver a contabilidad',
     reincluir: 'Reincluir',
     destinoPlaceholder: 'Destino...',
     ver: 'Ver'
   };
+  const viewUrlSearch = new URLSearchParams({ readonly: '1' });
+  if (sociedadId) {
+    viewUrlSearch.set('sociedad', String(sociedadId));
+  }
+  const viewUrl = `/facturas/${facturaId}/contabilizacion?${viewUrlSearch.toString()}`;
+
   return (
     <div className={`tramite-doc-actions ${className}`.trim()}>
-      <Link className="btn btn-sm btn-outline-primary" to={`/facturas/${facturaId}`}>
+      <Link
+        className="btn btn-sm btn-outline-primary"
+        to={viewUrl}
+        target="_blank"
+        rel="noreferrer"
+      >
         {actionLabels.ver}
       </Link>
       {puedeGerencia && (
@@ -80,27 +94,41 @@ function TramiteActions({
       )}
       {puedeTesoreria && (
         <>
-          <select
-            className="form-select form-select-sm"
-            value={destinoSeleccionado || ''}
-            onChange={(e) => onDestinoChange(facturaId, e.target.value)}
-          >
-            <option value="">{actionLabels.destinoPlaceholder}</option>
-            {destinosTesoreria.map((destino) => (
-              <option key={destino.value} value={destino.value}>
-                {destino.label}
-              </option>
-            ))}
-          </select>
           {showReincluir && isExcluido ? (
-            <button
-              className="btn btn-sm btn-outline-success"
-              onClick={() => onAccionTesoreria(facturaId, 'reincluir')}
-            >
-              {actionLabels.reincluir}
-            </button>
-          ) : (
             <>
+              <select
+                className="form-select form-select-sm"
+                value={destinoSeleccionado || ''}
+                onChange={(e) => onDestinoChange(facturaId, e.target.value)}
+              >
+                <option value="">{actionLabels.destinoPlaceholder}</option>
+                {destinosTesoreria.map((destino) => (
+                  <option key={destino.value} value={destino.value}>
+                    {destino.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                className="btn btn-sm btn-outline-success"
+                onClick={() => onAccionTesoreria(facturaId, 'reincluir')}
+              >
+                {actionLabels.reincluir}
+              </button>
+            </>
+          ) : !isExcluido && !isDevueltoContabilidad ? (
+            <>
+              <select
+                className="form-select form-select-sm"
+                value={destinoSeleccionado || ''}
+                onChange={(e) => onDestinoChange(facturaId, e.target.value)}
+              >
+                <option value="">{actionLabels.destinoPlaceholder}</option>
+                {destinosTesoreria.map((destino) => (
+                  <option key={destino.value} value={destino.value}>
+                    {destino.label}
+                  </option>
+                ))}
+              </select>
               <button
                 className="btn btn-sm btn-outline-primary"
                 onClick={() => onAccionTesoreria(facturaId, 'reenviar')}
@@ -113,8 +141,14 @@ function TramiteActions({
               >
                 {actionLabels.excluir}
               </button>
+              <button
+                className="btn btn-sm btn-outline-warning"
+                onClick={() => onAccionTesoreria(facturaId, 'devolver_contabilidad')}
+              >
+                {actionLabels.devolverContabilidad}
+              </button>
             </>
-          )}
+          ) : null}
         </>
       )}
     </div>

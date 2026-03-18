@@ -20,6 +20,7 @@ export const useTramitesViewModel = ({
   facturasDisponibles,
   retencionesDisponibles,
   canCreateTramite,
+  actorUsuario,
   fetchFacturasDisponibles,
   crearTramiteApi,
   setActionMessage,
@@ -101,7 +102,7 @@ export const useTramitesViewModel = ({
     const ok = await crearTramiteApi({
       facturaIds,
       retencionFacturaIds,
-      usuario: 'admin'
+      usuario: actorUsuario || 'system'
     });
 
     if (ok) {
@@ -215,6 +216,25 @@ export const useTramitesViewModel = ({
     return Array.from(setMonedas).sort();
   }, [facturasDisponibles, retencionesDisponibles]);
 
+  const marcarTodosVisibles = () => {
+    setSelectedFacturas((prev) => {
+      const next = new Set(prev);
+      facturasFiltradas.forEach((factura) => next.add(factura.id));
+      return next;
+    });
+
+    setSelectedRetenciones((prev) => {
+      const next = new Set(prev);
+      retencionesFiltradas.forEach((retencion) => next.add(retencion.factura_id));
+      return next;
+    });
+  };
+
+  const desmarcarTodos = () => {
+    setSelectedFacturas(new Set());
+    setSelectedRetenciones(new Set());
+  };
+
   return {
     search,
     setSearch,
@@ -237,6 +257,8 @@ export const useTramitesViewModel = ({
     totalRetencionesSeleccionadas,
     totalSeleccionado,
     totalPorMoneda,
-    monedasDisponibles
+    monedasDisponibles,
+    marcarTodosVisibles,
+    desmarcarTodos
   };
 };

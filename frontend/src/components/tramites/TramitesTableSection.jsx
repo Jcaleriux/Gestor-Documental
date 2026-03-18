@@ -38,6 +38,7 @@ function TramitesTableSection({
               {TRAMITES_LABELS.filters.estados.en_aprobacion_gerencia_financiera}
             </option>
             <option value="en_revision_tesoreria">{TRAMITES_LABELS.filters.estados.en_revision_tesoreria}</option>
+            <option value="en_revision_tesoreria_2">{TRAMITES_LABELS.filters.estados.en_revision_tesoreria_2}</option>
             <option value="pagado">{TRAMITES_LABELS.filters.estados.pagado}</option>
             <option value="cancelado">{TRAMITES_LABELS.filters.estados.cancelado}</option>
           </select>

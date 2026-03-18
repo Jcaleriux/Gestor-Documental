@@ -24,7 +24,6 @@ const createDeps = () => ({
     tesoreriaError: 'tesoreria-error',
     tesoreriaDestinoRequired: 'destino-requerido'
   },
-  getRoleByEstadoFn: createMockFn(() => 'gerencia_contable'),
   overrideLabels: {
     required: 'override-required'
   }
@@ -32,6 +31,7 @@ const createDeps = () => ({
 
 const createWorkflowInputs = () => ({
   id: 88,
+  actorUsuario: 'gerencia@novogar.local',
   documentosActivos: [
     { factura_id: 1, total_a_pagar: 100, consecutivo: 'FAC-1' }
   ],
@@ -47,7 +47,6 @@ const createWorkflowState = () => ({
   setOverrideEstado: createMockFn(),
   setOverrideMotivo: createMockFn(),
   setOverrideError: createMockFn(),
-  setRolActivo: createMockFn(),
   tesoreriaDestino: { 1: 'en_aprobacion_gerencia' },
   pagosFacturas: { 1: '75.50' }
 });
@@ -69,7 +68,7 @@ test('createTramiteWorkflowHandlers.handleDecision usa prompt en rechazo y refre
   assert.deepEqual(deps.api.decisionDocumento.calls[0], [
     88,
     1,
-    { etapa: 'gerencia', decision: 'rechazado', motivo: 'motivo-demo', usuario: 'admin' }
+    { etapa: 'gerencia', decision: 'rechazado', motivo: 'motivo-demo', usuario: 'gerencia@novogar.local' }
   ]);
   assert.equal(workflowInputs.fetchDetalle.calls.length, 1);
   assert.deepEqual(workflowInputs.setActionMessage.calls.at(-1), ['decision-ok']);
@@ -118,7 +117,6 @@ test('createTramiteWorkflowHandlers.handleOverrideEstado aplica cambio forzado y
       force: true
     }
   ]);
-  assert.deepEqual(workflowState.setRolActivo.calls[0], ['gerencia_contable']);
   assert.deepEqual(workflowState.setOverrideEstado.calls[0], ['']);
   assert.deepEqual(workflowState.setOverrideMotivo.calls[0], ['']);
 });
@@ -160,7 +158,7 @@ test('createTramiteWorkflowHandlers.handleAccionSiguiente para pagado envía pag
     88,
     {
       estado: 'pagado',
-      usuario: 'admin',
+      usuario: 'gerencia@novogar.local',
       motivo: null,
       force: false,
       pagos_documentos: [{ factura_id: 1, monto_pago: 99.99 }]

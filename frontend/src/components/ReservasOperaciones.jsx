@@ -1,6 +1,6 @@
-import { Fragment, useCallback, useEffect, useState } from 'react';
-import { reservasApi } from '../services/reservasApi';
-import { getAuthToken } from '../utils/auth';
+import { Fragment, useState } from 'react';
+import { useReservaOperationDetails } from '../hooks/reservas/useReservaOperationDetails.js';
+import { useReservasOperations } from '../hooks/reservas/useReservasOperations.js';
 import PageHeader from './common/PageHeader';
 import SectionCard from './common/SectionCard';
 import LoadingState from './common/LoadingState';
@@ -38,13 +38,6 @@ const inferPreviewType = (doc) => {
   return 'pdf';
 };
 
-const fileToDataUrl = (file) => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onload = () => resolve(String(reader.result || ''));
-  reader.onerror = () => reject(new Error('No se pudo leer el archivo'));
-  reader.readAsDataURL(file);
-});
-
 const resolveSellerName = (operation) => {
   const sellerMeta = operation?.metadata?.vendedor;
   if (sellerMeta && typeof sellerMeta === 'object') {
@@ -63,80 +56,52 @@ const resolveSellerName = (operation) => {
 };
 
 function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
-  const [operations, setOperations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [filterEstado, setFilterEstado] = useState('');
   const [showCreatePanel, setShowCreatePanel] = useState(false);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
   const [createForm, setCreateForm] = useState(CREATE_FORM_INITIAL);
   const [transferOperationId, setTransferOperationId] = useState(null);
   const [transferForm, setTransferForm] = useState(TRANSFER_FORM_INITIAL);
-  const [openDetailId, setOpenDetailId] = useState(null);
-  const [detailsLoadingId, setDetailsLoadingId] = useState(null);
-  const [operationDetails, setOperationDetails] = useState({});
-  const [selectedDocumentByOperation, setSelectedDocumentByOperation] = useState({});
   const [replaceFile, setReplaceFile] = useState(null);
   const [replaceReason, setReplaceReason] = useState('');
 
-  const loadOperations = useCallback(async ({ showLoader = true } = {}) => {
-    if (!sociedadId) {
-      setOperations([]);
-      if (showLoader) setLoading(false);
-      return;
-    }
+  const {
+    cancelOperation,
+    clearFeedback: clearOperationsFeedback,
+    closeOperation,
+    createOperation,
+    error: operationsError,
+    loading,
+    message: operationsMessage,
+    operations,
+    refetch,
+    saving,
+    transferOperation,
+  } = useReservasOperations({
+    sociedadId,
+    estado: filterEstado,
+  });
 
-    try {
-      if (showLoader) setLoading(true);
-      const res = await reservasApi.listOperaciones({
-        sociedad_id: sociedadId,
-        estado: filterEstado || undefined,
-      });
-      if (res.data?.success) {
-        setOperations(Array.isArray(res.data.data) ? res.data.data : []);
-      }
-    } catch (requestError) {
-      setError(requestError.response?.data?.error || 'No se pudo cargar reservas.');
-    } finally {
-      if (showLoader) setLoading(false);
-    }
-  }, [sociedadId, filterEstado]);
+  const {
+    buildPreviewUrl,
+    clearFeedback: clearDetailsFeedback,
+    detailsLoadingId,
+    error: detailsError,
+    message: detailsMessage,
+    openDetailId,
+    operationDetails,
+    replaceDocument,
+    resetState: resetDetailState,
+    saving: detailSaving,
+    selectDocument,
+    selectedDocumentByOperation,
+    toggleOperationDetail,
+  } = useReservaOperationDetails({
+    scopeKey: `${sociedadId || ''}:${filterEstado}`,
+  });
 
-  const loadOperationDetail = useCallback(async (operationId) => {
-    setDetailsLoadingId(operationId);
-    try {
-      const res = await reservasApi.getOperacion(operationId);
-      if (res.data?.success) {
-        const detail = res.data.data || {};
-        setOperationDetails((previous) => ({
-          ...previous,
-          [operationId]: detail,
-        }));
-
-        const docs = Array.isArray(detail.documentos) ? detail.documentos : [];
-        if (docs.length > 0) {
-          setSelectedDocumentByOperation((previous) => ({
-            ...previous,
-            [operationId]: previous[operationId] || docs[0].id,
-          }));
-        }
-      }
-    } finally {
-      setDetailsLoadingId(null);
-    }
-  }, []);
-
-  useEffect(() => {
-    setError('');
-    setMessage('');
-    setOpenDetailId(null);
-    setOperationDetails({});
-    setSelectedDocumentByOperation({});
-    setReplaceFile(null);
-    setReplaceReason('');
-    loadOperations();
-  }, [loadOperations]);
+  const error = detailsError || operationsError;
+  const message = detailsMessage || operationsMessage;
+  const isBusy = saving || detailSaving;
 
   const updateCreateForm = (field) => (event) => {
     const value = event.target.value;
@@ -151,15 +116,12 @@ function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
   const handleCreateOperation = async (event) => {
     event.preventDefault();
     if (!sociedadId) {
-      setError('Seleccione una sociedad para crear reservas.');
       return;
     }
 
     try {
-      setSaving(true);
-      setError('');
-      setMessage('');
-      await reservasApi.createOperacion({
+      clearDetailsFeedback();
+      await createOperation({
         sociedad_id: Number(sociedadId),
         proyecto_codigo: createForm.proyecto_codigo.trim().toUpperCase(),
         unidad_codigo: createForm.unidad_codigo.trim().toUpperCase(),
@@ -168,33 +130,29 @@ function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
       });
       setShowCreatePanel(false);
       setCreateForm(CREATE_FORM_INITIAL);
-      setMessage('Reserva creada correctamente.');
-      await loadOperations({ showLoader: false });
-    } catch (requestError) {
-      setError(requestError.response?.data?.error || 'No se pudo crear la reserva.');
-    } finally {
-      setSaving(false);
-    }
+    } catch {}
   };
 
-  const executeStateAction = async ({ operationId, action, successMessage }) => {
+  const executeStateAction = async ({ operationId, action }) => {
+    const reason = window.prompt('Motivo (opcional):', '') || '';
+
     try {
-      setSaving(true);
-      setError('');
-      setMessage('');
-      const reason = window.prompt('Motivo (opcional):', '') || '';
+      clearDetailsFeedback();
       if (action === 'cancel') {
-        await reservasApi.cancelOperacion(operationId, { motivo: reason || null });
+        await cancelOperation({
+          operacionId: operationId,
+          motivo: reason || null,
+        });
       } else if (action === 'close') {
-        await reservasApi.closeOperacion(operationId, { motivo: reason || null });
+        await closeOperation({
+          operacionId: operationId,
+          motivo: reason || null,
+        });
       }
-      setMessage(successMessage);
-      await loadOperations({ showLoader: false });
-    } catch (requestError) {
-      setError(requestError.response?.data?.error || 'No se pudo ejecutar la accion.');
-    } finally {
-      setSaving(false);
-    }
+      resetDetailState();
+      setReplaceFile(null);
+      setReplaceReason('');
+    } catch {}
   };
 
   const startTransfer = (operation) => {
@@ -207,8 +165,8 @@ function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
       cliente_identificacion: String(operation.cliente_identificacion || ''),
       motivo: '',
     });
-    setError('');
-    setMessage('');
+    clearOperationsFeedback();
+    clearDetailsFeedback();
   };
 
   const submitTransfer = async (event) => {
@@ -216,85 +174,51 @@ function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
     if (!transferOperationId) return;
 
     try {
-      setSaving(true);
-      setError('');
-      setMessage('');
-      await reservasApi.transferOperacion(transferOperationId, {
-        destino_sociedad_id: transferForm.destino_sociedad_id ? Number(transferForm.destino_sociedad_id) : null,
-        destino_proyecto_codigo: transferForm.destino_proyecto_codigo.trim().toUpperCase(),
-        destino_unidad_codigo: transferForm.destino_unidad_codigo.trim().toUpperCase(),
-        cliente_nombre: transferForm.cliente_nombre.trim() || null,
-        cliente_identificacion: transferForm.cliente_identificacion.trim() || null,
-        motivo: transferForm.motivo.trim() || null,
+      clearDetailsFeedback();
+      await transferOperation({
+        operacionId: transferOperationId,
+        payload: {
+          destino_sociedad_id: transferForm.destino_sociedad_id ? Number(transferForm.destino_sociedad_id) : null,
+          destino_proyecto_codigo: transferForm.destino_proyecto_codigo.trim().toUpperCase(),
+          destino_unidad_codigo: transferForm.destino_unidad_codigo.trim().toUpperCase(),
+          cliente_nombre: transferForm.cliente_nombre.trim() || null,
+          cliente_identificacion: transferForm.cliente_identificacion.trim() || null,
+          motivo: transferForm.motivo.trim() || null,
+        },
       });
       setTransferOperationId(null);
       setTransferForm(TRANSFER_FORM_INITIAL);
-      setMessage('Traslado aplicado correctamente.');
-      await loadOperations({ showLoader: false });
-    } catch (requestError) {
-      setError(requestError.response?.data?.error || 'No se pudo trasladar la reserva.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const toggleOperationDetail = async (operationId) => {
-    if (openDetailId === operationId) {
-      setOpenDetailId(null);
+      resetDetailState();
       setReplaceFile(null);
       setReplaceReason('');
-      return;
-    }
+    } catch {}
+  };
 
-    setOpenDetailId(operationId);
+  const handleToggleOperationDetail = async (operationId) => {
     setReplaceFile(null);
     setReplaceReason('');
     try {
-      await loadOperationDetail(operationId);
-    } catch (requestError) {
-      setError(requestError.response?.data?.error || 'No se pudo cargar el detalle de la reserva.');
-      setOpenDetailId(null);
-    }
+      await toggleOperationDetail(operationId);
+    } catch {}
   };
 
   const handleReplaceDocument = async (event, operationId, selectedDoc) => {
     event.preventDefault();
-    if (!canManageDocuments) {
-      setError('No tiene permisos para reemplazar documentos.');
-      return;
-    }
-    if (!selectedDoc) {
-      setError('Seleccione un documento.');
-      return;
-    }
-    if (!replaceFile) {
-      setError('Seleccione un archivo PDF o imagen para reemplazar.');
+    if (!canManageDocuments || !selectedDoc) {
       return;
     }
 
     try {
-      setSaving(true);
-      setError('');
-      setMessage('');
-      const fileBase64 = await fileToDataUrl(replaceFile);
-      await reservasApi.replaceDocumento(operationId, selectedDoc.id, {
-        filename: replaceFile.name,
-        file_base64: fileBase64,
-        mime_type: replaceFile.type || null,
+      await replaceDocument({
+        operacionId: operationId,
+        documentoId: selectedDoc.id,
+        file: replaceFile,
         motivo: replaceReason.trim() || null,
       });
       setReplaceFile(null);
       setReplaceReason('');
-      setMessage('Documento reemplazado correctamente. Se registro en historial.');
-      await Promise.all([
-        loadOperationDetail(operationId),
-        loadOperations({ showLoader: false }),
-      ]);
-    } catch (requestError) {
-      setError(requestError.response?.data?.error || 'No se pudo reemplazar el documento.');
-    } finally {
-      setSaving(false);
-    }
+      await refetch({ showLoader: false }).catch(() => {});
+    } catch {}
   };
 
   if (!sociedadId) {
@@ -325,7 +249,13 @@ function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
               className="form-select"
               style={{ minWidth: '220px' }}
               value={filterEstado}
-              onChange={(event) => setFilterEstado(event.target.value)}
+              onChange={(event) => {
+                setFilterEstado(event.target.value);
+                setTransferOperationId(null);
+                setTransferForm(TRANSFER_FORM_INITIAL);
+                setReplaceFile(null);
+                setReplaceReason('');
+              }}
             >
               <option value="">Todos los estados</option>
               <option value="activa">Activa</option>
@@ -336,7 +266,11 @@ function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
             <button
               type="button"
               className={`btn btn-sm ${showCreatePanel ? 'btn-outline-secondary' : 'btn-primary'}`}
-              onClick={() => setShowCreatePanel((previous) => !previous)}
+              onClick={() => {
+                setShowCreatePanel((previous) => !previous);
+                clearOperationsFeedback();
+                clearDetailsFeedback();
+              }}
             >
               {showCreatePanel ? 'Ocultar nueva reserva' : 'Nueva reserva'}
             </button>
@@ -367,7 +301,7 @@ function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
                 </label>
               </div>
               <div className="col-12 col-md-2 d-grid">
-                <button className="btn btn-primary" type="submit" disabled={saving}>{saving ? 'Guardando...' : 'Crear'}</button>
+                <button className="btn btn-primary" type="submit" disabled={isBusy}>{isBusy ? 'Guardando...' : 'Crear'}</button>
               </div>
             </div>
           </form>
@@ -401,10 +335,9 @@ function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
                   const selectedId = selectedDocumentByOperation[operation.id];
                   const selectedDoc = documents.find((doc) => doc.id === selectedId) || documents[0] || null;
                   const previewType = inferPreviewType(selectedDoc);
-                  const previewUrl = selectedDoc ? reservasApi.buildPreviewDocumentoUrl({
+                  const previewUrl = selectedDoc ? buildPreviewUrl({
                     operacionId: operation.id,
                     documentoId: selectedDoc.id,
-                    token: getAuthToken(),
                   }) : '';
 
                   return (
@@ -419,21 +352,21 @@ function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
                         <td>{formatDateTime(operation.actualizado_en || operation.creado_en)}</td>
                         <td className="text-end">
                           <div className="d-inline-flex gap-1 flex-wrap justify-content-end">
-                            <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => toggleOperationDetail(operation.id)} disabled={detailsLoadingId === operation.id}>
+                            <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => handleToggleOperationDetail(operation.id)} disabled={detailsLoadingId === operation.id}>
                               {isDetailOpen ? 'Ocultar detalle' : 'Ver detalle'}
                             </button>
                             {isActive && (
-                              <button type="button" className="btn btn-outline-warning btn-sm" onClick={() => executeStateAction({ operationId: operation.id, action: 'close', successMessage: 'Reserva cerrada correctamente.' })} disabled={saving}>
+                              <button type="button" className="btn btn-outline-warning btn-sm" onClick={() => executeStateAction({ operationId: operation.id, action: 'close' })} disabled={isBusy}>
                                 Cerrar
                               </button>
                             )}
                             {isActive && (
-                              <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => executeStateAction({ operationId: operation.id, action: 'cancel', successMessage: 'Reserva cancelada correctamente.' })} disabled={saving}>
+                              <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => executeStateAction({ operationId: operation.id, action: 'cancel' })} disabled={isBusy}>
                                 Cancelar
                               </button>
                             )}
                             {isActive && (
-                              <button type="button" className="btn btn-outline-primary btn-sm" onClick={() => startTransfer(operation)} disabled={saving}>
+                              <button type="button" className="btn btn-outline-primary btn-sm" onClick={() => startTransfer(operation)} disabled={isBusy}>
                                 Trasladar
                               </button>
                             )}
@@ -460,7 +393,7 @@ function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
                                               className={selectedDoc?.id === doc.id ? 'table-primary' : ''}
                                               style={{ cursor: 'pointer' }}
                                               onClick={() => {
-                                                setSelectedDocumentByOperation((previous) => ({ ...previous, [operation.id]: doc.id }));
+                                                selectDocument({ operationId: operation.id, documentoId: doc.id });
                                                 setReplaceFile(null);
                                                 setReplaceReason('');
                                               }}
@@ -480,7 +413,7 @@ function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
                                       ) : history.slice(0, 25).map((item) => (
                                         <div key={item.id} className="small border-bottom py-1">
                                           <strong>{item.accion}</strong>
-                                          <div className="text-muted">{formatDateTime(item.creado_en)}{item.usuario ? ` Â· ${item.usuario}` : ''}</div>
+                                          <div className="text-muted">{formatDateTime(item.creado_en)}{item.usuario ? ` | ${item.usuario}` : ''}</div>
                                           {item.motivo && <div className="text-muted">Motivo: {item.motivo}</div>}
                                         </div>
                                       ))}
@@ -516,7 +449,7 @@ function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
                                           </div>
                                         </div>
                                         <div className="text-end mt-3">
-                                          <button type="submit" className="btn btn-primary btn-sm" disabled={saving}>{saving ? 'Reemplazando...' : 'Guardar reemplazo'}</button>
+                                          <button type="submit" className="btn btn-primary btn-sm" disabled={isBusy}>{isBusy ? 'Reemplazando...' : 'Guardar reemplazo'}</button>
                                         </div>
                                       </form>
                                     )}
@@ -541,8 +474,8 @@ function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
                                 <div className="col-12 col-md-8"><input className="form-control" placeholder="Motivo" value={transferForm.motivo} onChange={updateTransferForm('motivo')} /></div>
                               </div>
                               <div className="d-flex gap-2 justify-content-end mt-3">
-                                <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setTransferOperationId(null)} disabled={saving}>Cancelar</button>
-                                <button type="submit" className="btn btn-primary btn-sm" disabled={saving}>{saving ? 'Aplicando...' : 'Confirmar traslado'}</button>
+                                <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setTransferOperationId(null)} disabled={isBusy}>Cancelar</button>
+                                <button type="submit" className="btn btn-primary btn-sm" disabled={isBusy}>{isBusy ? 'Aplicando...' : 'Confirmar traslado'}</button>
                               </div>
                             </form>
                           </td>
@@ -561,20 +494,3 @@ function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
 }
 
 export default ReservasOperaciones;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

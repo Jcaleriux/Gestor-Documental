@@ -24,21 +24,6 @@ const { PERMISSIONS, WORKFLOW_PERMISSIONS } = require('../domain/permissions');
 
 const router = express.Router({ mergeParams: true });
 
-const ETAPA_PERMISSION_MAP = Object.freeze({
-  gerencia: PERMISSIONS.DOCUMENTOS_APROBAR_GERENCIA,
-  gerencia_contable: PERMISSIONS.DOCUMENTOS_APROBAR_GERENCIA_CONTABLE,
-  financiera: PERMISSIONS.DOCUMENTOS_APROBAR_GERENCIA_FINANCIERA
-});
-
-const requirePermissionByEtapa = (req, res, next) => {
-  const etapa = String(req.body?.etapa || '').trim().toLowerCase();
-  const permission = ETAPA_PERMISSION_MAP[etapa];
-  if (!permission) {
-    return next(createError(400, 'etapa invalida'));
-  }
-  return requirePermission(permission)(req, res, next);
-};
-
 // POST rechazo por tesoreria (legacy -> se trata como exclusion)
 router.post(
   '/tramites-pago/:id/documentos/:facturaId/rechazo-tesoreria',
@@ -47,7 +32,7 @@ router.post(
   rechazoTesoreria
 );
 
-// POST accion tesoreria (reenviar / excluir / reincluir)
+// POST accion tesoreria (reenviar / excluir / reincluir / devolver_contabilidad)
 router.post(
   '/tramites-pago/:id/documentos/:facturaId/tesoreria',
   validateBody(tesoreriaActionSchema, { message: 'accion invalida' }),
@@ -85,7 +70,7 @@ router.post(
 router.post(
   '/tramites-pago/:id/documentos/:facturaId/decision',
   validateBody(decisionDocumentoSchema, { message: 'etapa invalida' }),
-  requirePermissionByEtapa,
+  requirePermission(PERMISSIONS.DOCUMENTOS_VER),
   decisionDocumento
 );
 

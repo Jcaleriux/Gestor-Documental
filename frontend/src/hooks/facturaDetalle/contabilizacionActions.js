@@ -1,4 +1,10 @@
 import { getNotaCreditoTotal } from './utils.js';
+import {
+  buildCentroCostoResumen,
+  createCentroCostoLinea,
+  createCentroCostoSnapshot,
+  ensureCentrosCostoMetadata,
+} from '../../utils/centrosCosto.js';
 
 const requireFacturaSociedadId = ({ factura, setContaError }) => {
   if (!factura?.sociedad_id) {
@@ -58,18 +64,36 @@ const associateItem = ({
   setModalOpen(false);
 };
 
-const buildContabilizacionPayload = ({ conta, workflowAction }) => ({
-  ...conta,
-  proveedor_id: conta.proveedor_id ? Number(conta.proveedor_id) : null,
-  tabla_pago_id: conta.tabla_pago_id ? Number(conta.tabla_pago_id) : null,
-  orden_compra_id: conta.orden_compra_id ? Number(conta.orden_compra_id) : null,
-  nota_credito_id: conta.nota_credito_id ? Number(conta.nota_credito_id) : null,
-  monto_nota_credito: conta.monto_nota_credito === '' || Number.isNaN(Number(conta.monto_nota_credito))
-    ? null
-    : Number(conta.monto_nota_credito),
-  workflow_action: workflowAction,
-  usuario: 'admin'
-});
+const buildContaWithUpdatedCentrosCosto = ({ conta, lineas }) => {
+  const metadata = ensureCentrosCostoMetadata(conta?.metadata);
+  metadata.centros_costo_lineas = Array.isArray(lineas) ? lineas : [];
+
+  return {
+    ...conta,
+    metadata,
+    centro_costo: buildCentroCostoResumen(metadata.centros_costo_lineas),
+  };
+};
+
+const buildContabilizacionPayload = ({ conta, workflowAction }) => {
+  const nextConta = buildContaWithUpdatedCentrosCosto({
+    conta,
+    lineas: ensureCentrosCostoMetadata(conta?.metadata).centros_costo_lineas,
+  });
+
+  return {
+    ...nextConta,
+    proveedor_id: nextConta.proveedor_id ? Number(nextConta.proveedor_id) : null,
+    tabla_pago_id: nextConta.tabla_pago_id ? Number(nextConta.tabla_pago_id) : null,
+    orden_compra_id: nextConta.orden_compra_id ? Number(nextConta.orden_compra_id) : null,
+    nota_credito_id: nextConta.nota_credito_id ? Number(nextConta.nota_credito_id) : null,
+    monto_nota_credito: nextConta.monto_nota_credito === '' || Number.isNaN(Number(nextConta.monto_nota_credito))
+      ? null
+      : Number(nextConta.monto_nota_credito),
+    workflow_action: workflowAction,
+    usuario: 'admin',
+  };
+};
 
 const buildRetencionPayload = ({
   monto,
@@ -85,6 +109,44 @@ const buildRetencionPayload = ({
 const createHandleContaChangeAction = ({ setConta }) => (field) => (event) => {
   const nextValue = event.target.value;
   setConta((prev) => ({ ...prev, [field]: nextValue }));
+};
+
+const updateCentrosCostoLineas = ({ setConta, updater }) => {
+  setConta((previous) => {
+    const metadata = ensureCentrosCostoMetadata(previous.metadata, { preserveEmpty: true });
+    const nextLineas = updater(metadata.centros_costo_lineas);
+    return buildContaWithUpdatedCentrosCosto({
+      conta: previous,
+      lineas: nextLineas,
+    });
+  });
+};
+
+const validateCentrosCostoDistribution = ({
+  conta,
+  workflowAction,
+  setContaError,
+}) => {
+  if (workflowAction === 'save_draft') {
+    return true;
+  }
+
+  const metadata = ensureCentrosCostoMetadata(conta?.metadata, { preserveEmpty: true });
+  const lineas = Array.isArray(metadata.centros_costo_lineas) ? metadata.centros_costo_lineas : [];
+  const lineasAsignadas = lineas.filter((linea) => linea.centro_costo_id || linea.codigo || linea.nombre);
+  const hasIncompleteLines = lineas.some((linea) => !linea.centro_costo_id || !linea.codigo);
+
+  if (lineasAsignadas.length === 0) {
+    setContaError('Agrega al menos un centro de costo antes de continuar.');
+    return false;
+  }
+
+  if (hasIncompleteLines) {
+    setContaError('Completa todas las lineas de centros de costo antes de continuar.');
+    return false;
+  }
+
+  return true;
 };
 
 export const createContabilizacionActions = ({
@@ -111,6 +173,11 @@ export const createContabilizacionActions = ({
   setNotasModalOpen,
   setNotasError,
   setNotasLoading,
+  centrosCostoCatalogo,
+  setCentrosCostoModalOpen,
+  setCentrosCostoTargetLineId,
+  setCentrosCostoError,
+  setCentrosCostoLoading,
   retencionPagoMonto,
   retencionPagoFecha,
   retencionPagoNotas,
@@ -123,6 +190,73 @@ export const createContabilizacionActions = ({
   facturaApi
 }) => {
   const handleContaChange = createHandleContaChangeAction({ setConta });
+
+  const addCentroCostoLinea = () => {
+    updateCentrosCostoLineas({
+      setConta,
+      updater: (lineas) => [...lineas, createCentroCostoLinea()],
+    });
+  };
+
+  const removeCentroCostoLinea = (localId) => {
+    updateCentrosCostoLineas({
+      setConta,
+      updater: (lineas) => {
+        const nextLineas = lineas.filter((linea) => linea.local_id !== localId);
+        return nextLineas.length > 0 ? nextLineas : [createCentroCostoLinea()];
+      },
+    });
+  };
+
+  const actualizarMontoCentroCosto = (localId, monto) => {
+    updateCentrosCostoLineas({
+      setConta,
+      updater: (lineas) => lineas.map((linea) => (
+        linea.local_id === localId
+          ? { ...linea, monto }
+          : linea
+      )),
+    });
+  };
+
+  const seleccionarCentroCostoEnLinea = (localId, centro) => {
+    if (!centro) {
+      return;
+    }
+
+    setCentrosCostoError('');
+    updateCentrosCostoLineas({
+      setConta,
+      updater: (lineas) => lineas.map((linea) => (
+        linea.local_id === localId
+          ? createCentroCostoSnapshot(centro, {
+            local_id: linea.local_id,
+            monto: linea.monto,
+          })
+          : linea
+      )),
+    });
+    setCentrosCostoModalOpen(false);
+    setCentrosCostoTargetLineId('');
+  };
+
+  const abrirSelectorCentrosCosto = (localId) => {
+    setCentrosCostoError('');
+    setCentrosCostoLoading(false);
+
+    if (!Array.isArray(centrosCostoCatalogo) || centrosCostoCatalogo.length === 0) {
+      setCentrosCostoError('No hay centros de costo cargados para esta sociedad.');
+      return;
+    }
+
+    setCentrosCostoTargetLineId(localId);
+    setCentrosCostoModalOpen(true);
+  };
+
+  const cerrarSelectorCentrosCosto = () => {
+    setCentrosCostoModalOpen(false);
+    setCentrosCostoTargetLineId('');
+  };
 
   const resolveAssociationContext = (missingProveedorError) => {
     const sociedadId = requireFacturaSociedadId({ factura, setContaError });
@@ -260,6 +394,15 @@ export const createContabilizacionActions = ({
       setContaSavingAction?.(workflowAction);
       setContaError('');
       setContaMessage('');
+
+      if (!validateCentrosCostoDistribution({
+        conta,
+        workflowAction,
+        setContaError,
+      })) {
+        return;
+      }
+
       await facturaApi.saveContabilizacion(id, buildContabilizacionPayload({ conta, workflowAction }));
       setContaMessage(successMessage);
       await fetchAll();
@@ -336,6 +479,12 @@ export const createContabilizacionActions = ({
     asociarOrdenCompra,
     abrirAsociarNotaCredito,
     asociarNotaCredito,
+    addCentroCostoLinea,
+    removeCentroCostoLinea,
+    actualizarMontoCentroCosto,
+    abrirSelectorCentrosCosto,
+    cerrarSelectorCentrosCosto,
+    seleccionarCentroCostoEnLinea,
     guardarBorrador,
     marcarEnRevision,
     guardarContabilizacion,

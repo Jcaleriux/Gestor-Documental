@@ -16,13 +16,18 @@ const rulePolicyRegistry = createTramitesPagoRulePolicyRegistry();
 
 const normalizeEstado = (value) => (value ?? '').toString().trim().toLowerCase();
 
-const validateAccionTesoreriaInput = (accion, destino) => {
+const normalizeMotivo = (value) => (value ?? '').toString().trim();
+
+const validateAccionTesoreriaInput = (accion, destino, motivo) => {
   const policy = rulePolicyRegistry.resolveTesoreriaActionPolicy(accion);
   if (!accion || !policy) {
     return { status: 400, error: 'accion invalida' };
   }
   if (policy.requiresDestino && !DESTINOS_TESORERIA.has(destino)) {
     return { status: 400, error: 'destino invalido' };
+  }
+  if (policy.requiresMotivo && !normalizeMotivo(motivo)) {
+    return { status: 400, error: 'motivo requerido' };
   }
   return null;
 };
@@ -38,7 +43,7 @@ const validateAccionTesoreriaEstado = (accion, estadoTesActual) => {
 
 const validateFacturaNoPagada = (estadoFactura) => {
   if (normalizeEstado(estadoFactura) === FACTURA_ESTADOS.PAGADO) {
-    return { status: 400, error: 'No se puede excluir un documento pagado' };
+    return { status: 400, error: 'No se puede gestionar un documento pagado en tesoreria' };
   }
   return null;
 };

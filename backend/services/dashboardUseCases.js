@@ -5,6 +5,65 @@ const {
   mapDashboardStats
 } = require('../mappers/dashboardMapper');
 
+const toNumber = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const buildMonetaryBreakdown = (rows, { amountKey, documentsKey }) => (
+  (rows || [])
+    .map((row) => ({
+      moneda: row.moneda || 'CRC',
+      monto: toNumber(row[amountKey]),
+      documentos: toNumber(row[documentsKey])
+    }))
+    .filter((entry) => entry.documentos > 0 || entry.monto > 0)
+);
+
+const buildCurrencyGroupBreakdown = (totalesPorMoneda, group) => (
+  Object.entries(totalesPorMoneda || {})
+    .map(([moneda, groups]) => ({
+      moneda,
+      monto: toNumber(groups?.[group]?.total || 0),
+      documentos: toNumber(groups?.[group]?.count || 0)
+    }))
+    .filter((entry) => entry.documentos > 0 || entry.monto > 0)
+);
+
+const countDocuments = (rows, key) => (
+  (rows || []).reduce((total, row) => total + toNumber(row[key]), 0)
+);
+
+const countCurrencyGroupDocuments = (totalesPorMoneda, group) => (
+  Object.values(totalesPorMoneda || {}).reduce(
+    (total, groups) => total + toNumber(groups?.[group]?.count || 0),
+    0
+  )
+);
+
+const groupTopProveedoresByCurrency = (rows) => (
+  (rows || []).reduce((result, row) => {
+    const moneda = row.moneda || 'CRC';
+
+    if (!result[moneda]) {
+      result[moneda] = [];
+    }
+
+    result[moneda].push({
+      proveedorId: Number(row.proveedor_id),
+      proveedorNombre: row.proveedor_nombre || 'Sin nombre',
+      proveedorIdentificacion: row.proveedor_identificacion || '',
+      moneda,
+      documentos: toNumber(row.documentos),
+      totalAPagar: toNumber(row.total_a_pagar),
+      totalRetencionPendiente: toNumber(row.total_retencion_pendiente),
+      totalPendienteGlobal: toNumber(row.total_pendiente_global)
+    });
+
+    return result;
+  }, {})
+);
+
 const createDashboardUseCases = ({ dashboardRepo }) => {
   if (!dashboardRepo) {
     throw new Error('dashboardRepo requerido');
@@ -25,12 +84,11 @@ const createDashboardUseCases = ({ dashboardRepo }) => {
       dashboardRepo.countMensajesHacienda({ sociedadId }),
       dashboardRepo.countSociedades({ sociedadId }),
       dashboardRepo.getMonedasResumen({ sociedadId }),
-      dashboardRepo.getCuentasPagarResumen({ sociedadId }),
+      dashboardRepo.getCuentasPagarResumenPorMoneda({ sociedadId }),
       dashboardRepo.getTopProveedoresPorPagar({ sociedadId, limit: 10 })
     ]);
 
     const facturas = facturasStats || {};
-    const cuentasPagar = cuentasPagarRows || {};
     const pendientes = (facturas.no_contabilizado || 0) + (facturas.en_revision || 0);
     const resumenEstados = {
       no_contabilizadas: pendientes,
@@ -65,34 +123,43 @@ const createDashboardUseCases = ({ dashboardRepo }) => {
     });
 
     const cuentasPorPagar = {
-      documentos: Number(cuentasPagar.docs_por_pagar || 0),
-      monto: Number(cuentasPagar.monto_por_pagar || 0)
+      documentos: countDocuments(cuentasPagarRows, 'docs_por_pagar'),
+      montosPorMoneda: buildMonetaryBreakdown(cuentasPagarRows, {
+        amountKey: 'monto_por_pagar',
+        documentsKey: 'docs_por_pagar'
+      })
     };
 
     const vencidas = {
-      documentos: Number(cuentasPagar.docs_vencidas || 0),
-      monto: Number(cuentasPagar.monto_vencidas || 0)
+      documentos: countDocuments(cuentasPagarRows, 'docs_vencidas'),
+      montosPorMoneda: buildMonetaryBreakdown(cuentasPagarRows, {
+        amountKey: 'monto_vencidas',
+        documentsKey: 'docs_vencidas'
+      })
     };
 
     const porVencer7Dias = {
-      documentos: Number(cuentasPagar.docs_por_vencer_7 || 0),
-      monto: Number(cuentasPagar.monto_por_vencer_7 || 0)
+      documentos: countDocuments(cuentasPagarRows, 'docs_por_vencer_7'),
+      montosPorMoneda: buildMonetaryBreakdown(cuentasPagarRows, {
+        amountKey: 'monto_por_vencer_7',
+        documentsKey: 'docs_por_vencer_7'
+      })
     };
 
     const retencionesPendientes = {
-      documentos: Number(cuentasPagar.docs_retencion_pendiente || 0),
-      monto: Number(cuentasPagar.monto_retencion_pendiente || 0)
+      documentos: countDocuments(cuentasPagarRows, 'docs_retencion_pendiente'),
+      montosPorMoneda: buildMonetaryBreakdown(cuentasPagarRows, {
+        amountKey: 'monto_retencion_pendiente',
+        documentsKey: 'docs_retencion_pendiente'
+      })
     };
 
-    const topProveedoresPorPagar = (topProveedoresRows || []).map((row) => ({
-      proveedorId: Number(row.proveedor_id),
-      proveedorNombre: row.proveedor_nombre || 'Sin nombre',
-      proveedorIdentificacion: row.proveedor_identificacion || '',
-      documentos: Number(row.documentos || 0),
-      totalAPagar: Number(row.total_a_pagar || 0),
-      totalRetencionPendiente: Number(row.total_retencion_pendiente || 0),
-      totalPendienteGlobal: Number(row.total_pendiente_global || 0)
-    }));
+    const pagadas = {
+      documentos: countCurrencyGroupDocuments(totalesPorMoneda, 'pagadas'),
+      montosPorMoneda: buildCurrencyGroupBreakdown(totalesPorMoneda, 'pagadas')
+    };
+
+    const topProveedoresPorPagar = groupTopProveedoresByCurrency(topProveedoresRows);
 
     return mapDashboardStats({
       totalFacturas: facturas.total_facturas || 0,
@@ -111,7 +178,11 @@ const createDashboardUseCases = ({ dashboardRepo }) => {
       vencidas,
       porVencer7Dias,
       retencionesPendientes,
-      montoPendienteGlobal: Number(cuentasPagar.monto_pendiente_global || 0),
+      pagadas,
+      montoPendienteGlobalPorMoneda: buildMonetaryBreakdown(cuentasPagarRows, {
+        amountKey: 'monto_pendiente_global',
+        documentsKey: 'docs_por_pagar'
+      }),
       topProveedoresPorPagar
     });
   };

@@ -3,6 +3,7 @@ import SectionCard from '../common/SectionCard';
 import StatusBadge from '../common/StatusBadge';
 import { FACTURA_DETALLE_LABELS } from '../../utils/uiLabels';
 import SelectionListModal from './contabilizacion/SelectionListModal';
+import CentroCostoSelectionModal from './contabilizacion/CentroCostoSelectionModal';
 import ContaMainFields from './contabilizacion/ContaMainFields';
 import ContaAssociationsActions from './contabilizacion/ContaAssociationsActions';
 import ContaTotalsSummary from './contabilizacion/ContaTotalsSummary';
@@ -68,7 +69,12 @@ function FacturaDetalleContabilizacionSection({ viewModel }) {
       <form className="row g-2">
         <ContaMainFields
           conta={conta}
+          centrosCostoCatalogo={form.centrosCostoCatalogo}
           handleContaChange={handleContaChange}
+          addCentroCostoLinea={form.addCentroCostoLinea}
+          removeCentroCostoLinea={form.removeCentroCostoLinea}
+          abrirSelectorCentrosCosto={form.abrirSelectorCentrosCosto}
+          seleccionarCentroCostoEnLinea={form.seleccionarCentroCostoEnLinea}
           disabled={isReadOnly}
         />
 
@@ -125,6 +131,18 @@ function FacturaDetalleContabilizacionSection({ viewModel }) {
             onClose={modals.ordenes.onClose}
             onSelect={modals.ordenes.onSelect}
             renderLabel={modals.ordenes.renderLabel}
+          />
+        )}
+
+        {canEditContabilizacion && modals.centrosCosto.isOpen && (
+          <CentroCostoSelectionModal
+            title="Seleccionar centro de costo"
+            error={modals.centrosCosto.error}
+            loading={modals.centrosCosto.loading}
+            items={modals.centrosCosto.items}
+            targetLineId={modals.centrosCosto.targetLineId}
+            onClose={modals.centrosCosto.onClose}
+            onSelect={modals.centrosCosto.onSelect}
           />
         )}
 

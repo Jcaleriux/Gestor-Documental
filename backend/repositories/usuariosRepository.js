@@ -16,7 +16,19 @@ const USER_PUBLIC_SELECT = `
 
 const getByEmail = async (email, client) => {
   const { rows } = await getDb(client).query(
-    'SELECT id, nombre, email, rol_id, activo, password FROM usuarios WHERE email = $1',
+    `SELECT
+      u.id,
+      u.nombre,
+      u.email,
+      u.rol_id as rol,
+      u.rol_id as rol_id,
+      r.codigo as rol_codigo,
+      r.nombre as rol_nombre,
+      u.activo,
+      u.password
+    FROM usuarios u
+    LEFT JOIN roles r ON r.id = u.rol_id
+    WHERE u.email = $1`,
     [email]
   );
   return rows[0] || null;

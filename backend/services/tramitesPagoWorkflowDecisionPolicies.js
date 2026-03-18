@@ -1,5 +1,4 @@
 const { TRAMITE_ESTADOS, DOCUMENTO_ACCIONES, DOCUMENTO_DECISIONES } = require('../domain/tramitesPago');
-const { FACTURA_ESTADOS } = require('../domain/facturas');
 const { ETAPA_DECISION_POLICIES } = require('./tramitesPagoWorkflowEtapaPolicies');
 
 const NO_OP_DECISION_POLICY = Object.freeze({
@@ -8,11 +7,6 @@ const NO_OP_DECISION_POLICY = Object.freeze({
 
 const createDefaultRechazadoDecisionPolicy = ({ tramitesPagoRepo }) => ({
   runAfterDecision: async ({ tramiteId, facturaId, usuario, motivo, client }) => {
-    await tramitesPagoRepo.updateFacturaEstado({
-      facturaId,
-      estado: FACTURA_ESTADOS.EN_REVISION
-    }, client);
-
     await tramitesPagoRepo.updateDocumentoTesoreriaPendiente({
       tramiteId,
       facturaId

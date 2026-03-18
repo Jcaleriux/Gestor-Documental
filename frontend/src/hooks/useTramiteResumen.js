@@ -6,9 +6,13 @@ const getMontoRetencion = (item) => {
   return Number.isFinite(monto) ? monto : 0;
 };
 
+const isDocumentoActivo = (estadoTesoreria) => (
+  estadoTesoreria !== 'excluido' && estadoTesoreria !== 'devuelto_contabilidad'
+);
+
 function useTramiteResumen(documentos = [], retenciones = []) {
   const documentosActivos = useMemo(
-    () => documentos.filter((doc) => doc.estado_tesoreria !== 'excluido'),
+    () => documentos.filter((doc) => isDocumentoActivo(doc.estado_tesoreria)),
     [documentos]
   );
 

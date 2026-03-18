@@ -18,6 +18,11 @@ export const useFacturaDetalleContabilizacionState = () => {
   const [notasModalOpen, setNotasModalOpen] = useState(false);
   const [notasLoading, setNotasLoading] = useState(false);
   const [notasError, setNotasError] = useState('');
+  const [centrosCostoCatalogo, setCentrosCostoCatalogo] = useState([]);
+  const [centrosCostoModalOpen, setCentrosCostoModalOpen] = useState(false);
+  const [centrosCostoTargetLineId, setCentrosCostoTargetLineId] = useState('');
+  const [centrosCostoLoading, setCentrosCostoLoading] = useState(false);
+  const [centrosCostoError, setCentrosCostoError] = useState('');
   const [retencionPagos, setRetencionPagos] = useState([]);
   const [conta, setConta] = useState(createInitialContaState);
   const [contaSaving, setContaSaving] = useState(false);
@@ -64,6 +69,16 @@ export const useFacturaDetalleContabilizacionState = () => {
     setNotasLoading,
     notasError,
     setNotasError,
+    centrosCostoCatalogo,
+    setCentrosCostoCatalogo,
+    centrosCostoModalOpen,
+    setCentrosCostoModalOpen,
+    centrosCostoTargetLineId,
+    setCentrosCostoTargetLineId,
+    centrosCostoLoading,
+    setCentrosCostoLoading,
+    centrosCostoError,
+    setCentrosCostoError,
     retencionPagos,
     setRetencionPagos,
     conta,

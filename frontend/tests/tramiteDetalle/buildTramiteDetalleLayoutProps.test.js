@@ -29,8 +29,7 @@ const createBaseInput = () => {
     handleAccionSiguiente: noop,
     historialVisible: false,
     setHistorialVisible: noop,
-    rolActivo: 'tesoreria',
-    setRolActivo: noop,
+    userPermissions: ['documentos_tramitar_pago'],
     activeTab: 'individual',
     setActiveTab: noop,
     actionError: '',
@@ -90,7 +89,7 @@ test('buildHeaderLayoutProps conserva header y wiring de acciones', () => {
   const header = buildHeaderLayoutProps(input);
 
   assert.equal(header.title, 'Tramite #55');
-  assert.equal(header.roles.length > 0, true);
+  assert.equal(header.accionSiguiente, null);
   assert.equal(typeof header.onAccionSiguiente, 'function');
 });
 

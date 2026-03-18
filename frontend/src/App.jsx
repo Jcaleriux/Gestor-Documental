@@ -20,6 +20,7 @@ import Login from './components/Login';
 import Tramites from './components/Tramites';
 import TramiteDetalle from './components/TramiteDetalle';
 import Proveedores from './components/Proveedores';
+import CentrosCosto from './components/CentrosCosto';
 import TablasPagoIngenieria from './components/TablasPagoIngenieria';
 import OrdenesCompraIngenieria from './components/OrdenesCompraIngenieria';
 import ReservasOperaciones from './components/ReservasOperaciones';
@@ -33,6 +34,7 @@ import './App.css';
 
 const SIDEBAR_COLLAPSED_KEY = 'novogar.sidebar.collapsed';
 const SIDEBAR_SECTIONS_KEY = 'novogar.sidebar.sections';
+const SELECTED_SOCIEDAD_KEY = 'novogar.sociedad.selected';
 const MOBILE_MEDIA_QUERY = '(max-width: 991.98px)';
 
 const setAxiosAuthHeader = (token) => {
@@ -75,6 +77,25 @@ const parseJsonStorage = (key, fallback) => {
 };
 
 const readCollapsedPreference = () => parseJsonStorage(SIDEBAR_COLLAPSED_KEY, false) === true;
+const readSociedadFromLocation = () => {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  try {
+    return new URLSearchParams(window.location.search).get('sociedad') || '';
+  } catch {
+    return '';
+  }
+};
+
+const readSelectedSociedadPreference = () => {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  return window.localStorage.getItem(SELECTED_SOCIEDAD_KEY) || '';
+};
 
 const buildExpandedSectionsState = (sections, storedValue = {}) => {
   const defaults = Object.fromEntries(sections.map((section) => [section.id, true]));
@@ -227,6 +248,16 @@ const ICONS = Object.freeze({
       <circle cx="17.5" cy="18" r="1.5" />
     </>
   ),
+  centrosCosto: (
+    <>
+      <path d="M12 5v4" strokeLinecap="round" />
+      <path d="M6 11h12" strokeLinecap="round" />
+      <path d="M7 11v4M17 11v4" strokeLinecap="round" />
+      <rect x="9" y="3" width="6" height="3.5" rx="1" />
+      <rect x="4" y="15" width="6" height="4" rx="1" />
+      <rect x="14" y="15" width="6" height="4" rx="1" />
+    </>
+  ),
 });
 
 const AppIcon = ({ name, className = '' }) => (
@@ -244,7 +275,7 @@ const AppIcon = ({ name, className = '' }) => (
 
 const initialAppState = {
   sociedades: [],
-  sociedadId: '',
+  sociedadId: readSociedadFromLocation() || readSelectedSociedadPreference(),
   authToken: '',
   authUser: null,
   authLoading: true
@@ -305,10 +336,13 @@ function AuthenticatedAppShell({
   canManageUsers,
   canUseTablasPago,
   canUseOrdenesCompra,
+  canViewTramites,
   canTramitarPago,
   canUseReservas,
   canManageReservasDocumentos,
   canEditContabilizacion,
+  authUser,
+  userPermissions,
 }) {
   const location = useLocation();
   const [isMobileView, setIsMobileView] = useState(() => {
@@ -368,7 +402,7 @@ function AuthenticatedAppShell({
             label: 'Tramites de pago',
             to: '/tramites',
             icon: 'tramites',
-            visible: canTramitarPago,
+            visible: canViewTramites,
           },
         ],
       },
@@ -420,6 +454,13 @@ function AuthenticatedAppShell({
             icon: 'proveedores',
             visible: canManageUsers,
           },
+          {
+            id: 'centros-costo',
+            label: 'Centros de costo',
+            to: '/centros-costo',
+            icon: 'centrosCosto',
+            visible: canManageUsers,
+          },
         ],
       },
     ];
@@ -432,8 +473,9 @@ function AuthenticatedAppShell({
       .filter((section) => section.items.length > 0);
   }, [
     canManageUsers,
-    canTramitarPago,
     canUseOrdenesCompra,
+    canViewTramites,
+    canTramitarPago,
     canUseReservas,
     canUseTablasPago,
   ]);
@@ -677,7 +719,17 @@ function AuthenticatedAppShell({
 
         <main className="content">
           <Routes>
-            <Route path="/" element={<Dashboard sociedadId={sociedadId} />} />
+            <Route
+              path="/"
+              element={(
+                <Dashboard
+                  sociedadId={sociedadId}
+                  selectedSociedadName={selectedSociedad?.nombre_proyecto || selectedSociedad?.razon_social || ''}
+                  authUser={authUser}
+                  userPermissions={userPermissions}
+                />
+              )}
+            />
             <Route path="/usuarios" element={canManageUsers ? <Usuarios /> : <Navigate to="/" replace />} />
             <Route
               path="/facturas"
@@ -697,8 +749,26 @@ function AuthenticatedAppShell({
             />
             <Route path="/notas-credito" element={<NotasCredito sociedadId={sociedadId} />} />
             <Route path="/tiquetes-electronicos" element={<TiquetesElectronicos sociedadId={sociedadId} />} />
-            <Route path="/tramites" element={<Tramites sociedadId={sociedadId} canCreateTramite={canTramitarPago} />} />
-            <Route path="/tramites/:id" element={<TramiteDetalle sociedadId={sociedadId} />} />
+            <Route
+              path="/tramites"
+              element={(
+                <Tramites
+                  sociedadId={sociedadId}
+                  canCreateTramite={canTramitarPago}
+                  authUser={authUser}
+                />
+              )}
+            />
+            <Route
+              path="/tramites/:id"
+              element={(
+                <TramiteDetalle
+                  sociedadId={sociedadId}
+                  authUser={authUser}
+                  userPermissions={userPermissions}
+                />
+              )}
+            />
             <Route path="/ventas" element={<Navigate to="/reservas" replace />} />
             <Route
               path="/reservas"
@@ -707,6 +777,7 @@ function AuthenticatedAppShell({
                 : <Navigate to="/" replace />}
             />
             <Route path="/proveedores" element={canManageUsers ? <Proveedores sociedadId={sociedadId} /> : <Navigate to="/" replace />} />
+            <Route path="/centros-costo" element={canManageUsers ? <CentrosCosto sociedadId={sociedadId} /> : <Navigate to="/" replace />} />
             <Route path="/tablas-pago" element={canUseTablasPago ? <TablasPagoIngenieria sociedadId={sociedadId} /> : <Navigate to="/" replace />} />
             <Route path="/ordenes-compra" element={canUseOrdenesCompra ? <OrdenesCompraIngenieria sociedadId={sociedadId} /> : <Navigate to="/" replace />} />
             <Route path="/login" element={<Navigate to="/" replace />} />
@@ -745,6 +816,13 @@ function App() {
     || userPermissions.includes('documentos_subir')
     || userPermissions.includes('documentos_contabilizar');
   const canUseOrdenesCompra = canUseTablasPago;
+  const canViewTramites = userPermissions.includes('acceso_total')
+    || userPermissions.includes('documentos_ver')
+    || userPermissions.includes('documentos_tramitar_pago')
+    || userPermissions.includes('documentos_aprobar_gerencia')
+    || userPermissions.includes('documentos_aprobar_gerencia_contable')
+    || userPermissions.includes('documentos_aprobar_gerencia_financiera')
+    || userPermissions.includes('documentos_marcar_pagado');
   const canTramitarPago = userPermissions.includes('acceso_total')
     || userPermissions.includes('documentos_tramitar_pago');
   const canEditContabilizacion = userPermissions.includes('acceso_total')
@@ -757,7 +835,7 @@ function App() {
     || userPermissions.includes('reservas_gestionar');
 
   const userName = authUser?.nombre || 'Usuario';
-  const userRole = authUser?.rol != null ? `Rol ${authUser.rol}` : 'Usuario';
+  const userRole = authUser?.rol_nombre || authUser?.rol_codigo || (authUser?.rol != null ? `Rol ${authUser.rol}` : 'Usuario');
   const userInitials = useMemo(() => initialsFromName(userName), [userName]);
 
   const clearSession = useCallback(() => {
@@ -819,6 +897,19 @@ function App() {
     fetchSociedades();
   }, [isAuthenticated, fetchSociedades]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (sociedadId) {
+      window.localStorage.setItem(SELECTED_SOCIEDAD_KEY, sociedadId);
+      return;
+    }
+
+    window.localStorage.removeItem(SELECTED_SOCIEDAD_KEY);
+  }, [sociedadId]);
+
   const handleLoginSuccess = useCallback(({ token, user }) => {
     applySession({ token, user });
   }, [applySession]);
@@ -860,10 +951,13 @@ function App() {
         canManageUsers={canManageUsers}
         canUseTablasPago={canUseTablasPago}
         canUseOrdenesCompra={canUseOrdenesCompra}
+        canViewTramites={canViewTramites}
         canTramitarPago={canTramitarPago}
         canUseReservas={canUseReservas}
         canManageReservasDocumentos={canManageReservasDocumentos}
         canEditContabilizacion={canEditContabilizacion}
+        authUser={authUser}
+        userPermissions={userPermissions}
       />
     </Router>
   );

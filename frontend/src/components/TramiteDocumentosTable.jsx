@@ -13,10 +13,13 @@ import { TRAMITES_ACTION_LABELS } from '../utils/uiLabels';
 
 function TramiteDocumentosTable({
   documentos,
+  enEtapaGerencia,
+  puedeVerGerencia,
   puedeGerencia,
   puedeGerenciaContable,
   puedeFinanciera,
   puedeTesoreria,
+  sociedadId,
   destinosTesoreria,
   tesoreriaDestino,
   onDestinoChange,
@@ -27,6 +30,37 @@ function TramiteDocumentosTable({
   const tableLabels = labels || {
     empty: 'No hay documentos asociados al tramite.'
   };
+
+  const buildGerenciaSummary = (doc) => {
+    const totalAprobadores = Number(doc.gerencia_aprobadores_total || 0);
+    if (totalAprobadores <= 0) {
+      return [];
+    }
+
+    const aprobados = Number(doc.gerencia_aprobadores_aprobados || 0);
+    const pendientes = Array.isArray(doc.gerencia_aprobadores)
+      ? doc.gerencia_aprobadores
+        .filter((item) => item?.estado === 'pendiente')
+        .map((item) => item?.usuario_aprobador_nombre || item?.usuario_aprobador_email || '')
+        .filter(Boolean)
+      : [];
+
+    const summaryLines = [`${aprobados}/${totalAprobadores} aprobadores`];
+    if (doc.gerencia_ya_aprobo_usuario_actual) {
+      summaryLines.push('Tu aprobacion ya fue registrada.');
+    }
+    if (pendientes.length > 0) {
+      const visiblePendientes = pendientes.slice(0, 2).join(', ');
+      summaryLines.push(
+        pendientes.length > 2
+          ? `Pendientes: ${visiblePendientes}...`
+          : `Pendientes: ${visiblePendientes}`
+      );
+    }
+
+    return summaryLines;
+  };
+
   return (
     <table className="table table-hover align-middle mb-0">
       <thead>
@@ -38,14 +72,30 @@ function TramiteDocumentosTable({
           <th>Estado</th>
           <th>Gerencia</th>
           <th>G. Contable</th>
-          <th>Revision</th>
           <th>Financiera</th>
+          <th>Gestion tesoreria</th>
           <th className="text-end">Acciones</th>
         </tr>
       </thead>
       <tbody>
         {documentos.map((doc) => {
           const isExcluido = doc.estado_tesoreria === 'excluido';
+          const isDevueltoContabilidad = doc.estado_tesoreria === 'devuelto_contabilidad';
+          const totalAprobadoresGerencia = Number(doc.gerencia_aprobadores_total || 0);
+          const gerenciaGestionadaPorCentro = totalAprobadoresGerencia > 0;
+          const puedeGerenciaDocumento = enEtapaGerencia && (
+            gerenciaGestionadaPorCentro
+              ? doc.gerencia_puede_aprobar_usuario_actual
+                && !doc.gerencia_ya_aprobo_usuario_actual
+                && doc.estado_gerencia === 'pendiente'
+              : puedeGerencia
+          );
+          const puedeGerenciaContableDocumento =
+            puedeGerenciaContable && doc.estado_gerencia_contable === 'pendiente';
+          const puedeFinancieraDocumento =
+            puedeFinanciera && doc.estado_financiero === 'pendiente';
+          const gerenciaSummary = buildGerenciaSummary(doc);
+
           return (
             <tr key={doc.factura_id}>
               <td className="fw-semibold">#{doc.consecutivo || doc.clave}</td>
@@ -63,6 +113,11 @@ function TramiteDocumentosTable({
                   label={decisionLabel(doc.estado_gerencia)}
                   className={decisionClass(doc.estado_gerencia)}
                 />
+                {puedeVerGerencia && gerenciaSummary.map((summaryLine) => (
+                  <div key={`${doc.factura_id}-${summaryLine}`} className="small text-muted mt-1">
+                    {summaryLine}
+                  </div>
+                ))}
               </td>
               <td>
                 <StatusBadge
@@ -72,29 +127,31 @@ function TramiteDocumentosTable({
               </td>
               <td>
                 <StatusBadge
-                  label={tesoreriaLabel(doc.estado_tesoreria)}
-                  className={tesoreriaClass(doc.estado_tesoreria)}
+                  label={decisionLabel(doc.estado_financiero)}
+                  className={decisionClass(doc.estado_financiero)}
                 />
               </td>
               <td>
                 <StatusBadge
-                  label={decisionLabel(doc.estado_financiero)}
-                  className={decisionClass(doc.estado_financiero)}
+                  label={tesoreriaLabel(doc.estado_tesoreria)}
+                  className={tesoreriaClass(doc.estado_tesoreria)}
                 />
               </td>
               <td className="text-end">
                 <TramiteActions
                   facturaId={doc.factura_id}
-                  puedeGerencia={puedeGerencia}
-                  puedeGerenciaContable={puedeGerenciaContable}
-                  puedeFinanciera={puedeFinanciera}
+                  puedeGerencia={puedeGerenciaDocumento}
+                  puedeGerenciaContable={puedeGerenciaContableDocumento}
+                  puedeFinanciera={puedeFinancieraDocumento}
                   puedeTesoreria={puedeTesoreria}
+                  sociedadId={sociedadId}
                   destinosTesoreria={destinosTesoreria}
                   destinoSeleccionado={tesoreriaDestino[doc.factura_id]}
                   onDestinoChange={onDestinoChange}
                   onDecision={onDecision}
                   onAccionTesoreria={onAccionTesoreria}
                   isExcluido={isExcluido}
+                  isDevueltoContabilidad={isDevueltoContabilidad}
                   showReincluir
                   labels={TRAMITES_ACTION_LABELS}
                 />

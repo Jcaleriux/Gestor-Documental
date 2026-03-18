@@ -38,6 +38,8 @@ test('mapFacturaDetalleDataToViewState transforma datos remotos al estado de la 
   assert.equal(mapped.notaCreditoActual?.id, 30);
   assert.equal(mapped.conta.proveedor_id, '5');
   assert.equal(mapped.conta.numero_proveedor, '3101122334');
+  assert.equal(mapped.conta.plazo_credito, 30);
+  assert.equal(mapped.conta.fecha_vencimiento, '2026-02-19');
   assert.equal(mapped.retencionPagoFecha, '2026-02-18');
 });
 
@@ -58,5 +60,6 @@ test('mapFacturaDetalleDataToViewState aplica defaults cuando no hay datos opcio
   assert.equal(mapped.tablaPagoActual, null);
   assert.equal(mapped.ordenCompraActual, null);
   assert.equal(mapped.notaCreditoActual, null);
+  assert.equal(mapped.conta.plazo_credito, 30);
   assert.equal(mapped.retencionPagoFecha, '');
 });

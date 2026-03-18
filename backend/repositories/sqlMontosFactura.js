@@ -34,12 +34,17 @@ const createPagosFacturaExpression = ({ facturaAlias = 'f' } = {}) => `
   ), 0)
 `;
 
-const createTotalPagoPrincipalExpression = ({ facturaAlias = 'f', contaAlias = 'fc' } = {}) => {
+const createTotalPagoBaseExpression = ({ facturaAlias = 'f', contaAlias = 'fc' } = {}) => {
   const totalFactura = createTotalFacturaExpression({ facturaAlias });
   const rebajosAplicados = createRebajosAplicadosExpression({ contaAlias });
   const retencionTotal = createRetencionTotalExpression({ contaAlias });
+  return `GREATEST((${totalFactura} - ${rebajosAplicados} - ${retencionTotal}), 0)`;
+};
+
+const createTotalPagoPrincipalExpression = ({ facturaAlias = 'f', contaAlias = 'fc' } = {}) => {
+  const totalPagoBase = createTotalPagoBaseExpression({ facturaAlias, contaAlias });
   const pagosFactura = createPagosFacturaExpression({ facturaAlias });
-  return `GREATEST((${totalFactura} - ${rebajosAplicados} - ${retencionTotal} - ${pagosFactura}), 0)`;
+  return `GREATEST((${totalPagoBase} - ${pagosFactura}), 0)`;
 };
 
 const createTotalPendienteGlobalExpression = ({ facturaAlias = 'f', contaAlias = 'fc' } = {}) => {
@@ -55,6 +60,7 @@ module.exports = {
   createRetencionPagadaExpression,
   createRetencionPendienteExpression,
   createPagosFacturaExpression,
+  createTotalPagoBaseExpression,
   createTotalPagoPrincipalExpression,
   createTotalPendienteGlobalExpression
 };

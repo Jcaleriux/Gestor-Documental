@@ -10,8 +10,7 @@ const TRAMITE_LABELS = {
     toggleHistory: {
       show: 'Ver historial',
       hide: 'Ocultar historial'
-    },
-    roleLabel: 'Actuar como'
+    }
   },
   override: {
     title: 'Override de estado (admin)',

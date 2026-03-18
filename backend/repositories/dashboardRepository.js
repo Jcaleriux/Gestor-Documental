@@ -1,14 +1,31 @@
 const pool = require('../db');
 const { FACTURA_ESTADOS } = require('../domain/facturas');
 const {
+  createTotalPagoBaseExpression,
   createTotalPagoPrincipalExpression,
   createRetencionPendienteExpression,
   createTotalPendienteGlobalExpression
 } = require('./sqlMontosFactura');
 
+const totalPagoBaseExpression = createTotalPagoBaseExpression({ facturaAlias: 'f', contaAlias: 'fc' });
 const totalAPagarExpression = createTotalPagoPrincipalExpression({ facturaAlias: 'f', contaAlias: 'fc' });
 const retencionPendienteExpression = createRetencionPendienteExpression({ contaAlias: 'fc' });
 const totalPendienteGlobalExpression = createTotalPendienteGlobalExpression({ facturaAlias: 'f', contaAlias: 'fc' });
+const dashboardTotalPorEstadoExpression = `
+  CASE
+    WHEN COALESCE(f.estado, '${FACTURA_ESTADOS.NO_CONTABILIZADO}') = '${FACTURA_ESTADOS.PAGADO}'
+      THEN ${totalPagoBaseExpression}
+    ELSE ${totalAPagarExpression}
+  END
+`;
+const monedaFacturaExpression = `
+  COALESCE(
+    f.resumen->'CodigoTipoMoneda'->>'CodigoMoneda',
+    f.resumen->>'CodigoMoneda',
+    f.resumen->>'codigoMoneda',
+    'CRC'
+  )
+`;
 
 const getFacturasStats = async ({ sociedadId } = {}) => {
   const params = sociedadId ? [sociedadId] : [];
@@ -84,9 +101,9 @@ const getMonedasResumen = async ({ sociedadId } = {}) => {
   const { rows } = await pool.query(
     `
     SELECT
-      COALESCE(f.resumen->'CodigoTipoMoneda'->>'CodigoMoneda', f.resumen->>'CodigoMoneda', f.resumen->>'codigoMoneda', 'CRC') AS moneda,
+      ${monedaFacturaExpression} AS moneda,
       COALESCE(f.estado, '${FACTURA_ESTADOS.NO_CONTABILIZADO}') AS estado,
-      SUM(${totalAPagarExpression}) AS total,
+      SUM(${dashboardTotalPorEstadoExpression}) AS total,
       COUNT(*)::int AS count
     FROM facturas f
     LEFT JOIN facturas_contabilizacion fc ON fc.factura_id = f.id
@@ -191,9 +208,8 @@ const listRecentDocuments = async ({ sociedadId } = {}) => {
   return rows;
 };
 
-const getCuentasPagarResumen = async ({ sociedadId } = {}) => {
+const getCuentasPagarResumenPorMoneda = async ({ sociedadId } = {}) => {
   const params = sociedadId ? [sociedadId] : [];
-  const whereSociedad = sociedadId ? 'WHERE f.sociedad_id = $1' : '';
   const estadosFlujoPago = `
     (
       '${FACTURA_ESTADOS.CONTABILIZADO}',
@@ -201,41 +217,38 @@ const getCuentasPagarResumen = async ({ sociedadId } = {}) => {
       '${FACTURA_ESTADOS.PAGADO_PARCIALMENTE}'
     )
   `;
+  const whereClauses = [`f.estado IN ${estadosFlujoPago}`];
+
+  if (sociedadId) {
+    whereClauses.push('f.sociedad_id = $1');
+  }
+
+  const whereClause = `WHERE ${whereClauses.join(' AND ')}`;
 
   const { rows } = await pool.query(
     `
     SELECT
+      ${monedaFacturaExpression} AS moneda,
+      COUNT(*)::int AS docs_por_pagar,
+      COALESCE(SUM(${totalAPagarExpression}), 0) AS monto_por_pagar,
       COUNT(*) FILTER (
-        WHERE f.estado IN ${estadosFlujoPago}
-      )::int AS docs_por_pagar,
-      COALESCE(SUM(
-        CASE WHEN f.estado IN ${estadosFlujoPago}
-          THEN ${totalAPagarExpression}
-          ELSE 0
-        END
-      ), 0) AS monto_por_pagar,
-      COUNT(*) FILTER (
-        WHERE f.estado IN ${estadosFlujoPago}
-          AND fc.fecha_vencimiento IS NOT NULL
+        WHERE fc.fecha_vencimiento IS NOT NULL
           AND fc.fecha_vencimiento < CURRENT_DATE
       )::int AS docs_vencidas,
       COALESCE(SUM(
-        CASE WHEN f.estado IN ${estadosFlujoPago}
-          AND fc.fecha_vencimiento IS NOT NULL
+        CASE WHEN fc.fecha_vencimiento IS NOT NULL
           AND fc.fecha_vencimiento < CURRENT_DATE
             THEN ${totalAPagarExpression}
             ELSE 0
         END
       ), 0) AS monto_vencidas,
       COUNT(*) FILTER (
-        WHERE f.estado IN ${estadosFlujoPago}
-          AND fc.fecha_vencimiento IS NOT NULL
+        WHERE fc.fecha_vencimiento IS NOT NULL
           AND fc.fecha_vencimiento >= CURRENT_DATE
           AND fc.fecha_vencimiento <= (CURRENT_DATE + INTERVAL '7 days')
       )::int AS docs_por_vencer_7,
       COALESCE(SUM(
-        CASE WHEN f.estado IN ${estadosFlujoPago}
-          AND fc.fecha_vencimiento IS NOT NULL
+        CASE WHEN fc.fecha_vencimiento IS NOT NULL
           AND fc.fecha_vencimiento >= CURRENT_DATE
           AND fc.fecha_vencimiento <= (CURRENT_DATE + INTERVAL '7 days')
             THEN ${totalAPagarExpression}
@@ -243,29 +256,20 @@ const getCuentasPagarResumen = async ({ sociedadId } = {}) => {
         END
       ), 0) AS monto_por_vencer_7,
       COUNT(*) FILTER (
-        WHERE f.estado IN ${estadosFlujoPago}
-          AND ${retencionPendienteExpression} > 0
+        WHERE ${retencionPendienteExpression} > 0
       )::int AS docs_retencion_pendiente,
-      COALESCE(SUM(
-        CASE WHEN f.estado IN ${estadosFlujoPago}
-          THEN ${retencionPendienteExpression}
-          ELSE 0
-        END
-      ), 0) AS monto_retencion_pendiente,
-      COALESCE(SUM(
-        CASE WHEN f.estado IN ${estadosFlujoPago}
-          THEN ${totalPendienteGlobalExpression}
-          ELSE 0
-        END
-      ), 0) AS monto_pendiente_global
+      COALESCE(SUM(${retencionPendienteExpression}), 0) AS monto_retencion_pendiente,
+      COALESCE(SUM(${totalPendienteGlobalExpression}), 0) AS monto_pendiente_global
     FROM facturas f
     LEFT JOIN facturas_contabilizacion fc ON fc.factura_id = f.id
-    ${whereSociedad}
+    ${whereClause}
+    GROUP BY moneda
+    ORDER BY moneda ASC
     `,
     params
   );
 
-  return rows[0] || null;
+  return rows;
 };
 
 const getTopProveedoresPorPagar = async ({ sociedadId, limit = 10 } = {}) => {
@@ -289,22 +293,51 @@ const getTopProveedoresPorPagar = async ({ sociedadId, limit = 10 } = {}) => {
 
   const { rows } = await pool.query(
     `
+    WITH proveedores_agrupados AS (
+      SELECT
+        p.id AS proveedor_id,
+        p.nombre AS proveedor_nombre,
+        p.identificacion_numero AS proveedor_identificacion,
+        ${monedaFacturaExpression} AS moneda,
+        COUNT(*)::int AS documentos,
+        SUM(${totalAPagarExpression}) AS total_a_pagar,
+        SUM(${retencionPendienteExpression}) AS total_retencion_pendiente,
+        SUM(${totalPendienteGlobalExpression}) AS total_pendiente_global
+      FROM facturas f
+      JOIN facturas_contabilizacion fc ON fc.factura_id = f.id
+      JOIN proveedores p ON p.id = fc.proveedor_id
+      ${whereClause}
+      GROUP BY p.id, p.nombre, p.identificacion_numero, moneda
+      HAVING SUM(${totalPendienteGlobalExpression}) > 0
+    ),
+    ranked AS (
+      SELECT
+        proveedor_id,
+        proveedor_nombre,
+        proveedor_identificacion,
+        moneda,
+        documentos,
+        total_a_pagar,
+        total_retencion_pendiente,
+        total_pendiente_global,
+        ROW_NUMBER() OVER (
+          PARTITION BY moneda
+          ORDER BY total_pendiente_global DESC, documentos DESC, proveedor_nombre ASC
+        ) AS moneda_rank
+      FROM proveedores_agrupados
+    )
     SELECT
-      p.id AS proveedor_id,
-      p.nombre AS proveedor_nombre,
-      p.identificacion_numero AS proveedor_identificacion,
-      COUNT(*)::int AS documentos,
-      SUM(${totalAPagarExpression}) AS total_a_pagar,
-      SUM(${retencionPendienteExpression}) AS total_retencion_pendiente,
-      SUM(${totalPendienteGlobalExpression}) AS total_pendiente_global
-    FROM facturas f
-    JOIN facturas_contabilizacion fc ON fc.factura_id = f.id
-    JOIN proveedores p ON p.id = fc.proveedor_id
-    ${whereClause}
-    GROUP BY p.id, p.nombre, p.identificacion_numero
-    HAVING SUM(${totalPendienteGlobalExpression}) > 0
-    ORDER BY total_pendiente_global DESC, documentos DESC
-    LIMIT ${limitPlaceholder}
+      proveedor_id,
+      proveedor_nombre,
+      proveedor_identificacion,
+      moneda,
+      documentos,
+      total_a_pagar,
+      total_retencion_pendiente,
+      total_pendiente_global
+    FROM ranked
+    WHERE moneda_rank <= ${limitPlaceholder}
+    ORDER BY moneda ASC, moneda_rank ASC
     `,
     params
   );
@@ -318,7 +351,7 @@ module.exports = {
   countMensajesHacienda,
   countSociedades,
   getMonedasResumen,
-  getCuentasPagarResumen,
+  getCuentasPagarResumenPorMoneda,
   getTopProveedoresPorPagar,
   listRecentFacturas,
   listRecentNotasCredito,

@@ -32,6 +32,13 @@ const DEFAULT_FACTURAS_PAGE = 1;
 const DEFAULT_FACTURAS_PAGE_SIZE = 50;
 const MAX_FACTURAS_PAGE_SIZE = 200;
 const DATE_INPUT_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+const FACTURAS_DASHBOARD_PRESETS = new Set([
+  'no_contabilizadas',
+  'por_pagar',
+  'vencidas',
+  'por_vencer_7',
+  'pagadas'
+]);
 
 const toOptionalPositiveInt = (value, fieldName) => {
   if (value === undefined || value === null || value === '') {
@@ -128,6 +135,19 @@ const normalizeSortDir = (value) => {
   return normalized;
 };
 
+const normalizeDashboardPreset = (value) => {
+  const normalized = normalizeOptionalText(value);
+  if (!normalized) {
+    return null;
+  }
+
+  if (!FACTURAS_DASHBOARD_PRESETS.has(normalized)) {
+    throw createError(400, 'dashboardPreset invalido');
+  }
+
+  return normalized;
+};
+
 const toNumber = (value, fallback = 0) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -196,6 +216,7 @@ const normalizeFacturasListParams = ({
   fechaHasta,
   montoMin,
   montoMax,
+  dashboardPreset,
   sortBy,
   sortDir,
   page,
@@ -232,6 +253,7 @@ const normalizeFacturasListParams = ({
     fechaHasta: normalizedFechaHasta,
     montoMin: normalizedMontoMin,
     montoMax: normalizedMontoMax,
+    dashboardPreset: normalizeDashboardPreset(dashboardPreset),
     sortBy: normalizeSortField(sortBy),
     sortDir: normalizeSortDir(sortDir),
     page: toBoundedPositiveInt(page, 'page', { defaultValue: DEFAULT_FACTURAS_PAGE }),

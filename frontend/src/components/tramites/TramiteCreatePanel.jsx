@@ -1,24 +1,152 @@
-import { Link } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
 import { formatAmount, getMoneda, getMontoDocumento } from '../../utils/formatters';
+import { facturasApi } from '../../services/facturasApi.js';
+import { withAuthToken } from '../../utils/auth.js';
 import SectionCard from '../common/SectionCard';
 import ActionAlerts from '../common/ActionAlerts';
 import LoadingState from '../common/LoadingState';
 import FiltersSection from '../common/FiltersSection';
 import DataTable from '../common/DataTable';
 import EmptyState from '../common/EmptyState';
-import { TRAMITES_LABELS, LOADING_LABELS } from '../../utils/uiLabels';
+import { FACTURAS_LABELS, TRAMITES_LABELS, LOADING_LABELS } from '../../utils/uiLabels';
 
 const getMontoRetencion = (row) => {
   const monto = Number(row?.monto_retencion_pendiente ?? row?.monto_retencion ?? 0);
   return Number.isFinite(monto) ? monto : 0;
 };
 
+function FacturaTramiteRowActions({
+  factura,
+  sociedadId,
+  openMenuId,
+  mhLoadingId,
+  onToggleMenu,
+  onCloseMenu,
+  onViewMh,
+}) {
+  const isOpen = openMenuId === factura.id;
+  const isMhLoading = mhLoadingId === factura.id;
+  const primaryUrlSearch = new URLSearchParams({ readonly: '1' });
+
+  if (sociedadId) {
+    primaryUrlSearch.set('sociedad', String(sociedadId));
+  }
+
+  const primaryUrl = `/facturas/${factura.id}/contabilizacion?${primaryUrlSearch.toString()}`;
+  const actions = [
+    {
+      key: 'pdf',
+      label: FACTURAS_LABELS.actionsMenu.openPdf,
+      url: factura.ruta_pdf
+        ? withAuthToken(`/api/files/pdf?path=${encodeURIComponent(factura.ruta_pdf)}`)
+        : '',
+      disabled: !factura.ruta_pdf,
+    },
+    {
+      key: 'xml',
+      label: FACTURAS_LABELS.actionsMenu.openXml,
+      url: factura.ruta_xml
+        ? withAuthToken(`/api/files/xml?path=${encodeURIComponent(factura.ruta_xml)}`)
+        : '',
+      disabled: !factura.ruta_xml,
+    },
+    {
+      key: 'mh',
+      label: FACTURAS_LABELS.actionsMenu.viewMh,
+      disabled: !factura.has_mensaje_hacienda || isMhLoading,
+      onClick: () => onViewMh(factura),
+    },
+    {
+      key: 'manifest',
+      label: FACTURAS_LABELS.actionsMenu.viewManifest,
+      url: factura.ruta_xml || factura.ruta_pdf
+        ? withAuthToken(`/api/facturas/${factura.id}/manifest`)
+        : '',
+      disabled: !factura.ruta_xml && !factura.ruta_pdf,
+    },
+  ];
+
+  return (
+    <div className="factura-actions" data-factura-menu="true">
+      {primaryUrl ? (
+        <a
+          className="btn btn-sm btn-outline-primary"
+          href={primaryUrl}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Ver
+        </a>
+      ) : (
+        <button className="btn btn-sm btn-outline-secondary" type="button" disabled>
+          Ver
+        </button>
+      )}
+      <div className={`factura-actions-menu${isOpen ? ' open' : ''}`} data-factura-menu="true">
+        <button
+          className="btn btn-sm btn-light factura-actions-trigger"
+          type="button"
+          onClick={() => onToggleMenu(factura.id)}
+          aria-expanded={isOpen}
+          aria-label={FACTURAS_LABELS.actionsButton}
+        >
+          ...
+        </button>
+        {isOpen ? (
+          <div className="factura-actions-popover" role="menu" data-factura-menu="true">
+            {actions.map((action) => (
+              action.disabled ? (
+                <button
+                  key={action.key}
+                  type="button"
+                  className="factura-actions-item disabled"
+                  disabled
+                >
+                  <span>{action.label}</span>
+                  <span>{FACTURAS_LABELS.actionsMenu.unavailable}</span>
+                </button>
+              ) : action.onClick ? (
+                <button
+                  key={action.key}
+                  type="button"
+                  className="factura-actions-item"
+                  role="menuitem"
+                  onClick={() => {
+                    onCloseMenu();
+                    action.onClick();
+                  }}
+                >
+                  {action.label}
+                </button>
+              ) : (
+                <a
+                  key={action.key}
+                  className="factura-actions-item"
+                  href={action.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  role="menuitem"
+                  onClick={onCloseMenu}
+                >
+                  {action.label}
+                </a>
+              )
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function TramiteCreatePanel({
   showCreate,
   canCreateTramite,
+  sociedadId,
   closeCreate,
   actionError,
   actionMessage,
+  setActionError,
   loadingDocs,
   createFilters,
   updateCreateFilter,
@@ -33,8 +161,69 @@ function TramiteCreatePanel({
   totalRetencionesSeleccionadas,
   totalSeleccionado,
   totalPorMoneda,
+  marcarTodosVisibles,
+  desmarcarTodos,
   crearTramite
 }) {
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [mhLoadingId, setMhLoadingId] = useState(null);
+
+  const handleViewMh = useCallback(async (factura) => {
+    if (!factura?.id || !factura?.has_mensaje_hacienda) {
+      return;
+    }
+
+    try {
+      setMhLoadingId(factura.id);
+      setActionError?.('');
+
+      const response = await facturasApi.getMensajeHacienda(factura.id);
+      const rutaXml = response?.data?.data?.ruta_xml;
+
+      if (!rutaXml) {
+        setActionError?.('Mensaje Hacienda sin XML.');
+        return;
+      }
+
+      const url = withAuthToken(`/api/files/xml?path=${encodeURIComponent(rutaXml)}`);
+      if (typeof window !== 'undefined' && typeof window.open === 'function') {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
+    } catch (err) {
+      const apiError = err?.response?.data?.error || 'Mensaje Hacienda no encontrado.';
+      setActionError?.(apiError);
+    } finally {
+      setMhLoadingId(null);
+    }
+  }, [setActionError]);
+
+  useEffect(() => {
+    if (!openMenuId) {
+      return undefined;
+    }
+
+    const handlePointerDown = (event) => {
+      if (event.target?.closest?.('[data-factura-menu="true"]')) {
+        return;
+      }
+      setOpenMenuId(null);
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setOpenMenuId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [openMenuId]);
+
   if (!showCreate || !canCreateTramite) {
     return null;
   }
@@ -44,6 +233,7 @@ function TramiteCreatePanel({
     : Object.entries(totalPorMoneda)
       .map(([moneda, total]) => `${moneda}: ${formatAmount(total)}`)
       .join(' - ');
+  const totalItemsVisibles = facturasFiltradas.length + retencionesFiltradas.length;
 
   return (
     <SectionCard
@@ -60,6 +250,28 @@ function TramiteCreatePanel({
         <div>
           <p className="tramite-create-subtitle">{TRAMITES_LABELS.createSubtitle}</p>
         </div>
+        <div className="tramite-actions">
+          <button
+            className="btn btn-outline-primary btn-sm"
+            type="button"
+            onClick={marcarTodosVisibles}
+            disabled={totalItemsVisibles === 0}
+          >
+            {TRAMITES_LABELS.createMarkAll}
+          </button>
+          <button
+            className="btn btn-light btn-sm"
+            type="button"
+            onClick={desmarcarTodos}
+            disabled={selectedFacturas.size === 0 && selectedRetenciones.size === 0}
+          >
+            {TRAMITES_LABELS.createClearAll}
+          </button>
+        </div>
+      </div>
+
+      <div className="small text-muted">
+        {TRAMITES_LABELS.createSelectionHelper.replace('{count}', String(totalItemsVisibles))}
       </div>
 
       <ActionAlerts error={actionError} message={actionMessage} />
@@ -151,9 +363,15 @@ function TramiteCreatePanel({
                 <td>{formatAmount(getMontoDocumento(factura, { preferAjustado: true }))}</td>
                 <td>{factura.fecha_emision ? new Date(factura.fecha_emision).toLocaleDateString() : '-'}</td>
                 <td className="text-end">
-                  <Link className="btn btn-sm btn-outline-primary" to={`/facturas/${factura.id}`}>
-                    Ver
-                  </Link>
+                  <FacturaTramiteRowActions
+                    factura={factura}
+                    sociedadId={sociedadId}
+                    openMenuId={openMenuId}
+                    mhLoadingId={mhLoadingId}
+                    onToggleMenu={(facturaId) => setOpenMenuId((current) => (current === facturaId ? null : facturaId))}
+                    onCloseMenu={() => setOpenMenuId(null)}
+                    onViewMh={handleViewMh}
+                  />
                 </td>
               </tr>
             ))}

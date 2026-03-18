@@ -11,6 +11,8 @@ Sistema web para gestion de facturas, documentos y tramites de pago con control 
 - [Inicio rapido](#inicio-rapido)
 - [Credenciales iniciales](#credenciales-iniciales)
 - [Variables de entorno](#variables-de-entorno)
+- [Convenciones de idioma](#convenciones-de-idioma)
+- [Principios transversales](#principios-transversales)
 - [Scripts](#scripts)
 - [API base](#api-base)
 - [Pruebas](#pruebas)
@@ -119,6 +121,18 @@ La conexion de PostgreSQL actualmente se define en `backend/db/index.js`. Variab
 - `WATCHER_LATE_FILES_DELAY_MS` (default: `2000`)
 - `WATCHER_AWF_STABILITY_MS` (default: `2000`)
 - `WATCHER_AWF_POLL_MS` (default: `100`)
+
+## Convenciones de idioma
+
+La consistencia objetivo del proyecto no es "traducir todo al ingles". La UI, los flujos operativos y la documentacion funcional siguen en espanol, mientras que el codigo usa ingles para la estructura tecnica y conserva en espanol los terminos de dominio que ya son canonicos en el negocio, por ejemplo `factura`, `tramite`, `sociedad` y `proveedor`.
+
+La guia detallada vive en `docs/convenciones_idioma_codigo.md`. La regla practica para trabajo nuevo es: no mezclar sinonimos para el mismo concepto dentro del mismo modulo y no hacer renombrados masivos solo por traduccion si eso rompe contratos, migrations o legibilidad del dominio.
+
+## Principios transversales
+
+Las decisiones que deben mantenerse visibles durante todo el desarrollo viven en `docs/principios_transversales.md`.
+
+Por ahora el principio operativo mas importante es `multicurrency-first`: no mezclar montos entre monedas, siempre mostrar la moneda junto al monto y modelar agregados financieros por divisa.
 
 ## Scripts
 

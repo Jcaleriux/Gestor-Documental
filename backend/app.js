@@ -58,6 +58,7 @@ const filesRoutes = require('./routes/files');
 const usuariosRoutes = require('./routes/usuarios');
 const sociedadesRoutes = require('./routes/sociedades');
 const proveedoresRoutes = require('./routes/proveedores');
+const centrosCostoRoutes = require('./routes/centrosCosto');
 const tablasPagoRoutes = require('./routes/tablasPago');
 const ordenesCompraRoutes = require('./routes/ordenesCompra');
 const reservasRoutes = require('./routes/reservas');
@@ -74,6 +75,7 @@ const reservasRoutes = require('./routes/reservas');
   usuariosRoutes,
   sociedadesRoutes,
   proveedoresRoutes,
+  centrosCostoRoutes,
   tablasPagoRoutes,
   ordenesCompraRoutes,
   reservasRoutes

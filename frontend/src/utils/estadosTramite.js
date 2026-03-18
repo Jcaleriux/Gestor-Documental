@@ -6,7 +6,7 @@ export const estadoLabelTramite = (estado) => {
     en_aprobacion_gerencia_financiera: 'En aprobacion gerencia financiera',
     en_revision_tesoreria: 'En revision tesoreria',
     en_revision_tesoreria_1: 'En revision tesoreria',
-    en_revision_tesoreria_2: 'En revision tesoreria',
+    en_revision_tesoreria_2: 'En tesoreria para pago',
     pagado: 'Pagado',
     cancelado: 'Cancelado'
   };
@@ -54,7 +54,9 @@ export const decisionClass = (valor) => {
 
 export const tesoreriaLabel = (valor) => {
   if (!valor || valor === 'pendiente') return 'Pendiente';
+  if (valor === 'pagado') return 'Pagado';
   if (valor === 'excluido' || valor === 'rechazado') return 'Excluido';
+  if (valor === 'devuelto_contabilidad') return 'Devuelto a contabilidad';
   if (valor === 'reenviado') return 'Reenviado';
   if (valor === 'reincluido') return 'Reincluido';
   return valor;
@@ -62,7 +64,9 @@ export const tesoreriaLabel = (valor) => {
 
 export const tesoreriaClass = (valor) => {
   if (!valor || valor === 'pendiente') return 'badge-soft-warning';
+  if (valor === 'pagado') return 'badge-soft-success';
   if (valor === 'excluido' || valor === 'rechazado') return 'badge-soft-danger';
+  if (valor === 'devuelto_contabilidad') return 'badge-soft-danger';
   if (valor === 'reenviado' || valor === 'reincluido') return 'badge-soft-primary';
   return 'badge-soft-secondary';
 };

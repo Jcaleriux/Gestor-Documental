@@ -256,7 +256,21 @@ const FACTURA_DETALLE_LABELS = {
     notasPagoRetencion: 'Notas pago',
     historialRetencion: 'Historial pagos retencion',
     centroCosto: 'Centro de costo',
-    cuentaContable: 'Cuenta contable',
+    centrosCostoDistribucion: 'Distribucion de centros de costo',
+    centrosCostoAgregarLinea: 'Agregar otro centro',
+    centrosCostoBuscar: 'Buscar centro por codigo o nombre',
+    centrosCostoVerTodos: 'Ver todos',
+    centrosCostoModalTitle: 'Seleccionar centro de costo',
+    centrosCostoTotalObjetivo: 'Total neto a pagar',
+    centrosCostoTotalAsignado: 'Distribuido',
+    centrosCostoDiferencia: 'Diferencia',
+    centrosCostoAprobador: 'Aprobador',
+    centrosCostoMonto: 'Monto',
+    centrosCostoSinCatalogo: 'No hay centros de costo cargados para esta sociedad.',
+    centrosCostoSinResultados: 'No hay centros que coincidan con la busqueda.',
+    centrosCostoBudgetPending: 'Por ahora solo seleccionaremos los centros de costo. Los montos por linea y el consumo de presupuesto se habilitaran cuando carguemos presupuestos.',
+    centrosCostoHelp: 'Este campo es obligatorio. Cada linea debe quedar asociada a un centro activo antes de continuar.',
+    cuentaContable: 'Asiento #',
     proyecto: 'Proyecto',
     ordenCompra: 'Orden de compra',
     notas: 'Observaciones contables',
@@ -278,8 +292,8 @@ const FACTURA_DETALLE_LABELS = {
     submit: 'Guardar estado'
   },
   historial: {
-    title: 'Historial de estados',
-    empty: 'Sin historial.'
+    title: 'Trazabilidad del documento',
+    empty: 'Sin trazabilidad registrada.'
   },
   comentarios: {
     title: 'Comentarios',
@@ -295,6 +309,7 @@ const TRAMITES_ACTION_LABELS = {
   rechazar: 'Rechazar',
   reenviar: 'Reenviar',
   excluir: 'Excluir',
+  devolverContabilidad: 'Devolver a contabilidad',
   reincluir: 'Reincluir',
   destinoPlaceholder: 'Destino...',
   ver: 'Ver'
@@ -308,6 +323,9 @@ const TRAMITES_LABELS = {
   createTitle: 'Nuevo tramite de pago',
   createSubtitle: 'Selecciona facturas y/o retenciones pendientes para incluir en el tramite.',
   createClose: 'Cerrar',
+  createMarkAll: 'Marcar todos',
+  createClearAll: 'Desmarcar todos',
+  createSelectionHelper: 'Aplica a los documentos visibles con los filtros actuales ({count}).',
   createEmptyFilters: 'No hay facturas para los filtros seleccionados.',
   listEmptyFilters: 'No hay tramites para los filtros seleccionados.',
   filters: {
@@ -317,6 +335,7 @@ const TRAMITES_LABELS = {
       en_aprobacion_gerencia_contable: 'En aprobacion gerencia contable',
       en_aprobacion_gerencia_financiera: 'En aprobacion gerencia financiera',
       en_revision_tesoreria: 'En revision tesoreria',
+      en_revision_tesoreria_2: 'En tesoreria para pago',
       pagado: 'Pagado',
       cancelado: 'Cancelado'
     },
@@ -356,12 +375,14 @@ const TRAMITE_ALERT_LABELS = {
   decisionError: 'No se pudo registrar la decision.',
   estadoError: 'No se pudo cambiar el estado.',
   tesoreriaError: 'No se pudo registrar la accion.',
-  tesoreriaDestinoRequired: 'Selecciona un destino para continuar.'
+  tesoreriaDestinoRequired: 'Selecciona un destino para continuar.',
+  tesoreriaMotivoRequired: 'Debes indicar un motivo para devolver el documento a contabilidad.'
 };
 
 const PROMPT_LABELS = {
   rechazoMotivo: 'Motivo del rechazo',
   exclusionMotivo: 'Motivo de exclusion',
+  devolucionContabilidadMotivo: 'Motivo de devolucion a contabilidad',
   motivoOpcional: 'Motivo (opcional)'
 };
 

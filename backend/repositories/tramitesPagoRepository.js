@@ -19,10 +19,19 @@ const retencionPendienteExpression = createRetencionPendienteExpression({ contaA
 const pagosFacturaExpression = createPagosFacturaExpression({ facturaAlias: 'f' });
 const totalPagoPrincipalExpression = createTotalPagoPrincipalExpression({ facturaAlias: 'f', contaAlias: 'fc' });
 const totalPendienteGlobalExpression = createTotalPendienteGlobalExpression({ facturaAlias: 'f', contaAlias: 'fc' });
+const ETAPA_ESTADO_COLUMN_MAP = Object.freeze({
+  gerencia: 'estado_gerencia',
+  gerencia_contable: 'estado_gerencia_contable',
+  financiera: 'estado_financiero'
+});
 
 const getDb = (client) => client || pool;
 
 const getClient = () => pool.connect();
+const normalizePositiveIntOrNull = (value) => {
+  const normalized = Number(value);
+  return Number.isInteger(normalized) && normalized > 0 ? normalized : null;
+};
 
 const getTramiteEstado = async (tramiteId, client) => {
   const { rows } = await getDb(client).query('SELECT estado FROM tramites_pago WHERE id = $1', [tramiteId]);
@@ -31,6 +40,14 @@ const getTramiteEstado = async (tramiteId, client) => {
 
 const getTramiteById = async (tramiteId, client) => {
   const { rows } = await getDb(client).query('SELECT * FROM tramites_pago WHERE id = $1', [tramiteId]);
+  return rows[0] || null;
+};
+
+const getTramiteByIdForUpdate = async (tramiteId, client) => {
+  const { rows } = await getDb(client).query(
+    'SELECT * FROM tramites_pago WHERE id = $1 FOR UPDATE',
+    [tramiteId]
+  );
   return rows[0] || null;
 };
 
@@ -51,17 +68,36 @@ const getDocumentoTesoreriaEstado = async (tramiteId, facturaId, client) => {
   return rows[0] || null;
 };
 
-const updateDocumentoTesoreriaExcluido = async ({ tramiteId, facturaId, motivo }, client) => {
+const getTramiteDocumentoByFacturaIdForUpdate = async ({ tramiteId, facturaId }, client) => {
+  const { rows } = await getDb(client).query(
+    `
+    SELECT *
+    FROM tramites_pago_documentos
+    WHERE tramite_id = $1
+      AND factura_id = $2
+    FOR UPDATE
+    `,
+    [tramiteId, facturaId]
+  );
+  return rows[0] || null;
+};
+
+const updateDocumentoTesoreriaExcluido = async ({
+  tramiteId,
+  facturaId,
+  motivo,
+  estadoTesoreria = TESORERIA_ESTADOS.EXCLUIDO
+}, client) => {
   const { rows } = await getDb(client).query(
     `
     UPDATE tramites_pago_documentos
-    SET estado_tesoreria = '${TESORERIA_ESTADOS.EXCLUIDO}',
-        motivo_tesoreria = $1,
+    SET estado_tesoreria = $1,
+        motivo_tesoreria = $2,
         actualizado_en = CURRENT_TIMESTAMP
-    WHERE tramite_id = $2 AND factura_id = $3
+    WHERE tramite_id = $3 AND factura_id = $4
     RETURNING *
     `,
-    [motivo || null, tramiteId, facturaId]
+    [estadoTesoreria, motivo || null, tramiteId, facturaId]
   );
   return rows[0] || null;
 };
@@ -82,6 +118,32 @@ const updateDocumentoTesoreriaPendiente = async ({ tramiteId, facturaId }, clien
     WHERE tramite_id = $1 AND factura_id = $2
     `,
     [tramiteId, facturaId]
+  );
+};
+
+const updateDocumentosTesoreriaEstadoByTramite = async ({ tramiteId, estadoTesoreria }, client) => {
+  await getDb(client).query(
+    `
+    UPDATE tramites_pago_documentos
+    SET estado_tesoreria = $1,
+        actualizado_en = CURRENT_TIMESTAMP
+    WHERE tramite_id = $2
+      AND ${tesoreriaActivaSql('estado_tesoreria')}
+    `,
+    [estadoTesoreria, tramiteId]
+  );
+};
+
+const updateRetencionesTesoreriaEstadoByTramite = async ({ tramiteId, estadoTesoreria }, client) => {
+  await getDb(client).query(
+    `
+    UPDATE tramites_pago_retenciones
+    SET estado_tesoreria = $1,
+        actualizado_en = CURRENT_TIMESTAMP
+    WHERE tramite_id = $2
+      AND ${tesoreriaActivaSql('estado_tesoreria')}
+    `,
+    [estadoTesoreria, tramiteId]
   );
 };
 
@@ -302,7 +364,8 @@ const getRetencionesDisponibles = async ({ sociedadId }, client) => {
   return rows;
 };
 
-const listDocumentosByTramite = async (tramiteId, client) => {
+const listDocumentosByTramite = async (tramiteId, client, options = {}) => {
+  const currentUserId = normalizePositiveIntOrNull(options.currentUserId);
   const { rows } = await getDb(client).query(
     `
     SELECT
@@ -332,6 +395,13 @@ const listDocumentosByTramite = async (tramiteId, client) => {
       fc.orden_compra AS conta_orden_compra,
       fc.numero_proveedor AS conta_numero_proveedor,
       fc.notas AS conta_notas,
+      COALESCE(gerencia.gerencia_aprobadores_total, 0) AS gerencia_aprobadores_total,
+      COALESCE(gerencia.gerencia_aprobadores_aprobados, 0) AS gerencia_aprobadores_aprobados,
+      COALESCE(gerencia.gerencia_aprobadores_pendientes, 0) AS gerencia_aprobadores_pendientes,
+      COALESCE(gerencia.gerencia_aprobadores_rechazados, 0) AS gerencia_aprobadores_rechazados,
+      COALESCE(gerencia.gerencia_puede_aprobar_usuario_actual, false) AS gerencia_puede_aprobar_usuario_actual,
+      COALESCE(gerencia.gerencia_ya_aprobo_usuario_actual, false) AS gerencia_ya_aprobo_usuario_actual,
+      COALESCE(gerencia.gerencia_aprobadores, '[]'::jsonb) AS gerencia_aprobadores,
       ${totalFacturaExpression} AS total_factura,
       ${totalRebajosExpression} AS total_rebajos,
       ${pagosFacturaExpression} AS total_pagado_principal,
@@ -340,10 +410,63 @@ const listDocumentosByTramite = async (tramiteId, client) => {
     FROM tramites_pago_documentos td
     JOIN facturas f ON f.id = td.factura_id
     LEFT JOIN facturas_contabilizacion fc ON fc.factura_id = f.id
+    LEFT JOIN LATERAL (
+      WITH existing_approvers AS (
+        SELECT
+          tda.usuario_aprobador_id,
+          tda.usuario_aprobador_nombre,
+          tda.usuario_aprobador_email,
+          tda.estado_gerencia AS estado_aprobacion,
+          tda.motivo_gerencia AS motivo_aprobacion,
+          tda.decision_en
+        FROM tramites_pago_documentos_aprobadores tda
+        WHERE tda.tramite_id = td.tramite_id
+          AND tda.factura_id = td.factura_id
+      ),
+      fallback_approvers AS (
+        SELECT DISTINCT
+          NULLIF(linea->>'usuario_aprobador_id', '')::int AS usuario_aprobador_id,
+          NULLIF(BTRIM(COALESCE(linea->>'usuario_aprobador_nombre', '')), '') AS usuario_aprobador_nombre,
+          NULLIF(BTRIM(COALESCE(linea->>'usuario_aprobador_email', '')), '') AS usuario_aprobador_email,
+          '${DOCUMENTO_ESTADOS.PENDIENTE}'::character varying AS estado_aprobacion,
+          NULL::text AS motivo_aprobacion,
+          NULL::timestamp without time zone AS decision_en
+        FROM jsonb_array_elements(COALESCE(fc.metadata->'centros_costo_lineas', '[]'::jsonb)) AS linea
+        WHERE NOT EXISTS (SELECT 1 FROM existing_approvers)
+          AND NULLIF(linea->>'usuario_aprobador_id', '') ~ '^[0-9]+$'
+      ),
+      approvers AS (
+        SELECT * FROM existing_approvers
+        UNION ALL
+        SELECT * FROM fallback_approvers
+      )
+      SELECT
+        COUNT(*)::int AS gerencia_aprobadores_total,
+        COUNT(*) FILTER (WHERE estado_aprobacion = '${DOCUMENTO_ESTADOS.APROBADO}')::int AS gerencia_aprobadores_aprobados,
+        COUNT(*) FILTER (WHERE estado_aprobacion = '${DOCUMENTO_ESTADOS.PENDIENTE}')::int AS gerencia_aprobadores_pendientes,
+        COUNT(*) FILTER (WHERE estado_aprobacion = '${DOCUMENTO_ESTADOS.RECHAZADO}')::int AS gerencia_aprobadores_rechazados,
+        COALESCE(BOOL_OR(usuario_aprobador_id = $2 AND estado_aprobacion = '${DOCUMENTO_ESTADOS.PENDIENTE}'), false) AS gerencia_puede_aprobar_usuario_actual,
+        COALESCE(BOOL_OR(usuario_aprobador_id = $2 AND estado_aprobacion = '${DOCUMENTO_ESTADOS.APROBADO}'), false) AS gerencia_ya_aprobo_usuario_actual,
+        COALESCE(
+          jsonb_agg(
+            jsonb_build_object(
+              'usuario_aprobador_id', usuario_aprobador_id,
+              'usuario_aprobador_nombre', usuario_aprobador_nombre,
+              'usuario_aprobador_email', usuario_aprobador_email,
+              'estado', estado_aprobacion,
+              'motivo', motivo_aprobacion,
+              'decision_en', decision_en
+            )
+            ORDER BY COALESCE(usuario_aprobador_nombre, usuario_aprobador_email, usuario_aprobador_id::text)
+          ) FILTER (WHERE usuario_aprobador_id IS NOT NULL),
+          '[]'::jsonb
+        ) AS gerencia_aprobadores
+      FROM approvers
+    ) gerencia ON true
     WHERE td.tramite_id = $1
     ORDER BY f.fecha_emision DESC NULLS LAST, f.id DESC
     `,
-    [tramiteId]
+    [tramiteId, currentUserId]
   );
 
   return rows;
@@ -488,13 +611,212 @@ const insertTramite = async ({ sociedadId, estado, creadoPor }, client) => {
   return rows[0];
 };
 
-const insertTramiteDocumentos = async ({ tramiteId, facturaIds }, client) => {
+const insertTramiteDocumentos = async ({
+  tramiteId,
+  facturaIds,
+  facturaEntries
+}, client) => {
+  const normalizedEntries = Array.isArray(facturaEntries) && facturaEntries.length > 0
+    ? facturaEntries
+      .map((entry) => ({
+        facturaId: Number(entry?.facturaId ?? entry?.factura_id),
+        estadoFacturaOrigen: entry?.estadoFacturaOrigen || entry?.estado_factura_origen || null
+      }))
+      .filter((entry) => Number.isInteger(entry.facturaId) && entry.facturaId > 0)
+    : Array.isArray(facturaIds) && facturaIds.length > 0
+      ? facturaIds
+        .map((facturaId) => ({
+          facturaId: Number(facturaId),
+          estadoFacturaOrigen: null
+        }))
+        .filter((entry) => Number.isInteger(entry.facturaId) && entry.facturaId > 0)
+      : [];
+
+  if (normalizedEntries.length === 0) {
+    return;
+  }
+
   await getDb(client).query(
     `
-    INSERT INTO tramites_pago_documentos (tramite_id, factura_id)
-    SELECT $1, UNNEST($2::int[])
+    INSERT INTO tramites_pago_documentos (tramite_id, factura_id, estado_factura_origen)
+    SELECT $1, x.factura_id, x.estado_factura_origen
+    FROM UNNEST($2::int[], $3::text[]) AS x(factura_id, estado_factura_origen)
     `,
-    [tramiteId, facturaIds]
+    [
+      tramiteId,
+      normalizedEntries.map((entry) => entry.facturaId),
+      normalizedEntries.map((entry) => entry.estadoFacturaOrigen || null)
+    ]
+  );
+};
+
+const listCentroCostoAprobadoresByFacturaIds = async (facturaIds, client) => {
+  if (!Array.isArray(facturaIds) || facturaIds.length === 0) {
+    return [];
+  }
+
+  const { rows } = await getDb(client).query(
+    `
+    WITH raw AS (
+      SELECT
+        fc.factura_id,
+        NULLIF(linea->>'usuario_aprobador_id', '') AS usuario_aprobador_id_raw,
+        NULLIF(BTRIM(COALESCE(linea->>'usuario_aprobador_nombre', '')), '') AS usuario_aprobador_nombre,
+        NULLIF(BTRIM(COALESCE(linea->>'usuario_aprobador_email', '')), '') AS usuario_aprobador_email
+      FROM facturas_contabilizacion fc
+      CROSS JOIN LATERAL jsonb_array_elements(COALESCE(fc.metadata->'centros_costo_lineas', '[]'::jsonb)) AS linea
+      WHERE fc.factura_id = ANY($1::int[])
+    )
+    SELECT DISTINCT ON (factura_id, usuario_aprobador_id_raw::int)
+      factura_id,
+      usuario_aprobador_id_raw::int AS usuario_aprobador_id,
+      usuario_aprobador_nombre,
+      usuario_aprobador_email
+    FROM raw
+    WHERE usuario_aprobador_id_raw ~ '^[0-9]+$'
+    ORDER BY factura_id, usuario_aprobador_id_raw::int, usuario_aprobador_nombre NULLS LAST, usuario_aprobador_email NULLS LAST
+    `,
+    [facturaIds]
+  );
+
+  return rows;
+};
+
+const insertTramiteDocumentoAprobadores = async ({ tramiteId, aprobadores }, client) => {
+  if (!Array.isArray(aprobadores) || aprobadores.length === 0) {
+    return;
+  }
+
+  const facturaIds = aprobadores.map((item) => Number(item.factura_id));
+  const usuarioIds = aprobadores.map((item) => Number(item.usuario_aprobador_id));
+  const nombres = aprobadores.map((item) => item.usuario_aprobador_nombre || null);
+  const emails = aprobadores.map((item) => item.usuario_aprobador_email || null);
+
+  await getDb(client).query(
+    `
+    INSERT INTO tramites_pago_documentos_aprobadores (
+      tramite_id,
+      factura_id,
+      usuario_aprobador_id,
+      usuario_aprobador_nombre,
+      usuario_aprobador_email
+    )
+    SELECT
+      $1,
+      x.factura_id,
+      x.usuario_aprobador_id,
+      x.usuario_aprobador_nombre,
+      x.usuario_aprobador_email
+    FROM UNNEST($2::int[], $3::int[], $4::text[], $5::text[])
+      AS x(factura_id, usuario_aprobador_id, usuario_aprobador_nombre, usuario_aprobador_email)
+    ON CONFLICT (tramite_id, factura_id, usuario_aprobador_id) DO NOTHING
+    `,
+    [tramiteId, facturaIds, usuarioIds, nombres, emails]
+  );
+};
+
+const listTramiteDocumentoAprobadores = async ({ tramiteId, facturaIds }, client) => {
+  const normalizedFacturaIds = Array.isArray(facturaIds) && facturaIds.length > 0
+    ? facturaIds.map((value) => Number(value)).filter((value) => Number.isInteger(value) && value > 0)
+    : [];
+
+  const params = [tramiteId];
+  const where = ['tramite_id = $1'];
+  if (normalizedFacturaIds.length > 0) {
+    params.push(normalizedFacturaIds);
+    where.push(`factura_id = ANY($${params.length}::int[])`);
+  }
+
+  const { rows } = await getDb(client).query(
+    `
+    SELECT
+      id,
+      tramite_id,
+      factura_id,
+      usuario_aprobador_id,
+      usuario_aprobador_nombre,
+      usuario_aprobador_email,
+      estado_gerencia,
+      motivo_gerencia,
+      decision_en,
+      creado_en,
+      actualizado_en
+    FROM tramites_pago_documentos_aprobadores
+    WHERE ${where.join(' AND ')}
+    ORDER BY factura_id ASC, usuario_aprobador_nombre ASC NULLS LAST, usuario_aprobador_email ASC NULLS LAST, usuario_aprobador_id ASC
+    `,
+    params
+  );
+
+  return rows;
+};
+
+const listTramiteDocumentoAprobadoresForUpdate = async ({ tramiteId, facturaId }, client) => {
+  const { rows } = await getDb(client).query(
+    `
+    SELECT
+      id,
+      tramite_id,
+      factura_id,
+      usuario_aprobador_id,
+      usuario_aprobador_nombre,
+      usuario_aprobador_email,
+      estado_gerencia,
+      motivo_gerencia,
+      decision_en,
+      creado_en,
+      actualizado_en
+    FROM tramites_pago_documentos_aprobadores
+    WHERE tramite_id = $1
+      AND factura_id = $2
+    ORDER BY usuario_aprobador_nombre ASC NULLS LAST, usuario_aprobador_email ASC NULLS LAST, usuario_aprobador_id ASC
+    FOR UPDATE
+    `,
+    [tramiteId, facturaId]
+  );
+
+  return rows;
+};
+
+const updateTramiteDocumentoAprobadorEstado = async ({
+  tramiteId,
+  facturaId,
+  usuarioAprobadorId,
+  estado,
+  motivo
+}, client) => {
+  const { rows } = await getDb(client).query(
+    `
+    UPDATE tramites_pago_documentos_aprobadores
+    SET
+      estado_gerencia = $1,
+      motivo_gerencia = $2,
+      decision_en = CURRENT_TIMESTAMP,
+      actualizado_en = CURRENT_TIMESTAMP
+    WHERE tramite_id = $3
+      AND factura_id = $4
+      AND usuario_aprobador_id = $5
+    RETURNING *
+    `,
+    [estado, motivo || null, tramiteId, facturaId, usuarioAprobadorId]
+  );
+
+  return rows[0] || null;
+};
+
+const resetTramiteDocumentoAprobadores = async ({ tramiteId, facturaId }, client) => {
+  await getDb(client).query(
+    `
+    UPDATE tramites_pago_documentos_aprobadores
+    SET
+      estado_gerencia = '${DOCUMENTO_ESTADOS.PENDIENTE}',
+      motivo_gerencia = NULL,
+      decision_en = NULL,
+      actualizado_en = CURRENT_TIMESTAMP
+    WHERE tramite_id = $1
+      AND factura_id = $2
+    `,
+    [tramiteId, facturaId]
   );
 };
 
@@ -533,6 +855,33 @@ const countRechazadosActivos = async (tramiteId, client) => {
     [tramiteId]
   );
   return rows[0]?.total || 0;
+};
+
+const getResumenEtapaDocumentos = async ({ tramiteId, etapa }, client) => {
+  const stageColumn = ETAPA_ESTADO_COLUMN_MAP[etapa];
+  if (!stageColumn) {
+    throw new Error(`Etapa de resumen no soportada: ${etapa}`);
+  }
+
+  const { rows } = await getDb(client).query(
+    `
+    SELECT
+      COUNT(*) FILTER (WHERE ${tesoreriaActivaSql('estado_tesoreria')})::int AS total_activos,
+      COUNT(*) FILTER (WHERE ${tesoreriaActivaSql('estado_tesoreria')} AND ${stageColumn} = '${DOCUMENTO_ESTADOS.APROBADO}')::int AS aprobados,
+      COUNT(*) FILTER (WHERE ${tesoreriaActivaSql('estado_tesoreria')} AND ${stageColumn} = '${DOCUMENTO_ESTADOS.PENDIENTE}')::int AS pendientes,
+      COUNT(*) FILTER (WHERE ${tesoreriaActivaSql('estado_tesoreria')} AND ${stageColumn} = '${DOCUMENTO_ESTADOS.RECHAZADO}')::int AS rechazados
+    FROM tramites_pago_documentos
+    WHERE tramite_id = $1
+    `,
+    [tramiteId]
+  );
+
+  return rows[0] || {
+    total_activos: 0,
+    aprobados: 0,
+    pendientes: 0,
+    rechazados: 0
+  };
 };
 
 const insertPagoFactura = async ({
@@ -575,6 +924,7 @@ const updateFacturasEstadoPorSaldoByTramite = async (tramiteId, client) => {
     WITH saldos AS (
       SELECT
         td.factura_id,
+        f.estado AS estado_anterior,
         ${totalPagoPrincipalExpression} AS saldo_pago_principal
       FROM tramites_pago_documentos td
       JOIN facturas f ON f.id = td.factura_id
@@ -589,7 +939,7 @@ const updateFacturasEstadoPorSaldoByTramite = async (tramiteId, client) => {
     END
     FROM saldos s
     WHERE f.id = s.factura_id
-    RETURNING f.id, f.estado
+    RETURNING f.id, s.estado_anterior, f.estado AS estado_nuevo
     `,
     [tramiteId]
   );
@@ -674,11 +1024,15 @@ module.exports = {
   getClient,
   getTramiteEstado,
   getTramiteById,
+  getTramiteByIdForUpdate,
   getFacturaEstado,
   getDocumentoTesoreriaEstado,
+  getTramiteDocumentoByFacturaIdForUpdate,
   updateDocumentoTesoreriaExcluido,
   updateDocumentoTesoreriaReset,
   updateDocumentoTesoreriaPendiente,
+  updateDocumentosTesoreriaEstadoByTramite,
+  updateRetencionesTesoreriaEstadoByTramite,
   updateFacturaEstado,
   updateFacturasEstadoByIds,
   insertHistorialDocumentoConEstados,
@@ -698,9 +1052,16 @@ module.exports = {
   findRetencionesDuplicadasActivas,
   insertTramite,
   insertTramiteDocumentos,
+  listCentroCostoAprobadoresByFacturaIds,
+  insertTramiteDocumentoAprobadores,
+  listTramiteDocumentoAprobadores,
+  listTramiteDocumentoAprobadoresForUpdate,
+  updateTramiteDocumentoAprobadorEstado,
+  resetTramiteDocumentoAprobadores,
   insertTramiteRetenciones,
   listSaldosPagoPrincipalByTramite,
   countRechazadosActivos,
+  getResumenEtapaDocumentos,
   insertPagoFactura,
   updateFacturasEstadoPorSaldoByTramite,
   applyRetencionesPagadasByTramite,
