@@ -118,6 +118,16 @@ export const extractTiquetesPagePayload = (response) => {
   };
 };
 
+export const extractMensajeHaciendaXmlPath = (response) => {
+  if (response?.data?.success === false) {
+    throw new Error(response?.data?.error || 'Mensaje Hacienda no encontrado.');
+  }
+
+  const payload = response?.data?.data;
+  const rutaXml = payload?.ruta_xml || payload?.rutaXml || response?.data?.ruta_xml || response?.data?.rutaXml;
+  return rutaXml ? String(rutaXml) : '';
+};
+
 const listFacturas = (params) => axios.get('/api/facturas', { params });
 const listRetencionesPendientes = (params) => axios.get('/api/retenciones-pendientes', { params });
 const listNotasCredito = (params) => axios.get('/api/notas-credito', { params });

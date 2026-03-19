@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { formatAmount, getMoneda, getMontoDocumento } from '../../utils/formatters';
-import { facturasApi } from '../../services/facturasApi.js';
+import { extractMensajeHaciendaXmlPath, facturasApi } from '../../services/facturasApi.js';
 import { withAuthToken } from '../../utils/auth.js';
 import SectionCard from '../common/SectionCard';
 import ActionAlerts from '../common/ActionAlerts';
@@ -178,7 +178,7 @@ function TramiteCreatePanel({
       setActionError?.('');
 
       const response = await facturasApi.getMensajeHacienda(factura.id);
-      const rutaXml = response?.data?.data?.ruta_xml;
+      const rutaXml = extractMensajeHaciendaXmlPath(response);
 
       if (!rutaXml) {
         setActionError?.('Mensaje Hacienda sin XML.');

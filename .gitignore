@@ -32,7 +32,7 @@ tmp-files-usecases-check-*/
 *.tmp
 
 ## Local runtime/document data (do not version)
-facturas/
+/facturas/
 documentos/
 backend/scripts/salidas/
 backend/backups/

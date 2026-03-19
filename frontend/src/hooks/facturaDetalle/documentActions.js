@@ -1,3 +1,5 @@
+import { extractMensajeHaciendaXmlPath } from '../../services/facturasApi.js';
+
 const NEW_TAB_TARGET = '_blank';
 const NEW_TAB_FEATURES = 'noopener,noreferrer';
 
@@ -49,7 +51,7 @@ const buildManifestUrl = ({ id, buildAuthUrl }) => (
 
 const getMensajeHaciendaRutaXml = async ({ id, facturaApi }) => {
   const response = await facturaApi.getMensajeHacienda(id);
-  return response.data.data?.ruta_xml;
+  return extractMensajeHaciendaXmlPath(response);
 };
 
 export const createDocumentActions = ({
