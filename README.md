@@ -129,6 +129,7 @@ Para sesiones recurrentes con Codex o agentes similares:
 
 - La guia operativa del repo vive en `AGENTS.md`.
 - Hay un chequeo rapido de herramientas y convenciones en `scripts/setup-codex-env.ps1`.
+- La guia detallada del entorno vive en `docs/codex_entorno.md`.
 
 Ejemplo:
 

@@ -1,7 +1,9 @@
 [CmdletBinding()]
 param(
     [switch]$ConfigureGitSafeDirectory,
-    [switch]$CheckGhAuth
+    [switch]$CheckGhAuth,
+    [switch]$InstallProjectDependencies,
+    [switch]$BuildFrontend
 )
 
 Set-StrictMode -Version Latest
@@ -13,6 +15,20 @@ function Write-Section {
     param([string]$Title)
     Write-Host ""
     Write-Host "== $Title ==" -ForegroundColor Cyan
+}
+
+function Invoke-InDirectory {
+    param(
+        [string]$Path,
+        [scriptblock]$Script
+    )
+
+    Push-Location $Path
+    try {
+        & $Script
+    } finally {
+        Pop-Location
+    }
 }
 
 function Get-ToolStatus {
@@ -63,7 +79,7 @@ Write-Host "Repo root: $repoRoot"
 Write-Host "Agent guide: $repoRoot\\AGENTS.md"
 
 Write-Section "Tooling"
-$tools = @("git", "node", "npm", "gh") | ForEach-Object { Get-ToolStatus -Name $_ }
+$tools = @("git", "node", "npm", "gh", "psql") | ForEach-Object { Get-ToolStatus -Name $_ }
 foreach ($tool in $tools) {
     if ($tool.Found) {
         Write-Host ("[ok] {0} -> {1} ({2})" -f $tool.Name, $tool.Path, $tool.Version)
@@ -109,6 +125,26 @@ Write-Host "- PostgreSQL is still configured in backend\\db\\index.js."
 Write-Host "- Review docs\\convenciones_idioma_codigo.md before renaming mixed-language code."
 Write-Host "- Review docs\\principios_transversales.md before changing amounts, currency, or payment flows."
 Write-Host "- Frontend route-level lazy loading already exists in frontend\\src\\App.jsx."
+Write-Host "- Detailed Codex environment notes live in docs\\codex_entorno.md."
+
+if ($InstallProjectDependencies) {
+    Write-Section "Installing Dependencies"
+    Invoke-InDirectory -Path (Join-Path $repoRoot "backend") -Script {
+        npm install
+    }
+    Invoke-InDirectory -Path (Join-Path $repoRoot "frontend") -Script {
+        npm install
+    }
+    Write-Host "[ok] backend and frontend dependencies installed"
+}
+
+if ($BuildFrontend) {
+    Write-Section "Frontend Build"
+    Invoke-InDirectory -Path (Join-Path $repoRoot "frontend") -Script {
+        npm run build
+    }
+    Write-Host "[ok] frontend build completed"
+}
 
 Write-Section "Useful Commands"
 Write-Host "Backend:"
@@ -122,6 +158,10 @@ Write-Host "  cd frontend"
 Write-Host "  npm install"
 Write-Host "  npm run build"
 Write-Host "  npm test"
+Write-Host ""
+Write-Host "Bootstrap examples:"
+Write-Host "  .\\scripts\\setup-codex-env.ps1 -ConfigureGitSafeDirectory -InstallProjectDependencies"
+Write-Host "  .\\scripts\\setup-codex-env.ps1 -CheckGhAuth -BuildFrontend"
 Write-Host ""
 Write-Host "Targeted frontend checks when Node spawn hits EPERM:"
 Write-Host "  node tests/hooks/useAppSession.test.js"
