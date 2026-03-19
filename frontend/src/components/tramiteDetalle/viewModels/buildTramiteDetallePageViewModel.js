@@ -1,0 +1,102 @@
+import { buildTramiteDetallePageState } from './buildTramiteDetallePageState.js';
+import { buildTramiteDetalleHeaderViewModel } from './buildTramiteDetalleHeaderViewModel.js';
+import { buildTramiteDetalleLayoutProps } from './buildTramiteDetalleLayoutProps.js';
+
+export const buildTramiteWorkflowInputs = ({
+  id,
+  tramite,
+  documentosActivos,
+  authUser = null,
+  fetchDetalle,
+  fetchHistorial,
+  setActionMessage,
+  setActionError,
+}) => ({
+  id,
+  tramite,
+  documentosActivos,
+  actorUsuario: authUser?.email || authUser?.nombre || 'system',
+  fetchDetalle,
+  fetchHistorial,
+  setActionMessage,
+  setActionError,
+});
+
+export const buildSociedadLabel = ({ sociedadInfo, sociedadId }) => (
+  sociedadInfo?.nombre_proyecto || sociedadInfo?.razon_social || sociedadId || '-'
+);
+
+export const buildTramiteDetallePageViewModel = ({
+  id,
+  sociedadId,
+  detalle,
+  documentosActivos,
+  retencionesActivas,
+  resumenTotales,
+  resumenMoneda,
+  workflow,
+  userPermissions = [],
+}) => {
+  const pageState = buildTramiteDetallePageState({
+    sociedadId,
+    loading: detalle.loading,
+    tramite: detalle.tramite,
+  });
+
+  if (pageState.status !== 'ready') {
+    return {
+      pageState,
+      layoutProps: null,
+    };
+  }
+
+  const headerViewModel = buildTramiteDetalleHeaderViewModel({
+    tramite: detalle.tramite,
+  });
+  const sociedadLabel = buildSociedadLabel({
+    sociedadInfo: detalle.sociedadInfo,
+    sociedadId,
+  });
+
+  const layoutProps = buildTramiteDetalleLayoutProps({
+    headerViewModel,
+    tramite: detalle.tramite,
+    documentos: detalle.documentos,
+    documentosActivos,
+    retencionesActivas,
+    resumenTotales,
+    resumenMoneda,
+    accionSiguiente: workflow.accionSiguiente,
+    handleAccionSiguiente: workflow.handleAccionSiguiente,
+    historialVisible: workflow.historialVisible,
+    setHistorialVisible: workflow.setHistorialVisible,
+    userPermissions,
+    activeTab: workflow.activeTab,
+    setActiveTab: workflow.setActiveTab,
+    actionError: detalle.actionError,
+    actionMessage: detalle.actionMessage,
+    historial: detalle.historial,
+    historialError: detalle.historialError,
+    pagosFacturas: workflow.pagosFacturas,
+    handlePagoFacturaChange: workflow.handlePagoFacturaChange,
+    overrideUser: workflow.overrideUser,
+    overrideEstado: workflow.overrideEstado,
+    overrideMotivo: workflow.overrideMotivo,
+    overrideError: workflow.overrideError,
+    setOverrideUser: workflow.setOverrideUser,
+    setOverrideEstado: workflow.setOverrideEstado,
+    setOverrideMotivo: workflow.setOverrideMotivo,
+    handleOverrideEstado: workflow.handleOverrideEstado,
+    tesoreriaDestino: workflow.tesoreriaDestino,
+    handleTesoreriaDestinoChange: workflow.handleTesoreriaDestinoChange,
+    handleDecision: workflow.handleDecision,
+    handleAccionTesoreria: workflow.handleAccionTesoreria,
+    sociedadLabel,
+    sociedadId,
+  });
+
+  return {
+    pageState,
+    layoutProps,
+  };
+};
