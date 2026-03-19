@@ -25,6 +25,8 @@ export const createHookHarness = ({ hook, initialProps, autoRunEffects = true })
 
   const stateValues = [];
   const stateSetters = [];
+  const reducerValues = [];
+  const reducerDispatchers = [];
   const memoValues = [];
   const memoDeps = [];
   const refValues = [];
@@ -34,6 +36,7 @@ export const createHookHarness = ({ hook, initialProps, autoRunEffects = true })
   let result;
   let shouldRender = false;
   let stateIndex = 0;
+  let reducerIndex = 0;
   let memoIndex = 0;
   let refIndex = 0;
   let effectIndex = 0;
@@ -63,6 +66,25 @@ export const createHookHarness = ({ hook, initialProps, autoRunEffects = true })
       }
 
       return [stateValues[currentIndex], stateSetters[currentIndex]];
+    },
+    useReducer(reducer, initialArg, init) {
+      const currentIndex = reducerIndex;
+      reducerIndex += 1;
+
+      if (!(currentIndex in reducerValues)) {
+        reducerValues[currentIndex] = typeof init === 'function'
+          ? init(initialArg)
+          : initialArg;
+      }
+
+      if (!(currentIndex in reducerDispatchers)) {
+        reducerDispatchers[currentIndex] = (action) => {
+          reducerValues[currentIndex] = reducer(reducerValues[currentIndex], action);
+          scheduleRender();
+        };
+      }
+
+      return [reducerValues[currentIndex], reducerDispatchers[currentIndex]];
     },
     useEffect(create, deps) {
       const currentIndex = effectIndex;
@@ -115,6 +137,7 @@ export const createHookHarness = ({ hook, initialProps, autoRunEffects = true })
     const previousDispatcher = internals.H;
     internals.H = dispatcher;
     stateIndex = 0;
+    reducerIndex = 0;
     memoIndex = 0;
     refIndex = 0;
     effectIndex = 0;
