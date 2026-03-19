@@ -32,6 +32,51 @@
 - Do not widen HTTP contracts, DB schema, or permission rules as part of cleanup refactors unless explicitly requested.
 - Prefer incremental refactors by vertical slice over broad rewrites.
 
+## SOLID Autonomy Policy
+
+Default mode for unattended cleanup is: preserve public behavior, improve internal structure, and escalate only when the refactor starts affecting contracts, business rules, or operational risk.
+
+### Safe To Do Without Asking
+
+- Split large UI screens into smaller view components, hooks, helpers, and adapters.
+- Extract transport parsing out of components and into API services.
+- Split backend services or use cases into narrower internal modules while keeping the same public factory and route behavior.
+- Add or improve targeted tests, small docs, and internal helper files.
+- Normalize names inside a local module when the change stays internal and improves clarity.
+- Add low-risk performance improvements such as route-level lazy loading when behavior remains equivalent.
+- Commit and push each validated slice to the current feature branch.
+
+### Always Escalate To The User
+
+- Any DB schema change, migration, seed change, or data backfill.
+- Any route, payload, response shape, permission, auth, or workflow-state change.
+- Any refactor that changes user-visible business behavior, not just structure.
+- Any large rename that crosses modules, folders, or domain boundaries.
+- Any new dependency, framework shift, or cross-cutting build/tooling change with tradeoffs.
+- Any destructive action touching operational files, documents, or reset scripts.
+
+### Preferred Unattended Workflow
+
+1. Choose one vertical slice or hotspot, not the whole app at once.
+2. Preserve the existing public contract and move responsibilities behind narrower modules.
+3. Validate the touched area with targeted tests and the relevant build or backend check.
+4. Commit with a focused message and push to the active branch.
+5. Only continue to the next slice if the worktree is clean and the previous slice is stable.
+
+### Good SOLID Targets In This Repo
+
+- Large frontend screens that still mix rendering, orchestration, filters, and transport logic.
+- Backend service modules that coordinate business rules, filesystem access, and repository calls in one file.
+- Repeated UI table/filter/report patterns that can share helpers without changing business contracts.
+- Repositories that expose too many concerns and need narrower query boundaries.
+
+### Stop And Reconfirm If
+
+- The refactor reveals unclear business intent or conflicting domain names.
+- The safest solution appears to require changing contracts instead of internals.
+- There are unexpected user edits in the same files that would make ownership unclear.
+- Validation shows a regression that is not obviously structural.
+
 ## Validation Commands
 
 ### Backend
