@@ -11,6 +11,7 @@ Sistema web para gestion de facturas, documentos y tramites de pago con control 
 - [Inicio rapido](#inicio-rapido)
 - [Credenciales iniciales](#credenciales-iniciales)
 - [Variables de entorno](#variables-de-entorno)
+- [Entorno para Codex](#entorno-para-codex)
 - [Convenciones de idioma](#convenciones-de-idioma)
 - [Principios transversales](#principios-transversales)
 - [Scripts](#scripts)
@@ -121,6 +122,25 @@ La conexion de PostgreSQL actualmente se define en `backend/db/index.js`. Variab
 - `WATCHER_LATE_FILES_DELAY_MS` (default: `2000`)
 - `WATCHER_AWF_STABILITY_MS` (default: `2000`)
 - `WATCHER_AWF_POLL_MS` (default: `100`)
+
+## Entorno para Codex
+
+Para sesiones recurrentes con Codex o agentes similares:
+
+- La guia operativa del repo vive en `AGENTS.md`.
+- Hay un chequeo rapido de herramientas y convenciones en `scripts/setup-codex-env.ps1`.
+
+Ejemplo:
+
+```powershell
+.\scripts\setup-codex-env.ps1
+```
+
+Si quieres que el script agregue el repo a `git safe.directory`:
+
+```powershell
+.\scripts\setup-codex-env.ps1 -ConfigureGitSafeDirectory
+```
 
 ## Convenciones de idioma
 
