@@ -1,4 +1,4 @@
-import { withAuthToken } from '../../utils/auth.js';
+import { openProtectedInNewTab } from '../../utils/protectedResources.js';
 import { TIQUETES_ELECTRONICOS_LABELS } from '../../utils/uiLabels.js';
 
 function TiqueteRowActions({
@@ -8,24 +8,17 @@ function TiqueteRowActions({
   onCloseMenu,
 }) {
   const isOpen = openMenuId === tiquete.id;
-  const pdfUrl = tiquete.ruta_pdf
-    ? withAuthToken(`/api/files/pdf?path=${encodeURIComponent(tiquete.ruta_pdf)}`)
-    : '';
-  const xmlUrl = tiquete.ruta_xml
-    ? withAuthToken(`/api/files/xml?path=${encodeURIComponent(tiquete.ruta_xml)}`)
-    : '';
 
   return (
     <div className="factura-actions" data-factura-menu="true">
-      {pdfUrl ? (
-        <a
+      {tiquete.ruta_pdf ? (
+        <button
           className="btn btn-sm btn-outline-primary"
-          href={pdfUrl}
-          target="_blank"
-          rel="noreferrer"
+          type="button"
+          onClick={() => openProtectedInNewTab(`/api/files/pdf?path=${encodeURIComponent(tiquete.ruta_pdf)}`)}
         >
           {TIQUETES_ELECTRONICOS_LABELS.primaryAction}
-        </a>
+        </button>
       ) : (
         <button className="btn btn-sm btn-outline-secondary" type="button" disabled>
           {TIQUETES_ELECTRONICOS_LABELS.primaryAction}
@@ -43,17 +36,18 @@ function TiqueteRowActions({
         </button>
         {isOpen ? (
           <div className="factura-actions-popover" role="menu" data-factura-menu="true">
-            {xmlUrl ? (
-              <a
+            {tiquete.ruta_xml ? (
+              <button
                 className="factura-actions-item"
-                href={xmlUrl}
-                target="_blank"
-                rel="noreferrer"
+                type="button"
                 role="menuitem"
-                onClick={onCloseMenu}
+                onClick={async () => {
+                  onCloseMenu();
+                  await openProtectedInNewTab(`/api/files/xml?path=${encodeURIComponent(tiquete.ruta_xml)}`);
+                }}
               >
                 {TIQUETES_ELECTRONICOS_LABELS.actionsMenu.openXml}
-              </a>
+              </button>
             ) : (
               <button
                 type="button"

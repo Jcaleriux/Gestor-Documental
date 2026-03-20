@@ -47,6 +47,9 @@ test('useFacturaDetalleData carga datos usando facturaApi inyectado', async () =
       }
     }))
   };
+  const centrosApi = {
+    listCentros: createMockFn(async () => [])
+  };
 
   const hook = createHookHarness({
     hook: useFacturaDetalleDataHarness,
@@ -56,6 +59,7 @@ test('useFacturaDetalleData carga datos usando facturaApi inyectado', async () =
       sociedadId: 10,
       dependencies: {
         facturaApi,
+        centrosApi,
         nowProvider: () => now
       }
     }
@@ -69,6 +73,7 @@ test('useFacturaDetalleData carga datos usando facturaApi inyectado', async () =
   assert.equal(facturaApi.getEstados.calls.length, 1);
   assert.equal(facturaApi.getContabilizacion.calls.length, 1);
   assert.equal(facturaApi.getProveedores.calls.length, 1);
+  assert.equal(centrosApi.listCentros.calls.length, 1);
 
   assert.equal(hook.result.loading, false);
   assert.equal(hook.result.error, '');
@@ -89,6 +94,9 @@ test('useFacturaDetalleData no llama API cuando falta id', async () => {
     getContabilizacion: createMockFn(),
     getProveedores: createMockFn()
   };
+  const centrosApi = {
+    listCentros: createMockFn(async () => [])
+  };
 
   const hook = createHookHarness({
     hook: useFacturaDetalleDataHarness,
@@ -97,7 +105,8 @@ test('useFacturaDetalleData no llama API cuando falta id', async () => {
       id: null,
       sociedadId: 10,
       dependencies: {
-        facturaApi
+        facturaApi,
+        centrosApi
       }
     }
   });
@@ -143,6 +152,9 @@ test('useFacturaDetalleData no relanza fetchAll en cada render cuando usa nowPro
       }
     }))
   };
+  const centrosApi = {
+    listCentros: createMockFn(async () => [])
+  };
 
   const hook = createHookHarness({
     hook: useFacturaDetalleDataHarness,
@@ -150,7 +162,8 @@ test('useFacturaDetalleData no relanza fetchAll en cada render cuando usa nowPro
       id: 88,
       sociedadId: 10,
       dependencies: {
-        facturaApi
+        facturaApi,
+        centrosApi
       }
     }
   });

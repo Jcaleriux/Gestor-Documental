@@ -52,13 +52,13 @@ test('sub-builders de pdf conservan links, estado MH y asociaciones', () => {
     const associations = buildPdfAssociationsViewModel({ detalle });
 
     assert.equal(links.id, 50);
-    assert.equal(links.pdfUrl, '/api/files/pdf?path=docs%2Ffactura.pdf&token=token-pdf');
-    assert.equal(links.xmlUrl, '/api/files/xml?path=docs%2Ffactura.xml&token=token-pdf');
+    assert.equal(links.pdfUrl, '/api/files/pdf?path=docs%2Ffactura.pdf');
+    assert.equal(links.xmlUrl, '/api/files/xml?path=docs%2Ffactura.xml');
     assert.equal(mh.mhDisponible, true);
     assert.equal(mh.verManifest, detalle.verManifest);
     assert.equal(associations.tablaPagoActual.id, 11);
-    assert.equal(associations.ordenCompraPdfUrl, '/api/files/pdf?path=docs%2Foc.pdf&token=token-pdf');
-    assert.equal(associations.notaCreditoXmlUrl, '/api/files/xml?path=docs%2Fnc.xml&token=token-pdf');
+    assert.equal(associations.ordenCompraPdfUrl, '/api/files/pdf?path=docs%2Foc.pdf');
+    assert.equal(associations.notaCreditoXmlUrl, '/api/files/xml?path=docs%2Fnc.xml');
   } finally {
     restore();
   }

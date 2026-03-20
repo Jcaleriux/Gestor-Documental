@@ -63,7 +63,7 @@ test('buildContabilizacionTotals calcula totales de pago y retencion', () => {
   });
 });
 
-test('buildFileUrl agrega token de auth cuando existe', () => {
+test('buildFileUrl genera la ruta del recurso sin exponer token', () => {
   const restore = setLocalStorageMock({ token: 'abc 123' });
   try {
     const url = buildFileUrl({
@@ -73,7 +73,7 @@ test('buildFileUrl agrega token de auth cuando existe', () => {
 
     assert.equal(
       url,
-      '/api/files/pdf?path=docs%2Ffacturas%2Farchivo%20uno.pdf&token=abc%20123'
+      '/api/files/pdf?path=docs%2Ffacturas%2Farchivo%20uno.pdf'
     );
   } finally {
     restore();

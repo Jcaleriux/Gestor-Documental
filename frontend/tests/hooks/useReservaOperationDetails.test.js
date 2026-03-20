@@ -42,9 +42,9 @@ test('useReservaOperationDetails carga el detalle y selecciona el primer documen
   assert.deepEqual(hook.result.operationDetails[10].historial, [{ id: 1, accion: 'creada' }]);
 });
 
-test('useReservaOperationDetails construye preview URL con y sin token', () => {
-  const buildPreviewDocumentoUrl = createMockFn(({ operacionId, documentoId, token }) => (
-    `${operacionId}:${documentoId}:${token || ''}`
+test('useReservaOperationDetails construye preview URL sin exponer token', () => {
+  const buildPreviewDocumentoUrl = createMockFn(({ operacionId, documentoId }) => (
+    `${operacionId}:${documentoId}`
   ));
 
   const withToken = createHookHarness({
@@ -52,14 +52,13 @@ test('useReservaOperationDetails construye preview URL con y sin token', () => {
     initialProps: {
       dependencies: {
         api: { buildPreviewDocumentoUrl, getOperacion: async () => ({ data: { success: true, data: baseDetail } }) },
-        getToken: () => 'token-123',
       },
     },
   });
 
   assert.equal(
     withToken.result.buildPreviewUrl({ operacionId: 10, documentoId: 5 }),
-    '10:5:token-123',
+    '10:5',
   );
 
   const withoutToken = createHookHarness({
@@ -67,14 +66,13 @@ test('useReservaOperationDetails construye preview URL con y sin token', () => {
     initialProps: {
       dependencies: {
         api: { buildPreviewDocumentoUrl, getOperacion: async () => ({ data: { success: true, data: baseDetail } }) },
-        getToken: () => '',
       },
     },
   });
 
   assert.equal(
     withoutToken.result.buildPreviewUrl({ operacionId: 10, documentoId: 5 }),
-    '10:5:',
+    '10:5',
   );
 });
 

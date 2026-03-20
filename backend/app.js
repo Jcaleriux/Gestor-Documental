@@ -18,7 +18,16 @@ const filesAccessPermission = requireAnyPermission([
   PERMISSIONS.DOCUMENTOS_DESCARGAR
 ]);
 
+app.disable('x-powered-by');
+app.set('query parser', 'simple');
+
 // Middleware
+app.use((req, res, next) => {
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  next();
+});
 app.use(cors());
 app.use(express.json({ limit: runtimeConfig.jsonBodyLimit }));
 

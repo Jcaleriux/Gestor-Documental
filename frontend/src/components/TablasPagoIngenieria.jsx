@@ -1,4 +1,4 @@
-﻿import { withAuthToken } from '../utils/auth';
+import { openProtectedInNewTab } from '../utils/protectedResources.js';
 import { useTablasPagoIngenieria } from '../hooks/tablasPago/useTablasPagoIngenieria';
 import { formatDate, MAX_TABLA_PAGO_MB } from '../hooks/tablasPago/utils';
 import PageHeader from './common/PageHeader';
@@ -33,8 +33,7 @@ function TablasPagoIngenieria({ sociedadId }) {
 
   const openPdf = (rutaPdf) => {
     if (!rutaPdf) return;
-    const url = withAuthToken(`/api/files/pdf?path=${encodeURIComponent(rutaPdf)}`);
-    window.open(url, '_blank', 'noopener,noreferrer');
+    openProtectedInNewTab(`/api/files/pdf?path=${encodeURIComponent(rutaPdf)}`);
   };
 
   if (!sociedadId) {

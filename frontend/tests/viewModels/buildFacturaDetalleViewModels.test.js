@@ -122,7 +122,7 @@ test('buildFacturaDetalleViewModels compone summary/pdf/contabilizacion/estado/c
     assert.equal(viewModels.pdf.mhDisponible, true);
     assert.equal(
       viewModels.pdf.pdfUrl,
-      '/api/files/pdf?path=docs%2Ffactura.pdf&token=token-xyz'
+      '/api/files/pdf?path=docs%2Ffactura.pdf'
     );
     assert.equal(viewModels.contabilizacion.totals.totalFactura, 1000);
     assert.equal(viewModels.contabilizacion.totals.rebajosAplicados, 175);
@@ -156,7 +156,7 @@ test('sub-builders de buildFacturaDetalleViewModels conservan contratos por secc
     assert.equal(summary.monedaFactura, 'CRC');
     assert.equal(summary.selectedSociedadName, 'ASF');
     assert.equal(pdf.id, 202);
-    assert.equal(pdf.pdfUrl, '/api/files/pdf?path=docs%2Ffactura-202.pdf&token=token-abc');
+    assert.equal(pdf.pdfUrl, '/api/files/pdf?path=docs%2Ffactura-202.pdf');
     assert.equal(contabilizacion.totals.totalFactura, 500);
     assert.equal(estadoComentarios.estado.estadoUser, 'admin');
     assert.equal(estadoComentarios.historial.estados.length, 1);

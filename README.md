@@ -109,7 +109,7 @@ npm run dev
 
 ## Credenciales iniciales
 
-El seed crea usuarios base para varios roles. Cuenta ejemplo:
+El seed crea usuarios base para varios roles solo para bootstrap local. Hay que rotar esas credenciales antes de usar staging, produccion o cualquier entorno compartido. Cuenta ejemplo:
 
 - Email: `admin@novogar.local`
 - Password: `Novogar2026!`

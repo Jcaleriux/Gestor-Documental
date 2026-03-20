@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { withAuthToken } from '../utils/auth';
 import { useOrdenesCompraIngenieria } from '../hooks/ordenesCompra/useOrdenesCompraIngenieria';
+import { openProtectedInNewTab } from '../utils/protectedResources.js';
 import {
   formatAmount,
   formatDateOnly,
@@ -427,8 +427,7 @@ function OrdenesCompraIngenieria({ sociedadId }) {
 
   const openPdf = (rutaPdf) => {
     if (!rutaPdf) return;
-    const url = withAuthToken(`/api/files/pdf?path=${encodeURIComponent(rutaPdf)}`);
-    window.open(url, '_blank', 'noopener,noreferrer');
+    openProtectedInNewTab(`/api/files/pdf?path=${encodeURIComponent(rutaPdf)}`);
   };
 
   if (!sociedadId) {

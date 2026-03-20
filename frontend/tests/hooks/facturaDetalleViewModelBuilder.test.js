@@ -114,7 +114,7 @@ test('buildFacturaDetalleViewModelOutput compone viewModels para summary/pdf/con
     assert.equal(viewModels.summary.factura.id, 101);
     assert.equal(viewModels.summary.monedaFactura, 'USD');
     assert.equal(viewModels.pdf.id, 101);
-    assert.equal(viewModels.pdf.pdfUrl, '/api/files/pdf?path=docs%2Ffactura.pdf&token=token-abc');
+    assert.equal(viewModels.pdf.pdfUrl, '/api/files/pdf?path=docs%2Ffactura.pdf');
     assert.equal(viewModels.contabilizacion.totals.totalFactura, 200);
     assert.equal(Array.isArray(viewModels.historial.estados), true);
     assert.equal(Array.isArray(viewModels.comentarios.comentarios), true);

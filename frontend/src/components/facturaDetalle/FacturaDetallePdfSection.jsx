@@ -3,6 +3,8 @@ import ActionAlerts from '../common/ActionAlerts';
 import EmptyState from '../common/EmptyState';
 import SectionCard from '../common/SectionCard';
 import { FACTURA_DETALLE_LABELS } from '../../utils/uiLabels';
+import { useProtectedObjectUrl } from '../../hooks/useProtectedObjectUrl.js';
+import { openProtectedInNewTab } from '../../utils/protectedResources.js';
 
 const buildResetKey = ({ id, tablaPagoActual, ordenCompraActual, notaCreditoActual }) => (
   [
@@ -27,6 +29,34 @@ const pdfPanelKeysBySection = {
   ordenCompra: { options: 'ordenCompraOptionsOpen', inline: 'ordenCompraInlineOpen' },
   notaCredito: { options: 'notaCreditoOptionsOpen', inline: 'notaCreditoInlineOpen' }
 };
+
+function ProtectedPdfEmbed({ resourceUrl, title, unavailableMessage, height = '520px' }) {
+  const {
+    objectUrl,
+    error,
+    loading,
+  } = useProtectedObjectUrl(resourceUrl);
+
+  if (!resourceUrl) {
+    return <EmptyState className="py-2">{unavailableMessage}</EmptyState>;
+  }
+
+  if (loading) {
+    return <div className="small text-muted">Cargando PDF...</div>;
+  }
+
+  if (!objectUrl) {
+    return <div className="small text-danger">{error || unavailableMessage}</div>;
+  }
+
+  return (
+    <iframe
+      title={title}
+      src={objectUrl}
+      style={{ width: '100%', height, border: '1px solid #e6ebf2' }}
+    />
+  );
+}
 
 const pdfPanelReducer = (state, action) => {
   const sectionKeys = pdfPanelKeysBySection[action.section];
@@ -114,18 +144,26 @@ function FacturaDetallePdfSectionContent({
       actions={(
         <div className="d-flex flex-wrap gap-2">
           {pdfUrl ? (
-            <a className="btn btn-outline-secondary btn-sm" href={pdfUrl} target="_blank" rel="noreferrer">
+            <button
+              className="btn btn-outline-secondary btn-sm"
+              type="button"
+              onClick={() => openProtectedInNewTab(pdfUrl)}
+            >
               {FACTURA_DETALLE_LABELS.pdf.pdfOpenTab}
-            </a>
+            </button>
           ) : (
             <button className="btn btn-outline-secondary btn-sm" type="button" disabled>
               {FACTURA_DETALLE_LABELS.pdf.pdfOpenTabUnavailable}
             </button>
           )}
           {xmlUrl ? (
-            <a className="btn btn-outline-secondary btn-sm" href={xmlUrl} target="_blank" rel="noreferrer">
+            <button
+              className="btn btn-outline-secondary btn-sm"
+              type="button"
+              onClick={() => openProtectedInNewTab(xmlUrl)}
+            >
               {FACTURA_DETALLE_LABELS.pdf.xmlAvailable}
-            </a>
+            </button>
           ) : (
             <button className="btn btn-outline-secondary btn-sm" type="button" disabled>
               {FACTURA_DETALLE_LABELS.pdf.xmlUnavailable}
@@ -159,15 +197,12 @@ function FacturaDetallePdfSectionContent({
       )}
     >
       <ActionAlerts error={mhError} message="" className="small mb-2" />
-      {pdfUrl ? (
-        <iframe
-          title="PDF"
-          src={pdfUrl}
-          style={{ width: '100%', height: '600px', border: '1px solid #e6ebf2' }}
-        />
-      ) : (
-        <EmptyState className="py-2">{FACTURA_DETALLE_LABELS.pdf.pdfUnavailable}</EmptyState>
-      )}
+      <ProtectedPdfEmbed
+        resourceUrl={pdfUrl}
+        title="PDF"
+        height="600px"
+        unavailableMessage={FACTURA_DETALLE_LABELS.pdf.pdfUnavailable}
+      />
 
       {tablaPagoActual?.ruta_pdf && (
         <div className="mt-3">
@@ -201,10 +236,10 @@ function FacturaDetallePdfSectionContent({
               <div className="text-muted small mb-1">
                 Tabla asociada: {tablaPagoActual.nombre}
               </div>
-              <iframe
+              <ProtectedPdfEmbed
+                resourceUrl={tablaPagoPdfUrl}
                 title="Tabla de pagos PDF"
-                src={tablaPagoPdfUrl}
-                style={{ width: '100%', height: '520px', border: '1px solid #e6ebf2' }}
+                unavailableMessage="Tabla de pagos no disponible."
               />
             </div>
           )}
@@ -243,10 +278,10 @@ function FacturaDetallePdfSectionContent({
               <div className="text-muted small mb-1">
                 OC asociada: {ordenCompraActual.nombre}
               </div>
-              <iframe
+              <ProtectedPdfEmbed
+                resourceUrl={ordenCompraPdfUrl}
                 title="Orden de compra PDF"
-                src={ordenCompraPdfUrl}
-                style={{ width: '100%', height: '520px', border: '1px solid #e6ebf2' }}
+                unavailableMessage="Orden de compra no disponible."
               />
             </div>
           )}
@@ -286,10 +321,10 @@ function FacturaDetallePdfSectionContent({
               <div className="text-muted small mb-1">
                 Nota asociada: {notaCreditoActual.clave || `Nota #${notaCreditoActual.id}`}
               </div>
-              <iframe
+              <ProtectedPdfEmbed
+                resourceUrl={notaCreditoPdfUrl}
                 title="Nota de credito PDF"
-                src={notaCreditoPdfUrl}
-                style={{ width: '100%', height: '520px', border: '1px solid #e6ebf2' }}
+                unavailableMessage="Nota de credito no disponible."
               />
             </div>
           )}

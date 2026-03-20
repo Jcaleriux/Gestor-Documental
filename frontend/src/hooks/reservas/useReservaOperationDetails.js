@@ -4,7 +4,6 @@ import {
   extractReservaDetallePayload,
   reservasApi,
 } from '../../services/reservasApi.js';
-import { getAuthToken } from '../../utils/auth.js';
 
 const getErrorMessage = (error, fallbackMessage) => (
   error?.response?.data?.error || error?.message || fallbackMessage
@@ -23,7 +22,6 @@ export const useReservaOperationDetails = ({
 }) => {
   const {
     api = reservasApi,
-    getToken = getAuthToken,
     readFile = readFileAsDataUrl,
   } = dependencies;
 
@@ -114,9 +112,8 @@ export const useReservaOperationDetails = ({
     api.buildPreviewDocumentoUrl({
       operacionId,
       documentoId,
-      token: getToken(),
     })
-  ), [api, getToken]);
+  ), [api]);
 
   const replaceDocument = useCallback(async ({
     operacionId,

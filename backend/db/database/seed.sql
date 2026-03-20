@@ -267,30 +267,35 @@ WHERE r.codigo IN (
 ON CONFLICT (rol_id, permiso_id) DO NOTHING;
 
 -- Seed usuarios base: 1 usuario por rol (excepto personalizado)
--- Nota: password en texto plano para compatibilidad actual; se hashea en primer login exitoso.
-WITH usuarios_seed AS (
+-- La password inicial corresponde al hash bcrypt de `Novogar2026!`.
+-- Debe rotarse antes de usar cualquier entorno compartido o expuesto.
+WITH seed_defaults AS (
+  SELECT '$2b$12$xdaV21ddpyjSymqzYuDnSuN7Ggj0Gf1fvpLCPVPVbpj9Mtg3aXR8W'::text AS password_hash
+),
+usuarios_seed AS (
   SELECT *
   FROM (VALUES
-    ('admin@novogar.local', 'Administrador', 'Novogar2026!', 'admin'),
-    ('gerencia.financiera@novogar.local', 'Gerencia Financiera', 'Novogar2026!', 'gerencia_financiera'),
-    ('gerencia.contable@novogar.local', 'Gerencia Contable', 'Novogar2026!', 'gerencia_contable'),
-    ('gerencia.construccion@novogar.local', 'Gerencia Construccion', 'Novogar2026!', 'gerencia_construccion'),
-    ('gerencia.presupuesto@novogar.local', 'Gerencia Presupuesto', 'Novogar2026!', 'gerencia_presupuesto'),
-    ('gerencia.mercadeo@novogar.local', 'Gerencia Mercadeo', 'Novogar2026!', 'gerencia_mercadeo'),
-    ('gerencia.ventas@novogar.local', 'Gerencia Ventas', 'Novogar2026!', 'gerencia_ventas'),
-    ('gerencia.infraestructura@novogar.local', 'Gerencia Infraestructura', 'Novogar2026!', 'gerencia_infraestructura'),
-    ('gerencia.proyectos@novogar.local', 'Gerencia Proyectos', 'Novogar2026!', 'gerencia_proyectos'),
-    ('contabilidad.jefe@novogar.local', 'Contabilidad Jefe', 'Novogar2026!', 'contabilidad_jefe'),
-    ('contabilidad.asistente@novogar.local', 'Contabilidad Asistente', 'Novogar2026!', 'contabilidad_asistente'),
-    ('tesoreria.encargado@novogar.local', 'Tesoreria Encargado', 'Novogar2026!', 'tesoreria_encargado'),
-    ('tesoreria.auxiliar@novogar.local', 'Tesoreria Auxiliar', 'Novogar2026!', 'tesoreria_auxiliar'),
-    ('proveeduria@novogar.local', 'Proveeduria', 'Novogar2026!', 'proveeduria'),
-    ('asistencia@novogar.local', 'Asistencia', 'Novogar2026!', 'asistencia')
-  ) AS t(email, nombre, password, rol_codigo)
+    ('admin@novogar.local', 'Administrador', 'admin'),
+    ('gerencia.financiera@novogar.local', 'Gerencia Financiera', 'gerencia_financiera'),
+    ('gerencia.contable@novogar.local', 'Gerencia Contable', 'gerencia_contable'),
+    ('gerencia.construccion@novogar.local', 'Gerencia Construccion', 'gerencia_construccion'),
+    ('gerencia.presupuesto@novogar.local', 'Gerencia Presupuesto', 'gerencia_presupuesto'),
+    ('gerencia.mercadeo@novogar.local', 'Gerencia Mercadeo', 'gerencia_mercadeo'),
+    ('gerencia.ventas@novogar.local', 'Gerencia Ventas', 'gerencia_ventas'),
+    ('gerencia.infraestructura@novogar.local', 'Gerencia Infraestructura', 'gerencia_infraestructura'),
+    ('gerencia.proyectos@novogar.local', 'Gerencia Proyectos', 'gerencia_proyectos'),
+    ('contabilidad.jefe@novogar.local', 'Contabilidad Jefe', 'contabilidad_jefe'),
+    ('contabilidad.asistente@novogar.local', 'Contabilidad Asistente', 'contabilidad_asistente'),
+    ('tesoreria.encargado@novogar.local', 'Tesoreria Encargado', 'tesoreria_encargado'),
+    ('tesoreria.auxiliar@novogar.local', 'Tesoreria Auxiliar', 'tesoreria_auxiliar'),
+    ('proveeduria@novogar.local', 'Proveeduria', 'proveeduria'),
+    ('asistencia@novogar.local', 'Asistencia', 'asistencia')
+  ) AS t(email, nombre, rol_codigo)
 )
 INSERT INTO usuarios (email, nombre, password, rol_id, activo)
-SELECT us.email, us.nombre, us.password, r.id, true
+SELECT us.email, us.nombre, sd.password_hash, r.id, true
 FROM usuarios_seed us
+CROSS JOIN seed_defaults sd
 JOIN roles r ON r.codigo = us.rol_codigo
 ON CONFLICT (email) DO UPDATE
 SET nombre = EXCLUDED.nombre,

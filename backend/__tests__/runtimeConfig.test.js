@@ -9,6 +9,8 @@ const RELEVANT_ENV_KEYS = [
   'FACTURAS_BASE_DIR',
   'JSON_BODY_LIMIT',
   'PERMISSIONS_CACHE_TTL_MS',
+  'AUTH_LOGIN_RATE_LIMIT_WINDOW_MS',
+  'AUTH_LOGIN_RATE_LIMIT_MAX',
   'TABLAS_PAGO_MAX_FILE_MB',
   'ORDENES_COMPRA_MAX_FILE_MB',
   'RESERVAS_DOC_MAX_FILE_MB',
@@ -56,6 +58,8 @@ describe('runtime config', () => {
     expect(config.port).toBe(DEFAULT_RUNTIME_CONFIG.port);
     expect(config.jsonBodyLimit).toBe(DEFAULT_RUNTIME_CONFIG.jsonBodyLimit);
     expect(config.permissionsCacheTtlMs).toBe(DEFAULT_RUNTIME_CONFIG.permissionsCacheTtlMs);
+    expect(config.authLoginRateLimitWindowMs).toBe(DEFAULT_RUNTIME_CONFIG.authLoginRateLimitWindowMs);
+    expect(config.authLoginRateLimitMax).toBe(DEFAULT_RUNTIME_CONFIG.authLoginRateLimitMax);
     expect(config.maxTablaPagoMb).toBe(DEFAULT_RUNTIME_CONFIG.maxTablaPagoMb);
     expect(config.maxOrdenCompraMb).toBe(DEFAULT_RUNTIME_CONFIG.maxOrdenCompraMb);
     expect(config.maxReservasDocMb).toBe(DEFAULT_RUNTIME_CONFIG.maxReservasDocMb);
@@ -85,6 +89,8 @@ describe('runtime config', () => {
     process.env.PORT = '4100';
     process.env.JSON_BODY_LIMIT = '25mb';
     process.env.PERMISSIONS_CACHE_TTL_MS = '90000';
+    process.env.AUTH_LOGIN_RATE_LIMIT_WINDOW_MS = '120000';
+    process.env.AUTH_LOGIN_RATE_LIMIT_MAX = '8';
     process.env.TABLAS_PAGO_MAX_FILE_MB = '12';
     process.env.ORDENES_COMPRA_MAX_FILE_MB = '18';
     process.env.RESERVAS_DOC_MAX_FILE_MB = '20';
@@ -99,6 +105,8 @@ describe('runtime config', () => {
       port: 4100,
       jsonBodyLimit: '25mb',
       permissionsCacheTtlMs: 90000,
+      authLoginRateLimitWindowMs: 120000,
+      authLoginRateLimitMax: 8,
       maxTablaPagoMb: 12,
       maxOrdenCompraMb: 18,
       maxReservasDocMb: 20,
@@ -115,6 +123,12 @@ describe('runtime config', () => {
   test('resolveRuntimeConfig falla rapido ante valores invalidos', () => {
     process.env.PORT = 'abc';
     expect(() => resolveRuntimeConfig()).toThrow('PORT debe ser un entero positivo.');
+
+    resetRelevantEnv();
+    process.env.AUTH_LOGIN_RATE_LIMIT_MAX = '-1';
+    expect(() => resolveRuntimeConfig()).toThrow(
+      'AUTH_LOGIN_RATE_LIMIT_MAX debe ser un entero mayor o igual a 0.'
+    );
 
     resetRelevantEnv();
     process.env.TABLAS_PAGO_MAX_FILE_MB = '0';

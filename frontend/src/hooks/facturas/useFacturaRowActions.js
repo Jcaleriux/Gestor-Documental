@@ -3,16 +3,10 @@ import {
   extractMensajeHaciendaXmlPath,
   facturasApi,
 } from '../../services/facturasApi.js';
-import { withAuthToken } from '../../utils/auth.js';
-
-const NEW_TAB_TARGET = '_blank';
-const NEW_TAB_FEATURES = 'noopener,noreferrer';
-
-const defaultOpenWindow = (url, target, features) => {
-  if (typeof window !== 'undefined' && typeof window.open === 'function') {
-    window.open(url, target, features);
-  }
-};
+import {
+  createProtectedResourceOpener,
+  openProtectedInNewTab,
+} from '../../utils/protectedResources.js';
 
 const getDefaultEventTarget = () => (
   typeof document !== 'undefined' ? document : null
@@ -25,11 +19,17 @@ export const useFacturaRowActions = ({
 } = {}) => {
   const {
     api = facturasApi,
-    buildAuthUrl = withAuthToken,
+    buildAuthUrl,
     eventTarget = getDefaultEventTarget(),
-    openWindow = defaultOpenWindow,
+    openWindow,
+    openProtectedResource = openProtectedInNewTab,
     extractXmlPath = extractMensajeHaciendaXmlPath,
   } = dependencies;
+  const resolvedOpenProtectedResource = createProtectedResourceOpener({
+    openProtectedResource,
+    buildAuthUrl,
+    openWindow,
+  });
 
   const [openMenuId, setOpenMenuId] = useState(null);
   const [mhLoadingId, setMhLoadingId] = useState(null);
@@ -101,15 +101,15 @@ export const useFacturaRowActions = ({
         return;
       }
 
-      const url = buildAuthUrl(`/api/files/xml?path=${encodeURIComponent(rutaXml)}`);
-      openWindow(url, NEW_TAB_TARGET, NEW_TAB_FEATURES);
+      const url = `/api/files/xml?path=${encodeURIComponent(rutaXml)}`;
+      await resolvedOpenProtectedResource(url);
     } catch (error) {
       const apiError = error?.response?.data?.error || 'Mensaje Hacienda no encontrado.';
       setActionError(apiError);
     } finally {
       setMhLoadingId(null);
     }
-  }, [api, buildAuthUrl, extractXmlPath, openWindow]);
+  }, [api, extractXmlPath, resolvedOpenProtectedResource]);
 
   return {
     actionError,

@@ -81,10 +81,7 @@ const clearAuthSession = () => {
 };
 
 const withAuthToken = (url) => {
-  const token = getAuthToken();
-  if (!token) return url;
-  const separator = url.includes('?') ? '&' : '?';
-  return `${url}${separator}token=${encodeURIComponent(token)}`;
+  return String(url || '');
 };
 
 export {

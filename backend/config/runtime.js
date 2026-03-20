@@ -10,6 +10,8 @@ const DEFAULT_RUNTIME_CONFIG = Object.freeze({
   port: 3002,
   jsonBodyLimit: '20mb',
   permissionsCacheTtlMs: 60 * 1000,
+  authLoginRateLimitWindowMs: 10 * 60 * 1000,
+  authLoginRateLimitMax: 20,
   maxTablaPagoMb: 10,
   maxOrdenCompraMb: 10,
   maxReservasDocMb: 15,
@@ -119,6 +121,18 @@ const resolveRuntimeConfig = () => {
       fallback: DEFAULT_RUNTIME_CONFIG.permissionsCacheTtlMs,
       allowZero: true,
       label: 'PERMISSIONS_CACHE_TTL_MS',
+    }),
+    authLoginRateLimitWindowMs: parsePositiveIntEnv({
+      name: 'AUTH_LOGIN_RATE_LIMIT_WINDOW_MS',
+      fallback: DEFAULT_RUNTIME_CONFIG.authLoginRateLimitWindowMs,
+      allowZero: true,
+      label: 'AUTH_LOGIN_RATE_LIMIT_WINDOW_MS',
+    }),
+    authLoginRateLimitMax: parsePositiveIntEnv({
+      name: 'AUTH_LOGIN_RATE_LIMIT_MAX',
+      fallback: DEFAULT_RUNTIME_CONFIG.authLoginRateLimitMax,
+      allowZero: true,
+      label: 'AUTH_LOGIN_RATE_LIMIT_MAX',
     }),
     maxTablaPagoMb: parsePositiveNumberEnv({
       name: 'TABLAS_PAGO_MAX_FILE_MB',

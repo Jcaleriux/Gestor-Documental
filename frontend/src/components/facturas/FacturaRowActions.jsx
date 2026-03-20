@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { withAuthToken } from '../../utils/auth.js';
+import { openProtectedInNewTab } from '../../utils/protectedResources.js';
 import { FACTURAS_LABELS } from '../../utils/uiLabels.js';
 
 function FacturaRowActions({
@@ -17,17 +17,17 @@ function FacturaRowActions({
     {
       key: 'pdf',
       label: FACTURAS_LABELS.actionsMenu.openPdf,
-      url: factura.ruta_pdf
-        ? withAuthToken(`/api/files/pdf?path=${encodeURIComponent(factura.ruta_pdf)}`)
-        : '',
+      onClick: factura.ruta_pdf
+        ? () => openProtectedInNewTab(`/api/files/pdf?path=${encodeURIComponent(factura.ruta_pdf)}`)
+        : null,
       disabled: !factura.ruta_pdf,
     },
     {
       key: 'xml',
       label: FACTURAS_LABELS.actionsMenu.openXml,
-      url: factura.ruta_xml
-        ? withAuthToken(`/api/files/xml?path=${encodeURIComponent(factura.ruta_xml)}`)
-        : '',
+      onClick: factura.ruta_xml
+        ? () => openProtectedInNewTab(`/api/files/xml?path=${encodeURIComponent(factura.ruta_xml)}`)
+        : null,
       disabled: !factura.ruta_xml,
     },
     {
@@ -39,9 +39,9 @@ function FacturaRowActions({
     {
       key: 'manifest',
       label: FACTURAS_LABELS.actionsMenu.viewManifest,
-      url: factura.ruta_xml || factura.ruta_pdf
-        ? withAuthToken(`/api/facturas/${factura.id}/manifest`)
-        : '',
+      onClick: factura.ruta_xml || factura.ruta_pdf
+        ? () => openProtectedInNewTab(`/api/facturas/${factura.id}/manifest`)
+        : null,
       disabled: !factura.ruta_xml && !factura.ruta_pdf,
     },
   ];
@@ -76,31 +76,19 @@ function FacturaRowActions({
                   <span>{action.label}</span>
                   <span>{FACTURAS_LABELS.actionsMenu.unavailable}</span>
                 </button>
-              ) : action.onClick ? (
+              ) : (
                 <button
                   key={action.key}
                   type="button"
                   className="factura-actions-item"
                   role="menuitem"
-                  onClick={() => {
+                  onClick={async () => {
                     onCloseMenu();
-                    action.onClick();
+                    await action.onClick?.();
                   }}
                 >
                   {action.label}
                 </button>
-              ) : (
-                <a
-                  key={action.key}
-                  className="factura-actions-item"
-                  href={action.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  role="menuitem"
-                  onClick={onCloseMenu}
-                >
-                  {action.label}
-                </a>
               )
             ))}
           </div>

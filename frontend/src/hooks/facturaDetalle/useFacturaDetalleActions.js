@@ -1,13 +1,9 @@
 import { defaultActionModules, mergeModuleActions } from './actionRegistry.js';
 import { facturaDetalleApi } from '../../services/facturaDetalleApi.js';
-import { withAuthToken } from '../../utils/auth.js';
-
-const defaultOpenWindow = (...args) => {
-  if (typeof window === 'undefined' || typeof window.open !== 'function') {
-    return null;
-  }
-  return window.open(...args);
-};
+import {
+  createProtectedResourceOpener,
+  openProtectedInNewTab,
+} from '../../utils/protectedResources.js';
 
 const normalizeModuleInputs = (moduleInputs = {}) => ({
   commentEstado: moduleInputs.commentEstado || {},
@@ -31,17 +27,24 @@ export const useFacturaDetalleActions = (params = {}) => {
 
   const {
     facturaApi = facturaDetalleApi,
-    buildAuthUrl = withAuthToken,
-    openWindow = defaultOpenWindow,
+    buildAuthUrl,
+    openWindow,
+    openProtectedResource = openProtectedInNewTab,
     actionModules = defaultActionModules
   } = dependencies;
+  const resolvedOpenProtectedResource = createProtectedResourceOpener({
+    openProtectedResource,
+    buildAuthUrl,
+    openWindow,
+  });
 
   const normalizedModuleInputs = normalizeModuleInputs(moduleInputs);
 
   const sharedDependencies = {
     facturaApi,
     buildAuthUrl,
-    openWindow
+    openWindow,
+    openProtectedResource: resolvedOpenProtectedResource
   };
 
   return mergeModuleActions({
