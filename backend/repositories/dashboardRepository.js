@@ -1,6 +1,10 @@
 const pool = require('../db');
 const { FACTURA_ESTADOS } = require('../domain/facturas');
 const {
+  createFacturaWorkflowPagoJoin,
+  createFacturaEstadoOperativoExpression
+} = require('./sqlFacturaEstado');
+const {
   createTotalPagoBaseExpression,
   createTotalPagoPrincipalExpression,
   createRetencionPendienteExpression,
@@ -11,9 +15,14 @@ const totalPagoBaseExpression = createTotalPagoBaseExpression({ facturaAlias: 'f
 const totalAPagarExpression = createTotalPagoPrincipalExpression({ facturaAlias: 'f', contaAlias: 'fc' });
 const retencionPendienteExpression = createRetencionPendienteExpression({ contaAlias: 'fc' });
 const totalPendienteGlobalExpression = createTotalPendienteGlobalExpression({ facturaAlias: 'f', contaAlias: 'fc' });
+const facturaWorkflowPagoJoin = createFacturaWorkflowPagoJoin({ facturaAlias: 'f', workflowAlias: 'fwp' });
+const facturaEstadoOperativoExpression = createFacturaEstadoOperativoExpression({
+  facturaAlias: 'f',
+  workflowAlias: 'fwp'
+});
 const dashboardTotalPorEstadoExpression = `
   CASE
-    WHEN COALESCE(f.estado, '${FACTURA_ESTADOS.NO_CONTABILIZADO}') = '${FACTURA_ESTADOS.PAGADO}'
+    WHEN ${facturaEstadoOperativoExpression} = '${FACTURA_ESTADOS.PAGADO}'
       THEN ${totalPagoBaseExpression}
     ELSE ${totalAPagarExpression}
   END
@@ -29,28 +38,29 @@ const monedaFacturaExpression = `
 
 const getFacturasStats = async ({ sociedadId } = {}) => {
   const params = sociedadId ? [sociedadId] : [];
-  const whereSociedad = sociedadId ? 'WHERE sociedad_id = $1' : '';
+  const whereSociedad = sociedadId ? 'WHERE f.sociedad_id = $1' : '';
 
   const { rows } = await pool.query(
     `
     SELECT
       COUNT(*)::int as total_facturas,
       SUM(
-        CASE WHEN estado IN (
+        CASE WHEN ${facturaEstadoOperativoExpression} IN (
           '${FACTURA_ESTADOS.CONTABILIZADO}',
           '${FACTURA_ESTADOS.EN_TRAMITE_PAGO}',
           '${FACTURA_ESTADOS.PAGADO_PARCIALMENTE}'
         ) THEN 1 ELSE 0 END
       )::int as contabilizados,
-      SUM(CASE WHEN estado = '${FACTURA_ESTADOS.RECHAZADO}' THEN 1 ELSE 0 END)::int as rechazados,
-      SUM(CASE WHEN estado = '${FACTURA_ESTADOS.EN_REVISION}' THEN 1 ELSE 0 END)::int as en_revision,
-      SUM(CASE WHEN estado IS NULL OR estado = '${FACTURA_ESTADOS.NO_CONTABILIZADO}' THEN 1 ELSE 0 END)::int as no_contabilizado,
-      SUM(CASE WHEN fecha_emision >= date_trunc('month', CURRENT_DATE) THEN 1 ELSE 0 END)::int as total_mes,
-      SUM(CASE WHEN estado = '${FACTURA_ESTADOS.CONTABILIZADO}' THEN 1 ELSE 0 END)::int as contabilizado_simple,
-      SUM(CASE WHEN estado = '${FACTURA_ESTADOS.EN_TRAMITE_PAGO}' THEN 1 ELSE 0 END)::int as en_tramite,
-      SUM(CASE WHEN estado = '${FACTURA_ESTADOS.PAGADO_PARCIALMENTE}' THEN 1 ELSE 0 END)::int as pagados_parcialmente,
-      SUM(CASE WHEN estado = '${FACTURA_ESTADOS.PAGADO}' THEN 1 ELSE 0 END)::int as pagados
-    FROM facturas
+      SUM(CASE WHEN ${facturaEstadoOperativoExpression} = '${FACTURA_ESTADOS.RECHAZADO}' THEN 1 ELSE 0 END)::int as rechazados,
+      SUM(CASE WHEN ${facturaEstadoOperativoExpression} = '${FACTURA_ESTADOS.EN_REVISION}' THEN 1 ELSE 0 END)::int as en_revision,
+      SUM(CASE WHEN ${facturaEstadoOperativoExpression} = '${FACTURA_ESTADOS.NO_CONTABILIZADO}' THEN 1 ELSE 0 END)::int as no_contabilizado,
+      SUM(CASE WHEN f.fecha_emision >= date_trunc('month', CURRENT_DATE) THEN 1 ELSE 0 END)::int as total_mes,
+      SUM(CASE WHEN ${facturaEstadoOperativoExpression} = '${FACTURA_ESTADOS.CONTABILIZADO}' THEN 1 ELSE 0 END)::int as contabilizado_simple,
+      SUM(CASE WHEN ${facturaEstadoOperativoExpression} = '${FACTURA_ESTADOS.EN_TRAMITE_PAGO}' THEN 1 ELSE 0 END)::int as en_tramite,
+      SUM(CASE WHEN ${facturaEstadoOperativoExpression} = '${FACTURA_ESTADOS.PAGADO_PARCIALMENTE}' THEN 1 ELSE 0 END)::int as pagados_parcialmente,
+      SUM(CASE WHEN ${facturaEstadoOperativoExpression} = '${FACTURA_ESTADOS.PAGADO}' THEN 1 ELSE 0 END)::int as pagados
+    FROM facturas f
+    ${facturaWorkflowPagoJoin}
     ${whereSociedad}
     `,
     params
@@ -102,13 +112,14 @@ const getMonedasResumen = async ({ sociedadId } = {}) => {
     `
     SELECT
       ${monedaFacturaExpression} AS moneda,
-      COALESCE(f.estado, '${FACTURA_ESTADOS.NO_CONTABILIZADO}') AS estado,
+      ${facturaEstadoOperativoExpression} AS estado,
       SUM(${dashboardTotalPorEstadoExpression}) AS total,
       COUNT(*)::int AS count
     FROM facturas f
+    ${facturaWorkflowPagoJoin}
     LEFT JOIN facturas_contabilizacion fc ON fc.factura_id = f.id
     ${whereSociedadFactura}
-    GROUP BY moneda, estado
+    GROUP BY 1, 2
     `,
     params
   );
@@ -182,24 +193,70 @@ const listRecentDocuments = async ({ sociedadId } = {}) => {
 
   const { rows } = await pool.query(
     `
+    WITH historial_estado AS (
+      SELECT
+        fedh.id,
+        fedh.factura_id,
+        'contabilizacion'::varchar AS dominio,
+        'facturas_estado_documental_historial'::text AS origen_historial,
+        fedh.estado_anterior,
+        fedh.estado_nuevo,
+        fedh.usuario,
+        fedh.motivo,
+        fedh.creado_en
+      FROM facturas_estado_documental_historial fedh
+
+      UNION ALL
+
+      SELECT
+        fwh.id,
+        fwh.factura_id,
+        'workflow_pago'::varchar AS dominio,
+        'facturas_workflow_pago_historial'::text AS origen_historial,
+        fwh.estado_anterior,
+        fwh.estado_nuevo,
+        fwh.usuario,
+        fwh.motivo,
+        fwh.creado_en
+      FROM facturas_workflow_pago_historial fwh
+
+      UNION ALL
+
+      SELECT
+        fmh.id,
+        fmh.factura_id,
+        'mixto'::varchar AS dominio,
+        'facturas_estado_mixto_historial'::text AS origen_historial,
+        fmh.estado_anterior,
+        fmh.estado_nuevo,
+        fmh.usuario,
+        fmh.motivo,
+        fmh.creado_en
+      FROM facturas_estado_mixto_historial fmh
+    )
     SELECT
-      ed.id,
-      ed.factura_id,
-      ed.estado_anterior,
-      ed.estado_nuevo,
-      ed.usuario,
-      ed.motivo,
-      ed.creado_en,
+      he.id,
+      he.origen_historial,
+      he.factura_id,
+      he.estado_anterior,
+      he.estado_nuevo,
+      he.dominio,
+      he.usuario,
+      he.motivo,
+      he.creado_en,
       f.consecutivo,
       f.clave,
       f.emisor,
-      f.estado,
+      ${facturaEstadoOperativoExpression} AS estado,
+      f.estado AS estado_documental,
+      fwp.estado AS estado_workflow_pago,
       f.resumen,
       f.sociedad_id
-    FROM estados_documento ed
-    JOIN facturas f ON f.id = ed.factura_id
+    FROM historial_estado he
+    JOIN facturas f ON f.id = he.factura_id
+    ${facturaWorkflowPagoJoin}
     ${sociedadFilter}
-    ORDER BY ed.creado_en DESC
+    ORDER BY he.creado_en DESC, he.id DESC
     LIMIT 10
     `,
     params
@@ -217,7 +274,7 @@ const getCuentasPagarResumenPorMoneda = async ({ sociedadId } = {}) => {
       '${FACTURA_ESTADOS.PAGADO_PARCIALMENTE}'
     )
   `;
-  const whereClauses = [`f.estado IN ${estadosFlujoPago}`];
+  const whereClauses = [`${facturaEstadoOperativoExpression} IN ${estadosFlujoPago}`];
 
   if (sociedadId) {
     whereClauses.push('f.sociedad_id = $1');
@@ -261,6 +318,7 @@ const getCuentasPagarResumenPorMoneda = async ({ sociedadId } = {}) => {
       COALESCE(SUM(${retencionPendienteExpression}), 0) AS monto_retencion_pendiente,
       COALESCE(SUM(${totalPendienteGlobalExpression}), 0) AS monto_pendiente_global
     FROM facturas f
+    ${facturaWorkflowPagoJoin}
     LEFT JOIN facturas_contabilizacion fc ON fc.factura_id = f.id
     ${whereClause}
     GROUP BY moneda
@@ -275,7 +333,7 @@ const getCuentasPagarResumenPorMoneda = async ({ sociedadId } = {}) => {
 const getTopProveedoresPorPagar = async ({ sociedadId, limit = 10 } = {}) => {
   const params = [];
   const whereClauses = [
-    `f.estado IN (
+    `${facturaEstadoOperativoExpression} IN (
       '${FACTURA_ESTADOS.CONTABILIZADO}',
       '${FACTURA_ESTADOS.EN_TRAMITE_PAGO}',
       '${FACTURA_ESTADOS.PAGADO_PARCIALMENTE}'
@@ -304,6 +362,7 @@ const getTopProveedoresPorPagar = async ({ sociedadId, limit = 10 } = {}) => {
         SUM(${retencionPendienteExpression}) AS total_retencion_pendiente,
         SUM(${totalPendienteGlobalExpression}) AS total_pendiente_global
       FROM facturas f
+      ${facturaWorkflowPagoJoin}
       JOIN facturas_contabilizacion fc ON fc.factura_id = f.id
       JOIN proveedores p ON p.id = fc.proveedor_id
       ${whereClause}

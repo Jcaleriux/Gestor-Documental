@@ -17,7 +17,7 @@ function Dashboard({
   authUser = null,
   userPermissions = [],
 }) {
-  const { stats, recentDocs, loading } = useDashboard({ sociedadId });
+  const { stats, recentDocs, loading, error, refetch } = useDashboard({ sociedadId });
   const {
     banner,
     cards,
@@ -50,6 +50,15 @@ function Dashboard({
 
   return (
     <div className="container-fluid">
+      {error && (
+        <div className="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4" role="alert">
+          <span>{error}</span>
+          <button type="button" className="btn btn-sm btn-outline-secondary" onClick={refetch}>
+            Reintentar
+          </button>
+        </div>
+      )}
+
       <div className="dashboard-hero mb-4">
         <div>
           <div className="dashboard-eyebrow">{profileCopy.eyebrow}</div>

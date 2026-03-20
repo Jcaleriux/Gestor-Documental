@@ -1,14 +1,13 @@
-const path = require('path');
 const { handleRequest } = require('../utils/http');
 const { createOrdenesCompraUseCases } = require('./ordenesCompraUseCases');
 const ordenesCompraRepo = require('../repositories/ordenesCompraRepository');
 const proveedoresRepo = require('../repositories/proveedoresRepository');
+const { runtimeConfig } = require('../config/runtime');
 
-const baseDir = process.env.FACTURAS_BASE_DIR || path.resolve(__dirname, '..', '..');
 const useCases = createOrdenesCompraUseCases({
   ordenesCompraRepo,
   proveedoresRepo,
-  baseDir
+  baseDir: runtimeConfig.storageBaseDir
 });
 
 const listOrdenesCompra = handleRequest(async (req) => {

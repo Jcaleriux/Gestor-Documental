@@ -9,16 +9,11 @@ const {
   PURCHASE_ORDERS_DIR_NAME,
   getRelativePathVariants
 } = require('../utils/documentPaths');
+const { runtimeConfig } = require('../config/runtime');
 
 const MANUAL_STATE_MIN_HIERARCHY = 70;
 const ESTADOS_VALIDOS = new Set(['abierta', 'cerrada']);
-
-const parseMaxOrdenCompraMb = () => {
-  const raw = Number(process.env.ORDENES_COMPRA_MAX_FILE_MB);
-  return Number.isFinite(raw) && raw > 0 ? raw : 10;
-};
-
-const MAX_ORDEN_COMPRA_MB = parseMaxOrdenCompraMb();
+const MAX_ORDEN_COMPRA_MB = runtimeConfig.maxOrdenCompraMb;
 const MAX_ORDEN_COMPRA_BYTES = MAX_ORDEN_COMPRA_MB * 1024 * 1024;
 
 const sanitizeFileName = (value) => {

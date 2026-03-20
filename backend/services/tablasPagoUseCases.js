@@ -7,13 +7,9 @@ const {
   PAYMENT_TABLES_DIR_NAME,
   getRelativePathVariants
 } = require('../utils/documentPaths');
+const { runtimeConfig } = require('../config/runtime');
 
-const parseMaxTablaPagoMb = () => {
-  const raw = Number(process.env.TABLAS_PAGO_MAX_FILE_MB);
-  return Number.isFinite(raw) && raw > 0 ? raw : 10;
-};
-
-const MAX_TABLA_PAGO_MB = parseMaxTablaPagoMb();
+const MAX_TABLA_PAGO_MB = runtimeConfig.maxTablaPagoMb;
 const MAX_TABLA_PAGO_BYTES = MAX_TABLA_PAGO_MB * 1024 * 1024;
 
 const sanitizeFileName = (value) => {

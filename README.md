@@ -7,6 +7,7 @@ Sistema web para gestion de facturas, documentos y tramites de pago con control 
 - [Resumen](#resumen)
 - [Arquitectura](#arquitectura)
 - [Estructura del repositorio](#estructura-del-repositorio)
+- [Documentacion funcional](#documentacion-funcional)
 - [Requisitos](#requisitos)
 - [Inicio rapido](#inicio-rapido)
 - [Credenciales iniciales](#credenciales-iniciales)
@@ -41,6 +42,13 @@ Sistema web para gestion de facturas, documentos y tramites de pago con control 
 - `docs/`: catalogos y documentos de referencia del negocio
 - `documentos/` y `facturas/`: almacenamiento local operativo (no versionado)
 
+## Documentacion funcional
+
+- `docs/requerimientos_vigentes.md`: resumen funcional vigente y alineado al sistema actual.
+- `docs/REQUERIMIENTOS.md`: levantamiento inicial conservado como referencia historica.
+- `docs/arquitectura/`: alcance, estados, permisos y decisiones de arquitectura que complementan el estado actual.
+- `docs/despliegue_checklist.md`: checklist manual de despliegue para staging/produccion.
+
 ## Requisitos
 
 - Node.js 20 o superior (recomendado)
@@ -67,7 +75,7 @@ npm install
 cd ..
 ```
 
-4. Verificar configuracion de PostgreSQL en `backend/db/index.js`.
+4. Copiar `backend/.env.example` a `backend/.env` y ajustar DB/JWT segun tu entorno.
 
 5. Crear la base (si no existe):
 
@@ -108,16 +116,23 @@ El seed crea usuarios base para varios roles. Cuenta ejemplo:
 
 ## Variables de entorno
 
-La conexion de PostgreSQL actualmente se define en `backend/db/index.js`. Variables usadas por la app:
+El backend carga `backend/.env` y `backend/.env.local` si existen. Variables usadas por la app:
 
+- `DB_HOST` o `PGHOST` (default dev: `localhost`)
+- `DB_PORT` o `PGPORT` (default dev: `5432`)
+- `DB_USER` o `PGUSER` (default dev: `postgres`)
+- `DB_PASSWORD` o `PGPASSWORD` (default dev: `admin`)
+- `DB_NAME` o `PGDATABASE` (default dev: `novogar_db`)
 - `PORT` (default: `3002`)
-- `JWT_SECRET` (default: `dev-secret`)
+- `JWT_SECRET` (default solo en dev/test: `dev-secret`; en `production` es obligatorio definirlo)
 - `JWT_EXPIRES_IN` (default: `8h`)
 - `BCRYPT_ROUNDS` (default: `12`)
 - `FACTURAS_BASE_DIR` (default: raiz del repo)
 - `JSON_BODY_LIMIT` (default: `20mb`)
 - `PERMISSIONS_CACHE_TTL_MS` (default: `60000`)
 - `TABLAS_PAGO_MAX_FILE_MB` (default: `10`)
+- `ORDENES_COMPRA_MAX_FILE_MB` (default: `10`)
+- `RESERVAS_DOC_MAX_FILE_MB` (default: `15`)
 - `WATCHER_SCAN_DEBOUNCE_MS` (default: `600`)
 - `WATCHER_LATE_FILES_DELAY_MS` (default: `2000`)
 - `WATCHER_AWF_STABILITY_MS` (default: `2000`)
@@ -161,6 +176,7 @@ Por ahora el principio operativo mas importante es `multicurrency-first`: no mez
 
 - `npm run dev`: iniciar API
 - `npm run test`: pruebas con Jest
+- `npm run test:ci`: baseline CI en backend (`runInBand`)
 - `npm run db:init`: ejecutar schema si `public` esta vacio
 - `npm run db:reset`: reconstruir schema desde cero
 - `npm run db:check`: validar estructura actual
@@ -179,6 +195,7 @@ Por ahora el principio operativo mas importante es `multicurrency-first`: no mez
 - `npm run dev`: levantar Vite
 - `npm run build`: build de produccion
 - `npm run test`: pruebas con Node test runner
+- `npm run test:ci`: baseline CI estable de frontend
 - `npm run lint`: lint con ESLint
 - `npm run preview`: previsualizar build
 
@@ -213,12 +230,14 @@ npm test
 
 ## Roadmap
 
-- Mover configuracion de DB desde codigo a variables de entorno.
-- Agregar guia de despliegue productivo (Docker/CI).
+- Expandir la validacion centralizada de entorno a scripts y casos operativos secundarios.
+- Expandir la CI baseline para cubrir mas suites de frontend y chequeos de release.
 - Incluir capturas y flujos por rol en documentacion.
 
 ## Notas operativas
 
 - `npm run db:reset` elimina y recrea `public`.
-- Antes de produccion, cambiar secretos y credenciales por defecto.
+- Antes de produccion, definir credenciales de DB y `JWT_SECRET` reales en variables de entorno.
+- El repo ya incluye una CI minima en `.github/workflows/ci.yml`.
 - El `.gitignore` excluye dependencias, temporales y datos operativos locales.
+- El historial activo de estados usa tablas dedicadas por dominio; las referencias a `estados_documento` quedan solo en SQL legacy conservado como historial tecnico.

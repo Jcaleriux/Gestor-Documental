@@ -5,6 +5,45 @@ import { createHookHarness } from '../utils/hookHarness.js';
 import { createMockFn } from '../utils/mockFn.js';
 
 const useAppSessionHarness = (props) => useAppSession(props);
+const createBlockedStorage = () => ({
+  getItem() {
+    throw new Error('Storage bloqueado');
+  },
+  setItem() {
+    throw new Error('Storage bloqueado');
+  },
+  removeItem() {
+    throw new Error('Storage bloqueado');
+  },
+});
+
+const withBlockedWindowStorage = async (run) => {
+  const previousWindow = globalThis.window;
+  const previousLocalStorage = globalThis.localStorage;
+  const blockedStorage = createBlockedStorage();
+
+  globalThis.window = {
+    location: { search: '' },
+    localStorage: blockedStorage,
+  };
+  globalThis.localStorage = blockedStorage;
+
+  try {
+    await run();
+  } finally {
+    if (previousWindow === undefined) {
+      delete globalThis.window;
+    } else {
+      globalThis.window = previousWindow;
+    }
+
+    if (previousLocalStorage === undefined) {
+      delete globalThis.localStorage;
+    } else {
+      globalThis.localStorage = previousLocalStorage;
+    }
+  }
+};
 
 test('useAppSession termina sin autenticar cuando no hay token guardado', async () => {
   const apiGet = createMockFn(async () => {
@@ -137,4 +176,101 @@ test('useAppSession persiste cambios de sociedad seleccionada', async () => {
 
   assert.equal(hook.result.sociedadId, '10');
   assert.deepEqual(persistSociedad.calls.at(-1), ['10']);
+});
+
+test('useAppSession arranca aunque window.localStorage no sea accesible', async () => {
+  await withBlockedWindowStorage(async () => {
+    const apiGet = createMockFn(async () => {
+      throw new Error('No deberia consultar la API sin token');
+    });
+    const setAuthHeader = createMockFn();
+
+    const hook = createHookHarness({
+      hook: useAppSessionHarness,
+      initialProps: {
+        dependencies: {
+          api: { get: apiGet },
+          setAuthHeader,
+        },
+      },
+    });
+
+    await hook.flush({ cycles: 4 });
+
+    assert.equal(hook.result.authLoading, false);
+    assert.equal(hook.result.isAuthenticated, false);
+    assert.equal(hook.result.sociedadId, '');
+    assert.equal(apiGet.calls.length, 0);
+    assert.equal(setAuthHeader.calls.length, 0);
+  });
+});
+
+test('useAppSession handleLogout limpia la sesion y redirige a login', async () => {
+  const clearAuthSession = createMockFn();
+  const redirectToLogin = createMockFn();
+  const setAuthHeader = createMockFn();
+  const apiGet = createMockFn(async (url) => {
+    if (url === '/api/auth/me') {
+      return {
+        data: {
+          data: {
+            user: {
+              id: 9,
+              nombre: 'Gerencia Test',
+              permissions: ['documentos_aprobar_gerencia'],
+            },
+          },
+        },
+      };
+    }
+
+    if (url === '/api/sociedades') {
+      return {
+        data: {
+          success: true,
+          data: [
+            { id: 15, nombre_proyecto: 'Arbora', razon_social: 'Arbora SA', cedula_juridica: '3-101-861274' },
+          ],
+        },
+      };
+    }
+
+    throw new Error(`Ruta inesperada: ${url}`);
+  });
+
+  const hook = createHookHarness({
+    hook: useAppSessionHarness,
+    initialProps: {
+      dependencies: {
+        api: { get: apiGet },
+        authSession: {
+          clearAuthSession,
+          getAuthToken: createMockFn(() => 'token-logout'),
+          getAuthUser: createMockFn(() => ({ nombre: 'Stored Gerencia' })),
+          saveAuthSession: createMockFn(),
+        },
+        getInitialSociedad: createMockFn(() => '15'),
+        persistSociedad: createMockFn(),
+        redirectToLogin,
+        setAuthHeader,
+      },
+    },
+  });
+
+  await hook.flush({ cycles: 8 });
+
+  assert.equal(hook.result.isAuthenticated, true);
+  assert.equal(hook.result.sociedadId, '15');
+
+  hook.result.handleLogout();
+  await hook.flush({ cycles: 4 });
+
+  assert.equal(clearAuthSession.calls.length, 1);
+  assert.equal(redirectToLogin.calls.length, 1);
+  assert.equal(hook.result.isAuthenticated, false);
+  assert.equal(hook.result.authToken, '');
+  assert.equal(hook.result.authUser, null);
+  assert.equal(hook.result.sociedadId, '');
+  assert.equal(hook.result.sociedades.length, 0);
+  assert.deepEqual(setAuthHeader.calls.at(-1), ['']);
 });

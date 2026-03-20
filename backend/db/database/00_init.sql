@@ -23,18 +23,6 @@ CREATE TABLE IF NOT EXISTS public.comentarios_documento
     CONSTRAINT comentarios_documento_pkey PRIMARY KEY (id)
 );
 
-CREATE TABLE IF NOT EXISTS public.estados_documento
-(
-    id serial NOT NULL,
-    factura_id integer NOT NULL,
-    estado_anterior character varying(50),
-    estado_nuevo character varying(50) NOT NULL,
-    usuario character varying(100) NOT NULL,
-    motivo text,
-    creado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT estados_documento_pkey PRIMARY KEY (id)
-);
-
 CREATE TABLE IF NOT EXISTS public.facturas
 (
     id serial NOT NULL,
@@ -61,6 +49,71 @@ CREATE TABLE IF NOT EXISTS public.facturas
       'rechazado',
       'pagado'
     ))
+);
+
+CREATE TABLE IF NOT EXISTS public.facturas_workflow_pago_estado
+(
+    factura_id integer NOT NULL,
+    estado character varying(30) NOT NULL,
+    actualizado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT facturas_workflow_pago_estado_pkey PRIMARY KEY (factura_id),
+    CONSTRAINT facturas_workflow_pago_estado_estado_check CHECK (estado IN (
+      'en_tramite_pago',
+      'pagado_parcialmente',
+      'pagado'
+    )),
+    CONSTRAINT facturas_workflow_pago_estado_factura_id_fkey FOREIGN KEY (factura_id)
+      REFERENCES public.facturas (id) MATCH SIMPLE
+      ON UPDATE NO ACTION
+      ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS public.facturas_estado_documental_historial
+(
+    id serial NOT NULL,
+    factura_id integer NOT NULL,
+    estado_anterior character varying(50),
+    estado_nuevo character varying(50) NOT NULL,
+    usuario character varying(100) NOT NULL,
+    motivo text,
+    creado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT facturas_estado_documental_historial_pkey PRIMARY KEY (id),
+    CONSTRAINT facturas_estado_documental_historial_factura_id_fkey FOREIGN KEY (factura_id)
+      REFERENCES public.facturas (id) MATCH SIMPLE
+      ON UPDATE NO ACTION
+      ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS public.facturas_workflow_pago_historial
+(
+    id serial NOT NULL,
+    factura_id integer NOT NULL,
+    estado_anterior character varying(50),
+    estado_nuevo character varying(50) NOT NULL,
+    usuario character varying(100) NOT NULL,
+    motivo text,
+    creado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT facturas_workflow_pago_historial_pkey PRIMARY KEY (id),
+    CONSTRAINT facturas_workflow_pago_historial_factura_id_fkey FOREIGN KEY (factura_id)
+      REFERENCES public.facturas (id) MATCH SIMPLE
+      ON UPDATE NO ACTION
+      ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS public.facturas_estado_mixto_historial
+(
+    id serial NOT NULL,
+    factura_id integer NOT NULL,
+    estado_anterior character varying(50),
+    estado_nuevo character varying(50) NOT NULL,
+    usuario character varying(100) NOT NULL,
+    motivo text,
+    creado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT facturas_estado_mixto_historial_pkey PRIMARY KEY (id),
+    CONSTRAINT facturas_estado_mixto_historial_factura_id_fkey FOREIGN KEY (factura_id)
+      REFERENCES public.facturas (id) MATCH SIMPLE
+      ON UPDATE NO ACTION
+      ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS public.facturas_contabilizacion
@@ -547,16 +600,6 @@ ALTER TABLE IF EXISTS public.comentarios_documento
 CREATE INDEX IF NOT EXISTS idx_comentarios_factura
     ON public.comentarios_documento(factura_id);
 
-ALTER TABLE IF EXISTS public.estados_documento
-    ADD CONSTRAINT estados_documento_factura_id_fkey FOREIGN KEY (factura_id)
-    REFERENCES public.facturas (id) MATCH SIMPLE
-    ON UPDATE NO ACTION
-    ON DELETE CASCADE;
-CREATE INDEX IF NOT EXISTS idx_estados_factura
-    ON public.estados_documento(factura_id);
-CREATE INDEX IF NOT EXISTS idx_estados_fecha
-    ON public.estados_documento(creado_en);
-
 ALTER TABLE IF EXISTS public.facturas
     ADD CONSTRAINT fk_facturas_sociedad FOREIGN KEY (sociedad_id)
     REFERENCES public.sociedades (id) MATCH SIMPLE
@@ -566,6 +609,21 @@ CREATE INDEX IF NOT EXISTS idx_facturas_sociedad
     ON public.facturas(sociedad_id);
 CREATE INDEX IF NOT EXISTS idx_facturas_estado
     ON public.facturas(estado);
+
+CREATE INDEX IF NOT EXISTS idx_facturas_workflow_pago_estado_estado
+    ON public.facturas_workflow_pago_estado(estado);
+CREATE INDEX IF NOT EXISTS idx_facturas_estado_documental_historial_factura_id
+    ON public.facturas_estado_documental_historial(factura_id);
+CREATE INDEX IF NOT EXISTS idx_facturas_estado_documental_historial_creado_en
+    ON public.facturas_estado_documental_historial(creado_en);
+CREATE INDEX IF NOT EXISTS idx_facturas_workflow_pago_historial_factura_id
+    ON public.facturas_workflow_pago_historial(factura_id);
+CREATE INDEX IF NOT EXISTS idx_facturas_workflow_pago_historial_creado_en
+    ON public.facturas_workflow_pago_historial(creado_en);
+CREATE INDEX IF NOT EXISTS idx_facturas_estado_mixto_historial_factura_id
+    ON public.facturas_estado_mixto_historial(factura_id);
+CREATE INDEX IF NOT EXISTS idx_facturas_estado_mixto_historial_creado_en
+    ON public.facturas_estado_mixto_historial(creado_en);
 CREATE INDEX IF NOT EXISTS idx_facturas_fecha
     ON public.facturas(fecha_emision);
 

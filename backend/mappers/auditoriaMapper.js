@@ -60,6 +60,7 @@ const buildTimelineEvent = ({
   referencia = '',
   monto = null,
   moneda = '',
+  dominio = null,
   sort_at = null
 }) => ({
   id,
@@ -73,6 +74,7 @@ const buildTimelineEvent = ({
   referencia,
   monto,
   moneda,
+  dominio,
   sort_at: sort_at || creado_en || null
 });
 
@@ -189,7 +191,7 @@ const mapAuditoriaRow = (row) => ({ ...row });
 const mapEstadoDocumentoRow = (row) => ({ ...row });
 
 const mapEstadoDocumentoTimelineRow = (row) => buildTimelineEvent({
-  id: `estado-${row.id}`,
+  id: `estado-${row.origen_historial || row.dominio || 'legacy'}-${row.id}`,
   tipo: 'estado_documento',
   categoria: 'estado',
   titulo: buildEstadoTitle(row.estado_nuevo),
@@ -198,6 +200,7 @@ const mapEstadoDocumentoTimelineRow = (row) => buildTimelineEvent({
   creado_en: row.creado_en,
   motivo: row.motivo || '',
   referencia: '',
+  dominio: row.dominio || null,
 });
 
 const mapTramiteHistorialTimelineRow = (row) => {

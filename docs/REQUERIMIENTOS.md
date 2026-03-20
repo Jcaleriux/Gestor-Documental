@@ -1,12 +1,27 @@
+## Estado del documento
+
+> Historico. Este archivo conserva el levantamiento inicial y las respuestas base con las que arranco el proyecto.
+>
+> No debe usarse como especificacion vigente unica ni como contrato tecnico actual.
+>
+> Para el estado actual del sistema consultar:
+>
+> - `docs/requerimientos_vigentes.md`
+> - `docs/arquitectura/01_vision_y_alcance.md`
+> - `docs/arquitectura/05_catalogo_estados.md`
+> - `docs/arquitectura/06_matriz_permisos.md`
+> - `README.md`
+
 Requisitos funcionales (RF)
 1. Preguntas sobre Usuarios y Roles
 1.	¿Qué tipos de usuarios existirán en el sistema?
 1.	Administrador
-2.	Gerente financiera, contable, construcción, presupuesto, mercadeo, ventas y Infraestructura y proyectos (Acceso limitado a sociedad a cargo).
-3.	Contabilidad
-4.	Tesorería
+2.	Gerente financiera, contable,
+3.  Gerente construcción, presupuesto, inmobiliaria, mercadeo, ventas, Infraestructura, proyecto (Todos con acceso limitado a sociedad a cargo).
+3.	Contabilidad auxiliar y jefe
+4.	Tesorería auxiliar y jefe
 5.	proveeduría
-6.	Asistencia
+6.	Asistencia 
 7.	Personalizado.
 
 2.	¿Cada usuario pertenece a un solo grupo o puede tener múltiples grupos?

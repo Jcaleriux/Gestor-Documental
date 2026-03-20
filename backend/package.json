@@ -16,6 +16,9 @@
         "db:migrate:centros-costo": "node db/migrate_centros_costo.js",
         "db:migrate:tramites-aprobadores": "node db/migrate_tramites_aprobadores_centros_costo.js",
         "db:migrate:tramites-estado-origen": "node db/migrate_tramites_estado_factura_origen.js",
+        "db:migrate:facturas-workflow-pago": "node db/migrate_facturas_workflow_pago_estado.js",
+        "db:migrate:facturas-estado-historiales": "node db/migrate_facturas_estado_historiales.js",
+        "db:migrate:facturas-estado-mixto-historial": "node db/migrate_facturas_estado_mixto_historial.js",
         "db:migrate:tramites-dev-conta": "node db/migrate_tramites_tesoreria_devolver_contabilidad.js",
         "db:migrate:tramites-tesoreria-pagado": "node db/migrate_tramites_tesoreria_pagado.js",
         "db:migrate:tramites-tesoreria-pagado-backfill": "node db/migrate_tramites_tesoreria_pagado_backfill.js",
@@ -28,9 +31,11 @@
         "smoke:facturas": "node scripts/smoke_facturas_list.js",
         "reporte-duplicados": "node scripts/reporte_duplicados.js",
         "reset-docs": "node scripts/reset_documentos.js",
+        "reset-facturas-prueba:dry-run": "node scripts/reset_facturas_prueba.js --dry-run",
         "server": "node server.js",
         "dev": "node server.js",
-        "test": "jest"
+        "test": "jest",
+        "test:ci": "node node_modules/jest/bin/jest.js --runInBand"
     },
     "dependencies": {
         "bcrypt": "^6.0.0",

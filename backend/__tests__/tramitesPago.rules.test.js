@@ -52,7 +52,7 @@ describe('tramitesPagoRules', () => {
   test('validateFacturaNoPagada bloquea pagado', () => {
     expect(validateFacturaNoPagada('pagado')).toMatchObject({
       status: 400,
-      error: 'No se puede excluir un documento pagado'
+      error: 'No se puede gestionar un documento pagado en tesoreria'
     });
 
     expect(validateFacturaNoPagada('en_revision')).toBeNull();

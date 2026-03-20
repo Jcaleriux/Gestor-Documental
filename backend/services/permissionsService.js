@@ -1,12 +1,6 @@
 const rolesPermisosRepo = require('../repositories/rolesPermisosRepository');
 const { PERMISSIONS } = require('../domain/permissions');
-
-const DEFAULT_CACHE_TTL_MS = 60 * 1000;
-
-const parseCacheTtl = () => {
-  const value = Number(process.env.PERMISSIONS_CACHE_TTL_MS);
-  return Number.isFinite(value) && value >= 0 ? value : DEFAULT_CACHE_TTL_MS;
-};
+const { runtimeConfig } = require('../config/runtime');
 
 const normalizeRoleId = (roleId) => {
   const normalized = Number(roleId);
@@ -18,7 +12,10 @@ const normalizePermissionList = (permissionNames) => {
   return [...new Set(permissionNames.filter(Boolean).map((permission) => String(permission).trim()))];
 };
 
-const createPermissionsService = ({ repository = rolesPermisosRepo, cacheTtlMs = parseCacheTtl() } = {}) => {
+const createPermissionsService = ({
+  repository = rolesPermisosRepo,
+  cacheTtlMs = runtimeConfig.permissionsCacheTtlMs
+} = {}) => {
   if (!repository || typeof repository.getPermissionNamesByRolId !== 'function') {
     throw new Error('repository.getPermissionNamesByRolId requerido');
   }

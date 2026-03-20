@@ -41,7 +41,16 @@ async function createTables() {
     const result = await pool.query(`
       SELECT tablename FROM pg_tables
       WHERE schemaname = 'public'
-      AND tablename IN ('comentarios_documento', 'versiones_documento', 'auditoria', 'estados_documento', 'facturas', 'sociedades')
+      AND tablename IN (
+        'comentarios_documento',
+        'versiones_documento',
+        'auditoria',
+        'facturas',
+        'facturas_estado_documental_historial',
+        'facturas_workflow_pago_historial',
+        'facturas_estado_mixto_historial',
+        'sociedades'
+      )
     `);
 
     console.log(`Tablas verificadas: ${result.rows.map(r => r.tablename).join(', ')}`);

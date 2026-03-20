@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const fse = require("fs-extra");
+const { runtimeConfig } = require("../config/runtime");
 const { parseXML } = require("../utils/xmlParser");
 const { resolveDocumentPaths } = require("../utils/documentPaths");
 const {
@@ -147,7 +148,7 @@ function createPdfAssigner(pdfEntries) {
 }
 
 async function procesarManifest(manifestPath, options = {}) {
-  const baseDir = options.baseDir || process.env.FACTURAS_BASE_DIR || path.resolve(__dirname, "..", "..");
+  const baseDir = options.baseDir || runtimeConfig.storageBaseDir;
   const documentPaths = resolveDocumentPaths(baseDir);
   const carpetaEntrada = options.carpetaEntrada || documentPaths.facturasRecibidasDir;
   const carpetaProcesados = options.carpetaProcesados || documentPaths.facturasProcesadasDir;
@@ -380,7 +381,7 @@ async function procesarManifest(manifestPath, options = {}) {
 // CLI: procesar manifests existentes en carpeta recibidas
 async function main() {
   try {
-    const baseDir = process.env.FACTURAS_BASE_DIR || path.resolve(__dirname, "..", "..");
+    const baseDir = runtimeConfig.storageBaseDir;
     const documentPaths = resolveDocumentPaths(baseDir);
     const recibidasDir = documentPaths.facturasRecibidasDir;
     const procesadasDir = documentPaths.facturasProcesadasDir;

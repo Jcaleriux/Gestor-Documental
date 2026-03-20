@@ -1,4 +1,6 @@
 const pool = require('../db');
+const { resolveFacturaEstadoTransitionDomain } = require('../domain/facturas');
+const { createFacturaEstadoHistorial } = require('./facturaEstadoHistorialStore');
 
 const getDb = (client) => client || pool;
 
@@ -390,16 +392,23 @@ const insertEstadoDocumento = async ({
   facturaId,
   estadoAnterior,
   estadoNuevo,
+  dominio,
   usuario,
   motivo
 }, client) => {
-  await getDb(client).query(
-    `
-    INSERT INTO estados_documento (factura_id, estado_anterior, estado_nuevo, usuario, motivo)
-    VALUES ($1, $2, $3, $4, $5)
-    `,
-    [facturaId, estadoAnterior, estadoNuevo, usuario || null, motivo || null]
-  );
+  const dominioFinal = dominio || resolveFacturaEstadoTransitionDomain({
+    estadoAnterior,
+    estadoNuevo
+  });
+
+  await createFacturaEstadoHistorial({
+    facturaId,
+    dominio: dominioFinal,
+    estadoAnterior,
+    estadoNuevo,
+    usuario: usuario || null,
+    motivo: motivo || null
+  }, client);
 };
 
 const refreshEstadoOrdenCompraById = async (ordenCompraId, client) => {

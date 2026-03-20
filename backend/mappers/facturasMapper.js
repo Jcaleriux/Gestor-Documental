@@ -28,6 +28,8 @@ const mapFacturaRow = (row) => ({
   ruta_xml: row.ruta_xml,
   ruta_pdf: row.ruta_pdf,
   estado: row.estado || FACTURA_ESTADOS.NO_CONTABILIZADO,
+  estado_documental: row.estado_documental || row.estado || FACTURA_ESTADOS.NO_CONTABILIZADO,
+  estado_workflow_pago: row.estado_workflow_pago || null,
   sociedad_id: row.sociedad_id || null,
   total_factura: toNumber(
     row.total_factura ?? row.resumen?.TotalComprobante,
@@ -62,6 +64,8 @@ const mapRetencionPendienteRow = (row) => ({
   ruta_xml: row.ruta_xml,
   ruta_pdf: row.ruta_pdf,
   estado: row.estado || FACTURA_ESTADOS.NO_CONTABILIZADO,
+  estado_documental: row.estado_documental || row.estado || FACTURA_ESTADOS.NO_CONTABILIZADO,
+  estado_workflow_pago: row.estado_workflow_pago || null,
   sociedad_id: row.sociedad_id || null,
   total_factura: toNumber(row.total_factura ?? row.resumen?.TotalComprobante, 0),
   total_rebajos: toNumber(row.total_rebajos, 0),

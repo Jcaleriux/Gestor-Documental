@@ -8,6 +8,24 @@ import {
 } from '../../utils/auth.js';
 
 const SELECTED_SOCIEDAD_KEY = 'novogar.sociedad.selected';
+const DEFAULT_AUTH_SESSION = Object.freeze({
+  clearAuthSession,
+  getAuthToken,
+  getAuthUser,
+  saveAuthSession,
+});
+
+const readWindowStorageItem = (key) => {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  try {
+    return window.localStorage.getItem(key) || '';
+  } catch {
+    return '';
+  }
+};
 
 const setAxiosAuthHeader = (token) => {
   if (token) {
@@ -40,11 +58,7 @@ const readSociedadFromLocation = () => {
 };
 
 const readSelectedSociedadPreference = () => {
-  if (typeof window === 'undefined') {
-    return '';
-  }
-
-  return window.localStorage.getItem(SELECTED_SOCIEDAD_KEY) || '';
+  return readWindowStorageItem(SELECTED_SOCIEDAD_KEY);
 };
 
 const getInitialSociedadId = () => readSociedadFromLocation() || readSelectedSociedadPreference();
@@ -54,12 +68,30 @@ const persistSelectedSociedad = (sociedadId) => {
     return;
   }
 
-  if (sociedadId) {
-    window.localStorage.setItem(SELECTED_SOCIEDAD_KEY, sociedadId);
+  try {
+    if (sociedadId) {
+      window.localStorage.setItem(SELECTED_SOCIEDAD_KEY, sociedadId);
+      return;
+    }
+
+    window.localStorage.removeItem(SELECTED_SOCIEDAD_KEY);
+  } catch {
+    // Ignore storage failures so the login screen can still render.
+  }
+};
+
+const redirectToLoginPage = () => {
+  if (typeof window === 'undefined' || !window.location) {
     return;
   }
 
-  window.localStorage.removeItem(SELECTED_SOCIEDAD_KEY);
+  if (window.location.pathname === '/login') {
+    return;
+  }
+
+  if (typeof window.location.assign === 'function') {
+    window.location.assign('/login');
+  }
 };
 
 const createInitialState = (initialSociedadId) => ({
@@ -157,14 +189,10 @@ export const useAppSession = ({
 } = {}) => {
   const {
     api = axios,
-    authSession = {
-      clearAuthSession,
-      getAuthToken,
-      getAuthUser,
-      saveAuthSession,
-    },
+    authSession = DEFAULT_AUTH_SESSION,
     getInitialSociedad = getInitialSociedadId,
     persistSociedad = persistSelectedSociedad,
+    redirectToLogin = redirectToLoginPage,
     setAuthHeader = setAxiosAuthHeader,
   } = dependencies;
 
@@ -252,7 +280,8 @@ export const useAppSession = ({
 
   const handleLogout = useCallback(() => {
     clearSession();
-  }, [clearSession]);
+    redirectToLogin();
+  }, [clearSession, redirectToLogin]);
 
   const selectedSociedad = useMemo(
     () => sociedades.find((sociedad) => String(sociedad.id) === String(sociedadId)),

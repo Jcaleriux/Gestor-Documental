@@ -7,6 +7,7 @@ const {
   mapTiqueteElectronicoRow,
   mapMensajeHaciendaRow
 } = require('../mappers/facturasMapper');
+const { runtimeConfig } = require('../config/runtime');
 const { createFacturasManifestResolver } = require('./facturasManifestResolver');
 
 const FACTURAS_SORT_FIELDS = new Set([
@@ -398,7 +399,7 @@ const createFacturasUseCases = ({ facturasRepo }) => {
   }
 
   const manifestResolver = createFacturasManifestResolver({
-    baseDir: process.env.FACTURAS_BASE_DIR || path.resolve(__dirname, '..', '..')
+    baseDir: runtimeConfig.storageBaseDir
   });
 
   const listFacturas = async (params) => {

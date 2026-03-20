@@ -1,11 +1,5 @@
 const { toErrorResponse, shouldLogError } = require('../utils/http');
-
-const parseMaxTablaPagoMb = () => {
-  const raw = Number(process.env.TABLAS_PAGO_MAX_FILE_MB);
-  return Number.isFinite(raw) && raw > 0 ? raw : 10;
-};
-
-const MAX_TABLA_PAGO_MB = parseMaxTablaPagoMb();
+const { runtimeConfig } = require('../config/runtime');
 
 const errorMiddleware = (fallbackMessage = 'Internal server error') => (error, req, res, next) => {
   if (res.headersSent) {
@@ -15,7 +9,7 @@ const errorMiddleware = (fallbackMessage = 'Internal server error') => (error, r
   if (error && (error.type === 'entity.too.large' || error.status === 413 || error.statusCode === 413)) {
     return res.status(413).json({
       success: false,
-      error: `Archivo demasiado grande. Tamano maximo permitido: ${MAX_TABLA_PAGO_MB} MB.`
+      error: `Archivo demasiado grande. Tamano maximo permitido: ${runtimeConfig.maxTablaPagoMb} MB.`
     });
   }
 

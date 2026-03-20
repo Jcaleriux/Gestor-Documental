@@ -1,11 +1,9 @@
-const { Pool } = require("pg");
+const { Pool } = require('pg');
+const { resolveDbConfig } = require('../config/env');
 
 const pool = new Pool({
-  host: "localhost",
-  port: 5432,
-  user: "postgres",
-  password: "admin",
-  database: "novogar_db"
+  ...resolveDbConfig(),
+  allowExitOnIdle: process.env.NODE_ENV === 'test',
 });
 
 module.exports = pool;

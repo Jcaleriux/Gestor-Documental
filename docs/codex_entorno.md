@@ -39,25 +39,24 @@ La configuracion de Codex para `Proyecto Novogar` no es un archivo magico unico.
 - `README.md`: arranque general del proyecto.
 - `docs/convenciones_idioma_codigo.md`: mezcla correcta de ingles tecnico y dominio en espanol.
 - `docs/principios_transversales.md`: principios de negocio que nunca deben romperse.
+- `docs/despliegue_checklist.md`: checklist manual para staging/produccion.
+- `.github/workflows/ci.yml`: baseline minima de build/tests automatizados.
+
+Nota de arquitectura vigente:
+
+- `estados_documento` ya no forma parte del schema runtime actual.
+- El runtime backend debe usar `facturas_estado_documental_historial`, `facturas_workflow_pago_historial` y `facturas_estado_mixto_historial`.
+- Las referencias restantes a `estados_documento` viven solo en migraciones SQL legacy conservadas como historial.
 
 ### Variables y configuracion real
 
-El repo usa variables de entorno en varias zonas, pero hoy la conexion a PostgreSQL sigue hardcodeada en `backend/db/index.js`:
+El backend ya carga `backend/.env` y `backend/.env.local` de forma automatica. Si no se definen variables, el entorno de desarrollo conserva defaults compatibles con la instalacion local actual:
 
-```js
-host: "localhost",
-port: 5432,
-user: "postgres",
-password: "admin",
-database: "novogar_db"
-```
-
-Eso significa que el entorno Codex actual debe asumir:
-
-- base local disponible,
-- usuario `postgres`,
-- password `admin`,
-- base `novogar_db`.
+- `DB_HOST` o `PGHOST`: `localhost`
+- `DB_PORT` o `PGPORT`: `5432`
+- `DB_USER` o `PGUSER`: `postgres`
+- `DB_PASSWORD` o `PGPASSWORD`: `admin`
+- `DB_NAME` o `PGDATABASE`: `novogar_db`
 
 Ademas, el backend ya soporta variables utiles:
 
@@ -75,6 +74,13 @@ Ademas, el backend ya soporta variables utiles:
 - `WATCHER_LATE_FILES_DELAY_MS`
 - `WATCHER_AWF_STABILITY_MS`
 - `WATCHER_AWF_POLL_MS`
+
+La validacion central de runtime ahora vive en `backend/config/runtime.js` para `PORT`, `FACTURAS_BASE_DIR`, `JSON_BODY_LIMIT`, limites operativos y configuracion del watcher.
+
+Notas de seguridad:
+
+- `JWT_SECRET` puede caer a `dev-secret` solo en `development` y `test`.
+- En `production`, el backend exige `JWT_SECRET` explicito y configuracion de DB explicita.
 
 ### Como se usa Codex con autonomia
 
@@ -141,6 +147,8 @@ npm install
 cd ..\frontend
 npm install
 ```
+
+Antes de levantar el backend, copiar `backend/.env.example` a `backend/.env` y ajustar DB/JWT segun el entorno.
 
 ### Crear base de datos
 
@@ -219,7 +227,8 @@ Sintoma:
 
 Causa probable:
 
-- `backend/db/index.js` espera `localhost:5432`, usuario `postgres`, password `admin`, base `novogar_db`.
+- `backend/.env`, `backend/.env.local` o las variables del sistema no coinciden con la base real.
+- Si no hay variables definidas, el fallback dev espera `localhost:5432`, usuario `postgres`, password `admin`, base `novogar_db`.
 
 ### `psql` no existe en PATH
 
@@ -306,15 +315,15 @@ Solucion:
 
 ## 5. Recomendaciones De Mejora Del Proyecto
 
-### Mover la DB a variables de entorno
+### Expandir validacion de entorno y CI
 
-Hoy la conexion esta hardcodeada. Lo mas importante a mejorar es pasar `backend/db/index.js` a `process.env` y dejar un `backend/.env.example`.
+La configuracion principal ya salio del codigo sensible y existe una CI baseline, pero todavia conviene ampliar cobertura a mas scripts, mas suites frontend y chequeos de release.
 
 Impacto:
 
-- mas portabilidad,
-- menos riesgo al cambiar maquina,
-- mejor compatibilidad con Codex, CI y despliegue.
+- menos sorpresas al mover el proyecto entre maquinas,
+- mejor trazabilidad de configuracion en CI y produccion,
+- menos riesgo de dejar fuera checks importantes al crecer el repo.
 
 ### Agregar bootstrap raiz del repo
 

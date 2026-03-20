@@ -3,6 +3,11 @@ const { tesoreriaActivaSql, buildTesoreriaResetQuery } = require('../services/tr
 const { TESORERIA_ESTADOS, TRAMITE_ESTADOS, DOCUMENTO_ESTADOS } = require('../domain/tramitesPago');
 const { FACTURA_ESTADOS } = require('../domain/facturas');
 const {
+  createFacturaWorkflowPagoJoin,
+  createFacturaEstadoOperativoExpression,
+  isFacturaWorkflowPagoEstado
+} = require('./sqlFacturaEstado');
+const {
   createTotalFacturaExpression,
   createRebajosAplicadosExpression,
   createRetencionTotalExpression,
@@ -19,6 +24,11 @@ const retencionPendienteExpression = createRetencionPendienteExpression({ contaA
 const pagosFacturaExpression = createPagosFacturaExpression({ facturaAlias: 'f' });
 const totalPagoPrincipalExpression = createTotalPagoPrincipalExpression({ facturaAlias: 'f', contaAlias: 'fc' });
 const totalPendienteGlobalExpression = createTotalPendienteGlobalExpression({ facturaAlias: 'f', contaAlias: 'fc' });
+const facturaWorkflowPagoJoin = createFacturaWorkflowPagoJoin({ facturaAlias: 'f', workflowAlias: 'fwp' });
+const facturaEstadoOperativoExpression = createFacturaEstadoOperativoExpression({
+  facturaAlias: 'f',
+  workflowAlias: 'fwp'
+});
 const ETAPA_ESTADO_COLUMN_MAP = Object.freeze({
   gerencia: 'estado_gerencia',
   gerencia_contable: 'estado_gerencia_contable',
@@ -52,7 +62,18 @@ const getTramiteByIdForUpdate = async (tramiteId, client) => {
 };
 
 const getFacturaEstado = async (facturaId, client) => {
-  const { rows } = await getDb(client).query('SELECT estado FROM facturas WHERE id = $1', [facturaId]);
+  const { rows } = await getDb(client).query(
+    `
+    SELECT
+      ${facturaEstadoOperativoExpression} AS estado,
+      f.estado AS estado_documental,
+      fwp.estado AS estado_workflow_pago
+    FROM facturas f
+    ${facturaWorkflowPagoJoin}
+    WHERE f.id = $1
+    `,
+    [facturaId]
+  );
   return rows[0] || null;
 };
 
@@ -148,6 +169,29 @@ const updateRetencionesTesoreriaEstadoByTramite = async ({ tramiteId, estadoTeso
 };
 
 const updateFacturaEstado = async ({ facturaId, estado }, client) => {
+  if (isFacturaWorkflowPagoEstado(estado)) {
+    await getDb(client).query(
+      `
+      INSERT INTO facturas_workflow_pago_estado (factura_id, estado)
+      VALUES ($1, $2)
+      ON CONFLICT (factura_id)
+      DO UPDATE SET
+        estado = EXCLUDED.estado,
+        actualizado_en = CURRENT_TIMESTAMP
+      `,
+      [facturaId, estado]
+    );
+    return;
+  }
+
+  await getDb(client).query(
+    `
+    DELETE FROM facturas_workflow_pago_estado
+    WHERE factura_id = $1
+    `,
+    [facturaId]
+  );
+
   await getDb(client).query(
     `
     UPDATE facturas
@@ -159,6 +203,34 @@ const updateFacturaEstado = async ({ facturaId, estado }, client) => {
 };
 
 const updateFacturasEstadoByIds = async ({ facturaIds, estado }, client) => {
+  if (!Array.isArray(facturaIds) || facturaIds.length === 0) {
+    return;
+  }
+
+  if (isFacturaWorkflowPagoEstado(estado)) {
+    await getDb(client).query(
+      `
+      INSERT INTO facturas_workflow_pago_estado (factura_id, estado)
+      SELECT factura_id, $2
+      FROM UNNEST($1::int[]) AS x(factura_id)
+      ON CONFLICT (factura_id)
+      DO UPDATE SET
+        estado = EXCLUDED.estado,
+        actualizado_en = CURRENT_TIMESTAMP
+      `,
+      [facturaIds, estado]
+    );
+    return;
+  }
+
+  await getDb(client).query(
+    `
+    DELETE FROM facturas_workflow_pago_estado
+    WHERE factura_id = ANY($1::int[])
+    `,
+    [facturaIds]
+  );
+
   await getDb(client).query(
     `
     UPDATE facturas
@@ -336,17 +408,20 @@ const getRetencionesDisponibles = async ({ sociedadId }, client) => {
       f.clave,
       f.consecutivo,
       f.fecha_emision,
-      f.estado,
+      ${facturaEstadoOperativoExpression} AS estado,
+      f.estado AS estado_documental,
+      fwp.estado AS estado_workflow_pago,
       COALESCE(f.resumen->'CodigoTipoMoneda'->>'CodigoMoneda', f.resumen->>'CodigoMoneda', f.resumen->>'codigoMoneda', 'CRC') AS moneda,
       p.id AS proveedor_id,
       p.nombre AS proveedor_nombre,
       p.identificacion_numero AS proveedor_identificacion,
       ${retencionPendienteExpression} AS monto_retencion_pendiente
     FROM facturas f
+    ${facturaWorkflowPagoJoin}
     JOIN facturas_contabilizacion fc ON fc.factura_id = f.id
     LEFT JOIN proveedores p ON p.id = fc.proveedor_id
     WHERE f.sociedad_id = $1
-      AND f.estado = '${FACTURA_ESTADOS.PAGADO}'
+      AND ${facturaEstadoOperativoExpression} = '${FACTURA_ESTADOS.PAGADO}'
       AND ${retencionPendienteExpression} > 0
       AND NOT EXISTS (
         SELECT 1
@@ -375,7 +450,9 @@ const listDocumentosByTramite = async (tramiteId, client, options = {}) => {
       f.fecha_emision,
       f.emisor,
       f.resumen,
-      f.estado,
+      ${facturaEstadoOperativoExpression} AS estado,
+      f.estado AS estado_documental,
+      fwp.estado AS estado_workflow_pago,
       f.ruta_pdf,
       fc.fecha_documento AS conta_fecha_documento,
       fc.fecha_vencimiento AS conta_fecha_vencimiento,
@@ -409,6 +486,7 @@ const listDocumentosByTramite = async (tramiteId, client, options = {}) => {
       ${totalPendienteGlobalExpression} AS total_pendiente_global
     FROM tramites_pago_documentos td
     JOIN facturas f ON f.id = td.factura_id
+    ${facturaWorkflowPagoJoin}
     LEFT JOIN facturas_contabilizacion fc ON fc.factura_id = f.id
     LEFT JOIN LATERAL (
       WITH existing_approvers AS (
@@ -506,13 +584,16 @@ const listRetencionesByTramite = async (tramiteId, client) => {
       f.clave,
       f.consecutivo,
       f.fecha_emision,
-      f.estado,
+      ${facturaEstadoOperativoExpression} AS estado,
+      f.estado AS estado_documental,
+      fwp.estado AS estado_workflow_pago,
       f.emisor,
       COALESCE(f.resumen->'CodigoTipoMoneda'->>'CodigoMoneda', f.resumen->>'CodigoMoneda', f.resumen->>'codigoMoneda', 'CRC') AS moneda,
       p.nombre AS proveedor_nombre,
       p.identificacion_numero AS proveedor_identificacion
     FROM tramites_pago_retenciones tr
     JOIN facturas f ON f.id = tr.factura_id
+    ${facturaWorkflowPagoJoin}
     LEFT JOIN proveedores p ON p.id = tr.proveedor_id
     WHERE tr.tramite_id = $1
     ORDER BY p.nombre ASC NULLS LAST, f.fecha_emision DESC NULLS LAST, tr.id DESC
@@ -542,7 +623,17 @@ const listHistorialByTramite = async (tramiteId, client) => {
 
 const getFacturasByIds = async (facturaIds, client) => {
   const { rows } = await getDb(client).query(
-    'SELECT id, sociedad_id, estado FROM facturas WHERE id = ANY($1::int[])',
+    `
+    SELECT
+      f.id,
+      f.sociedad_id,
+      ${facturaEstadoOperativoExpression} AS estado,
+      f.estado AS estado_documental,
+      fwp.estado AS estado_workflow_pago
+    FROM facturas f
+    ${facturaWorkflowPagoJoin}
+    WHERE f.id = ANY($1::int[])
+    `,
     [facturaIds]
   );
   return rows;
@@ -554,13 +645,16 @@ const getRetencionesPendientesByFacturaIds = async (facturaIds, client) => {
     SELECT
       f.id,
       f.sociedad_id,
-      f.estado,
+      ${facturaEstadoOperativoExpression} AS estado,
+      f.estado AS estado_documental,
+      fwp.estado AS estado_workflow_pago,
       fc.proveedor_id,
       ${retencionPendienteExpression} AS monto_retencion_pendiente
     FROM facturas f
+    ${facturaWorkflowPagoJoin}
     JOIN facturas_contabilizacion fc ON fc.factura_id = f.id
     WHERE f.id = ANY($1::int[])
-      AND f.estado = '${FACTURA_ESTADOS.PAGADO}'
+      AND ${facturaEstadoOperativoExpression} = '${FACTURA_ESTADOS.PAGADO}'
       AND ${retencionPendienteExpression} > 0
     `,
     [facturaIds]
@@ -924,22 +1018,36 @@ const updateFacturasEstadoPorSaldoByTramite = async (tramiteId, client) => {
     WITH saldos AS (
       SELECT
         td.factura_id,
-        f.estado AS estado_anterior,
+        ${facturaEstadoOperativoExpression} AS estado_anterior,
         ${totalPagoPrincipalExpression} AS saldo_pago_principal
       FROM tramites_pago_documentos td
       JOIN facturas f ON f.id = td.factura_id
+      ${facturaWorkflowPagoJoin}
       LEFT JOIN facturas_contabilizacion fc ON fc.factura_id = f.id
       WHERE td.tramite_id = $1
         AND ${tesoreriaActivaSql('td.estado_tesoreria')}
+    ),
+    upsert AS (
+      INSERT INTO facturas_workflow_pago_estado (factura_id, estado)
+      SELECT
+        s.factura_id,
+        CASE
+          WHEN s.saldo_pago_principal > 0 THEN '${FACTURA_ESTADOS.PAGADO_PARCIALMENTE}'
+          ELSE '${FACTURA_ESTADOS.PAGADO}'
+        END
+      FROM saldos s
+      ON CONFLICT (factura_id)
+      DO UPDATE SET
+        estado = EXCLUDED.estado,
+        actualizado_en = CURRENT_TIMESTAMP
+      RETURNING factura_id, estado
     )
-    UPDATE facturas f
-    SET estado = CASE
-      WHEN s.saldo_pago_principal > 0 THEN '${FACTURA_ESTADOS.PAGADO_PARCIALMENTE}'
-      ELSE '${FACTURA_ESTADOS.PAGADO}'
-    END
-    FROM saldos s
-    WHERE f.id = s.factura_id
-    RETURNING f.id, s.estado_anterior, f.estado AS estado_nuevo
+    SELECT
+      u.factura_id AS id,
+      s.estado_anterior,
+      u.estado AS estado_nuevo
+    FROM upsert u
+    JOIN saldos s ON s.factura_id = u.factura_id
     `,
     [tramiteId]
   );

@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { createError } = require('../../utils/errors');
+const { runtimeConfig } = require('../../config/runtime');
 
 const ALLOWED_UPLOAD_MIME_TYPES = Object.freeze({
   'application/pdf': 'pdf',
@@ -16,12 +17,7 @@ const DOCUMENT_DIRECTORY_ALIASES = Object.freeze([
   ['ventas_operaciones', 'reservas_operaciones'],
 ]);
 
-const parseMaxReservasDocMb = () => {
-  const raw = Number(process.env.RESERVAS_DOC_MAX_FILE_MB);
-  return Number.isFinite(raw) && raw > 0 ? raw : 15;
-};
-
-const MAX_RESERVAS_DOC_MB = parseMaxReservasDocMb();
+const MAX_RESERVAS_DOC_MB = runtimeConfig.maxReservasDocMb;
 const MAX_RESERVAS_DOC_BYTES = MAX_RESERVAS_DOC_MB * 1024 * 1024;
 
 const sanitizeFileName = (value, fallback = 'documento') => {

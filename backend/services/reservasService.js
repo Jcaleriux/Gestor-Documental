@@ -1,12 +1,13 @@
-const path = require('path');
 const { handleRequest } = require('../utils/http');
 const { sendFile } = require('./filesService');
 const { createReservasUseCases } = require('./reservasUseCases');
 const reservasRepo = require('../repositories/reservasRepository');
+const { runtimeConfig } = require('../config/runtime');
 
-const defaultBaseDir = path.resolve(__dirname, '..', '..');
-const baseDir = process.env.FACTURAS_BASE_DIR || defaultBaseDir;
-const useCases = createReservasUseCases({ reservasRepo, baseDir });
+const useCases = createReservasUseCases({
+  reservasRepo,
+  baseDir: runtimeConfig.storageBaseDir
+});
 
 const listOperacionesReserva = handleRequest(async (req) => {
   const {

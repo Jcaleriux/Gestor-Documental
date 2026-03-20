@@ -1,4 +1,18 @@
 const pool = require('../db');
+const {
+  createFacturaWorkflowPagoJoin,
+  createFacturaEstadoOperativoExpression,
+  isFacturaWorkflowPagoEstado
+} = require('./sqlFacturaEstado');
+const { resolveFacturaEstadoTransitionDomain } = require('../domain/facturas');
+const { createFacturaEstadoHistorial } = require('./facturaEstadoHistorialStore');
+
+const facturaWorkflowPagoJoin = createFacturaWorkflowPagoJoin({ facturaAlias: 'f', workflowAlias: 'fwp' });
+const facturaEstadoOperativoExpression = createFacturaEstadoOperativoExpression({
+  facturaAlias: 'f',
+  workflowAlias: 'fwp'
+});
+
 const monedaFacturaExpression = `
   upper(
     COALESCE(
@@ -37,7 +51,55 @@ const createAuditoria = async ({ facturaId, accion, usuario, detalles, ip_addres
 
 const listEstadosByFacturaId = async (facturaId) => {
   const { rows } = await pool.query(
-    'SELECT * FROM estados_documento WHERE factura_id = $1 ORDER BY creado_en DESC',
+    `
+    WITH historial_estado AS (
+      SELECT
+        fedh.id,
+        fedh.factura_id,
+        'contabilizacion'::varchar AS dominio,
+        'facturas_estado_documental_historial'::text AS origen_historial,
+        fedh.estado_anterior,
+        fedh.estado_nuevo,
+        fedh.usuario,
+        fedh.motivo,
+        fedh.creado_en
+      FROM facturas_estado_documental_historial fedh
+      WHERE fedh.factura_id = $1
+
+      UNION ALL
+
+      SELECT
+        fwh.id,
+        fwh.factura_id,
+        'workflow_pago'::varchar AS dominio,
+        'facturas_workflow_pago_historial'::text AS origen_historial,
+        fwh.estado_anterior,
+        fwh.estado_nuevo,
+        fwh.usuario,
+        fwh.motivo,
+        fwh.creado_en
+      FROM facturas_workflow_pago_historial fwh
+      WHERE fwh.factura_id = $1
+
+      UNION ALL
+
+      SELECT
+        fmh.id,
+        fmh.factura_id,
+        'mixto'::varchar AS dominio,
+        'facturas_estado_mixto_historial'::text AS origen_historial,
+        fmh.estado_anterior,
+        fmh.estado_nuevo,
+        fmh.usuario,
+        fmh.motivo,
+        fmh.creado_en
+      FROM facturas_estado_mixto_historial fmh
+      WHERE fmh.factura_id = $1
+    )
+    SELECT *
+    FROM historial_estado
+    ORDER BY creado_en DESC, id DESC
+    `,
     [facturaId]
   );
 
@@ -138,21 +200,70 @@ const listRetencionPagosByFacturaId = async (facturaId) => {
   return rows;
 };
 
-const createEstado = async ({ facturaId, estado_anterior, estado_nuevo, usuario, motivo }) => {
-  const { rows } = await pool.query(
-    `INSERT INTO estados_documento (factura_id, estado_anterior, estado_nuevo, usuario, motivo)
-     VALUES ($1, $2, $3, $4, $5)
-     RETURNING *`,
-    [facturaId, estado_anterior || null, estado_nuevo, usuario, motivo || null]
-  );
+const createEstado = async ({ facturaId, dominio, estado_anterior, estado_nuevo, usuario, motivo }) => {
+  const dominioFinal = dominio || resolveFacturaEstadoTransitionDomain({
+    estadoAnterior: estado_anterior,
+    estadoNuevo: estado_nuevo
+  });
 
-  return rows[0] || null;
+  return createFacturaEstadoHistorial({
+    facturaId,
+    dominio: dominioFinal,
+    estadoAnterior: estado_anterior || null,
+    estadoNuevo: estado_nuevo,
+    usuario,
+    motivo: motivo || null
+  });
 };
 
 const updateFacturaEstado = async ({ facturaId, estado }) => {
+  const facturaExists = await pool.query(
+    'SELECT 1 FROM facturas WHERE id = $1',
+    [facturaId]
+  );
+
+  if (facturaExists.rowCount === 0) {
+    return null;
+  }
+
+  if (isFacturaWorkflowPagoEstado(estado)) {
+    await pool.query(
+      `
+      INSERT INTO facturas_workflow_pago_estado (factura_id, estado)
+      VALUES ($1, $2)
+      ON CONFLICT (factura_id)
+      DO UPDATE SET
+        estado = EXCLUDED.estado,
+        actualizado_en = CURRENT_TIMESTAMP
+      `,
+      [facturaId, estado]
+    );
+  } else {
+    await pool.query(
+      `
+      DELETE FROM facturas_workflow_pago_estado
+      WHERE factura_id = $1
+      `,
+      [facturaId]
+    );
+    await pool.query(
+      'UPDATE facturas SET estado = $1 WHERE id = $2',
+      [estado, facturaId]
+    );
+  }
+
   const { rows } = await pool.query(
-    'UPDATE facturas SET estado = $1 WHERE id = $2 RETURNING id, estado',
-    [estado, facturaId]
+    `
+    SELECT
+      f.id,
+      ${facturaEstadoOperativoExpression} AS estado,
+      f.estado AS estado_documental,
+      fwp.estado AS estado_workflow_pago
+    FROM facturas f
+    ${facturaWorkflowPagoJoin}
+    WHERE f.id = $1
+    `,
+    [facturaId]
   );
 
   return rows[0] || null;

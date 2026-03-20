@@ -1,13 +1,13 @@
 const fs = require("fs");
-const path = require("path");
 const chokidar = require("chokidar");
 const { procesarFacturaDesdeXML } = require("./importarFactura");
+const { runtimeConfig } = require("../config/runtime");
 const { resolveDocumentPaths } = require("../utils/documentPaths");
 
 // ==============================
 // CONFIGURACION
 // ==============================
-const baseDir = process.env.FACTURAS_BASE_DIR || path.resolve(__dirname, "..", "..");
+const baseDir = runtimeConfig.storageBaseDir;
 const documentPaths = resolveDocumentPaths(baseDir);
 const carpetaEntrada = documentPaths.facturasRecibidasDir;
 const carpetaProcesados = documentPaths.facturasProcesadasDir;
@@ -28,7 +28,7 @@ let timer = null;
 
 function scheduleScan() {
   if (timer) clearTimeout(timer);
-  timer = setTimeout(() => escanearCarpeta(), 600);
+  timer = setTimeout(() => escanearCarpeta(), runtimeConfig.watcher.scanDebounceMs);
 }
 
 chokidar.watch(carpetaEntrada, { ignoreInitial: false }).on("add", (addedPath) => {

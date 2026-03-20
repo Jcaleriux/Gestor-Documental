@@ -1,13 +1,13 @@
 const fs = require("fs");
-const path = require("path");
 const chokidar = require("chokidar");
 const { procesarManifest } = require("./importarFacturaManifest");
+const { runtimeConfig } = require("../config/runtime");
 const { resolveDocumentPaths } = require("../utils/documentPaths");
 
 // ==============================
 // CONFIGURACION (MANIFEST)
 // ==============================
-const baseDir = process.env.FACTURAS_BASE_DIR || path.resolve(__dirname, "..", "..");
+const baseDir = runtimeConfig.storageBaseDir;
 const documentPaths = resolveDocumentPaths(baseDir);
 const carpetaEntrada = documentPaths.facturasRecibidasDir;
 const carpetaProcesados = documentPaths.facturasProcesadasDir;
@@ -27,16 +27,13 @@ console.log("Watcher manifest activo en:", carpetaEntrada);
 let timer = null;
 let scanning = false;
 
-const toNumber = (value, fallback) => {
-  const n = Number(value);
-  return Number.isFinite(n) && n >= 0 ? n : fallback;
-};
-
-const SCAN_DEBOUNCE_MS = toNumber(process.env.WATCHER_SCAN_DEBOUNCE_MS, 600);
-const LATE_FILES_DELAY_MS = toNumber(process.env.WATCHER_LATE_FILES_DELAY_MS, 2000);
-const AWF_STABILITY_MS = toNumber(process.env.WATCHER_AWF_STABILITY_MS, 2000);
-const AWF_POLL_MS = toNumber(process.env.WATCHER_AWF_POLL_MS, 100);
-const SCAN_DELAY_MS = SCAN_DEBOUNCE_MS + LATE_FILES_DELAY_MS;
+const {
+  scanDebounceMs: SCAN_DEBOUNCE_MS,
+  lateFilesDelayMs: LATE_FILES_DELAY_MS,
+  awfStabilityMs: AWF_STABILITY_MS,
+  awfPollMs: AWF_POLL_MS,
+  scanDelayMs: SCAN_DELAY_MS,
+} = runtimeConfig.watcher;
 
 function scheduleScan() {
   if (timer) clearTimeout(timer);
