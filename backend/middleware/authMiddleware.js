@@ -14,11 +14,15 @@ const requireAuth = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+    const tokenPermissions = Array.isArray(decoded.permissions)
+      ? decoded.permissions.filter(Boolean).map((permission) => String(permission).trim())
+      : undefined;
     req.user = {
       id: decoded.sub,
       nombre: decoded.nombre,
       email: decoded.email,
-      rol: decoded.rol
+      rol: decoded.rol,
+      ...(tokenPermissions ? { permissions: tokenPermissions } : {})
     };
     return next();
   } catch (error) {

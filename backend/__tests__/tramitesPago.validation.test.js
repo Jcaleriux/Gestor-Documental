@@ -2,8 +2,17 @@ const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const app = require('../server');
 const { JWT_SECRET } = require('../config/auth');
+const { PERMISSIONS } = require('../domain/permissions');
 
-const token = jwt.sign({ sub: 1, email: 'test@example.com', rol: 1 }, JWT_SECRET);
+const token = jwt.sign({
+  sub: 1,
+  email: 'test@example.com',
+  rol: 1,
+  permissions: [
+    PERMISSIONS.DOCUMENTOS_VER,
+    PERMISSIONS.DOCUMENTOS_TRAMITAR_PAGO
+  ]
+}, JWT_SECRET);
 const withAuth = (req) => req.set('Authorization', `Bearer ${token}`);
 
 describe('Tramites Pago - validaciones basicas', () => {
