@@ -48,6 +48,9 @@ Sistema web para gestion de facturas, documentos y tramites de pago con control 
 - `docs/REQUERIMIENTOS.md`: levantamiento inicial conservado como referencia historica.
 - `docs/arquitectura/`: alcance, estados, permisos y decisiones de arquitectura que complementan el estado actual.
 - `docs/despliegue_checklist.md`: checklist manual de despliegue para staging/produccion.
+- `docs/proceso_crecimiento_scrum.md`: guia para crecer Novogar con backlog, epics, deuda tecnica y Scrum ligero.
+- `docs/producto/`: vision, goals, roadmap, backlog, epics, sprints y templates para gestionar el crecimiento del producto.
+- `VERSION` y `CHANGELOG.md`: fuente base de version objetivo y notas de release del producto.
 
 ## Requisitos
 
@@ -175,15 +178,14 @@ Por ahora el principio operativo mas importante es `multicurrency-first`: no mez
 ### Backend (`backend/package.json`)
 
 - `npm run dev`: iniciar API
+- `npm run check:release`: chequeos de release de backend (sintaxis, bootstrap DB, migraciones versionadas)
 - `npm run test`: pruebas con Jest
-- `npm run test:ci`: baseline CI en backend (`runInBand`)
+- `npm run test:ci`: suite CI de backend (`runInBand`)
 - `npm run db:init`: ejecutar schema si `public` esta vacio
 - `npm run db:reset`: reconstruir schema desde cero
 - `npm run db:check`: validar estructura actual
-- `npm run db:migrate:proveedores`
-- `npm run db:migrate:retenciones`
-- `npm run db:migrate:tramites-retenciones`
-- `npm run db:migrate:pagos-parciales`
+- `npm run db:migrate`: aplicar migraciones versionadas pendientes
+- `npm run db:migrate:status`: ver estado del tracking versionado
 - `npm run importar`: importacion por XML
 - `npm run watcher`: watcher de XML
 - `npm run diagnostico`
@@ -194,8 +196,8 @@ Por ahora el principio operativo mas importante es `multicurrency-first`: no mez
 
 - `npm run dev`: levantar Vite
 - `npm run build`: build de produccion
-- `npm run test`: pruebas con Node test runner
-- `npm run test:ci`: baseline CI estable de frontend
+- `npm run test`: suite completa de frontend en un solo proceso
+- `npm run test:ci`: suite completa de frontend para CI en un solo proceso
 - `npm run lint`: lint con ESLint
 - `npm run preview`: previsualizar build
 
@@ -231,13 +233,16 @@ npm test
 ## Roadmap
 
 - Expandir la validacion centralizada de entorno a scripts y casos operativos secundarios.
-- Expandir la CI baseline para cubrir mas suites de frontend y chequeos de release.
+- Agregar smoke checks de release mas cercanos a dominio/negocio (facturas, reservas, ordenes de compra).
 - Incluir capturas y flujos por rol en documentacion.
 
 ## Notas operativas
 
 - `npm run db:reset` elimina y recrea `public`.
+- `00_init.sql` define el baseline runtime y `backend/db/migrations/` es el camino canonico para cambios incrementales nuevos.
+- Los aliases legacy `npm run db:migrate:*` ya fueron retirados del flujo oficial del repo.
 - Antes de produccion, definir credenciales de DB y `JWT_SECRET` reales en variables de entorno.
-- El repo ya incluye una CI minima en `.github/workflows/ci.yml`.
+- El repo ya incluye una CI base en `.github/workflows/ci.yml`.
+- La CI actual ya corre `backend npm run check:release`, `backend npm run test:ci`, `frontend npm run lint`, `frontend npm run build` y `frontend npm run test:ci`.
 - El `.gitignore` excluye dependencias, temporales y datos operativos locales.
 - El historial activo de estados usa tablas dedicadas por dominio; las referencias a `estados_documento` quedan solo en SQL legacy conservado como historial tecnico.

@@ -40,7 +40,7 @@ La configuracion de Codex para `Proyecto Novogar` no es un archivo magico unico.
 - `docs/convenciones_idioma_codigo.md`: mezcla correcta de ingles tecnico y dominio en espanol.
 - `docs/principios_transversales.md`: principios de negocio que nunca deben romperse.
 - `docs/despliegue_checklist.md`: checklist manual para staging/produccion.
-- `.github/workflows/ci.yml`: baseline minima de build/tests automatizados.
+- `.github/workflows/ci.yml`: build/tests automatizados del repo.
 
 Nota de arquitectura vigente:
 
@@ -165,6 +165,25 @@ npm run db:reset
 ```
 
 Nota: este comando es destructivo sobre `public`.
+
+### Aplicar migraciones versionadas pendientes
+
+```powershell
+cd C:\Jose\Proyecto Novogar\backend
+npm run db:migrate
+```
+
+### Revisar estado del tracking de migraciones
+
+```powershell
+cd C:\Jose\Proyecto Novogar\backend
+npm run db:migrate:status
+```
+
+Nota:
+
+- los comandos `npm run db:migrate:*` legacy ya no forman parte del flujo operativo del repo;
+- para cambios de schema el camino oficial es `npm run db:migrate`.
 
 ### Levantar backend
 
@@ -310,6 +329,8 @@ Causa probable:
 
 Solucion:
 
+- usar `npm test` o `npm run test:ci`, que ya ejecutan la suite estable en un solo proceso,
+- dejar `node --test ...` y `npm run test:watch` para entornos donde el runner pueda crear procesos hijos,
 - correr tests puntuales con `node tests/...`,
 - o ejecutar fuera del sandbox si aplica.
 
@@ -317,7 +338,7 @@ Solucion:
 
 ### Expandir validacion de entorno y CI
 
-La configuracion principal ya salio del codigo sensible y existe una CI baseline, pero todavia conviene ampliar cobertura a mas scripts, mas suites frontend y chequeos de release.
+La configuracion principal ya salio del codigo sensible y la CI ya valida lint, build, tests y chequeos de release base, pero todavia conviene ampliar cobertura a smoke checks mas cercanos al dominio y a scripts operativos secundarios.
 
 Impacto:
 
@@ -349,18 +370,33 @@ Impacto:
 - facilita entornos nuevos,
 - reduce errores de credenciales y puertos.
 
-### Agregar CI minima
+### Ampliar checks de CI
 
-Minimo recomendado:
+La CI actual en `.github/workflows/ci.yml` hoy corre:
 
+- `backend npm run check:release`
+- `frontend npm run lint`
 - `frontend npm run build`
-- `frontend npm test`
-- `backend npm test`
+- `frontend npm run test:ci`
+- `backend npm run test:ci`
+
+Ademas quedaron disponibles comandos manuales para release local:
+
+- `backend npm run check:release`
+- `frontend npm run lint`
+- `frontend npm run build`
+- `frontend npm run test:ci`
+
+Lo siguiente natural es sumar:
+
+- smoke checks mas cercanos a despliegue y negocio
+- validaciones adicionales para scripts operativos criticos
 
 Impacto:
 
 - evita merges con regresiones basicas,
-- da confianza para refactors SOLID desatendidos.
+- sube la confianza del release,
+- reduce sorpresas entre entorno local y GitHub.
 
 ### Seguir aplicando SRP/SOLID por slices
 

@@ -27,7 +27,6 @@ export const buildSociedadLabel = ({ sociedadInfo, sociedadId }) => (
 );
 
 export const buildTramiteDetallePageViewModel = ({
-  id,
   sociedadId,
   detalle,
   documentosActivos,

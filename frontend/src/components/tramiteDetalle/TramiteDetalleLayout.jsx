@@ -58,7 +58,7 @@ function TramiteDetalleLayout({ layoutProps }) {
 
       return next;
     });
-  }, [table.activeTab, documentosActivosIdsKey]);
+  }, [table.activeTab, table.documentosActivos, documentosActivosIdsKey]);
 
   const handleToggleExpandedDoc = useCallback((facturaId) => {
     setExpandedDocIds((previous) => {

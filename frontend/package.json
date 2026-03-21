@@ -1,13 +1,13 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "test": "node --test --experimental-specifier-resolution=node tests/**/*.test.js",
-    "test:ci": "node tests/ci.baseline.test.js",
+    "test": "node tests/run-ci-suite.js",
+    "test:ci": "node tests/run-ci-suite.js",
     "test:watch": "node --test --watch --experimental-specifier-resolution=node tests/**/*.test.js",
     "lint": "eslint .",
     "preview": "vite preview"

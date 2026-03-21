@@ -34,6 +34,37 @@ const buildAuthHeaders = (headers = {}) => {
 
 const buildProtectedResourceUrl = (url) => String(url || '');
 
+const closePendingWindow = (pendingWindow) => {
+  try {
+    pendingWindow?.close?.();
+  } catch {
+    // Ignore close failures to avoid masking the original error.
+  }
+};
+
+const navigatePendingWindow = (pendingWindow, url) => {
+  if (!pendingWindow) {
+    return false;
+  }
+
+  try {
+    pendingWindow.opener = null;
+  } catch {
+    // Ignore opener assignment failures and continue with navigation.
+  }
+
+  try {
+    if (typeof pendingWindow.location?.replace === 'function') {
+      pendingWindow.location.replace(url);
+    } else {
+      pendingWindow.location = url;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 const readErrorMessage = async (response) => {
   const contentType = response.headers.get('content-type') || '';
 
@@ -77,29 +108,34 @@ const fetchProtectedResource = async (url, options = {}) => {
 };
 
 const openProtectedInNewTab = async (url, options = {}) => {
-  const openWindow = getOpenWindow(options.openWindow);
+  const { openWindow: customOpenWindow, ...fetchOptions } = options;
+  const openWindow = getOpenWindow(customOpenWindow);
   const urlApi = getUrlApi();
   const pendingWindow = openWindow
-    ? openWindow('', NEW_TAB_TARGET, NEW_TAB_FEATURES)
+    ? openWindow('', NEW_TAB_TARGET)
     : null;
 
   try {
-    const { blob } = await fetchProtectedResource(url);
+    const { blob } = await fetchProtectedResource(url, fetchOptions);
     if (!urlApi?.createObjectURL) {
       throw new Error('No se pudo crear la vista previa del recurso');
     }
 
     const objectUrl = urlApi.createObjectURL(blob);
-    if (pendingWindow) {
-      pendingWindow.opener = null;
-      pendingWindow.location = objectUrl;
-    } else if (openWindow) {
+
+    if (navigatePendingWindow(pendingWindow, objectUrl)) {
+      return objectUrl;
+    }
+
+    closePendingWindow(pendingWindow);
+
+    if (openWindow) {
       openWindow(objectUrl, NEW_TAB_TARGET, NEW_TAB_FEATURES);
     }
 
     return objectUrl;
   } catch (error) {
-    pendingWindow?.close?.();
+    closePendingWindow(pendingWindow);
     throw error;
   }
 };

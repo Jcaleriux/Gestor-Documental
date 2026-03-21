@@ -609,7 +609,6 @@ function App() {
   const {
     sociedades,
     sociedadId,
-    authToken,
     authLoading,
     authUser,
     canEditContabilizacion,

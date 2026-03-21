@@ -4,6 +4,8 @@ Guia manual minima para desplegar `Proyecto Novogar` sin depender de memoria. Es
 
 ## 1. Antes De Empezar
 
+- [ ] Confirmar la version objetivo del release en `VERSION`.
+- [ ] Confirmar que `CHANGELOG.md` ya refleja el alcance real del corte.
 - [ ] Confirmar el alcance del release: que cambia, si toca schema, si toca permisos, si toca rutas o payloads.
 - [ ] Confirmar el entorno objetivo: desarrollo compartido, staging o produccion.
 - [ ] Confirmar acceso a PostgreSQL, filesystem operativo y credenciales del servidor.
@@ -41,6 +43,13 @@ cd backend
 npm install
 ```
 
+- [ ] Ejecutar chequeos base de release:
+
+```bash
+cd backend
+npm run check:release
+```
+
 - [ ] Ejecutar pruebas relevantes del release.
 - [ ] Si hay cambios de configuracion o arranque, validar sintaxis con `node -c` sobre los archivos tocados.
 
@@ -53,11 +62,25 @@ cd frontend
 npm install
 ```
 
+- [ ] Ejecutar lint:
+
+```bash
+cd frontend
+npm run lint
+```
+
 - [ ] Generar build:
 
 ```bash
 cd frontend
 npm run build
+```
+
+- [ ] Ejecutar tests CI de frontend:
+
+```bash
+cd frontend
+npm run test:ci
 ```
 
 ## 4. Base De Datos
@@ -121,6 +144,8 @@ Nota: hoy el repo documenta `npm run dev` como forma principal de levantar la AP
 
 ## 7. Cierre
 
+- [ ] Confirmar el commit exacto liberado.
+- [ ] Crear o registrar el tag Git oficial correspondiente, por ejemplo `v1.0.0`, sobre ese commit.
 - [ ] Registrar que version o commit quedo desplegado.
 - [ ] Registrar migraciones o scripts manuales ejecutados.
 - [ ] Registrar cualquier ajuste de entorno aplicado fuera del repo.

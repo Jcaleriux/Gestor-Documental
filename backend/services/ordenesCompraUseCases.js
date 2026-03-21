@@ -91,7 +91,7 @@ const withSchemaGuard = async (handler) => {
     return await handler();
   } catch (error) {
     if (error?.code === '42P01' || error?.code === '42703') {
-      throw createError(500, 'Falta la migracion de ordenes de compra. Ejecute: npm run db:migrate:ordenes-compra');
+      throw createError(500, 'Falta una migracion de schema requerida. Ejecute: npm run db:migrate');
     }
     throw error;
   }

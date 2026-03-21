@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import DataTable from '../../common/DataTable';
 import EmptyState from '../../common/EmptyState';
 import SearchInput from '../../common/SearchInput';
-import { filterCentrosCosto, formatCentroCostoLabel } from '../../../utils/centrosCosto.js';
+import { filterCentrosCosto } from '../../../utils/centrosCosto.js';
 
 const HEADERS = [
   { key: 'codigo', label: 'Codigo' },

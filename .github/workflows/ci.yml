@@ -30,6 +30,9 @@ jobs:
       - name: Install backend dependencies
         run: npm ci
 
+      - name: Run backend release checks
+        run: npm run check:release
+
       - name: Run backend CI tests
         run: npm run test:ci
 
@@ -53,8 +56,11 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Run frontend lint
+        run: npm run lint
+
       - name: Build frontend
         run: npm run build
 
-      - name: Run frontend CI baseline tests
+      - name: Run frontend CI tests
         run: npm run test:ci

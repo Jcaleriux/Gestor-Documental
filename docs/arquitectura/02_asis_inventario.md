@@ -63,6 +63,7 @@ Registradas en `backend/app.js`:
 
 5. Trazabilidad:
 - `auditoria`
+- `schema_migrations`
 - `facturas_estado_documental_historial`
 - `facturas_workflow_pago_historial`
 - `facturas_estado_mixto_historial`
@@ -87,7 +88,7 @@ Registradas en `backend/app.js`:
 
 ## Gaps para el rediseño
 1. Estado documental y estado de workflow mezclados en una columna de factura.
-2. Migraciones no estandarizadas de forma unica/versionada para todo cambio nuevo.
+2. La ruta versionada de migraciones ya existe y el flujo operativo del repo ya converge en `db:migrate`; lo que queda es solo SQL historico conservado como referencia.
 3. Falta documentacion arquitectonica formal y catalogo de decisiones.
 
 ## Estado de deprecacion suave

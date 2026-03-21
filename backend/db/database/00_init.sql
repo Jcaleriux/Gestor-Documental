@@ -1,6 +1,19 @@
 -- Init schema for fresh installs
 BEGIN;
 
+CREATE TABLE IF NOT EXISTS public.schema_migrations
+(
+    version character varying(32) NOT NULL,
+    name character varying(150) NOT NULL,
+    checksum character varying(128),
+    source character varying(30) NOT NULL DEFAULT 'migration'::character varying,
+    executed_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    execution_ms integer NOT NULL DEFAULT 0,
+    metadata jsonb,
+    CONSTRAINT schema_migrations_pkey PRIMARY KEY (version),
+    CONSTRAINT schema_migrations_source_check CHECK (source IN ('bootstrap', 'migration'))
+);
+
 CREATE TABLE IF NOT EXISTS public.auditoria
 (
     id serial NOT NULL,
@@ -997,6 +1010,19 @@ CREATE INDEX IF NOT EXISTS idx_reservas_operaciones_documentos_codigo
     ON public.reservas_operaciones_documentos(codigo_documento);
 CREATE INDEX IF NOT EXISTS idx_reservas_operaciones_documentos_creado_en
     ON public.reservas_operaciones_documentos(creado_en DESC);
+
+INSERT INTO public.schema_migrations
+    (version, name, checksum, source, execution_ms, metadata)
+VALUES
+    (
+      '20260320_0000',
+      'baseline_00_init_runtime_schema',
+      'bootstrap:00_init',
+      'bootstrap',
+      0,
+      '{"bootstrap_file":"00_init.sql","note":"Baseline generado desde bootstrap limpio"}'::jsonb
+    )
+ON CONFLICT (version) DO NOTHING;
 
 COMMIT;
 

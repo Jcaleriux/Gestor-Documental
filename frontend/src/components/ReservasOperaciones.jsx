@@ -166,7 +166,9 @@ function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
       });
       setShowCreatePanel(false);
       setCreateForm(CREATE_FORM_INITIAL);
-    } catch {}
+    } catch (error) {
+      void error;
+    }
   };
 
   const executeStateAction = async ({ operationId, action }) => {
@@ -188,7 +190,9 @@ function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
       resetDetailState();
       setReplaceFile(null);
       setReplaceReason('');
-    } catch {}
+    } catch (error) {
+      void error;
+    }
   };
 
   const startTransfer = (operation) => {
@@ -227,7 +231,9 @@ function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
       resetDetailState();
       setReplaceFile(null);
       setReplaceReason('');
-    } catch {}
+    } catch (error) {
+      void error;
+    }
   };
 
   const handleToggleOperationDetail = async (operationId) => {
@@ -235,7 +241,9 @@ function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
     setReplaceReason('');
     try {
       await toggleOperationDetail(operationId);
-    } catch {}
+    } catch (error) {
+      void error;
+    }
   };
 
   const handleReplaceDocument = async (event, operationId, selectedDoc) => {
@@ -254,7 +262,9 @@ function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
       setReplaceFile(null);
       setReplaceReason('');
       await refetch({ showLoader: false }).catch(() => {});
-    } catch {}
+    } catch (error) {
+      void error;
+    }
   };
 
   if (!sociedadId) {
