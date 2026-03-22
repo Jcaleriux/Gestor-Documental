@@ -7,7 +7,7 @@ const apiProxyTarget = process.env.NOVOGAR_API_PROXY_TARGET || 'http://localhost
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: '127.0.0.1',
+    host: '0.0.0.0',
     cors: false,
     proxy: {
       '/api': apiProxyTarget
