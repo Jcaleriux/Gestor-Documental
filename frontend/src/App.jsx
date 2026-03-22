@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -8,6 +8,11 @@ import {
   useLocation,
   useParams,
 } from 'react-router-dom';
+import {
+  buildExpandedSectionsState,
+  buildMobileSidebarOpen,
+  buildVisibleExpandedSections,
+} from './app/appShellState.js';
 import { buildNavigationSections } from './app/buildNavigationSections.js';
 import { useAppSession } from './hooks/app/useAppSession.js';
 import LoadingState from './components/common/LoadingState.jsx';
@@ -56,23 +61,39 @@ const parseJsonStorage = (key, fallback) => {
 
 const readCollapsedPreference = () => parseJsonStorage(SIDEBAR_COLLAPSED_KEY, false) === true;
 
-const buildExpandedSectionsState = (sections, storedValue = {}) => {
-  const defaults = Object.fromEntries(sections.map((section) => [section.id, true]));
-
-  if (!storedValue || typeof storedValue !== 'object') {
-    return defaults;
-  }
-
-  return Object.keys(defaults).reduce((result, sectionId) => {
-    result[sectionId] = storedValue[sectionId] !== undefined
-      ? Boolean(storedValue[sectionId])
-      : defaults[sectionId];
-    return result;
-  }, {});
-};
-
 const readExpandedSectionsPreference = (sections) =>
   buildExpandedSectionsState(sections, parseJsonStorage(SIDEBAR_SECTIONS_KEY, {}));
+
+const getMediaQuerySnapshot = (query) => {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  return window.matchMedia(query).matches;
+};
+
+const subscribeToMediaQuery = (query, onStoreChange) => {
+  if (typeof window === 'undefined') {
+    return () => {};
+  }
+
+  const media = window.matchMedia(query);
+  const handleChange = () => onStoreChange();
+
+  if (typeof media.addEventListener === 'function') {
+    media.addEventListener('change', handleChange);
+    return () => media.removeEventListener('change', handleChange);
+  }
+
+  media.addListener(handleChange);
+  return () => media.removeListener(handleChange);
+};
+
+const useMediaQueryValue = (query) => useSyncExternalStore(
+  (onStoreChange) => subscribeToMediaQuery(query, onStoreChange),
+  () => getMediaQuerySnapshot(query),
+  () => false,
+);
 
 const ICONS = Object.freeze({
   menu: (
@@ -265,13 +286,7 @@ function AuthenticatedAppShell({
   userPermissions,
 }) {
   const location = useLocation();
-  const [isMobileView, setIsMobileView] = useState(() => {
-    if (typeof window === 'undefined') {
-      return false;
-    }
-
-    return window.matchMedia(MOBILE_MEDIA_QUERY).matches;
-  });
+  const isMobileView = useMediaQueryValue(MOBILE_MEDIA_QUERY);
 
   const navigationSections = useMemo(() => {
     return buildNavigationSections({
@@ -290,39 +305,14 @@ function AuthenticatedAppShell({
   ]);
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(readCollapsedPreference);
-  const [expandedSections, setExpandedSections] = useState(() => readExpandedSectionsPreference(navigationSections));
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return undefined;
-    }
-
-    const media = window.matchMedia(MOBILE_MEDIA_QUERY);
-    const handleMediaChange = (event) => {
-      setIsMobileView(event.matches);
-    };
-
-    setIsMobileView(media.matches);
-
-    if (typeof media.addEventListener === 'function') {
-      media.addEventListener('change', handleMediaChange);
-      return () => media.removeEventListener('change', handleMediaChange);
-    }
-
-    media.addListener(handleMediaChange);
-    return () => media.removeListener(handleMediaChange);
-  }, []);
-
-  useEffect(() => {
-    if (!isMobileView) {
-      setMobileSidebarOpen(false);
-    }
-  }, [isMobileView]);
-
-  useEffect(() => {
-    setExpandedSections((previous) => buildExpandedSectionsState(navigationSections, previous));
-  }, [navigationSections]);
+  const [expandedSectionsState, setExpandedSectionsState] = useState(() => ({
+    pathname: '',
+    values: readExpandedSectionsPreference(navigationSections),
+  }));
+  const [mobileSidebarState, setMobileSidebarState] = useState(() => ({
+    pathname: '',
+    open: false,
+  }));
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -332,6 +322,32 @@ function AuthenticatedAppShell({
     window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, JSON.stringify(sidebarCollapsed));
   }, [sidebarCollapsed]);
 
+  const activeSectionId = useMemo(() => {
+    const activeSection = navigationSections.find((section) =>
+      section.items.some((item) => pathMatches(location.pathname, item.to))
+    );
+
+    return activeSection?.id || null;
+  }, [location.pathname, navigationSections]);
+  const expandedSections = useMemo(() => buildVisibleExpandedSections({
+    sections: navigationSections,
+    storedValue: expandedSectionsState.values,
+    activeSectionId,
+    pathname: location.pathname,
+    syncedPathname: expandedSectionsState.pathname,
+  }), [
+    activeSectionId,
+    expandedSectionsState.pathname,
+    expandedSectionsState.values,
+    location.pathname,
+    navigationSections,
+  ]);
+  const mobileSidebarOpen = useMemo(() => buildMobileSidebarOpen({
+    isMobileView,
+    pathname: location.pathname,
+    state: mobileSidebarState,
+  }), [isMobileView, location.pathname, mobileSidebarState]);
+
   useEffect(() => {
     if (typeof window === 'undefined') {
       return;
@@ -340,46 +356,41 @@ function AuthenticatedAppShell({
     window.localStorage.setItem(SIDEBAR_SECTIONS_KEY, JSON.stringify(expandedSections));
   }, [expandedSections]);
 
-  const activeSectionId = useMemo(() => {
-    const activeSection = navigationSections.find((section) =>
-      section.items.some((item) => pathMatches(location.pathname, item.to))
-    );
-
-    return activeSection?.id || null;
-  }, [location.pathname, navigationSections]);
-
-  useEffect(() => {
-    if (activeSectionId) {
-      setExpandedSections((previous) => {
-        if (previous[activeSectionId] === true) {
-          return previous;
-        }
-
-        return {
-          ...previous,
-          [activeSectionId]: true,
-        };
-      });
-    }
-
-    setMobileSidebarOpen(false);
-  }, [activeSectionId, location.pathname]);
-
   const toggleSidebar = useCallback(() => {
     if (isMobileView) {
-      setMobileSidebarOpen((previous) => !previous);
+      setMobileSidebarState({
+        pathname: location.pathname,
+        open: !mobileSidebarOpen,
+      });
       return;
     }
 
     setSidebarCollapsed((previous) => !previous);
-  }, [isMobileView]);
+  }, [isMobileView, location.pathname, mobileSidebarOpen]);
+
+  const closeMobileSidebar = useCallback(() => {
+    setMobileSidebarState({
+      pathname: location.pathname,
+      open: false,
+    });
+  }, [location.pathname]);
+
+  const openMobileSidebar = useCallback(() => {
+    setMobileSidebarState({
+      pathname: location.pathname,
+      open: true,
+    });
+  }, [location.pathname]);
 
   const toggleSection = useCallback((sectionId) => {
-    setExpandedSections((previous) => ({
-      ...previous,
-      [sectionId]: !(previous[sectionId] ?? true),
-    }));
-  }, []);
+    setExpandedSectionsState({
+      pathname: location.pathname,
+      values: {
+        ...buildExpandedSectionsState(navigationSections, expandedSections),
+        [sectionId]: !(expandedSections[sectionId] ?? true),
+      },
+    });
+  }, [expandedSections, location.pathname, navigationSections]);
 
   return (
     <div className="app-shell">
@@ -388,7 +399,7 @@ function AuthenticatedAppShell({
           type="button"
           className="sidebar-overlay"
           aria-label="Cerrar menu lateral"
-          onClick={() => setMobileSidebarOpen(false)}
+          onClick={closeMobileSidebar}
         />
       )}
 
@@ -449,6 +460,7 @@ function AuthenticatedAppShell({
                         to={item.to}
                         end={item.to === '/'}
                         title={sidebarCollapsed && !isMobileView ? item.label : undefined}
+                        onClick={closeMobileSidebar}
                         className={({ isActive }) => ['menu-link', isActive ? 'active' : ''].filter(Boolean).join(' ')}
                       >
                         <span className="menu-link-icon" aria-hidden="true">
@@ -483,7 +495,7 @@ function AuthenticatedAppShell({
               className="mobile-menu-btn"
               type="button"
               aria-label="Abrir menu lateral"
-              onClick={() => setMobileSidebarOpen(true)}
+              onClick={openMobileSidebar}
             >
               <AppIcon name="menu" />
             </button>

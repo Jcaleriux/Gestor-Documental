@@ -19,6 +19,10 @@ import {
   buildFilterChips,
   buildVisiblePages,
 } from './notasCredito/notasCreditoPageHelpers.js';
+import {
+  buildNotasCreditoViewScope,
+  buildScopedPanelVisible,
+} from './notasCredito/notasCreditoUiState.js';
 import { LOADING_LABELS, NOTAS_CREDITO_LABELS } from '../utils/uiLabels.js';
 
 const clearFilterByKey = ({
@@ -63,7 +67,17 @@ const clearFilterByKey = ({
 };
 
 function NotasCredito({ sociedadId }) {
-  const [showFilters, setShowFilters] = useState(false);
+  const viewScope = useMemo(() => buildNotasCreditoViewScope({
+    sociedadId,
+  }), [sociedadId]);
+  const [filtersPanelState, setFiltersPanelState] = useState(() => ({
+    scope: viewScope,
+    visible: false,
+  }));
+  const showFilters = useMemo(() => buildScopedPanelVisible({
+    scope: viewScope,
+    state: filtersPanelState,
+  }), [filtersPanelState, viewScope]);
 
   const {
     search,
@@ -127,7 +141,6 @@ function NotasCredito({ sociedadId }) {
 
   useEffect(() => {
     resetPaginationAndSort();
-    setShowFilters(false);
   }, [resetPaginationAndSort, sociedadId]);
 
   const activeFilterChips = useMemo(() => buildFilterChips({
@@ -201,7 +214,10 @@ function NotasCredito({ sociedadId }) {
               <button
                 className="btn btn-outline-secondary"
                 type="button"
-                onClick={() => setShowFilters((previous) => !previous)}
+                onClick={() => setFiltersPanelState({
+                  scope: viewScope,
+                  visible: !showFilters,
+                })}
               >
                 {NOTAS_CREDITO_LABELS.filtersButton}
               </button>

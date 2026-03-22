@@ -10,7 +10,8 @@
     "test:ci": "node tests/run-ci-suite.js",
     "test:watch": "node --test --watch --experimental-specifier-resolution=node tests/**/*.test.js",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "preprod:preview": "node scripts/run_preprod_preview.mjs"
   },
   "dependencies": {
     "@popperjs/core": "^2.11.8",

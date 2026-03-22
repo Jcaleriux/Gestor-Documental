@@ -282,6 +282,21 @@ const buildFacturasListWhere = ({
     `);
   }
 
+  if (dashboardPreset === 'en_revision') {
+    clauses.push(`
+      COALESCE(fe.estado, '${FACTURA_ESTADOS.NO_CONTABILIZADO}') = '${FACTURA_ESTADOS.EN_REVISION}'
+    `);
+  }
+
+  if (dashboardPreset === 'en_tramite') {
+    clauses.push(`
+      COALESCE(fe.estado, '${FACTURA_ESTADOS.NO_CONTABILIZADO}') IN (
+        '${FACTURA_ESTADOS.EN_TRAMITE_PAGO}',
+        '${FACTURA_ESTADOS.PAGADO_PARCIALMENTE}'
+      )
+    `);
+  }
+
   if (dashboardPreset === 'por_pagar') {
     clauses.push(`
       COALESCE(fe.estado, '${FACTURA_ESTADOS.NO_CONTABILIZADO}') IN ${estadosFlujoPagoFacturasExpression}

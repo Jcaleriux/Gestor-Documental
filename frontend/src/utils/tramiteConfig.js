@@ -3,6 +3,7 @@ const ESTADOS_TRAMITE = [
   'en_aprobacion_gerencia_contable',
   'en_aprobacion_gerencia_financiera',
   'en_revision_tesoreria',
+  'en_revision_tesoreria_1',
   'en_revision_tesoreria_2',
   'pagado',
   'cancelado'

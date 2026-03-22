@@ -73,6 +73,29 @@ export const buildRetencionesLayoutProps = ({ retencionesActivas }) => ({
   retencionesActivas
 });
 
+export const buildCaratulasLayoutProps = ({
+  tramite,
+  caratula,
+  providerGroups,
+  userPermissions,
+  handleUploadCaratulas,
+  handleResolveCaratulas,
+  uploadingCaratulas,
+  resolvingCaratulaGroupKey,
+  sociedadLabel
+}) => ({
+  caratula,
+  providerGroups,
+  tramiteEstado: tramite.estado,
+  permisos: getPermisosTramite({ userPermissions, estado: tramite.estado }),
+  onUploadCaratulas: handleUploadCaratulas,
+  onResolveCaratulas: handleResolveCaratulas,
+  uploadingCaratulas,
+  resolvingCaratulaGroupKey,
+  sociedadLabel,
+  labels: TRAMITE_LABELS.caratulas
+});
+
 export const buildOverrideLayoutProps = ({
   overrideUser,
   overrideEstado,
@@ -99,6 +122,8 @@ export const buildTableLayoutProps = ({
   activeTab,
   documentos,
   documentosActivos,
+  caratula,
+  providerGroups,
   tramite,
   userPermissions,
   tesoreriaDestino,
@@ -113,6 +138,8 @@ export const buildTableLayoutProps = ({
   activeTab,
   documentos,
   documentosActivos,
+  caratula,
+  providerGroups,
   permisos: getPermisosTramite({ userPermissions, estado: tramite.estado }),
   destinosTesoreria: DESTINOS_TESORERIA,
   tesoreriaDestino,
@@ -144,6 +171,7 @@ export const buildTramiteDetalleLayoutProps = (input) => {
     meta: buildMetaLayoutProps(input),
     pagos: buildPagosLayoutProps(input),
     retenciones: buildRetencionesLayoutProps(input),
+    caratulas: buildCaratulasLayoutProps(input),
     override: buildOverrideLayoutProps(input),
     table: buildTableLayoutProps(input)
   };

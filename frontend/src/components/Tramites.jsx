@@ -1,13 +1,66 @@
-﻿import { useTramites } from '../hooks/useTramites';
+import { useCallback, useEffect, useMemo } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTramites } from '../hooks/useTramites';
 import { useTramitesViewModel } from '../hooks/tramites/useTramitesViewModel';
 import PageHeader from './common/PageHeader';
 import LoadingState from './common/LoadingState';
 import TramiteCreatePanel from './tramites/TramiteCreatePanel';
 import TramitesTableSection from './tramites/TramitesTableSection';
+import {
+  buildTramitesSearch,
+  getTramitesReturnActionLabel,
+  parseTramitesEstadoFromSearch,
+  parseTramitesReturnContextFromSearch,
+} from './tramites/tramitesPageHelpers';
 import { TRAMITES_LABELS, LOADING_LABELS } from '../utils/uiLabels';
 
 function Tramites({ sociedadId, canCreateTramite = true, authUser = null }) {
+  const location = useLocation();
+  const navigate = useNavigate();
   const actorUsuario = authUser?.email || authUser?.nombre || 'system';
+  const estado = useMemo(
+    () => parseTramitesEstadoFromSearch(location.search),
+    [location.search],
+  );
+  const returnContext = useMemo(
+    () => parseTramitesReturnContextFromSearch(location.search),
+    [location.search],
+  );
+  const canonicalSearch = useMemo(
+    () => buildTramitesSearch({
+      estado,
+      returnTo: returnContext.returnTo,
+      returnLabel: returnContext.returnLabel,
+    }),
+    [estado, returnContext.returnLabel, returnContext.returnTo],
+  );
+
+  const handleEstadoChange = useCallback((nextEstado) => {
+    const nextSearch = buildTramitesSearch({
+      estado: nextEstado,
+      returnTo: returnContext.returnTo,
+      returnLabel: returnContext.returnLabel,
+    });
+
+    if (nextSearch !== location.search) {
+      navigate({
+        pathname: location.pathname,
+        search: nextSearch,
+      });
+    }
+  }, [location.pathname, location.search, navigate, returnContext.returnLabel, returnContext.returnTo]);
+
+  useEffect(() => {
+    if (canonicalSearch !== location.search) {
+      navigate(
+        {
+          pathname: location.pathname,
+          search: canonicalSearch,
+        },
+        { replace: true },
+      );
+    }
+  }, [canonicalSearch, location.pathname, location.search, navigate]);
 
   const {
     tramites,
@@ -20,14 +73,12 @@ function Tramites({ sociedadId, canCreateTramite = true, authUser = null }) {
     actionError,
     setActionError,
     fetchFacturasDisponibles,
-    crearTramite: crearTramiteApi
-  } = useTramites({ sociedadId });
+    crearTramite: crearTramiteApi,
+  } = useTramites({ sociedadId, estado });
 
   const {
     search,
     setSearch,
-    estado,
-    setEstado,
     showCreate,
     selectedFacturas,
     selectedRetenciones,
@@ -47,17 +98,21 @@ function Tramites({ sociedadId, canCreateTramite = true, authUser = null }) {
     totalPorMoneda,
     monedasDisponibles,
     marcarTodosVisibles,
-    desmarcarTodos
+    desmarcarTodos,
   } = useTramitesViewModel({
     tramites,
     facturasDisponibles,
     retencionesDisponibles,
     canCreateTramite,
     actorUsuario,
+    estadoState: {
+      value: estado,
+      onChange: handleEstadoChange,
+    },
     fetchFacturasDisponibles,
     crearTramiteApi,
     setActionMessage,
-    setActionError
+    setActionError,
   });
 
   if (!sociedadId) {
@@ -71,11 +126,20 @@ function Tramites({ sociedadId, canCreateTramite = true, authUser = null }) {
       <PageHeader
         title={TRAMITES_LABELS.pageTitle}
         subtitle={TRAMITES_LABELS.pageSubtitle}
-        actions={canCreateTramite ? (
-          <button className="btn btn-primary" type="button" onClick={openCreate} disabled={!sociedadId}>
-            {TRAMITES_LABELS.createButton}
-          </button>
-        ) : null}
+        actions={(
+          <div className="d-flex gap-2">
+            {returnContext.returnTo ? (
+              <Link className="btn btn-outline-secondary" to={returnContext.returnTo}>
+                {getTramitesReturnActionLabel(returnContext.returnLabel)}
+              </Link>
+            ) : null}
+            {canCreateTramite ? (
+              <button className="btn btn-primary" type="button" onClick={openCreate} disabled={!sociedadId}>
+                {TRAMITES_LABELS.createButton}
+              </button>
+            ) : null}
+          </div>
+        )}
       />
 
       {!canCreateTramite && (
@@ -115,7 +179,7 @@ function Tramites({ sociedadId, canCreateTramite = true, authUser = null }) {
         search={search}
         onSearchChange={setSearch}
         estado={estado}
-        onEstadoChange={setEstado}
+        onEstadoChange={handleEstadoChange}
         tramitesFiltrados={tramitesFiltrados}
       />
     </div>

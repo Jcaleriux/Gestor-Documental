@@ -16,6 +16,8 @@ export const useTramiteDetalle = ({ id, sociedadId, dependencies = {} }) => {
     setTramite,
     setDocumentos,
     setRetenciones,
+    setCaratula,
+    setProviderGroups,
     setLoading,
     setActionError,
     setHistorial,
@@ -30,13 +32,25 @@ export const useTramiteDetalle = ({ id, sociedadId, dependencies = {} }) => {
       setTramite(data.tramite);
       setDocumentos(data.documentos);
       setRetenciones(data.retenciones);
+      setCaratula(data.caratula);
+      setProviderGroups(data.providerGroups);
     } catch (err) {
       console.error(err);
       setActionError('No se pudo cargar el tramite.');
     } finally {
       setLoading(false);
     }
-  }, [api, id, setActionError, setDocumentos, setLoading, setRetenciones, setTramite]);
+  }, [
+    api,
+    id,
+    setActionError,
+    setCaratula,
+    setDocumentos,
+    setLoading,
+    setProviderGroups,
+    setRetenciones,
+    setTramite
+  ]);
 
   const fetchSociedad = useCallback(async () => {
     try {

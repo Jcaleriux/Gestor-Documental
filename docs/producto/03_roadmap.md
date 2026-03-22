@@ -40,7 +40,17 @@ Epic:
 
 - `epics/EPIC-A-002_reservas_operaciones_y_documentos.md`
 
-### 4. Hardening tecnico del frontend y la operacion
+### 4. Tramites de pago con caratulas por proveedor
+
+- introducir una parada inicial de tesoreria despues de gerencia,
+- permitir carga y asignacion de caratulas por proveedor dentro del tramite,
+- y mejorar la vista unificada con preview PDF, warnings y resolucion manual.
+
+Epic:
+
+- `epics/EPIC-A-005_caratulas_tramites_pago_por_proveedor.md`
+
+### 5. Hardening tecnico del frontend y la operacion
 
 - sanear patrones de UI que hoy requieren tolerancia en lint,
 - ampliar smoke checks funcionales,
@@ -50,7 +60,7 @@ Epic:
 
 - `epics/EPIC-A-003_hardening_frontend_y_operacion.md`
 
-### 5. Versionado y primer release a produccion
+### 6. Versionado y primer release a produccion
 
 - formalizar versionado del producto,
 - dejar changelog y fuente de verdad de version,

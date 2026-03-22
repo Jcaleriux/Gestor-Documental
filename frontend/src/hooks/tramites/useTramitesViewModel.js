@@ -21,17 +21,23 @@ export const useTramitesViewModel = ({
   retencionesDisponibles,
   canCreateTramite,
   actorUsuario,
+  searchState = null,
+  estadoState = null,
   fetchFacturasDisponibles,
   crearTramiteApi,
   setActionMessage,
   setActionError
 }) => {
-  const [search, setSearch] = useState('');
-  const [estado, setEstado] = useState('');
+  const [internalSearch, setInternalSearch] = useState('');
+  const [internalEstado, setInternalEstado] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [selectedFacturas, setSelectedFacturas] = useState(new Set());
   const [selectedRetenciones, setSelectedRetenciones] = useState(new Set());
   const [createFilters, setCreateFilters] = useState(initialCreateFilters);
+  const search = searchState?.value ?? internalSearch;
+  const setSearch = searchState?.onChange ?? setInternalSearch;
+  const estado = estadoState?.value ?? internalEstado;
+  const setEstado = estadoState?.onChange ?? setInternalEstado;
 
   const updateCreateFilter = (field) => (value) => {
     setCreateFilters((prev) => ({

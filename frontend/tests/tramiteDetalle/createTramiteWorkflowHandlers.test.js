@@ -7,7 +7,9 @@ const createDeps = () => ({
   api: {
     decisionDocumento: createMockFn(async () => ({})),
     cambiarEstado: createMockFn(async () => ({})),
-    accionTesoreria: createMockFn(async () => ({}))
+    accionTesoreria: createMockFn(async () => ({})),
+    uploadCaratulas: createMockFn(async () => ({})),
+    resolveCaratulas: createMockFn(async () => ({}))
   },
   promptMotivoFn: createMockFn(() => 'motivo-demo'),
   promptLabels: {
@@ -22,7 +24,12 @@ const createDeps = () => ({
     estadoError: 'estado-error',
     tesoreriaSuccess: 'tesoreria-ok',
     tesoreriaError: 'tesoreria-error',
-    tesoreriaDestinoRequired: 'destino-requerido'
+    tesoreriaDestinoRequired: 'destino-requerido',
+    caratulasFileRequired: 'archivo-requerido',
+    caratulasUploadSuccess: 'caratulas-ok',
+    caratulasUploadError: 'caratulas-error',
+    caratulasResolveSuccess: 'resolver-ok',
+    caratulasResolveError: 'resolver-error'
   },
   overrideLabels: {
     required: 'override-required'
@@ -47,6 +54,8 @@ const createWorkflowState = () => ({
   setOverrideEstado: createMockFn(),
   setOverrideMotivo: createMockFn(),
   setOverrideError: createMockFn(),
+  setUploadingCaratulas: createMockFn(),
+  setResolvingCaratulaGroupKey: createMockFn(),
   tesoreriaDestino: { 1: 'en_aprobacion_gerencia' },
   pagosFacturas: { 1: '75.50' }
 });
@@ -164,4 +173,35 @@ test('createTramiteWorkflowHandlers.handleAccionSiguiente para pagado envía pag
       pagos_documentos: [{ factura_id: 1, monto_pago: 99.99 }]
     }
   ]);
+});
+
+test('createTramiteWorkflowHandlers.handleResolveCaratulas llama API y refresca detalle', async () => {
+  const deps = createDeps();
+  const workflowInputs = createWorkflowInputs();
+  const workflowState = createWorkflowState();
+
+  const handlers = createTramiteWorkflowHandlers({
+    workflowInputs,
+    workflowState,
+    dependencies: deps
+  });
+
+  await handlers.handleResolveCaratulas({
+    groupKey: 'group_1',
+    providerFacturaId: 1,
+    lineMatches: [{ line_key: 'line_1', factura_id: 1 }]
+  });
+
+  assert.deepEqual(deps.api.resolveCaratulas.calls[0], [
+    88,
+    {
+      group_key: 'group_1',
+      provider_factura_id: 1,
+      line_matches: [{ line_key: 'line_1', factura_id: 1 }],
+      usuario: 'gerencia@novogar.local'
+    }
+  ]);
+  assert.deepEqual(workflowState.setResolvingCaratulaGroupKey.calls[0], ['group_1']);
+  assert.deepEqual(workflowState.setResolvingCaratulaGroupKey.calls.at(-1), ['']);
+  assert.equal(workflowInputs.fetchDetalle.calls.length, 1);
 });

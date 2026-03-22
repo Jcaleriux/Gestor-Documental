@@ -24,6 +24,10 @@ import {
   parseDashboardPresetFromSearch,
   parseReturnContextFromSearch,
 } from './facturas/facturasPageHelpers.js';
+import {
+  buildFacturasViewScope,
+  buildScopedPanelVisible,
+} from './facturas/facturasUiState.js';
 import { FACTURAS_LABELS, LOADING_LABELS } from '../utils/uiLabels.js';
 
 const clearFilterByKey = ({
@@ -87,7 +91,18 @@ function Facturas({ sociedadId, canEditContabilizacion = false }) {
     () => parseReturnContextFromSearch(location.search),
     [location.search],
   );
-  const [showFilters, setShowFilters] = useState(false);
+  const viewScope = useMemo(() => buildFacturasViewScope({
+    sociedadId,
+    dashboardPreset,
+  }), [dashboardPreset, sociedadId]);
+  const [filtersPanelState, setFiltersPanelState] = useState(() => ({
+    scope: viewScope,
+    visible: false,
+  }));
+  const showFilters = useMemo(() => buildScopedPanelVisible({
+    scope: viewScope,
+    state: filtersPanelState,
+  }), [filtersPanelState, viewScope]);
 
   const {
     search,
@@ -158,7 +173,6 @@ function Facturas({ sociedadId, canEditContabilizacion = false }) {
 
   useEffect(() => {
     resetPaginationAndSort();
-    setShowFilters(false);
   }, [dashboardPreset, resetPaginationAndSort, sociedadId]);
 
   useEffect(() => {
@@ -252,7 +266,10 @@ function Facturas({ sociedadId, canEditContabilizacion = false }) {
               <button
                 className="btn btn-outline-secondary"
                 type="button"
-                onClick={() => setShowFilters((previous) => !previous)}
+                onClick={() => setFiltersPanelState({
+                  scope: viewScope,
+                  visible: !showFilters,
+                })}
               >
                 {FACTURAS_LABELS.filtersButton}
               </button>

@@ -37,4 +37,19 @@ describe('dashboardRepository', () => {
     expect(sql).not.toContain("'estados_documento'::text AS origen_historial");
     expect(params).toEqual([18]);
   });
+
+  test('getTramitesWorkQueueSummary agrega pendientes por etapa y rechazos activos', async () => {
+    pool.query.mockResolvedValueOnce({ rows: [] });
+
+    await dashboardRepository.getTramitesWorkQueueSummary({ sociedadId: 18 });
+
+    expect(pool.query).toHaveBeenCalledTimes(1);
+
+    const [sql, params] = pool.query.mock.calls[0];
+    expect(sql).toContain('WITH tramites_base AS');
+    expect(sql).toContain('aprobaciones_pendientes_gerencia');
+    expect(sql).toContain('estado_gerencia_contable');
+    expect(sql).toContain('rechazados_activos');
+    expect(params).toEqual([18]);
+  });
 });

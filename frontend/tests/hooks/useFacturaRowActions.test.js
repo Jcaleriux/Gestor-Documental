@@ -134,3 +134,46 @@ test('useFacturaRowActions cierra el menu al hacer click fuera y al cambiar item
 
   assert.equal(hook.result.openMenuId, null);
 });
+
+test('useFacturaRowActions limpia estado derivado cuando cambia resetKey', async () => {
+  const hook = createHookHarness({
+    hook: useFacturaRowActionsHarness,
+    initialProps: {
+      items: [{ id: 4 }],
+      resetKey: '10:base',
+      dependencies: {
+        api: {
+          getMensajeHacienda: createMockFn(async () => ({ data: { data: {} } })),
+        },
+        buildAuthUrl: createMockFn((url) => url),
+        openWindow: createMockFn(),
+        eventTarget: null,
+      },
+    },
+  });
+
+  hook.result.toggleMenu(4);
+  hook.result.setActionError('fallo temporal');
+  await hook.flush({ cycles: 4 });
+
+  assert.equal(hook.result.openMenuId, 4);
+  assert.equal(hook.result.actionError, 'fallo temporal');
+
+  hook.rerender({
+    items: [{ id: 4 }],
+    resetKey: '10:otro',
+    dependencies: {
+      api: {
+        getMensajeHacienda: createMockFn(async () => ({ data: { data: {} } })),
+      },
+      buildAuthUrl: createMockFn((url) => url),
+      openWindow: createMockFn(),
+      eventTarget: null,
+    },
+  });
+  await hook.flush({ cycles: 4 });
+
+  assert.equal(hook.result.openMenuId, null);
+  assert.equal(hook.result.actionError, '');
+  assert.equal(hook.result.mhLoadingId, null);
+});

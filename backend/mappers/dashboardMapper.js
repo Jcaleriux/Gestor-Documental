@@ -6,9 +6,11 @@ const mapDocumentoRecienteRow = (row) => ({
 });
 
 const mapDashboardStats = (data) => ({ ...data });
+const mapDashboardWorkQueue = (data) => ({ ...data });
 
 module.exports = {
   mapActividadRow,
   mapDocumentoRecienteRow,
-  mapDashboardStats
+  mapDashboardStats,
+  mapDashboardWorkQueue
 };

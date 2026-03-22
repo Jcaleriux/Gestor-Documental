@@ -7,6 +7,7 @@ import {
   createProtectedResourceOpener,
   openProtectedInNewTab,
 } from '../../utils/protectedResources.js';
+import { buildListScopeKey, readScopedValue } from '../shared/listScope.js';
 
 const getDefaultEventTarget = () => (
   typeof document !== 'undefined' ? document : null
@@ -30,20 +31,17 @@ export const useFacturaRowActions = ({
     buildAuthUrl,
     openWindow,
   });
+  const scopeKey = buildListScopeKey({ items, resetKey });
 
-  const [openMenuId, setOpenMenuId] = useState(null);
-  const [mhLoadingId, setMhLoadingId] = useState(null);
-  const [actionError, setActionError] = useState('');
-
-  useEffect(() => {
-    setOpenMenuId(null);
-  }, [items]);
-
-  useEffect(() => {
-    setOpenMenuId(null);
-    setMhLoadingId(null);
-    setActionError('');
-  }, [resetKey]);
+  const [uiState, setUiState] = useState(() => ({
+    scopeKey,
+    openMenuId: null,
+    mhLoadingId: null,
+    actionError: '',
+  }));
+  const openMenuId = readScopedValue(uiState, scopeKey, 'openMenuId', null);
+  const mhLoadingId = readScopedValue(uiState, scopeKey, 'mhLoadingId', null);
+  const actionError = readScopedValue(uiState, scopeKey, 'actionError', '');
 
   useEffect(() => {
     if (!openMenuId || !eventTarget?.addEventListener || !eventTarget?.removeEventListener) {
@@ -54,12 +52,20 @@ export const useFacturaRowActions = ({
       if (event.target?.closest?.('[data-factura-menu="true"]')) {
         return;
       }
-      setOpenMenuId(null);
+      setUiState((previous) => ({
+        ...previous,
+        scopeKey,
+        openMenuId: null,
+      }));
     };
 
     const handleEscape = (event) => {
       if (event.key === 'Escape') {
-        setOpenMenuId(null);
+        setUiState((previous) => ({
+          ...previous,
+          scopeKey,
+          openMenuId: null,
+        }));
       }
     };
 
@@ -70,19 +76,31 @@ export const useFacturaRowActions = ({
       eventTarget.removeEventListener('mousedown', handlePointerDown);
       eventTarget.removeEventListener('keydown', handleEscape);
     };
-  }, [eventTarget, openMenuId]);
+  }, [eventTarget, openMenuId, scopeKey]);
 
   const closeMenu = useCallback(() => {
-    setOpenMenuId(null);
-  }, []);
+    setUiState((previous) => ({
+      ...previous,
+      scopeKey,
+      openMenuId: null,
+    }));
+  }, [scopeKey]);
 
   const toggleMenu = useCallback((facturaId) => {
-    setOpenMenuId((current) => (current === facturaId ? null : facturaId));
-  }, []);
+    setUiState((previous) => ({
+      ...previous,
+      scopeKey,
+      openMenuId: readScopedValue(previous, scopeKey, 'openMenuId', null) === facturaId ? null : facturaId,
+    }));
+  }, [scopeKey]);
 
   const clearActionError = useCallback(() => {
-    setActionError('');
-  }, []);
+    setUiState((previous) => ({
+      ...previous,
+      scopeKey,
+      actionError: '',
+    }));
+  }, [scopeKey]);
 
   const viewMensajeHacienda = useCallback(async (factura) => {
     if (!factura?.id || !factura?.has_mensaje_hacienda) {
@@ -90,14 +108,23 @@ export const useFacturaRowActions = ({
     }
 
     try {
-      setMhLoadingId(factura.id);
-      setActionError('');
+      setUiState((previous) => ({
+        ...previous,
+        scopeKey,
+        mhLoadingId: factura.id,
+        actionError: '',
+      }));
 
       const response = await api.getMensajeHacienda(factura.id);
       const rutaXml = extractXmlPath(response);
 
       if (!rutaXml) {
-        setActionError('Mensaje Hacienda sin XML.');
+        setUiState((previous) => ({
+          ...previous,
+          scopeKey,
+          actionError: 'Mensaje Hacienda sin XML.',
+          mhLoadingId: null,
+        }));
         return;
       }
 
@@ -105,11 +132,19 @@ export const useFacturaRowActions = ({
       await resolvedOpenProtectedResource(url);
     } catch (error) {
       const apiError = error?.response?.data?.error || 'Mensaje Hacienda no encontrado.';
-      setActionError(apiError);
+      setUiState((previous) => ({
+        ...previous,
+        scopeKey,
+        actionError: apiError,
+      }));
     } finally {
-      setMhLoadingId(null);
+      setUiState((previous) => ({
+        ...previous,
+        scopeKey,
+        mhLoadingId: null,
+      }));
     }
-  }, [api, extractXmlPath, resolvedOpenProtectedResource]);
+  }, [api, extractXmlPath, resolvedOpenProtectedResource, scopeKey]);
 
   return {
     actionError,
@@ -117,7 +152,13 @@ export const useFacturaRowActions = ({
     closeMenu,
     mhLoadingId,
     openMenuId,
-    setActionError,
+    setActionError: (value) => {
+      setUiState((previous) => ({
+        ...previous,
+        scopeKey,
+        actionError: String(value || ''),
+      }));
+    },
     toggleMenu,
     viewMensajeHacienda,
   };

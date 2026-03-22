@@ -15,7 +15,9 @@ test('fetchTramiteDetalleData mapea tramite/documentos/retenciones cuando succes
         data: {
           tramite: { id: 101, estado: 'en_aprobacion_gerencia' },
           documentos: [{ factura_id: 1 }],
-          retenciones: [{ id: 10 }]
+          retenciones: [{ id: 10 }],
+          caratula: { id: 88, estado: 'procesada' },
+          provider_groups: [{ group_key: 'group_1' }]
         }
       }
     }))
@@ -28,7 +30,9 @@ test('fetchTramiteDetalleData mapea tramite/documentos/retenciones cuando succes
   assert.deepEqual(data, {
     tramite: { id: 101, estado: 'en_aprobacion_gerencia' },
     documentos: [{ factura_id: 1 }],
-    retenciones: [{ id: 10 }]
+    retenciones: [{ id: 10 }],
+    caratula: { id: 88, estado: 'procesada' },
+    providerGroups: [{ group_key: 'group_1' }]
   });
 });
 
@@ -46,7 +50,9 @@ test('fetchTramiteDetalleData retorna defaults cuando success=false', async () =
   assert.deepEqual(data, {
     tramite: null,
     documentos: [],
-    retenciones: []
+    retenciones: [],
+    caratula: null,
+    providerGroups: []
   });
 });
 

@@ -22,11 +22,15 @@ const createWorkflow = () => {
     overrideError: '',
     tesoreriaDestino: { 1: 'en_aprobacion_gerencia' },
     pagosFacturas: { 1: '1000' },
+    uploadingCaratulas: false,
+    resolvingCaratulaGroupKey: '',
     activeTab: 'individual',
     setActiveTab: noop,
     accionSiguiente: { estado: 'pagado' },
     handleDecision: noop,
     handleAccionTesoreria: noop,
+    handleUploadCaratulas: noop,
+    handleResolveCaratulas: noop,
     handleOverrideEstado: noop,
     handleTesoreriaDestinoChange: noop,
     handlePagoFacturaChange: noop,
@@ -83,6 +87,8 @@ test('buildTramiteDetallePageViewModel retorna layoutProps cuando la pagina esta
       tramite: { id: 55, estado: 'en_revision_tesoreria' },
       documentos: [{ factura_id: 1 }],
       retenciones: [{ id: 9 }],
+      caratula: { id: 11, estado: 'procesada' },
+      providerGroups: [{ group_key: 'group_1', documents: [{ factura_id: 1 }], lines: [] }],
       loading: false,
       actionMessage: 'ok',
       actionError: '',
@@ -102,6 +108,7 @@ test('buildTramiteDetallePageViewModel retorna layoutProps cuando la pagina esta
   assert.equal(viewModel.layoutProps.header.title, 'Tramite #55');
   assert.equal(viewModel.layoutProps.table.sociedadLabel, 'Sociedad 10');
   assert.equal(viewModel.layoutProps.pagos.visible, true);
+  assert.equal(viewModel.layoutProps.caratulas.caratula.id, 11);
 });
 
 test('buildTramiteDetallePageViewModel evita layoutProps cuando la pagina no esta lista', () => {
@@ -112,6 +119,8 @@ test('buildTramiteDetallePageViewModel evita layoutProps cuando la pagina no est
       tramite: { id: 55, estado: 'en_revision_tesoreria' },
       documentos: [],
       retenciones: [],
+      caratula: null,
+      providerGroups: [],
       loading: false,
       actionMessage: '',
       actionError: '',

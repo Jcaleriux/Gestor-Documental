@@ -26,6 +26,7 @@ async function createTables() {
       FROM information_schema.tables
       WHERE table_schema = 'public'
         AND table_type = 'BASE TABLE'
+        AND table_name <> 'schema_migrations'
     `);
 
     if (existingTables.rows[0].total > 0) {
@@ -76,4 +77,10 @@ async function createTables() {
   }
 }
 
-createTables();
+if (require.main === module) {
+  createTables();
+}
+
+module.exports = {
+  createTables,
+};

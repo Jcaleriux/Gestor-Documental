@@ -1,4 +1,5 @@
 import { tramitesApi } from '../../services/tramitesApi.js';
+import { toBase64 } from '../tablasPago/utils.js';
 import { promptMotivo } from '../../utils/promptUtils.js';
 import { PROMPT_LABELS, TRAMITE_ALERT_LABELS } from '../../utils/uiLabels.js';
 import TRAMITE_LABELS from '../../utils/tramiteLabels.js';
@@ -71,6 +72,8 @@ export const createTramiteWorkflowHandlers = ({
     setOverrideEstado,
     setOverrideMotivo,
     setOverrideError,
+    setUploadingCaratulas,
+    setResolvingCaratulaGroupKey,
     tesoreriaDestino,
     pagosFacturas
   } = workflowState;
@@ -168,6 +171,57 @@ export const createTramiteWorkflowHandlers = ({
     }
   };
 
+  const handleUploadCaratulas = async (file) => {
+    if (!file) {
+      setActionError(alertLabels.caratulasFileRequired);
+      return false;
+    }
+
+    try {
+      setActionError('');
+      setActionMessage('');
+      setUploadingCaratulas(true);
+      const fileBase64 = await toBase64(file);
+      await api.uploadCaratulas(id, {
+        filename: file.name,
+        file_base64: fileBase64,
+        usuario: actorUsuario
+      });
+      setActionMessage(alertLabels.caratulasUploadSuccess);
+      await fetchDetalle();
+      return true;
+    } catch (err) {
+      const apiError = err.response?.data?.error || alertLabels.caratulasUploadError;
+      setActionError(apiError);
+      return false;
+    } finally {
+      setUploadingCaratulas(false);
+    }
+  };
+
+  const handleResolveCaratulas = async ({ groupKey, providerFacturaId, lineMatches }) => {
+    try {
+      setActionError('');
+      setActionMessage('');
+      setResolvingCaratulaGroupKey(groupKey);
+      await api.resolveCaratulas(id, {
+        group_key: groupKey,
+        provider_factura_id: providerFacturaId || null,
+        line_matches: Array.isArray(lineMatches) ? lineMatches : [],
+        usuario: actorUsuario
+      });
+      setActionMessage(alertLabels.caratulasResolveSuccess);
+      await fetchDetalle();
+      return true;
+    } catch (err) {
+      const apiError = err.response?.data?.error || alertLabels.caratulasResolveError;
+      setActionError(apiError);
+      return false;
+    } finally {
+      setResolvingCaratulaGroupKey('');
+    }
+  };
+
   const handleAccionSiguiente = async (estado) => {
     if (estado !== 'pagado') {
       await handleCambiarEstado(estado);
@@ -191,6 +245,8 @@ export const createTramiteWorkflowHandlers = ({
   return {
     handleDecision,
     handleAccionTesoreria,
+    handleUploadCaratulas,
+    handleResolveCaratulas,
     handleOverrideEstado,
     handleAccionSiguiente
   };

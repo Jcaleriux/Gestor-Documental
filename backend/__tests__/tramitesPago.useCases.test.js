@@ -13,7 +13,15 @@ const createRepoMock = (overrides = {}) => {
     getClient: jest.fn().mockResolvedValue(client),
     getTramiteEstado: jest.fn().mockResolvedValue({ estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA }),
     getTramiteById: jest.fn().mockResolvedValue({ id: 1, estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA }),
+    getSociedadById: jest.fn().mockResolvedValue({
+      id: 10,
+      nombre_proyecto: 'Esencia Desamparados',
+      razon_social: 'Esencia Desamparados S.A.',
+      cedula_juridica: '3-101-877955'
+    }),
     getTramiteByIdForUpdate: jest.fn().mockResolvedValue({ id: 1, estado: TRAMITE_ESTADOS.EN_APROBACION_GERENCIA }),
+    getTramiteCaratulaByTramiteId: jest.fn().mockResolvedValue(null),
+    upsertTramiteCaratula: jest.fn().mockResolvedValue(null),
     getFacturaEstado: jest.fn().mockResolvedValue({ estado: FACTURA_ESTADOS.EN_REVISION }),
     getDocumentoTesoreriaEstado: jest.fn().mockResolvedValue({ estado_tesoreria: 'pendiente' }),
     getTramiteDocumentoByFacturaIdForUpdate: jest.fn().mockResolvedValue({
@@ -236,6 +244,28 @@ describe('tramitesPagoUseCases', () => {
     }, client);
   });
 
+  test('cambiarEstado a gerencia contable exige caratulas resueltas en revision tesoreria inicial', async () => {
+    const { repo, client } = createRepoMock({
+      getTramiteById: jest.fn().mockResolvedValue({
+        id: 1,
+        estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA_1
+      }),
+      getTramiteCaratulaByTramiteId: jest.fn().mockResolvedValue(null)
+    });
+    const useCases = createTramitesPagoUseCases({ tramitesPagoRepo: repo });
+
+    await expect(useCases.cambiarEstado({
+      id: 1,
+      estado: TRAMITE_ESTADOS.EN_APROBACION_GERENCIA_CONTABLE,
+      usuario: 'tesoreria@novogar.local',
+      actorPermissions: ['documentos_tramitar_pago']
+    })).rejects.toThrow('Debe cargar las caratulas del tramite antes de continuar');
+
+    expect(client.query).toHaveBeenNthCalledWith(1, 'BEGIN');
+    expect(client.query).toHaveBeenCalledWith('ROLLBACK');
+    expect(repo.updateTramiteEstado).not.toHaveBeenCalled();
+  });
+
   test('cambiarEstado a pagado exige permiso de tesoreria', async () => {
     const { repo, client } = createRepoMock({
       getTramiteById: jest.fn().mockResolvedValue({
@@ -400,6 +430,41 @@ describe('tramitesPagoUseCases', () => {
     expect(repo.updateTramiteEstado).toHaveBeenCalledWith({
       tramiteId: 1,
       estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA
+    }, client);
+  });
+
+  test('decisionDocumento aprobado en gerencia avanza el tramite a revision tesoreria inicial', async () => {
+    const { repo, client } = createRepoMock({
+      getTramiteByIdForUpdate: jest.fn().mockResolvedValue({
+        id: 1,
+        estado: TRAMITE_ESTADOS.EN_APROBACION_GERENCIA
+      }),
+      updateDocumentoDecision: jest.fn().mockResolvedValue({
+        factura_id: 2,
+        estado_gerencia: 'aprobado'
+      }),
+      updateTramiteEstado: jest.fn().mockResolvedValue({
+        id: 1,
+        estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA_1
+      })
+    });
+    const useCases = createTramitesPagoUseCases({ tramitesPagoRepo: repo });
+
+    await useCases.decisionDocumento({
+      id: 1,
+      facturaId: 2,
+      etapa: 'gerencia',
+      decision: DOCUMENTO_DECISIONES.APROBADO,
+      motivo: null,
+      usuario: 'gerencia@novogar.local',
+      actorPermissions: ['documentos_aprobar_gerencia']
+    });
+
+    expect(client.query).toHaveBeenNthCalledWith(1, 'BEGIN');
+    expect(client.query).toHaveBeenCalledWith('COMMIT');
+    expect(repo.updateTramiteEstado).toHaveBeenCalledWith({
+      tramiteId: 1,
+      estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA_1
     }, client);
   });
 

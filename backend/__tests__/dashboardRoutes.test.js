@@ -4,6 +4,13 @@ const { JWT_SECRET } = require('../config/auth');
 
 jest.mock('../services/dashboardService', () => ({
   getStats: (req, res) => res.json({ success: true, data: { totalFacturas: 1 } }),
+  getWorkQueue: (req, res) => res.json({
+    success: true,
+    data: {
+      facturas: { porPagar: 3 },
+      tramites: { activos: 2 }
+    }
+  }),
   getRecentActivity: (req, res) => res.json({ success: true, data: [] }),
   getRecentDocuments: (req, res) => res.json({ success: true, data: [] })
 }));
@@ -59,6 +66,19 @@ describe('Dashboard routes permissions', () => {
     expect(response.status).toBe(403);
     expect(response.body).toMatchObject({
       success: false
+    });
+  });
+
+  test('GET /api/dashboard/work-queue permite acceso con permiso gerencial de workflow', async () => {
+    const response = await withAuth(request(app).get('/api/dashboard/work-queue'), 10);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      success: true,
+      data: {
+        facturas: { porPagar: 3 },
+        tramites: { activos: 2 }
+      }
     });
   });
 });

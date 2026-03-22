@@ -6,6 +6,8 @@ import DashboardMetricCard from './dashboard/DashboardMetricCard.jsx';
 import DashboardFocusGrid from './dashboard/DashboardFocusGrid.jsx';
 import DashboardQuickActions from './dashboard/DashboardQuickActions.jsx';
 import DashboardNotes from './dashboard/DashboardNotes.jsx';
+import DashboardWorkQueueSection from './dashboard/DashboardWorkQueueSection.jsx';
+import DashboardAlertsSection from './dashboard/DashboardAlertsSection.jsx';
 import DashboardRecentDocumentsSection from './dashboard/DashboardRecentDocumentsSection.jsx';
 import DashboardProvidersSection from './dashboard/DashboardProvidersSection.jsx';
 import DashboardCurrencyTotalsSection from './dashboard/DashboardCurrencyTotalsSection.jsx';
@@ -17,23 +19,27 @@ function Dashboard({
   authUser = null,
   userPermissions = [],
 }) {
-  const { stats, recentDocs, loading, error, refetch } = useDashboard({ sociedadId });
+  const { stats, workQueue, recentDocs, loading, error, refetch } = useDashboard({ sociedadId });
   const {
     banner,
     cards,
     focusItems,
     greetingName,
     monedas,
+    primaryQueueItems,
     profileCopy,
     profileNotes,
+    quickActions,
     roleLabel,
+    secondaryAlerts,
     topProveedoresPorMoneda,
     totalesPorMoneda,
     visibleRecentDocs,
     visibleSociedadName,
-    quickActions,
+    workQueueUpdatedAt,
   } = useDashboardViewModel({
     stats,
+    workQueue,
     recentDocs,
     authUser,
     userPermissions,
@@ -84,6 +90,24 @@ function Dashboard({
       )}
 
       <div className="row g-3 mb-4">
+        <div className="col-12 col-xl-8">
+          <DashboardWorkQueueSection
+            title={profileCopy.focusTitle}
+            items={primaryQueueItems}
+            updatedAt={workQueueUpdatedAt}
+          />
+        </div>
+
+        <div className="col-12 col-xl-4 d-flex flex-column gap-3">
+          <DashboardAlertsSection items={secondaryAlerts} />
+
+          <SectionCard title="Accesos rapidos" className="section-card">
+            <DashboardQuickActions items={quickActions} />
+          </SectionCard>
+        </div>
+      </div>
+
+      <div className="row g-3 mb-4">
         {cards.map((card) => (
           <div className="col-12 col-md-6 col-xl-4" key={card.title}>
             <DashboardMetricCard card={card} />
@@ -93,29 +117,26 @@ function Dashboard({
 
       <div className="row g-3 mb-4">
         <div className="col-12 col-lg-7">
-          <SectionCard title={profileCopy.focusTitle} className="section-card">
-            <DashboardFocusGrid items={focusItems} />
-          </SectionCard>
+          <DashboardRecentDocumentsSection recentDocs={visibleRecentDocs} />
         </div>
 
         <div className="col-12 col-lg-5 d-flex flex-column gap-3">
-          <SectionCard title="Accesos rapidos" className="section-card">
-            <DashboardQuickActions items={quickActions} />
-          </SectionCard>
-
           <SectionCard title={profileCopy.modeTitle} className="section-card">
             <DashboardNotes notes={profileNotes} />
+          </SectionCard>
+
+          <SectionCard title="Radar complementario" className="section-card">
+            <DashboardFocusGrid items={focusItems} />
           </SectionCard>
         </div>
       </div>
 
       <div className="row g-3">
         <div className="col-12 col-lg-7">
-          <DashboardRecentDocumentsSection recentDocs={visibleRecentDocs} />
+          <DashboardProvidersSection groups={topProveedoresPorMoneda} />
         </div>
 
-        <div className="col-12 col-lg-5 d-flex flex-column gap-3">
-          <DashboardProvidersSection groups={topProveedoresPorMoneda} />
+        <div className="col-12 col-lg-5">
           <DashboardCurrencyTotalsSection monedas={monedas} totalesPorMoneda={totalesPorMoneda} />
         </div>
       </div>

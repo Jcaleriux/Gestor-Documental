@@ -17,6 +17,40 @@ export const buildDashboardFacturasLink = (dashboardPreset) => {
   return `/facturas?${params.toString()}`;
 };
 
+export const buildDashboardTramitesLink = (estado = '') => {
+  const params = new URLSearchParams({
+    returnTo: '/',
+    returnLabel: 'Dashboard',
+  });
+
+  if (estado) {
+    params.set('estado', estado);
+  }
+
+  return `/tramites?${params.toString()}`;
+};
+
+const createPermissionHelpers = (userPermissions) => {
+  const permissionSet = new Set(Array.isArray(userPermissions) ? userPermissions : []);
+  const hasPermission = (permission) => permissionSet.has('acceso_total') || permissionSet.has(permission);
+  const hasAnyPermission = (permissions) => permissions.some((permission) => hasPermission(permission));
+
+  return {
+    permissionSet,
+    hasPermission,
+    hasAnyPermission,
+    canOpenFacturas: hasPermission('documentos_ver'),
+    canOpenRetenciones: hasPermission('documentos_ver'),
+    canOpenTramites: hasPermission('documentos_ver') || hasAnyPermission([
+      'documentos_tramitar_pago',
+      'documentos_aprobar_gerencia',
+      'documentos_aprobar_gerencia_contable',
+      'documentos_aprobar_gerencia_financiera',
+      'documentos_marcar_pagado',
+    ]),
+  };
+};
+
 const buildNoContabilizadasBreakdown = (totalesPorMoneda) => (
   Object.entries(totalesPorMoneda || {})
     .map(([moneda, row]) => ({
@@ -32,6 +66,29 @@ const countTopProveedores = (topProveedoresPorPagar) => (
     0,
   )
 );
+
+const toCount = (value, fallback = 0) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const countRecentDocsWithMotivo = (recentDocs) => (
+  (Array.isArray(recentDocs) ? recentDocs : []).filter((item) => String(item?.motivo || '').trim()).length
+);
+
+const buildQueueItem = ({
+  label,
+  value,
+  description,
+  tone = 'primary',
+  to = '',
+}) => ({
+  label,
+  value,
+  description,
+  tone,
+  to,
+});
 
 const buildMetricCard = ({
   title,
@@ -243,6 +300,475 @@ const buildMetricCards = ({
   }
 };
 
+const normalizeWorkQueue = ({
+  workQueue,
+  stats,
+  recentDocs,
+} = {}) => {
+  const safeWorkQueue = workQueue && typeof workQueue === 'object' && !Array.isArray(workQueue)
+    ? workQueue
+    : {};
+  const facturas = safeWorkQueue.facturas && typeof safeWorkQueue.facturas === 'object'
+    ? safeWorkQueue.facturas
+    : {};
+  const tramites = safeWorkQueue.tramites && typeof safeWorkQueue.tramites === 'object'
+    ? safeWorkQueue.tramites
+    : {};
+  const tramitesPorEstado = tramites.porEstado && typeof tramites.porEstado === 'object'
+    ? tramites.porEstado
+    : {};
+  const aprobacionesPendientes = tramites.aprobacionesPendientes && typeof tramites.aprobacionesPendientes === 'object'
+    ? tramites.aprobacionesPendientes
+    : {};
+  const documentosRecientes = safeWorkQueue.documentosRecientes && typeof safeWorkQueue.documentosRecientes === 'object'
+    ? safeWorkQueue.documentosRecientes
+    : {};
+  const sociedades = safeWorkQueue.sociedades && typeof safeWorkQueue.sociedades === 'object'
+    ? safeWorkQueue.sociedades
+    : {};
+
+  return {
+    updatedAt: String(safeWorkQueue.updatedAt || '').trim(),
+    facturas: {
+      noContabilizadas: toCount(facturas.noContabilizadas, toCount(stats.noContabilizado)),
+      enRevision: toCount(facturas.enRevision, toCount(stats.enRevision)),
+      porPagar: toCount(facturas.porPagar, toCount(stats.cuentasPorPagar?.documentos)),
+      vencidas: toCount(facturas.vencidas, toCount(stats.vencidas?.documentos)),
+      porVencer7Dias: toCount(facturas.porVencer7Dias, toCount(stats.porVencer7Dias?.documentos)),
+      retencionesPendientes: toCount(
+        facturas.retencionesPendientes,
+        toCount(stats.retencionesPendientes?.documentos),
+      ),
+      enTramite: toCount(facturas.enTramite, toCount(stats.resumenEstados?.en_tramite)),
+      pagadas: toCount(facturas.pagadas, toCount(stats.pagadas?.documentos)),
+    },
+    tramites: {
+      activos: toCount(tramites.activos),
+      porEstado: {
+        en_aprobacion_gerencia: toCount(tramitesPorEstado.en_aprobacion_gerencia),
+        en_aprobacion_gerencia_contable: toCount(tramitesPorEstado.en_aprobacion_gerencia_contable),
+        en_aprobacion_gerencia_financiera: toCount(tramitesPorEstado.en_aprobacion_gerencia_financiera),
+        en_revision_tesoreria: toCount(tramitesPorEstado.en_revision_tesoreria),
+        en_revision_tesoreria_1: toCount(tramitesPorEstado.en_revision_tesoreria_1),
+        en_revision_tesoreria_2: toCount(tramitesPorEstado.en_revision_tesoreria_2),
+        pagado: toCount(tramitesPorEstado.pagado),
+        cancelado: toCount(tramitesPorEstado.cancelado),
+      },
+      aprobacionesPendientes: {
+        gerencia: toCount(aprobacionesPendientes.gerencia),
+        gerencia_contable: toCount(aprobacionesPendientes.gerencia_contable),
+        financiera: toCount(aprobacionesPendientes.financiera),
+      },
+      rechazadosActivos: toCount(tramites.rechazadosActivos),
+    },
+    documentosRecientes: {
+      total: toCount(documentosRecientes.total, Array.isArray(recentDocs) ? recentDocs.length : 0),
+      conMotivo: toCount(documentosRecientes.conMotivo, countRecentDocsWithMotivo(recentDocs)),
+    },
+    sociedades: {
+      visibles: toCount(sociedades.visibles, toCount(stats.totalSociedades)),
+    },
+  };
+};
+
+const buildPrimaryQueueItems = ({
+  dashboardProfile,
+  workQueue,
+  canOpenFacturas,
+  canOpenTramites,
+  canOpenRetenciones,
+}) => {
+  switch (dashboardProfile) {
+    case DASHBOARD_PROFILES.ADMIN:
+      return [
+        buildQueueItem({
+          label: 'Pendientes documentales',
+          value: workQueue.facturas.noContabilizadas + workQueue.facturas.enRevision,
+          description: 'Backlog base entre no contabilizadas y en revision.',
+          tone: 'info',
+          to: canOpenFacturas ? buildDashboardFacturasLink('no_contabilizadas') : '',
+        }),
+        buildQueueItem({
+          label: 'Tramites activos',
+          value: workQueue.tramites.activos,
+          description: 'Flujo vivo que sigue moviendose en aprobaciones y tesoreria.',
+          tone: 'primary',
+          to: canOpenTramites ? buildDashboardTramitesLink() : '',
+        }),
+        buildQueueItem({
+          label: 'Rechazos activos',
+          value: workQueue.tramites.rechazadosActivos,
+          description: 'Casos observados que pueden estar bloqueando avance.',
+          tone: 'danger',
+          to: canOpenTramites ? buildDashboardTramitesLink() : '',
+        }),
+        buildQueueItem({
+          label: 'Sociedades visibles',
+          value: workQueue.sociedades.visibles,
+          description: 'Cobertura actual de este tablero por acceso y sociedad.',
+          tone: 'secondary',
+        }),
+      ];
+    case DASHBOARD_PROFILES.TESORERIA:
+      return [
+        buildQueueItem({
+          label: 'Cola por pagar',
+          value: workQueue.facturas.porPagar,
+          description: 'Documentos listos para seguimiento financiero.',
+          tone: 'primary',
+          to: canOpenFacturas ? buildDashboardFacturasLink('por_pagar') : '',
+        }),
+        buildQueueItem({
+          label: 'Vencidas',
+          value: workQueue.facturas.vencidas,
+          description: 'Atencion inmediata para no dejar pagos fuera de fecha.',
+          tone: 'danger',
+          to: canOpenFacturas ? buildDashboardFacturasLink('vencidas') : '',
+        }),
+        buildQueueItem({
+          label: 'Proximos 7 dias',
+          value: workQueue.facturas.porVencer7Dias,
+          description: 'Casos que conviene preparar antes del cierre cercano.',
+          tone: 'warning',
+          to: canOpenFacturas ? buildDashboardFacturasLink('por_vencer_7') : '',
+        }),
+        buildQueueItem({
+          label: 'Listos para pago',
+          value: workQueue.tramites.porEstado.en_revision_tesoreria_2,
+          description: 'Tramites en tesoreria final que ya pueden cerrarse.',
+          tone: 'success',
+          to: canOpenTramites ? buildDashboardTramitesLink('en_revision_tesoreria_2') : '',
+        }),
+      ];
+    case DASHBOARD_PROFILES.CONTABILIDAD:
+      return [
+        buildQueueItem({
+          label: 'Backlog documental',
+          value: workQueue.facturas.noContabilizadas,
+          description: 'Documentos aun fuera del flujo de pago.',
+          tone: 'info',
+          to: canOpenFacturas ? buildDashboardFacturasLink('no_contabilizadas') : '',
+        }),
+        buildQueueItem({
+          label: 'En revision',
+          value: workQueue.facturas.enRevision,
+          description: 'Casos que requieren completar o corregir soporte.',
+          tone: 'warning',
+          to: canOpenFacturas ? buildDashboardFacturasLink('en_revision') : '',
+        }),
+        buildQueueItem({
+          label: 'En tramite',
+          value: workQueue.facturas.enTramite,
+          description: 'Documentos que ya avanzaron y conviene monitorear.',
+          tone: 'primary',
+          to: canOpenFacturas ? buildDashboardFacturasLink('en_tramite') : '',
+        }),
+        buildQueueItem({
+          label: 'Retenciones abiertas',
+          value: workQueue.facturas.retencionesPendientes,
+          description: 'Retenciones con saldo pendiente y seguimiento contable.',
+          tone: 'secondary',
+          to: canOpenRetenciones ? '/retenciones-pendientes' : '',
+        }),
+      ];
+    case DASHBOARD_PROFILES.GERENCIA:
+      return [
+        buildQueueItem({
+          label: 'Pendientes gerencia',
+          value: workQueue.tramites.aprobacionesPendientes.gerencia,
+          description: 'Documentos esperando decision gerencial.',
+          tone: 'primary',
+          to: canOpenTramites ? buildDashboardTramitesLink('en_aprobacion_gerencia') : '',
+        }),
+        buildQueueItem({
+          label: 'Gerencia contable',
+          value: workQueue.tramites.aprobacionesPendientes.gerencia_contable,
+          description: 'Aprobaciones que requieren criterio contable.',
+          tone: 'warning',
+          to: canOpenTramites ? buildDashboardTramitesLink('en_aprobacion_gerencia_contable') : '',
+        }),
+        buildQueueItem({
+          label: 'Gerencia financiera',
+          value: workQueue.tramites.aprobacionesPendientes.financiera,
+          description: 'Tramites que necesitan autorizacion financiera.',
+          tone: 'info',
+          to: canOpenTramites ? buildDashboardTramitesLink('en_aprobacion_gerencia_financiera') : '',
+        }),
+        buildQueueItem({
+          label: 'Rechazados activos',
+          value: workQueue.tramites.rechazadosActivos,
+          description: 'Casos observados que conviene revisar antes de aprobar mas.',
+          tone: 'danger',
+          to: canOpenTramites ? buildDashboardTramitesLink() : '',
+        }),
+      ];
+    case DASHBOARD_PROFILES.ASISTENTE:
+      return [
+        buildQueueItem({
+          label: 'Trabajo del dia',
+          value: workQueue.facturas.noContabilizadas,
+          description: 'Backlog base para preparar, ordenar o escalar.',
+          tone: 'info',
+          to: canOpenFacturas ? buildDashboardFacturasLink('no_contabilizadas') : '',
+        }),
+        buildQueueItem({
+          label: 'En revision',
+          value: workQueue.facturas.enRevision,
+          description: 'Casos que requieren seguimiento o contexto adicional.',
+          tone: 'warning',
+          to: canOpenFacturas ? buildDashboardFacturasLink('en_revision') : '',
+        }),
+        buildQueueItem({
+          label: 'Vencimientos proximos',
+          value: workQueue.facturas.porVencer7Dias,
+          description: 'Documentos que conviene elevar antes de que venzan.',
+          tone: 'primary',
+          to: canOpenFacturas ? buildDashboardFacturasLink('por_vencer_7') : '',
+        }),
+        buildQueueItem({
+          label: 'En tramite',
+          value: workQueue.facturas.enTramite,
+          description: 'Flujo ya encaminado para dar seguimiento sin perder contexto.',
+          tone: 'secondary',
+          to: canOpenFacturas ? buildDashboardFacturasLink('en_tramite') : '',
+        }),
+      ];
+    case DASHBOARD_PROFILES.CONSULTA:
+      return [
+        buildQueueItem({
+          label: 'Pendientes observables',
+          value: workQueue.facturas.noContabilizadas + workQueue.facturas.enRevision,
+          description: 'Casos que vale la pena monitorear sin tocar estados criticos.',
+          tone: 'info',
+          to: canOpenFacturas ? buildDashboardFacturasLink('no_contabilizadas') : '',
+        }),
+        buildQueueItem({
+          label: 'En tramite',
+          value: workQueue.facturas.enTramite,
+          description: 'Documentos ya en el flujo para consulta y trazabilidad.',
+          tone: 'primary',
+          to: canOpenFacturas ? buildDashboardFacturasLink('en_tramite') : '',
+        }),
+        buildQueueItem({
+          label: 'Pagadas',
+          value: workQueue.facturas.pagadas,
+          description: 'Casos cerrados que siguen siendo utiles para seguimiento.',
+          tone: 'success',
+          to: canOpenFacturas ? buildDashboardFacturasLink('pagadas') : '',
+        }),
+        buildQueueItem({
+          label: 'Cambios recientes',
+          value: workQueue.documentosRecientes.total,
+          description: 'Movimientos visibles para revisar contexto reciente.',
+          tone: 'secondary',
+        }),
+      ];
+    default:
+      return [
+        buildQueueItem({
+          label: 'Pendientes',
+          value: workQueue.facturas.noContabilizadas + workQueue.facturas.enRevision,
+          description: 'Documentos que siguen necesitando accion operativa.',
+          tone: 'info',
+          to: canOpenFacturas ? buildDashboardFacturasLink('no_contabilizadas') : '',
+        }),
+        buildQueueItem({
+          label: 'Vencidas',
+          value: workQueue.facturas.vencidas,
+          description: 'Casos con riesgo inmediato por fecha de pago.',
+          tone: 'danger',
+          to: canOpenFacturas ? buildDashboardFacturasLink('vencidas') : '',
+        }),
+        buildQueueItem({
+          label: 'Tramites activos',
+          value: workQueue.tramites.activos,
+          description: 'Workflow que conviene revisar antes de actuar.',
+          tone: 'primary',
+          to: canOpenTramites ? buildDashboardTramitesLink() : '',
+        }),
+        buildQueueItem({
+          label: 'Cambios recientes',
+          value: workQueue.documentosRecientes.total,
+          description: 'Actividad visible del tablero operativo.',
+          tone: 'secondary',
+        }),
+      ];
+  }
+};
+
+const buildSecondaryAlerts = ({
+  dashboardProfile,
+  workQueue,
+  canOpenFacturas,
+  canOpenTramites,
+  canOpenRetenciones,
+}) => {
+  const reviewTesoreria = workQueue.tramites.porEstado.en_revision_tesoreria
+    + workQueue.tramites.porEstado.en_revision_tesoreria_1;
+
+  switch (dashboardProfile) {
+    case DASHBOARD_PROFILES.ADMIN:
+      return [
+        buildQueueItem({
+          label: 'Actividad reciente',
+          value: workQueue.documentosRecientes.total,
+          description: 'Cambios visibles en la muestra reciente del tablero.',
+          tone: 'secondary',
+        }),
+        buildQueueItem({
+          label: 'Cambios con motivo',
+          value: workQueue.documentosRecientes.conMotivo,
+          description: 'Actualizaciones recientes con contexto explicito.',
+          tone: 'warning',
+        }),
+        buildQueueItem({
+          label: 'Vencidas',
+          value: workQueue.facturas.vencidas,
+          description: 'Riesgo financiero visible para priorizar apoyo.',
+          tone: 'danger',
+          to: canOpenFacturas ? buildDashboardFacturasLink('vencidas') : '',
+        }),
+      ];
+    case DASHBOARD_PROFILES.TESORERIA:
+      return [
+        buildQueueItem({
+          label: 'Revision tesoreria',
+          value: reviewTesoreria,
+          description: 'Casos todavia en validacion financiera antes del pago.',
+          tone: 'warning',
+          to: canOpenTramites ? buildDashboardTramitesLink() : '',
+        }),
+        buildQueueItem({
+          label: 'Retenciones pendientes',
+          value: workQueue.facturas.retencionesPendientes,
+          description: 'Saldo retenido que conviene monitorear en paralelo.',
+          tone: 'info',
+          to: canOpenRetenciones ? '/retenciones-pendientes' : '',
+        }),
+        buildQueueItem({
+          label: 'Tramites activos',
+          value: workQueue.tramites.activos,
+          description: 'Carga viva del flujo para el equipo financiero.',
+          tone: 'secondary',
+          to: canOpenTramites ? buildDashboardTramitesLink() : '',
+        }),
+      ];
+    case DASHBOARD_PROFILES.CONTABILIDAD:
+      return [
+        buildQueueItem({
+          label: 'Vencidas',
+          value: workQueue.facturas.vencidas,
+          description: 'Conviene revisar si la documentacion afecta el pago.',
+          tone: 'danger',
+          to: canOpenFacturas ? buildDashboardFacturasLink('vencidas') : '',
+        }),
+        buildQueueItem({
+          label: 'Cambios con motivo',
+          value: workQueue.documentosRecientes.conMotivo,
+          description: 'Actividad reciente con observaciones o justificaciones.',
+          tone: 'warning',
+        }),
+        buildQueueItem({
+          label: 'Tramites activos',
+          value: workQueue.tramites.activos,
+          description: 'Documentos ya fuera de contabilizacion que siguen vivos.',
+          tone: 'secondary',
+          to: canOpenTramites ? buildDashboardTramitesLink() : '',
+        }),
+      ];
+    case DASHBOARD_PROFILES.GERENCIA:
+      return [
+        buildQueueItem({
+          label: 'Riesgo vencido',
+          value: workQueue.facturas.vencidas,
+          description: 'Exposicion visible que conviene mirar antes de decidir.',
+          tone: 'danger',
+          to: canOpenFacturas ? buildDashboardFacturasLink('vencidas') : '',
+        }),
+        buildQueueItem({
+          label: 'En tramite',
+          value: workQueue.facturas.enTramite,
+          description: 'Volumen actualmente avanzando por workflow.',
+          tone: 'primary',
+          to: canOpenFacturas ? buildDashboardFacturasLink('en_tramite') : '',
+        }),
+        buildQueueItem({
+          label: 'Cambios con motivo',
+          value: workQueue.documentosRecientes.conMotivo,
+          description: 'Actualizaciones recientes que traen contexto para validar.',
+          tone: 'warning',
+        }),
+      ];
+    case DASHBOARD_PROFILES.ASISTENTE:
+      return [
+        buildQueueItem({
+          label: 'Retenciones pendientes',
+          value: workQueue.facturas.retencionesPendientes,
+          description: 'Casos que conviene apoyar o escalar segun el flujo.',
+          tone: 'info',
+          to: canOpenRetenciones ? '/retenciones-pendientes' : '',
+        }),
+        buildQueueItem({
+          label: 'Rechazos activos',
+          value: workQueue.tramites.rechazadosActivos,
+          description: 'Documentos observados donde hace falta contexto o seguimiento.',
+          tone: 'danger',
+          to: canOpenTramites ? buildDashboardTramitesLink() : '',
+        }),
+        buildQueueItem({
+          label: 'Cambios con motivo',
+          value: workQueue.documentosRecientes.conMotivo,
+          description: 'Cambios recientes que ayudan a retomar el hilo del caso.',
+          tone: 'secondary',
+        }),
+      ];
+    case DASHBOARD_PROFILES.CONSULTA:
+      return [
+        buildQueueItem({
+          label: 'Cambios con motivo',
+          value: workQueue.documentosRecientes.conMotivo,
+          description: 'Documentos recientes donde ya existe contexto escrito.',
+          tone: 'warning',
+        }),
+        buildQueueItem({
+          label: 'Actividad reciente',
+          value: workQueue.documentosRecientes.total,
+          description: 'Movimientos visibles en la muestra reciente.',
+          tone: 'secondary',
+        }),
+        buildQueueItem({
+          label: 'Sociedades visibles',
+          value: workQueue.sociedades.visibles,
+          description: 'Alcance actual de consulta dentro del tablero.',
+          tone: 'info',
+        }),
+      ];
+    default:
+      return [
+        buildQueueItem({
+          label: 'Cambios recientes',
+          value: workQueue.documentosRecientes.total,
+          description: 'Actividad visible para seguimiento rapido.',
+          tone: 'secondary',
+        }),
+        buildQueueItem({
+          label: 'Rechazos activos',
+          value: workQueue.tramites.rechazadosActivos,
+          description: 'Casos observados que pueden requerir contexto adicional.',
+          tone: 'danger',
+          to: canOpenTramites ? buildDashboardTramitesLink() : '',
+        }),
+        buildQueueItem({
+          label: 'Retenciones pendientes',
+          value: workQueue.facturas.retencionesPendientes,
+          description: 'Saldo retenido que conviene seguir de cerca.',
+          tone: 'info',
+          to: canOpenRetenciones ? '/retenciones-pendientes' : '',
+        }),
+      ];
+  }
+};
+
 const buildFocusItems = ({
   dashboardProfile,
   stats,
@@ -422,9 +948,7 @@ const buildFocusItems = ({
 };
 
 const buildQuickActions = ({ userPermissions }) => {
-  const permissionSet = new Set(Array.isArray(userPermissions) ? userPermissions : []);
-  const hasPermission = (permission) => permissionSet.has('acceso_total') || permissionSet.has(permission);
-  const hasAnyPermission = (permissions) => permissions.some((permission) => hasPermission(permission));
+  const { hasPermission, hasAnyPermission } = createPermissionHelpers(userPermissions);
   const items = [];
 
   if (hasPermission('documentos_ver')) {
@@ -547,6 +1071,7 @@ const formatGreetingName = (authUser) => {
 
 export const buildDashboardViewModel = ({
   stats = {},
+  workQueue = {},
   recentDocs = [],
   authUser = null,
   userPermissions = [],
@@ -558,8 +1083,11 @@ export const buildDashboardViewModel = ({
     roleCode: authUser?.rol_codigo,
     permissions: userPermissions,
   });
-  const permissionSet = new Set(Array.isArray(userPermissions) ? userPermissions : []);
-  const canOpenFacturas = permissionSet.has('acceso_total') || permissionSet.has('documentos_ver');
+  const {
+    canOpenFacturas,
+    canOpenRetenciones,
+    canOpenTramites,
+  } = createPermissionHelpers(userPermissions);
   const profileCopy = getDashboardProfileCopy(dashboardProfile);
   const roleLabel = formatRoleLabel(authUser);
   const greetingName = formatGreetingName(authUser);
@@ -573,6 +1101,11 @@ export const buildDashboardViewModel = ({
   const hasMultipleCurrencies = monedas.length > 1;
   const noContabilizadasPorMoneda = buildNoContabilizadasBreakdown(totalesPorMoneda);
   const topProveedoresPorMoneda = Object.entries(safeStats.topProveedoresPorPagar || {});
+  const normalizedWorkQueue = normalizeWorkQueue({
+    workQueue,
+    stats: safeStats,
+    recentDocs: visibleRecentDocs,
+  });
   const cards = buildMetricCards({
     dashboardProfile,
     stats: safeStats,
@@ -585,6 +1118,20 @@ export const buildDashboardViewModel = ({
     pagadas,
     noContabilizadasPorMoneda,
     canOpenFacturas,
+  });
+  const primaryQueueItems = buildPrimaryQueueItems({
+    dashboardProfile,
+    workQueue: normalizedWorkQueue,
+    canOpenFacturas,
+    canOpenTramites,
+    canOpenRetenciones,
+  });
+  const secondaryAlerts = buildSecondaryAlerts({
+    dashboardProfile,
+    workQueue: normalizedWorkQueue,
+    canOpenFacturas,
+    canOpenTramites,
+    canOpenRetenciones,
   });
   const focusItems = buildFocusItems({
     dashboardProfile,
@@ -613,13 +1160,16 @@ export const buildDashboardViewModel = ({
     focusItems,
     greetingName,
     monedas,
+    primaryQueueItems,
     profileCopy,
     profileNotes,
     quickActions,
     roleLabel,
+    secondaryAlerts,
     topProveedoresPorMoneda,
     totalesPorMoneda,
     visibleRecentDocs,
     visibleSociedadName: selectedSociedadName,
+    workQueueUpdatedAt: normalizedWorkQueue.updatedAt,
   };
 };

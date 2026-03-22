@@ -5,7 +5,7 @@ export const estadoLabelTramite = (estado) => {
     en_aprobacion_gerencia_contable: 'En aprobacion gerencia contable',
     en_aprobacion_gerencia_financiera: 'En aprobacion gerencia financiera',
     en_revision_tesoreria: 'En revision tesoreria',
-    en_revision_tesoreria_1: 'En revision tesoreria',
+    en_revision_tesoreria_1: 'En revision tesoreria inicial',
     en_revision_tesoreria_2: 'En tesoreria para pago',
     pagado: 'Pagado',
     cancelado: 'Cancelado'

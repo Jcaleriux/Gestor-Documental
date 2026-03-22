@@ -53,10 +53,103 @@ const getTramiteById = async (tramiteId, client) => {
   return rows[0] || null;
 };
 
+const getSociedadById = async (sociedadId, client) => {
+  const { rows } = await getDb(client).query(
+    `
+    SELECT id, codigo, nombre_proyecto, razon_social, cedula_juridica, activo
+    FROM sociedades
+    WHERE id = $1
+    `,
+    [sociedadId]
+  );
+  return rows[0] || null;
+};
+
 const getTramiteByIdForUpdate = async (tramiteId, client) => {
   const { rows } = await getDb(client).query(
     'SELECT * FROM tramites_pago WHERE id = $1 FOR UPDATE',
     [tramiteId]
+  );
+  return rows[0] || null;
+};
+
+const getTramiteCaratulaByTramiteId = async (tramiteId, client) => {
+  const { rows } = await getDb(client).query(
+    `
+    SELECT *
+    FROM tramites_pago_caratulas
+    WHERE tramite_id = $1
+    `,
+    [tramiteId]
+  );
+  return rows[0] || null;
+};
+
+const upsertTramiteCaratula = async ({
+  tramiteId,
+  nombreArchivo,
+  rutaArchivo,
+  estado,
+  fechaEjecucion,
+  sociedadNombreRaw,
+  sociedadIdentificacionRaw,
+  moneda,
+  totalPaginas,
+  warnings,
+  parsedPayload,
+  cargadoPor,
+  procesadoEn
+}, client) => {
+  const { rows } = await getDb(client).query(
+    `
+    INSERT INTO tramites_pago_caratulas (
+      tramite_id,
+      nombre_archivo,
+      ruta_archivo,
+      estado,
+      fecha_ejecucion,
+      sociedad_nombre_raw,
+      sociedad_identificacion_raw,
+      moneda,
+      total_paginas,
+      warnings,
+      parsed_payload,
+      cargado_por,
+      procesado_en
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11::jsonb, $12, $13)
+    ON CONFLICT (tramite_id)
+    DO UPDATE SET
+      nombre_archivo = EXCLUDED.nombre_archivo,
+      ruta_archivo = EXCLUDED.ruta_archivo,
+      estado = EXCLUDED.estado,
+      fecha_ejecucion = EXCLUDED.fecha_ejecucion,
+      sociedad_nombre_raw = EXCLUDED.sociedad_nombre_raw,
+      sociedad_identificacion_raw = EXCLUDED.sociedad_identificacion_raw,
+      moneda = EXCLUDED.moneda,
+      total_paginas = EXCLUDED.total_paginas,
+      warnings = EXCLUDED.warnings,
+      parsed_payload = EXCLUDED.parsed_payload,
+      cargado_por = EXCLUDED.cargado_por,
+      procesado_en = EXCLUDED.procesado_en,
+      actualizado_en = CURRENT_TIMESTAMP
+    RETURNING *
+    `,
+    [
+      tramiteId,
+      nombreArchivo,
+      rutaArchivo,
+      estado,
+      fechaEjecucion || null,
+      sociedadNombreRaw || null,
+      sociedadIdentificacionRaw || null,
+      moneda || null,
+      Number(totalPaginas || 0),
+      JSON.stringify(Array.isArray(warnings) ? warnings : []),
+      JSON.stringify(parsedPayload && typeof parsedPayload === 'object' ? parsedPayload : {}),
+      cargadoPor || null,
+      procesadoEn || null
+    ]
   );
   return rows[0] || null;
 };
@@ -454,6 +547,9 @@ const listDocumentosByTramite = async (tramiteId, client, options = {}) => {
       f.estado AS estado_documental,
       fwp.estado AS estado_workflow_pago,
       f.ruta_pdf,
+      fc.proveedor_id AS proveedor_id,
+      p.nombre AS proveedor_nombre,
+      p.identificacion_numero AS proveedor_identificacion,
       fc.fecha_documento AS conta_fecha_documento,
       fc.fecha_vencimiento AS conta_fecha_vencimiento,
       fc.fecha_contabilizacion AS conta_fecha_contabilizacion,
@@ -488,6 +584,7 @@ const listDocumentosByTramite = async (tramiteId, client, options = {}) => {
     JOIN facturas f ON f.id = td.factura_id
     ${facturaWorkflowPagoJoin}
     LEFT JOIN facturas_contabilizacion fc ON fc.factura_id = f.id
+    LEFT JOIN proveedores p ON p.id = fc.proveedor_id
     LEFT JOIN LATERAL (
       WITH existing_approvers AS (
         SELECT
@@ -1132,7 +1229,10 @@ module.exports = {
   getClient,
   getTramiteEstado,
   getTramiteById,
+  getSociedadById,
   getTramiteByIdForUpdate,
+  getTramiteCaratulaByTramiteId,
+  upsertTramiteCaratula,
   getFacturaEstado,
   getDocumentoTesoreriaEstado,
   getTramiteDocumentoByFacturaIdForUpdate,

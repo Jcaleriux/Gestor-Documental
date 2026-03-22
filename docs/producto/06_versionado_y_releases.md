@@ -165,10 +165,59 @@ Esto es lo minimo que deberia cumplirse antes del primer release o primer deploy
 
 Hoy, despues de esta Fase 1, siguen siendo importantes:
 
-- exponer version y commit del deploy en un punto visible o tecnico
-- dejar runbook mas explicito de backup y rollback
 - ampliar smoke checks por dominio critico
 - confirmar entorno real y secretos definitivos
+- validar tooling real de backup DB en el entorno objetivo
+- validar rutas reales de storage en el entorno objetivo
+
+Mientras ese entorno final llega, el repo ya deja una ruta intermedia util:
+
+- `docs/preproduccion_local.md`
+- `backend npm run preprod:setup`
+- `backend npm run preprod:readiness`
+- `backend npm run preprod:start`
+- `backend npm run preprod:smoke`
+
+## Punto Tecnico Visible Del Deploy
+
+El backend ya puede exponer metadata tecnica del deploy en dos formas compatibles:
+
+- `GET /api/release-info`
+- headers HTTP en respuestas backend:
+  - `X-Novogar-Release-Version`
+  - `X-Novogar-Release-Tag`
+  - `X-Novogar-Release-Commit`
+  - `X-Novogar-Release-Commit-Short`
+  - `X-Novogar-Release-Branch`
+
+Prioridad de resolucion:
+
+1. `NOVOGAR_RELEASE_VERSION`, `NOVOGAR_RELEASE_COMMIT`, `NOVOGAR_RELEASE_BRANCH`
+2. `VERSION`
+3. metadata de `.git` cuando esta disponible
+
+Residual menor:
+
+- si el entorno final no tiene `.git`, conviene inyectar `NOVOGAR_RELEASE_COMMIT` y `NOVOGAR_RELEASE_BRANCH` en el deployment para no depender del checkout local
+
+## Smoke Checks De Release
+
+El repo ya tiene un runner de smoke checks de dominio:
+
+- `backend npm run release:smoke`
+- `backend npm run preprod:smoke`
+
+Cobertura base de la Fase 2:
+
+- `GET /api/health`
+- `GET /api/release-info`
+- login real
+- `GET /api/auth/me`
+- `GET /api/sociedades`
+- `GET /api/dashboard/stats`
+- `GET /api/dashboard/recent-documents`
+- `GET /api/facturas`
+- `GET /api/tramites-pago`
 
 ## Flujo Recomendado De Release
 
@@ -188,3 +237,5 @@ Hoy, despues de esta Fase 1, siguen siendo importantes:
 - `../../VERSION`
 - `../proceso_crecimiento_scrum.md`
 - `../despliegue_checklist.md`
+- `../runbook_backup_rollback.md`
+- `../release_readiness.md`

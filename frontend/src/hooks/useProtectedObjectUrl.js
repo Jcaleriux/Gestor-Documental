@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { fetchProtectedResource } from '../utils/protectedResources.js';
 
 const getUrlApi = () => (
@@ -6,62 +6,84 @@ const getUrlApi = () => (
   || (typeof globalThis !== 'undefined' ? globalThis.URL : null)
 );
 
-export const useProtectedObjectUrl = (resourceUrl) => {
-  const [state, setState] = useState({
-    objectUrl: '',
-    error: '',
-    loading: false,
-  });
+const createIdleState = () => ({
+  resourceUrl: '',
+  objectUrl: '',
+  error: '',
+  loading: false,
+});
 
-  useEffect(() => {
-    const urlApi = getUrlApi();
-    let currentObjectUrl = '';
-    const controller = new AbortController();
+const createLoadingState = (resourceUrl) => ({
+  resourceUrl,
+  objectUrl: '',
+  error: '',
+  loading: true,
+});
 
+export const useProtectedObjectUrl = (resourceUrl, dependencies = {}) => {
+  const {
+    fetchResource = fetchProtectedResource,
+    getUrlApiImpl = getUrlApi,
+  } = dependencies;
+
+  const requestIdRef = useRef(0);
+  const [resolvedState, setResolvedState] = useState(() => createIdleState());
+
+  const state = useMemo(() => {
     if (!resourceUrl) {
-      setState({
-        objectUrl: '',
-        error: '',
-        loading: false,
-      });
-      return undefined;
+      return createIdleState();
     }
 
+    const urlApi = getUrlApiImpl();
     if (!urlApi?.createObjectURL) {
-      setState({
+      return {
+        resourceUrl,
         objectUrl: '',
         error: 'No se pudo crear la vista previa del recurso.',
         loading: false,
-      });
+      };
+    }
+
+    if (resolvedState.resourceUrl !== resourceUrl) {
+      return createLoadingState(resourceUrl);
+    }
+
+    return resolvedState;
+  }, [getUrlApiImpl, resolvedState, resourceUrl]);
+
+  useEffect(() => {
+    const urlApi = getUrlApiImpl();
+    let currentObjectUrl = '';
+    const controller = new AbortController();
+    const requestId = ++requestIdRef.current;
+
+    if (!resourceUrl || !urlApi?.createObjectURL) {
       return undefined;
     }
 
     let active = true;
-    setState({
-      objectUrl: '',
-      error: '',
-      loading: true,
-    });
 
-    fetchProtectedResource(resourceUrl, { signal: controller.signal })
+    fetchResource(resourceUrl, { signal: controller.signal })
       .then(({ blob }) => {
-        if (!active) {
+        if (!active || requestIdRef.current !== requestId) {
           return;
         }
 
         currentObjectUrl = urlApi.createObjectURL(blob);
-        setState({
+        setResolvedState({
+          resourceUrl,
           objectUrl: currentObjectUrl,
           error: '',
           loading: false,
         });
       })
       .catch((error) => {
-        if (!active || error?.name === 'AbortError') {
+        if (!active || error?.name === 'AbortError' || requestIdRef.current !== requestId) {
           return;
         }
 
-        setState({
+        setResolvedState({
+          resourceUrl,
           objectUrl: '',
           error: error?.message || 'No se pudo cargar el recurso.',
           loading: false,
@@ -75,7 +97,7 @@ export const useProtectedObjectUrl = (resourceUrl) => {
         urlApi.revokeObjectURL(currentObjectUrl);
       }
     };
-  }, [resourceUrl]);
+  }, [fetchResource, getUrlApiImpl, resourceUrl]);
 
   return state;
 };

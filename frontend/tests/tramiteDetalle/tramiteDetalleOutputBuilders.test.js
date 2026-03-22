@@ -13,6 +13,8 @@ test('buildTramiteDetalleOutputContract expone contrato publico del hook', () =>
     tramite: { id: 10 },
     documentos: [{ factura_id: 1 }],
     retenciones: [{ id: 5 }],
+    caratula: { id: 3, estado: 'procesada' },
+    providerGroups: [{ group_key: 'group_1' }],
     loading: false,
     actionMessage: 'ok',
     setActionMessage,
@@ -32,6 +34,8 @@ test('buildTramiteDetalleOutputContract expone contrato publico del hook', () =>
   assert.equal(output.tramite.id, 10);
   assert.equal(output.documentos.length, 1);
   assert.equal(output.retenciones.length, 1);
+  assert.equal(output.caratula.id, 3);
+  assert.equal(output.providerGroups.length, 1);
   assert.equal(output.actionMessage, 'ok');
   assert.equal(output.setActionMessage, setActionMessage);
   assert.equal(output.fetchDetalle, fetchDetalle);

@@ -3,6 +3,7 @@ const { PERMISSIONS } = require('../domain/permissions');
 const { validatePagadoSinRechazos } = require('./tramitesPagoRules');
 const { createError, throwIfValidationError } = require('../utils/errors');
 const { ensureEtapaReadyForAdvance } = require('./tramitesPagoGerenciaAprobaciones');
+const { summarizeStoredTramiteCaratula } = require('./tramitesPagoCaratulasSupport');
 const {
   normalizePagosDocumentos,
   buildSaldosByFactura,
@@ -16,6 +17,37 @@ const NO_OP_STATE_POLICY = Object.freeze({
   runAfterUpdate: async () => {}
 });
 
+const validateTramiteCaratulasReady = async ({ tramitesPagoRepo, tramiteId, client }) => {
+  const [caratulaRow, documents] = await Promise.all([
+    tramitesPagoRepo.getTramiteCaratulaByTramiteId(tramiteId, client),
+    tramitesPagoRepo.listDocumentosByTramite(tramiteId, client)
+  ]);
+
+  if (!caratulaRow) {
+    throw createError(400, 'Debe cargar las caratulas del tramite antes de continuar');
+  }
+
+  const summary = summarizeStoredTramiteCaratula({
+    row: caratulaRow,
+    documents
+  });
+  const caratula = summary.caratula;
+
+  if (!caratula) {
+    throw createError(400, 'Debe cargar las caratulas del tramite antes de continuar');
+  }
+
+  if (caratula.estado === 'sociedad_invalida') {
+    const societyWarning = summary.warnings.find((warning) => /^Caratulas no corresponden a sociedad/i.test(warning));
+    throw createError(400, societyWarning || 'Caratulas no corresponden a la sociedad seleccionada');
+  }
+
+  if (Number(caratula.unresolved_groups_count || 0) > 0 || Number(caratula.unresolved_lines_count || 0) > 0) {
+    const blockingWarning = summary.warnings.find(Boolean);
+    throw createError(400, blockingWarning || 'Debe resolver todas las caratulas del tramite antes de continuar');
+  }
+};
+
 const createStageAdvanceValidationPolicy = ({ tramitesPagoRepo, etapa }) => ({
   validateBeforeUpdate: async ({ tramiteId, sameNormalized, client }) => {
     if (sameNormalized) {
@@ -28,6 +60,14 @@ const createStageAdvanceValidationPolicy = ({ tramitesPagoRepo, etapa }) => ({
       etapa,
       client
     });
+
+    if (etapa === 'gerencia') {
+      await validateTramiteCaratulasReady({
+        tramitesPagoRepo,
+        tramiteId,
+        client
+      });
+    }
   },
   runAfterUpdate: async () => {}
 });

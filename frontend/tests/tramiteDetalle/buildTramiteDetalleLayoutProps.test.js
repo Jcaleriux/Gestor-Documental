@@ -22,6 +22,8 @@ const createBaseInput = () => {
     },
     documentos: [{ factura_id: 1 }],
     documentosActivos: [{ factura_id: 1, ruta_pdf: 'docs/f1.pdf' }],
+    caratula: { id: 44, estado: 'requiere_revision', ruta_archivo: 'documentos/tramites/car.pdf' },
+    providerGroups: [{ group_key: 'group_1', documents: [{ factura_id: 1 }], lines: [] }],
     retencionesActivas: [{ id: 9 }],
     resumenTotales: { totalDocs: 1, suma: 1000 },
     resumenMoneda: { codigo: 'CRC' },
@@ -50,6 +52,10 @@ const createBaseInput = () => {
     handleTesoreriaDestinoChange: noop,
     handleDecision: noop,
     handleAccionTesoreria: noop,
+    handleUploadCaratulas: noop,
+    handleResolveCaratulas: noop,
+    uploadingCaratulas: false,
+    resolvingCaratulaGroupKey: '',
     sociedadLabel: 'Sociedad 10'
   };
 };
@@ -64,8 +70,11 @@ test('buildTramiteDetalleLayoutProps agrupa secciones y calcula derivados', () =
   assert.equal(layoutProps.historial.visible, false);
   assert.equal(layoutProps.meta.tramite.id, 55);
   assert.equal(layoutProps.pagos.visible, true);
+  assert.equal(layoutProps.caratulas.caratula.id, 44);
+  assert.equal(layoutProps.caratulas.providerGroups.length, 1);
   assert.equal(layoutProps.override.estados.length > 0, true);
   assert.equal(layoutProps.table.documentos.length, 1);
+  assert.equal(layoutProps.table.providerGroups.length, 1);
   assert.equal(layoutProps.table.destinosTesoreria.length > 0, true);
   assert.equal(layoutProps.table.permisos.puedeTesoreria, true);
 

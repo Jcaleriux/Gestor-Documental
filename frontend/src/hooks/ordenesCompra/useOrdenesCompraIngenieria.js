@@ -1,37 +1,294 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { proveedoresApi } from '../../services/proveedoresApi';
-import { ordenesCompraApi } from '../../services/ordenesCompraApi';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { readScopedValue } from '../shared/listScope.js';
+import { proveedoresApi } from '../../services/proveedoresApi.js';
+import { ordenesCompraApi } from '../../services/ordenesCompraApi.js';
 import {
   MAX_ORDEN_COMPRA_BYTES,
   MAX_ORDEN_COMPRA_MB,
   MONEDAS_OPCIONES,
-  toBase64
-} from './utils';
+  toBase64,
+} from './utils.js';
 
 const initialMoneda = MONEDAS_OPCIONES[0] || 'CRC';
 const buildAutoResultKey = (file, index) => `${file?.webkitRelativePath || file?.name || 'archivo'}::${index}`;
+const buildScopeKey = ({ sociedadId }) => (sociedadId ? String(sociedadId) : '');
+const buildTodayIso = (nowProvider) => nowProvider().toISOString().slice(0, 10);
 
-export const useOrdenesCompraIngenieria = ({ sociedadId }) => {
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [deletingId, setDeletingId] = useState(null);
-  const [updatingEstadoId, setUpdatingEstadoId] = useState(null);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
-  const [estadoFilter, setEstadoFilter] = useState('');
-  const [proveedores, setProveedores] = useState([]);
-  const [ordenesCompra, setOrdenesCompra] = useState([]);
-  const [selectedProveedorId, setSelectedProveedorId] = useState('');
-  const [ordenNumero, setOrdenNumero] = useState('');
-  const [ordenMonto, setOrdenMonto] = useState('');
-  const [ordenMoneda, setOrdenMoneda] = useState(initialMoneda);
-  const [ordenFecha, setOrdenFecha] = useState(new Date().toISOString().slice(0, 10));
-  const [ordenFile, setOrdenFile] = useState(null);
-  const [autoFiles, setAutoFiles] = useState([]);
-  const [autoImporting, setAutoImporting] = useState(false);
-  const [autoResults, setAutoResults] = useState([]);
+const createFormState = ({ scopeKey, nowProvider }) => ({
+  scopeKey,
+  estadoFilter: '',
+  selectedProveedorId: '',
+  ordenNumero: '',
+  ordenMonto: '',
+  ordenMoneda: initialMoneda,
+  ordenFecha: buildTodayIso(nowProvider),
+  ordenFile: null,
+});
 
-  const validateFileSize = (file) => {
+const createDataState = ({ scopeKey }) => ({
+  scopeKey,
+  loading: false,
+  proveedores: [],
+  ordenesCompra: [],
+});
+
+const createStatusState = ({ scopeKey }) => ({
+  scopeKey,
+  saving: false,
+  deletingId: null,
+  updatingEstadoId: null,
+  message: '',
+  error: '',
+});
+
+const createAutoState = ({ scopeKey }) => ({
+  scopeKey,
+  autoFiles: [],
+  autoImporting: false,
+  autoResults: [],
+});
+
+const resolveScopedState = (state, scopeKey, factory) => (
+  state?.scopeKey === scopeKey ? state : factory({ scopeKey })
+);
+
+const resolveActionValue = (value, previousValue) => (
+  typeof value === 'function' ? value(previousValue) : value
+);
+
+export const useOrdenesCompraIngenieria = ({
+  sociedadId,
+  dependencies = {},
+}) => {
+  const {
+    proveedoresClient = proveedoresApi,
+    ordenesClient = ordenesCompraApi,
+    fileToBase64 = toBase64,
+    nowProvider = () => new Date(),
+    confirmDelete = (message) => window.confirm(message),
+  } = dependencies;
+
+  const currentScopeKey = buildScopeKey({ sociedadId });
+  const requestIdRef = useRef(0);
+  const lastLoadedScopeKeyRef = useRef('');
+  const lastLoadedFilterRef = useRef('');
+  const [formState, setFormState] = useState(() => createFormState({ scopeKey: currentScopeKey, nowProvider }));
+  const [dataState, setDataState] = useState(() => createDataState({ scopeKey: currentScopeKey }));
+  const [statusState, setStatusState] = useState(() => createStatusState({ scopeKey: currentScopeKey }));
+  const [autoState, setAutoState] = useState(() => createAutoState({ scopeKey: currentScopeKey }));
+
+  const estadoFilter = sociedadId
+    ? readScopedValue(formState, currentScopeKey, 'estadoFilter', '')
+    : '';
+  const selectedProveedorId = sociedadId
+    ? readScopedValue(formState, currentScopeKey, 'selectedProveedorId', '')
+    : '';
+  const ordenNumero = sociedadId
+    ? readScopedValue(formState, currentScopeKey, 'ordenNumero', '')
+    : '';
+  const ordenMonto = sociedadId
+    ? readScopedValue(formState, currentScopeKey, 'ordenMonto', '')
+    : '';
+  const ordenMoneda = sociedadId
+    ? readScopedValue(formState, currentScopeKey, 'ordenMoneda', initialMoneda)
+    : initialMoneda;
+  const ordenFecha = sociedadId
+    ? readScopedValue(formState, currentScopeKey, 'ordenFecha', buildTodayIso(nowProvider))
+    : buildTodayIso(nowProvider);
+  const ordenFile = sociedadId
+    ? readScopedValue(formState, currentScopeKey, 'ordenFile', null)
+    : null;
+  const loading = sociedadId
+    ? (
+      readScopedValue(dataState, currentScopeKey, 'loading', false)
+      || dataState.scopeKey !== currentScopeKey
+    )
+    : false;
+  const proveedores = useMemo(() => (
+    sociedadId ? readScopedValue(dataState, currentScopeKey, 'proveedores', []) : []
+  ), [currentScopeKey, dataState, sociedadId]);
+  const ordenesCompra = useMemo(() => (
+    sociedadId ? readScopedValue(dataState, currentScopeKey, 'ordenesCompra', []) : []
+  ), [currentScopeKey, dataState, sociedadId]);
+  const saving = sociedadId
+    ? readScopedValue(statusState, currentScopeKey, 'saving', false)
+    : false;
+  const deletingId = sociedadId
+    ? readScopedValue(statusState, currentScopeKey, 'deletingId', null)
+    : null;
+  const updatingEstadoId = sociedadId
+    ? readScopedValue(statusState, currentScopeKey, 'updatingEstadoId', null)
+    : null;
+  const message = sociedadId
+    ? readScopedValue(statusState, currentScopeKey, 'message', '')
+    : '';
+  const error = sociedadId
+    ? readScopedValue(statusState, currentScopeKey, 'error', '')
+    : '';
+  const autoFiles = useMemo(() => (
+    sociedadId ? readScopedValue(autoState, currentScopeKey, 'autoFiles', []) : []
+  ), [autoState, currentScopeKey, sociedadId]);
+  const autoImporting = sociedadId
+    ? readScopedValue(autoState, currentScopeKey, 'autoImporting', false)
+    : false;
+  const autoResults = useMemo(() => (
+    sociedadId ? readScopedValue(autoState, currentScopeKey, 'autoResults', []) : []
+  ), [autoState, currentScopeKey, sociedadId]);
+
+  const setError = useCallback((value) => {
+    setStatusState((previous) => {
+      const current = resolveScopedState(previous, currentScopeKey, createStatusState);
+      return {
+        ...current,
+        scopeKey: currentScopeKey,
+        error: String(resolveActionValue(value, current.error) || ''),
+      };
+    });
+  }, [currentScopeKey]);
+
+  const setMessage = useCallback((value) => {
+    setStatusState((previous) => {
+      const current = resolveScopedState(previous, currentScopeKey, createStatusState);
+      return {
+        ...current,
+        scopeKey: currentScopeKey,
+        message: String(resolveActionValue(value, current.message) || ''),
+      };
+    });
+  }, [currentScopeKey]);
+
+  const setEstadoFilter = useCallback((value) => {
+    setFormState((previous) => {
+      const current = resolveScopedState(previous, currentScopeKey, ({ scopeKey }) => (
+        createFormState({ scopeKey, nowProvider })
+      ));
+      return {
+        ...current,
+        scopeKey: currentScopeKey,
+        estadoFilter: String(resolveActionValue(value, current.estadoFilter) || ''),
+      };
+    });
+  }, [currentScopeKey, nowProvider]);
+
+  const setSelectedProveedorId = useCallback((value) => {
+    setFormState((previous) => {
+      const current = resolveScopedState(previous, currentScopeKey, ({ scopeKey }) => (
+        createFormState({ scopeKey, nowProvider })
+      ));
+      return {
+        ...current,
+        scopeKey: currentScopeKey,
+        selectedProveedorId: String(resolveActionValue(value, current.selectedProveedorId) || ''),
+      };
+    });
+  }, [currentScopeKey, nowProvider]);
+
+  const setOrdenNumero = useCallback((value) => {
+    setFormState((previous) => {
+      const current = resolveScopedState(previous, currentScopeKey, ({ scopeKey }) => (
+        createFormState({ scopeKey, nowProvider })
+      ));
+      return {
+        ...current,
+        scopeKey: currentScopeKey,
+        ordenNumero: String(resolveActionValue(value, current.ordenNumero) || ''),
+      };
+    });
+  }, [currentScopeKey, nowProvider]);
+
+  const setOrdenMonto = useCallback((value) => {
+    setFormState((previous) => {
+      const current = resolveScopedState(previous, currentScopeKey, ({ scopeKey }) => (
+        createFormState({ scopeKey, nowProvider })
+      ));
+      return {
+        ...current,
+        scopeKey: currentScopeKey,
+        ordenMonto: String(resolveActionValue(value, current.ordenMonto) || ''),
+      };
+    });
+  }, [currentScopeKey, nowProvider]);
+
+  const setOrdenMoneda = useCallback((value) => {
+    setFormState((previous) => {
+      const current = resolveScopedState(previous, currentScopeKey, ({ scopeKey }) => (
+        createFormState({ scopeKey, nowProvider })
+      ));
+      return {
+        ...current,
+        scopeKey: currentScopeKey,
+        ordenMoneda: String(resolveActionValue(value, current.ordenMoneda) || initialMoneda),
+      };
+    });
+  }, [currentScopeKey, nowProvider]);
+
+  const setOrdenFecha = useCallback((value) => {
+    setFormState((previous) => {
+      const current = resolveScopedState(previous, currentScopeKey, ({ scopeKey }) => (
+        createFormState({ scopeKey, nowProvider })
+      ));
+      return {
+        ...current,
+        scopeKey: currentScopeKey,
+        ordenFecha: String(resolveActionValue(value, current.ordenFecha) || buildTodayIso(nowProvider)),
+      };
+    });
+  }, [currentScopeKey, nowProvider]);
+
+  const setOrdenFile = useCallback((value) => {
+    setFormState((previous) => {
+      const current = resolveScopedState(previous, currentScopeKey, ({ scopeKey }) => (
+        createFormState({ scopeKey, nowProvider })
+      ));
+      return {
+        ...current,
+        scopeKey: currentScopeKey,
+        ordenFile: resolveActionValue(value, current.ordenFile),
+      };
+    });
+  }, [currentScopeKey, nowProvider]);
+
+  const setAutoFiles = useCallback((value) => {
+    setAutoState((previous) => {
+      const current = resolveScopedState(previous, currentScopeKey, createAutoState);
+      return {
+        ...current,
+        scopeKey: currentScopeKey,
+        autoFiles: resolveActionValue(value, current.autoFiles) || [],
+      };
+    });
+  }, [currentScopeKey]);
+
+  const setAutoResults = useCallback((value) => {
+    setAutoState((previous) => {
+      const current = resolveScopedState(previous, currentScopeKey, createAutoState);
+      return {
+        ...current,
+        scopeKey: currentScopeKey,
+        autoResults: resolveActionValue(value, current.autoResults) || [],
+      };
+    });
+  }, [currentScopeKey]);
+
+  const resetForm = useCallback(() => {
+    setFormState((previous) => {
+      const current = resolveScopedState(previous, currentScopeKey, ({ scopeKey }) => (
+        createFormState({ scopeKey, nowProvider })
+      ));
+      return {
+        ...current,
+        scopeKey: currentScopeKey,
+        selectedProveedorId: '',
+        ordenNumero: '',
+        ordenMonto: '',
+        ordenMoneda: initialMoneda,
+        ordenFecha: buildTodayIso(nowProvider),
+        ordenFile: null,
+      };
+    });
+  }, [currentScopeKey, nowProvider]);
+
+  const validateFileSize = useCallback((file) => {
     if (!file) return true;
     if (file.size > MAX_ORDEN_COMPRA_BYTES) {
       setOrdenFile(null);
@@ -39,68 +296,128 @@ export const useOrdenesCompraIngenieria = ({ sociedadId }) => {
       return false;
     }
     return true;
-  };
+  }, [setError, setOrdenFile]);
 
-  const resetForm = () => {
-    setSelectedProveedorId('');
-    setOrdenNumero('');
-    setOrdenMonto('');
-    setOrdenMoneda(initialMoneda);
-    setOrdenFecha(new Date().toISOString().slice(0, 10));
-    setOrdenFile(null);
-  };
-
-  const loadData = useCallback(async ({ showLoader = true } = {}) => {
+  const loadData = useCallback(async ({
+    showLoader = true,
+    targetScopeKey = currentScopeKey,
+    estadoOverride = '',
+  } = {}) => {
     if (!sociedadId) {
-      setProveedores([]);
-      setOrdenesCompra([]);
-      if (showLoader) setLoading(false);
-      return;
+      return false;
+    }
+
+    requestIdRef.current += 1;
+    const requestId = requestIdRef.current;
+
+    if (showLoader) {
+      setDataState((previous) => {
+        const current = resolveScopedState(previous, targetScopeKey, createDataState);
+        return {
+          ...current,
+          scopeKey: targetScopeKey,
+          loading: true,
+        };
+      });
     }
 
     try {
-      if (showLoader) setLoading(true);
       const [proveedoresRes, ordenesRes] = await Promise.all([
-        proveedoresApi.listProveedores(sociedadId),
-        ordenesCompraApi.listOrdenesCompra({
+        proveedoresClient.listProveedores(sociedadId),
+        ordenesClient.listOrdenesCompra({
           sociedadId,
-          estado: estadoFilter || undefined
-        })
+          estado: estadoOverride || undefined,
+        }),
       ]);
 
-      setProveedores(proveedoresRes.data?.data || []);
-      setOrdenesCompra(ordenesRes.data?.data || []);
+      if (requestIdRef.current !== requestId) {
+        return false;
+      }
+
+      setDataState({
+        scopeKey: targetScopeKey,
+        loading: false,
+        proveedores: proveedoresRes.data?.data || [],
+        ordenesCompra: ordenesRes.data?.data || [],
+      });
+      lastLoadedScopeKeyRef.current = targetScopeKey;
+      lastLoadedFilterRef.current = String(estadoOverride || '');
+
+      return true;
     } catch (err) {
-      const apiError = err.response?.data?.error || 'No se pudieron cargar las ordenes de compra.';
-      setError(apiError);
-    } finally {
-      if (showLoader) setLoading(false);
+      if (requestIdRef.current === requestId) {
+        setDataState((previous) => {
+          const current = resolveScopedState(previous, targetScopeKey, createDataState);
+          return {
+            ...current,
+            scopeKey: targetScopeKey,
+            loading: false,
+          };
+        });
+        setError(err.response?.data?.error || 'No se pudieron cargar las ordenes de compra.');
+      }
+      return false;
     }
-  }, [sociedadId, estadoFilter]);
+  }, [currentScopeKey, ordenesClient, proveedoresClient, setError, sociedadId]);
 
   useEffect(() => {
-    resetForm();
-    setMessage('');
-    setError('');
-    setEstadoFilter('');
-    setAutoFiles([]);
-    setAutoResults([]);
-    loadData();
-  }, [sociedadId, loadData]);
+    requestIdRef.current += 1;
+
+    if (!sociedadId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    queueMicrotask(() => {
+      if (!cancelled) {
+        void loadData({
+          showLoader: true,
+          targetScopeKey: currentScopeKey,
+          estadoOverride: '',
+        });
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentScopeKey, loadData, sociedadId]);
 
   useEffect(() => {
-    if (!sociedadId) return;
-    loadData({ showLoader: false });
-  }, [estadoFilter, sociedadId, loadData]);
+    if (
+      !sociedadId
+      || lastLoadedScopeKeyRef.current !== currentScopeKey
+      || lastLoadedFilterRef.current === String(estadoFilter || '')
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+
+    queueMicrotask(() => {
+      if (!cancelled) {
+        void loadData({
+          showLoader: false,
+          targetScopeKey: currentScopeKey,
+          estadoOverride: estadoFilter,
+        });
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentScopeKey, estadoFilter, loadData, sociedadId]);
 
   const proveedoresOrdenados = useMemo(
     () => [...proveedores].sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''))),
-    [proveedores]
+    [proveedores],
   );
 
   const selectedProveedor = useMemo(
     () => proveedores.find((proveedor) => String(proveedor.id) === String(selectedProveedorId)) || null,
-    [proveedores, selectedProveedorId]
+    [proveedores, selectedProveedorId],
   );
 
   const proveedoresConOrdenes = useMemo(() => {
@@ -119,7 +436,7 @@ export const useOrdenesCompraIngenieria = ({ sociedadId }) => {
       .map(([proveedorId, ordenes]) => ({
         proveedorId,
         proveedor: byId.get(proveedorId) || null,
-        ordenes: [...ordenes].sort((a, b) => new Date(b.creado_en) - new Date(a.creado_en))
+        ordenes: [...ordenes].sort((a, b) => new Date(b.creado_en) - new Date(a.creado_en)),
       }))
       .sort((a, b) => {
         const nameA = (a.proveedor?.nombre || '').toLowerCase();
@@ -128,18 +445,18 @@ export const useOrdenesCompraIngenieria = ({ sociedadId }) => {
       });
   }, [proveedores, ordenesCompra]);
 
-  const onProveedorChange = (value) => {
+  const onProveedorChange = useCallback((value) => {
     setSelectedProveedorId(value);
-  };
+  }, [setSelectedProveedorId]);
 
-  const handleAutoFilesChange = (fileList) => {
+  const handleAutoFilesChange = useCallback((fileList) => {
     const files = Array.from(fileList || [])
       .filter((file) => /\.pdf$/i.test(file?.name || ''));
     setAutoFiles(files);
     setAutoResults([]);
-  };
+  }, [setAutoFiles, setAutoResults]);
 
-  const handleUpload = async (e) => {
+  const handleUpload = useCallback(async (e) => {
     e.preventDefault();
     if (!sociedadId) {
       setError('Seleccione una sociedad para continuar.');
@@ -174,12 +491,19 @@ export const useOrdenesCompraIngenieria = ({ sociedadId }) => {
     }
 
     try {
-      setSaving(true);
-      setError('');
-      setMessage('');
+      setStatusState((previous) => {
+        const current = resolveScopedState(previous, currentScopeKey, createStatusState);
+        return {
+          ...current,
+          scopeKey: currentScopeKey,
+          saving: true,
+          error: '',
+          message: '',
+        };
+      });
 
-      const fileBase64 = await toBase64(ordenFile);
-      await ordenesCompraApi.createOrdenCompra({
+      const fileBase64 = await fileToBase64(ordenFile);
+      await ordenesClient.createOrdenCompra({
         sociedad_id: Number(sociedadId),
         proveedor_id: Number(selectedProveedor.id),
         numero_oc: ordenNumero.trim(),
@@ -187,21 +511,44 @@ export const useOrdenesCompraIngenieria = ({ sociedadId }) => {
         moneda: ordenMoneda,
         fecha: ordenFecha,
         filename: ordenFile.name,
-        file_base64: fileBase64
+        file_base64: fileBase64,
       });
 
       resetForm();
       setMessage('Orden de compra cargada correctamente.');
-      await loadData({ showLoader: false });
+      await loadData({ showLoader: false, estadoOverride: estadoFilter });
     } catch (err) {
-      const apiError = err.response?.data?.error || 'No se pudo subir la orden de compra.';
-      setError(apiError);
+      setError(err.response?.data?.error || 'No se pudo subir la orden de compra.');
     } finally {
-      setSaving(false);
+      setStatusState((previous) => {
+        const current = resolveScopedState(previous, currentScopeKey, createStatusState);
+        return {
+          ...current,
+          scopeKey: currentScopeKey,
+          saving: false,
+        };
+      });
     }
-  };
+  }, [
+    currentScopeKey,
+    fileToBase64,
+    loadData,
+    ordenFecha,
+    ordenFile,
+    ordenMoneda,
+    ordenNumero,
+    ordenMonto,
+    ordenesClient,
+    resetForm,
+    selectedProveedor,
+    estadoFilter,
+    setError,
+    setMessage,
+    sociedadId,
+    validateFileSize,
+  ]);
 
-  const handleDeleteOrden = async (orden) => {
+  const handleDeleteOrden = useCallback(async (orden) => {
     if (!orden?.id) {
       return;
     }
@@ -211,32 +558,45 @@ export const useOrdenesCompraIngenieria = ({ sociedadId }) => {
       return;
     }
 
-    const confirmDelete = window.confirm(`Desea eliminar la orden de compra "${orden.nombre}"?`);
-    if (!confirmDelete) {
+    const confirmDeleteResult = confirmDelete(`Desea eliminar la orden de compra "${orden.nombre}"?`);
+    if (!confirmDeleteResult) {
       return;
     }
 
     try {
-      setDeletingId(orden.id);
-      setError('');
-      setMessage('');
+      setStatusState((previous) => {
+        const current = resolveScopedState(previous, currentScopeKey, createStatusState);
+        return {
+          ...current,
+          scopeKey: currentScopeKey,
+          deletingId: orden.id,
+          error: '',
+          message: '',
+        };
+      });
 
-      await ordenesCompraApi.deleteOrdenCompra({
+      await ordenesClient.deleteOrdenCompra({
         ordenCompraId: orden.id,
-        sociedadId: Number(sociedadId)
+        sociedadId: Number(sociedadId),
       });
 
       setMessage('Orden de compra eliminada correctamente.');
-      await loadData({ showLoader: false });
+      await loadData({ showLoader: false, estadoOverride: estadoFilter });
     } catch (err) {
-      const apiError = err.response?.data?.error || 'No se pudo eliminar la orden de compra.';
-      setError(apiError);
+      setError(err.response?.data?.error || 'No se pudo eliminar la orden de compra.');
     } finally {
-      setDeletingId(null);
+      setStatusState((previous) => {
+        const current = resolveScopedState(previous, currentScopeKey, createStatusState);
+        return {
+          ...current,
+          scopeKey: currentScopeKey,
+          deletingId: null,
+        };
+      });
     }
-  };
+  }, [confirmDelete, currentScopeKey, estadoFilter, loadData, ordenesClient, setError, setMessage, sociedadId]);
 
-  const handleToggleEstadoManual = async (orden) => {
+  const handleToggleEstadoManual = useCallback(async (orden) => {
     if (!orden?.id) {
       return;
     }
@@ -250,27 +610,40 @@ export const useOrdenesCompraIngenieria = ({ sociedadId }) => {
     const nextEstado = estadoActual === 'cerrada' ? 'abierta' : 'cerrada';
 
     try {
-      setUpdatingEstadoId(orden.id);
-      setError('');
-      setMessage('');
+      setStatusState((previous) => {
+        const current = resolveScopedState(previous, currentScopeKey, createStatusState);
+        return {
+          ...current,
+          scopeKey: currentScopeKey,
+          updatingEstadoId: orden.id,
+          error: '',
+          message: '',
+        };
+      });
 
-      await ordenesCompraApi.updateEstadoManual({
+      await ordenesClient.updateEstadoManual({
         ordenCompraId: orden.id,
         sociedadId: Number(sociedadId),
-        estado: nextEstado
+        estado: nextEstado,
       });
 
       setMessage(`Orden de compra ${nextEstado} manualmente.`);
-      await loadData({ showLoader: false });
+      await loadData({ showLoader: false, estadoOverride: estadoFilter });
     } catch (err) {
-      const apiError = err.response?.data?.error || 'No se pudo actualizar el estado de la orden de compra.';
-      setError(apiError);
+      setError(err.response?.data?.error || 'No se pudo actualizar el estado de la orden de compra.');
     } finally {
-      setUpdatingEstadoId(null);
+      setStatusState((previous) => {
+        const current = resolveScopedState(previous, currentScopeKey, createStatusState);
+        return {
+          ...current,
+          scopeKey: currentScopeKey,
+          updatingEstadoId: null,
+        };
+      });
     }
-  };
+  }, [currentScopeKey, estadoFilter, loadData, ordenesClient, setError, setMessage, sociedadId]);
 
-  const handleAutoImport = async () => {
+  const handleAutoImport = useCallback(async () => {
     if (!sociedadId) {
       setError('Seleccione una sociedad para continuar.');
       return;
@@ -282,10 +655,17 @@ export const useOrdenesCompraIngenieria = ({ sociedadId }) => {
     }
 
     try {
-      setAutoImporting(true);
+      setAutoState((previous) => {
+        const current = resolveScopedState(previous, currentScopeKey, createAutoState);
+        return {
+          ...current,
+          scopeKey: currentScopeKey,
+          autoImporting: true,
+          autoResults: [],
+        };
+      });
       setError('');
       setMessage('');
-      setAutoResults([]);
 
       const results = [];
 
@@ -298,16 +678,16 @@ export const useOrdenesCompraIngenieria = ({ sociedadId }) => {
               rowKey,
               filename: file.webkitRelativePath || file.name,
               status: 'error',
-              error: `El archivo supera ${MAX_ORDEN_COMPRA_MB} MB`
+              error: `El archivo supera ${MAX_ORDEN_COMPRA_MB} MB`,
             });
             continue;
           }
 
-          const fileBase64 = await toBase64(file);
-          const response = await ordenesCompraApi.autoImportOrdenCompra({
+          const fileBase64 = await fileToBase64(file);
+          const response = await ordenesClient.autoImportOrdenCompra({
             sociedad_id: Number(sociedadId),
             filename: file.name,
-            file_base64: fileBase64
+            file_base64: fileBase64,
           });
           const data = response.data?.data || {};
           results.push({
@@ -318,14 +698,14 @@ export const useOrdenesCompraIngenieria = ({ sociedadId }) => {
             proveedor: data.extraido?.proveedor_nombre || '',
             moneda: data.extraido?.moneda || '',
             monto: data.extraido?.monto ?? null,
-            fecha: data.extraido?.fecha || ''
+            fecha: data.extraido?.fecha || '',
           });
         } catch (err) {
           results.push({
             rowKey,
             filename: file.webkitRelativePath || file.name,
             status: 'error',
-            error: err.response?.data?.error || 'No se pudo importar este archivo'
+            error: err.response?.data?.error || 'No se pudo importar este archivo',
           });
         }
       }
@@ -335,11 +715,30 @@ export const useOrdenesCompraIngenieria = ({ sociedadId }) => {
       const okCount = results.filter((item) => item.status === 'ok').length;
       const errorCount = results.length - okCount;
       setMessage(`Importacion automatica finalizada. Exitosas: ${okCount}. Errores: ${errorCount}.`);
-      await loadData({ showLoader: false });
+      await loadData({ showLoader: false, estadoOverride: estadoFilter });
     } finally {
-      setAutoImporting(false);
+      setAutoState((previous) => {
+        const current = resolveScopedState(previous, currentScopeKey, createAutoState);
+        return {
+          ...current,
+          scopeKey: currentScopeKey,
+          autoImporting: false,
+        };
+      });
     }
-  };
+  }, [
+    autoFiles,
+    currentScopeKey,
+    estadoFilter,
+    fileToBase64,
+    loadData,
+    ordenesClient,
+    setAutoResults,
+    setError,
+    setMessage,
+    sociedadId,
+    validateFileSize,
+  ]);
 
   return {
     loading,
@@ -373,6 +772,6 @@ export const useOrdenesCompraIngenieria = ({ sociedadId }) => {
     handleUpload,
     handleDeleteOrden,
     handleToggleEstadoManual,
-    validateFileSize
+    validateFileSize,
   };
 };

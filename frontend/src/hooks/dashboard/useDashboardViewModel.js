@@ -3,6 +3,7 @@ import { buildDashboardViewModel } from '../../components/dashboard/dashboardVie
 
 export const useDashboardViewModel = ({
   stats,
+  workQueue,
   recentDocs,
   authUser = null,
   userPermissions = [],
@@ -11,11 +12,12 @@ export const useDashboardViewModel = ({
   useMemo(
     () => buildDashboardViewModel({
       stats,
+      workQueue,
       recentDocs,
       authUser,
       userPermissions,
       selectedSociedadName,
     }),
-    [authUser, recentDocs, selectedSociedadName, stats, userPermissions],
+    [authUser, recentDocs, selectedSociedadName, stats, userPermissions, workQueue],
   )
 );

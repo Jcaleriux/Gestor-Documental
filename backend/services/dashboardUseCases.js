@@ -1,8 +1,10 @@
 const { FACTURA_ESTADOS } = require('../domain/facturas');
+const { TRAMITE_ESTADOS } = require('../domain/tramitesPago');
 const {
   mapActividadRow,
   mapDocumentoRecienteRow,
-  mapDashboardStats
+  mapDashboardStats,
+  mapDashboardWorkQueue
 } = require('../mappers/dashboardMapper');
 
 const toNumber = (value) => {
@@ -63,6 +65,45 @@ const groupTopProveedoresByCurrency = (rows) => (
     return result;
   }, {})
 );
+
+const buildFacturasWorkQueue = ({ facturasStats, cuentasPagarRows }) => {
+  const facturas = facturasStats || {};
+
+  return {
+    noContabilizadas: toNumber(facturas.no_contabilizado),
+    enRevision: toNumber(facturas.en_revision),
+    porPagar: countDocuments(cuentasPagarRows, 'docs_por_pagar'),
+    vencidas: countDocuments(cuentasPagarRows, 'docs_vencidas'),
+    porVencer7Dias: countDocuments(cuentasPagarRows, 'docs_por_vencer_7'),
+    retencionesPendientes: countDocuments(cuentasPagarRows, 'docs_retencion_pendiente'),
+    enTramite: toNumber(facturas.en_tramite) + toNumber(facturas.pagados_parcialmente),
+    pagadas: toNumber(facturas.pagados)
+  };
+};
+
+const buildTramitesWorkQueue = (tramitesSummary) => {
+  const summary = tramitesSummary || {};
+
+  return {
+    activos: toNumber(summary.activos),
+    porEstado: {
+      [TRAMITE_ESTADOS.EN_APROBACION_GERENCIA]: toNumber(summary.estado_en_aprobacion_gerencia),
+      [TRAMITE_ESTADOS.EN_APROBACION_GERENCIA_CONTABLE]: toNumber(summary.estado_en_aprobacion_gerencia_contable),
+      [TRAMITE_ESTADOS.EN_APROBACION_GERENCIA_FINANCIERA]: toNumber(summary.estado_en_aprobacion_gerencia_financiera),
+      [TRAMITE_ESTADOS.EN_REVISION_TESORERIA]: toNumber(summary.estado_en_revision_tesoreria),
+      [TRAMITE_ESTADOS.EN_REVISION_TESORERIA_1]: toNumber(summary.estado_en_revision_tesoreria_1),
+      [TRAMITE_ESTADOS.EN_REVISION_TESORERIA_2]: toNumber(summary.estado_en_revision_tesoreria_2),
+      [TRAMITE_ESTADOS.PAGADO]: toNumber(summary.estado_pagado),
+      [TRAMITE_ESTADOS.CANCELADO]: toNumber(summary.estado_cancelado),
+    },
+    aprobacionesPendientes: {
+      gerencia: toNumber(summary.aprobaciones_pendientes_gerencia),
+      gerencia_contable: toNumber(summary.aprobaciones_pendientes_gerencia_contable),
+      financiera: toNumber(summary.aprobaciones_pendientes_financiera)
+    },
+    rechazadosActivos: toNumber(summary.rechazados_activos)
+  };
+};
 
 const createDashboardUseCases = ({ dashboardRepo }) => {
   if (!dashboardRepo) {
@@ -207,8 +248,43 @@ const createDashboardUseCases = ({ dashboardRepo }) => {
     return rows.map(mapDocumentoRecienteRow);
   };
 
+  const getWorkQueue = async ({ sociedadId }) => {
+    const [
+      facturasStats,
+      cuentasPagarRows,
+      recentDocumentRows,
+      sociedadesCount,
+      tramitesSummary
+    ] = await Promise.all([
+      dashboardRepo.getFacturasStats({ sociedadId }),
+      dashboardRepo.getCuentasPagarResumenPorMoneda({ sociedadId }),
+      dashboardRepo.listRecentDocuments({ sociedadId }),
+      dashboardRepo.countSociedades({ sociedadId }),
+      dashboardRepo.getTramitesWorkQueueSummary({ sociedadId })
+    ]);
+
+    return mapDashboardWorkQueue({
+      updatedAt: new Date().toISOString(),
+      facturas: buildFacturasWorkQueue({
+        facturasStats,
+        cuentasPagarRows
+      }),
+      tramites: buildTramitesWorkQueue(tramitesSummary),
+      documentosRecientes: {
+        total: Array.isArray(recentDocumentRows) ? recentDocumentRows.length : 0,
+        conMotivo: Array.isArray(recentDocumentRows)
+          ? recentDocumentRows.filter((row) => String(row?.motivo || '').trim()).length
+          : 0
+      },
+      sociedades: {
+        visibles: toNumber(sociedadesCount?.count)
+      }
+    });
+  };
+
   return {
     getStats,
+    getWorkQueue,
     getRecentActivity,
     getRecentDocuments
   };

@@ -5,6 +5,7 @@ const RECEIVED_DIR_NAME = 'facturas recibidas';
 const PROCESSED_DIR_NAME = 'facturas procesadas';
 const PAYMENT_TABLES_DIR_NAME = 'tablas_pago';
 const PURCHASE_ORDERS_DIR_NAME = 'ordenes_compra';
+const TRAMITES_DIR_NAME = 'tramites_pago';
 
 const LEGACY_DOCUMENTS_ALIAS = 'facturas';
 const LEGACY_RECEIVED_ALIAS = 'recibidas';
@@ -57,6 +58,11 @@ const toCurrentRelativePath = (rawPath) => {
     `${LEGACY_DOCUMENTS_ALIAS}/${PURCHASE_ORDERS_DIR_NAME}`,
     `${DOCUMENTS_DIR_NAME}/${PURCHASE_ORDERS_DIR_NAME}`
   );
+  normalized = replacePrefix(
+    normalized,
+    `${LEGACY_DOCUMENTS_ALIAS}/${TRAMITES_DIR_NAME}`,
+    `${DOCUMENTS_DIR_NAME}/${TRAMITES_DIR_NAME}`
+  );
   normalized = replacePrefix(normalized, LEGACY_DOCUMENTS_ALIAS, DOCUMENTS_DIR_NAME);
 
   return normalized;
@@ -76,7 +82,8 @@ const resolveDocumentPaths = (baseDir) => {
     facturasRecibidasDir: path.join(resolvedBaseDir, DOCUMENTS_DIR_NAME, RECEIVED_DIR_NAME),
     facturasProcesadasDir: path.join(resolvedBaseDir, DOCUMENTS_DIR_NAME, PROCESSED_DIR_NAME),
     tablasPagoDir: path.join(resolvedBaseDir, DOCUMENTS_DIR_NAME, PAYMENT_TABLES_DIR_NAME),
-    ordenesCompraDir: path.join(resolvedBaseDir, DOCUMENTS_DIR_NAME, PURCHASE_ORDERS_DIR_NAME)
+    ordenesCompraDir: path.join(resolvedBaseDir, DOCUMENTS_DIR_NAME, PURCHASE_ORDERS_DIR_NAME),
+    tramitesDir: path.join(resolvedBaseDir, DOCUMENTS_DIR_NAME, TRAMITES_DIR_NAME)
   };
 };
 
@@ -86,6 +93,7 @@ module.exports = {
   PROCESSED_DIR_NAME,
   PAYMENT_TABLES_DIR_NAME,
   PURCHASE_ORDERS_DIR_NAME,
+  TRAMITES_DIR_NAME,
   toCurrentRelativePath,
   getRelativePathVariants,
   resolveDocumentPaths

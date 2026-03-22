@@ -9,6 +9,11 @@ const getStats = handleRequest((req) => {
   return useCases.getStats({ sociedadId });
 }, 'Error fetching dashboard stats:', 'Error fetching dashboard stats');
 
+const getWorkQueue = handleRequest((req) => {
+  const { sociedadId } = req.query || {};
+  return useCases.getWorkQueue({ sociedadId });
+}, 'Error fetching dashboard work queue:', 'Error fetching dashboard work queue');
+
 const getRecentActivity = handleRequest((req) => {
   const { sociedadId } = req.query || {};
   return useCases.getRecentActivity({ sociedadId });
@@ -21,6 +26,7 @@ const getRecentDocuments = handleRequest((req) => {
 
 module.exports = {
   getStats,
+  getWorkQueue,
   getRecentActivity,
   getRecentDocuments
 };

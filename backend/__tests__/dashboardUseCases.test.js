@@ -71,6 +71,21 @@ const createRepoMock = (overrides = {}) => ({
       total_pendiente_global: '250'
     }
   ]),
+  getTramitesWorkQueueSummary: jest.fn().mockResolvedValue({
+    activos: 4,
+    estado_en_aprobacion_gerencia: 1,
+    estado_en_aprobacion_gerencia_contable: 1,
+    estado_en_aprobacion_gerencia_financiera: 0,
+    estado_en_revision_tesoreria: 0,
+    estado_en_revision_tesoreria_1: 1,
+    estado_en_revision_tesoreria_2: 1,
+    estado_pagado: 2,
+    estado_cancelado: 0,
+    aprobaciones_pendientes_gerencia: 3,
+    aprobaciones_pendientes_gerencia_contable: 2,
+    aprobaciones_pendientes_financiera: 0,
+    rechazados_activos: 1
+  }),
   listRecentFacturas: jest.fn().mockResolvedValue([]),
   listRecentNotasCredito: jest.fn().mockResolvedValue([]),
   listRecentMensajesHacienda: jest.fn().mockResolvedValue([]),
@@ -149,5 +164,59 @@ describe('dashboardUseCases', () => {
         }
       ]
     });
+  });
+
+  test('getWorkQueue resume cola documental y aprobaciones por etapa', async () => {
+    const repo = createRepoMock({
+      listRecentDocuments: jest.fn().mockResolvedValue([
+        { id: 1, motivo: 'Falta soporte' },
+        { id: 2, motivo: '' },
+        { id: 3, motivo: 'Escalar aprobacion' }
+      ])
+    });
+    const useCases = createDashboardUseCases({ dashboardRepo: repo });
+
+    const result = await useCases.getWorkQueue({ sociedadId: 18 });
+
+    expect(repo.getTramitesWorkQueueSummary).toHaveBeenCalledWith({ sociedadId: 18 });
+    expect(result).toMatchObject({
+      facturas: {
+        noContabilizadas: 4,
+        enRevision: 1,
+        porPagar: 3,
+        vencidas: 1,
+        porVencer7Dias: 2,
+        retencionesPendientes: 1,
+        enTramite: 3,
+        pagadas: 1
+      },
+      tramites: {
+        activos: 4,
+        porEstado: {
+          en_aprobacion_gerencia: 1,
+          en_aprobacion_gerencia_contable: 1,
+          en_aprobacion_gerencia_financiera: 0,
+          en_revision_tesoreria: 0,
+          en_revision_tesoreria_1: 1,
+          en_revision_tesoreria_2: 1,
+          pagado: 2,
+          cancelado: 0
+        },
+        aprobacionesPendientes: {
+          gerencia: 3,
+          gerencia_contable: 2,
+          financiera: 0
+        },
+        rechazadosActivos: 1
+      },
+      documentosRecientes: {
+        total: 3,
+        conMotivo: 2
+      },
+      sociedades: {
+        visibles: 1
+      }
+    });
+    expect(typeof result.updatedAt).toBe('string');
   });
 });

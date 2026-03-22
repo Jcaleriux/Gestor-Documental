@@ -4,6 +4,20 @@
 
 Activo
 
+## Avance actual
+
+- FEAT-001: Hecho en Fase 1
+  - dashboard reordenado con cola operativa arriba del bloque analitico
+  - nueva fuente backend `GET /api/dashboard/work-queue`
+  - priorizacion por rol en frontend sin romper contratos existentes de `stats` ni `recent-documents`
+  - nuevos drill-downs compatibles a facturas (`en_revision`, `en_tramite`) y tramites por `estado`
+  - ajuste aditivo de permisos para lectura de tramites desde roles workflow
+
+## Residual relevante
+
+- FEAT-002 y FEAT-005 siguen siendo el siguiente salto natural para aging, excepciones y lectura gerencial mas fina
+- puede haber una Fase 2 futura para pulir CTAs por permiso fino o profundizar excepciones por moneda, sin reabrir el contrato base
+
 ## Problema
 
 El sistema ya muestra informacion util, pero el dashboard y la reporteria todavia pueden ayudar mucho mas a priorizar trabajo real por:

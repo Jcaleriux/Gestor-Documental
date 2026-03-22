@@ -165,3 +165,44 @@ test('useReservaOperationDetails valida que exista archivo antes de reemplazar',
 
   assert.equal(hook.result.error, 'Seleccione un archivo PDF o imagen para reemplazar.');
 });
+
+test('useReservaOperationDetails oculta detalle y seleccion derivada cuando cambia el scope sin reset en effect', async () => {
+  const getOperacion = createMockFn(async () => ({
+    data: {
+      success: true,
+      data: baseDetail,
+    },
+  }));
+
+  const hook = createHookHarness({
+    hook: useReservaOperationDetailsHarness,
+    initialProps: {
+      scopeKey: 'sociedad-10',
+      dependencies: {
+        api: {
+          getOperacion,
+          buildPreviewDocumentoUrl: () => '',
+        },
+      },
+    },
+  });
+
+  await hook.result.toggleOperationDetail(10);
+  await hook.flush({ cycles: 6 });
+
+  hook.rerender({
+    scopeKey: 'sociedad-20',
+    dependencies: {
+      api: {
+        getOperacion,
+        buildPreviewDocumentoUrl: () => '',
+      },
+    },
+  });
+  await hook.flush({ cycles: 4 });
+
+  assert.equal(hook.result.openDetailId, null);
+  assert.equal(hook.result.detailsLoadingId, null);
+  assert.deepEqual(hook.result.operationDetails, {});
+  assert.deepEqual(hook.result.selectedDocumentByOperation, {});
+});

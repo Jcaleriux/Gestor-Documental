@@ -330,15 +330,16 @@ const TRAMITES_LABELS = {
   listEmptyFilters: 'No hay tramites para los filtros seleccionados.',
   filters: {
     estadoPlaceholder: 'Todos los estados',
-    estados: {
-      en_aprobacion_gerencia: 'En aprobacion gerencia',
-      en_aprobacion_gerencia_contable: 'En aprobacion gerencia contable',
-      en_aprobacion_gerencia_financiera: 'En aprobacion gerencia financiera',
-      en_revision_tesoreria: 'En revision tesoreria',
-      en_revision_tesoreria_2: 'En tesoreria para pago',
-      pagado: 'Pagado',
-      cancelado: 'Cancelado'
-    },
+      estados: {
+        en_aprobacion_gerencia: 'En aprobacion gerencia',
+        en_aprobacion_gerencia_contable: 'En aprobacion gerencia contable',
+        en_aprobacion_gerencia_financiera: 'En aprobacion gerencia financiera',
+        en_revision_tesoreria: 'En revision tesoreria',
+        en_revision_tesoreria_1: 'En revision tesoreria inicial',
+        en_revision_tesoreria_2: 'En tesoreria para pago',
+        pagado: 'Pagado',
+        cancelado: 'Cancelado'
+      },
     create: {
       emisor: 'Emisor',
       emisorPlaceholder: 'Buscar por emisor',
@@ -372,11 +373,16 @@ const TRAMITE_ALERT_LABELS = {
   decisionSuccess: 'Decision registrada.',
   estadoSuccess: 'Estado del tramite actualizado.',
   tesoreriaSuccess: 'Accion de tesoreria registrada.',
+  caratulasUploadSuccess: 'Caratulas cargadas y procesadas.',
+  caratulasResolveSuccess: 'Resolucion de caratulas guardada.',
   decisionError: 'No se pudo registrar la decision.',
   estadoError: 'No se pudo cambiar el estado.',
   tesoreriaError: 'No se pudo registrar la accion.',
+  caratulasUploadError: 'No se pudieron cargar las caratulas.',
+  caratulasResolveError: 'No se pudo guardar la resolucion de caratulas.',
   tesoreriaDestinoRequired: 'Selecciona un destino para continuar.',
-  tesoreriaMotivoRequired: 'Debes indicar un motivo para devolver el documento a contabilidad.'
+  tesoreriaMotivoRequired: 'Debes indicar un motivo para devolver el documento a contabilidad.',
+  caratulasFileRequired: 'Selecciona un PDF de caratulas para continuar.'
 };
 
 const PROMPT_LABELS = {
