@@ -9,10 +9,25 @@ const { runtimeConfig } = require('../config/runtime');
 const backendRootDir = path.resolve(__dirname, '..');
 const repoRootDir = path.resolve(backendRootDir, '..');
 const defaultBackupRootDir = path.join(backendRootDir, 'backups');
+const WINDOWS_ABSOLUTE_PATH_PATTERN = /^(?:[a-zA-Z]:[\\/]|\\\\)/;
 
 const toReleaseTimestamp = (date = new Date()) => date.toISOString().replace(/[:.]/g, '-');
 
 const quotePowerShell = (value) => `"${String(value).replace(/"/g, '""')}"`;
+
+const isWindowsLikeAbsolutePath = (value) => (
+  typeof value === 'string' && WINDOWS_ABSOLUTE_PATH_PATTERN.test(value)
+);
+
+const resolvePathModule = (...values) => (
+  values.some((value) => isWindowsLikeAbsolutePath(value)) ? path.win32 : path
+);
+
+const resolveAbsolutePath = (pathModule, targetPath) => (
+  pathModule.isAbsolute(targetPath)
+    ? pathModule.normalize(targetPath)
+    : pathModule.resolve(targetPath)
+);
 
 const readCommandOutput = (command, args, runner = execFileSync) => {
   try {
@@ -35,7 +50,7 @@ const detectExecutable = (name, {
 } = {}) => {
   if ((name === 'pg_dump' || name === 'pg_restore') && env.PG_BIN_DIR) {
     const binaryName = platform === 'win32' ? `${name}.exe` : name;
-    const candidatePath = path.join(env.PG_BIN_DIR, binaryName);
+    const candidatePath = (platform === 'win32' ? path.win32 : path).join(env.PG_BIN_DIR, binaryName);
 
     if (fileExists(candidatePath)) {
       return candidatePath;
@@ -63,16 +78,17 @@ const buildReleaseBackupPlan = ({
   executableStatus = {},
   storagePathExists = (targetPath) => fs.existsSync(targetPath),
 } = {}) => {
+  const pathModule = resolvePathModule(backupRootDir, runtimeConfigData?.storageBaseDir);
   const effectiveTimestamp = timestamp || toReleaseTimestamp();
-  const effectiveBackupRootDir = path.resolve(backupRootDir);
-  const releaseDir = path.join(effectiveBackupRootDir, `v${version}`, effectiveTimestamp);
-  const dbDumpPath = path.join(releaseDir, 'db', `${dbConfig.database}_${effectiveTimestamp}.dump`);
-  const storageDir = path.join(releaseDir, 'storage');
-  const documentosSourceDir = path.join(runtimeConfigData.storageBaseDir, 'documentos');
-  const facturasSourceDir = path.join(runtimeConfigData.storageBaseDir, 'facturas');
-  const documentosArchivePath = path.join(storageDir, `documentos_${effectiveTimestamp}.zip`);
-  const facturasArchivePath = path.join(storageDir, `facturas_${effectiveTimestamp}.zip`);
-  const metadataPath = path.join(releaseDir, 'release-plan.json');
+  const effectiveBackupRootDir = resolveAbsolutePath(pathModule, backupRootDir);
+  const releaseDir = pathModule.join(effectiveBackupRootDir, `v${version}`, effectiveTimestamp);
+  const dbDumpPath = pathModule.join(releaseDir, 'db', `${dbConfig.database}_${effectiveTimestamp}.dump`);
+  const storageDir = pathModule.join(releaseDir, 'storage');
+  const documentosSourceDir = pathModule.join(runtimeConfigData.storageBaseDir, 'documentos');
+  const facturasSourceDir = pathModule.join(runtimeConfigData.storageBaseDir, 'facturas');
+  const documentosArchivePath = pathModule.join(storageDir, `documentos_${effectiveTimestamp}.zip`);
+  const facturasArchivePath = pathModule.join(storageDir, `facturas_${effectiveTimestamp}.zip`);
+  const metadataPath = pathModule.join(releaseDir, 'release-plan.json');
 
   const issues = [];
 
