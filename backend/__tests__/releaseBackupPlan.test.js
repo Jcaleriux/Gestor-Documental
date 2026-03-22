@@ -34,7 +34,7 @@ describe('release backup plan', () => {
     });
 
     expect(plan.gitTag).toBe('v1.0.0');
-    expect(plan.releaseDir).toBe(path.join('C:\\backups', 'v1.0.0', '2026-03-21T12-00-00-000Z'));
+    expect(plan.releaseDir).toBe(path.win32.join('C:\\backups', 'v1.0.0', '2026-03-21T12-00-00-000Z'));
     expect(plan.db.dumpPath).toContain('novogar_prod_2026-03-21T12-00-00-000Z.dump');
     expect(plan.db.backupCommand).toContain('pg_dump');
     expect(plan.db.rollbackCommand).toContain('pg_restore');

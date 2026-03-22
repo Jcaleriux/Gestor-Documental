@@ -12,6 +12,17 @@ const readOptionalEnvValue = (value) => {
   return trimmed || '';
 };
 
+const readBranchFromEnv = (env = process.env) => (
+  readOptionalEnvValue(env.NOVOGAR_RELEASE_BRANCH)
+  || readOptionalEnvValue(env.GITHUB_HEAD_REF)
+  || readOptionalEnvValue(env.GITHUB_REF_NAME)
+);
+
+const readCommitFromEnv = (env = process.env) => (
+  readOptionalEnvValue(env.NOVOGAR_RELEASE_COMMIT)
+  || readOptionalEnvValue(env.GITHUB_SHA)
+);
+
 const readTargetVersion = ({ versionFilePath = path.join(repoRootDir, 'VERSION') } = {}) => {
   if (!fs.existsSync(versionFilePath)) {
     throw new Error('No existe VERSION en la raiz del repo.');
@@ -63,13 +74,13 @@ const readPackedRef = ({ gitDirPath, refPath }) => {
   return match ? match.split(' ')[0].trim() : '';
 };
 
-const readGitMetadata = ({ rootDir = repoRootDir } = {}) => {
+const readGitMetadata = ({ rootDir = repoRootDir, env = process.env } = {}) => {
   const gitDirPath = resolveGitDir(rootDir);
 
   if (!gitDirPath) {
     return {
-      branch: '',
-      commit: '',
+      branch: readBranchFromEnv(env),
+      commit: readCommitFromEnv(env),
     };
   }
 
@@ -77,8 +88,8 @@ const readGitMetadata = ({ rootDir = repoRootDir } = {}) => {
 
   if (!fs.existsSync(headPath)) {
     return {
-      branch: '',
-      commit: '',
+      branch: readBranchFromEnv(env),
+      commit: readCommitFromEnv(env),
     };
   }
 
@@ -86,8 +97,8 @@ const readGitMetadata = ({ rootDir = repoRootDir } = {}) => {
 
   if (!headContent.startsWith('ref:')) {
     return {
-      branch: '',
-      commit: headContent,
+      branch: readBranchFromEnv(env),
+      commit: headContent || readCommitFromEnv(env),
     };
   }
 
@@ -99,8 +110,8 @@ const readGitMetadata = ({ rootDir = repoRootDir } = {}) => {
     : readPackedRef({ gitDirPath, refPath });
 
   return {
-    branch,
-    commit,
+    branch: branch || readBranchFromEnv(env),
+    commit: commit || readCommitFromEnv(env),
   };
 };
 
