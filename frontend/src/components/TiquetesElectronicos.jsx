@@ -17,6 +17,10 @@ import {
   buildFilterChips,
   buildVisiblePages,
 } from './tiquetes/tiquetesPageHelpers.js';
+import {
+  buildScopedPanelVisible,
+  buildTiquetesViewScope,
+} from './tiquetes/tiquetesUiState.js';
 import { LOADING_LABELS, TIQUETES_ELECTRONICOS_LABELS } from '../utils/uiLabels.js';
 
 const clearFilterByKey = ({
@@ -57,7 +61,17 @@ const clearFilterByKey = ({
 };
 
 function TiquetesElectronicos({ sociedadId }) {
-  const [showFilters, setShowFilters] = useState(false);
+  const viewScope = useMemo(() => buildTiquetesViewScope({
+    sociedadId,
+  }), [sociedadId]);
+  const [filtersPanelState, setFiltersPanelState] = useState(() => ({
+    scope: viewScope,
+    visible: false,
+  }));
+  const showFilters = useMemo(() => buildScopedPanelVisible({
+    scope: viewScope,
+    state: filtersPanelState,
+  }), [filtersPanelState, viewScope]);
 
   const {
     search,
@@ -109,7 +123,6 @@ function TiquetesElectronicos({ sociedadId }) {
 
   useEffect(() => {
     resetPaginationAndSort();
-    setShowFilters(false);
   }, [resetPaginationAndSort, sociedadId]);
 
   const activeFilterChips = useMemo(() => buildFilterChips({
@@ -167,7 +180,10 @@ function TiquetesElectronicos({ sociedadId }) {
               <button
                 className="btn btn-outline-secondary"
                 type="button"
-                onClick={() => setShowFilters((previous) => !previous)}
+                onClick={() => setFiltersPanelState({
+                  scope: viewScope,
+                  visible: !showFilters,
+                })}
               >
                 {TIQUETES_ELECTRONICOS_LABELS.filtersButton}
               </button>

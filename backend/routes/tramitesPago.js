@@ -6,6 +6,8 @@ const {
   getRetencionesDisponibles,
   getTramite,
   getHistorial,
+  uploadCaratulas,
+  resolveCaratulas,
   crearTramite,
   cambiarEstado,
   decisionDocumento
@@ -18,9 +20,11 @@ const {
   cambiarEstadoSchema,
   decisionDocumentoSchema,
   crearTramiteSchema,
-  rechazoTesoreriaSchema
+  rechazoTesoreriaSchema,
+  uploadTramiteCaratulasSchema,
+  resolveTramiteCaratulasSchema
 } = require('../validation/schemas');
-const { PERMISSIONS, WORKFLOW_PERMISSIONS } = require('../domain/permissions');
+const { PERMISSIONS, WORKFLOW_PERMISSIONS, TRAMITES_READ_PERMISSIONS } = require('../domain/permissions');
 
 const router = express.Router({ mergeParams: true });
 
@@ -41,14 +45,30 @@ router.post(
 );
 
 // GET lista de tramites
-router.get('/tramites-pago', requirePermission(PERMISSIONS.DOCUMENTOS_VER), listTramites);
+router.get('/tramites-pago', requireAnyPermission(TRAMITES_READ_PERMISSIONS), listTramites);
 router.get('/tramites-pago/retenciones-disponibles', requirePermission(PERMISSIONS.DOCUMENTOS_TRAMITAR_PAGO), getRetencionesDisponibles);
 
 // GET detalle de tramite
-router.get('/tramites-pago/:id', requirePermission(PERMISSIONS.DOCUMENTOS_VER), getTramite);
+router.get('/tramites-pago/:id', requireAnyPermission(TRAMITES_READ_PERMISSIONS), getTramite);
 
 // GET historial de tramite
-router.get('/tramites-pago/:id/historial', requirePermission(PERMISSIONS.DOCUMENTOS_VER), getHistorial);
+router.get('/tramites-pago/:id/historial', requireAnyPermission(TRAMITES_READ_PERMISSIONS), getHistorial);
+
+// POST cargar o reemplazar caratulas de un tramite
+router.post(
+  '/tramites-pago/:id/caratulas',
+  validateBody(uploadTramiteCaratulasSchema, { message: 'caratulas invalidas' }),
+  requirePermission(PERMISSIONS.DOCUMENTOS_TRAMITAR_PAGO),
+  uploadCaratulas
+);
+
+// POST resolver coincidencias manuales de caratulas
+router.post(
+  '/tramites-pago/:id/caratulas/resolver',
+  validateBody(resolveTramiteCaratulasSchema, { message: 'resolucion de caratulas invalida' }),
+  requirePermission(PERMISSIONS.DOCUMENTOS_TRAMITAR_PAGO),
+  resolveCaratulas
+);
 
 // POST crear tramite
 router.post(

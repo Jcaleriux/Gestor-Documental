@@ -8,11 +8,13 @@ const {
   requireAnyPermission
 } = require('./middleware/permissionsMiddleware');
 const { PERMISSIONS } = require('./domain/permissions');
+const { applyReleaseHeaders, resolveReleaseInfo } = require('./config/releaseInfo');
 const { runtimeConfig } = require('./config/runtime');
 const { resolveDocumentPaths } = require('./utils/documentPaths');
 
 const app = express();
 const documentPaths = resolveDocumentPaths(runtimeConfig.storageBaseDir);
+const releaseInfo = resolveReleaseInfo();
 const filesAccessPermission = requireAnyPermission([
   PERMISSIONS.DOCUMENTOS_VER,
   PERMISSIONS.DOCUMENTOS_DESCARGAR
@@ -30,6 +32,10 @@ app.use((req, res, next) => {
 });
 app.use(cors());
 app.use(express.json({ limit: runtimeConfig.jsonBodyLimit }));
+app.use((req, res, next) => {
+  applyReleaseHeaders(res, releaseInfo);
+  next();
+});
 
 // Serve static files from documentos directory.
 app.use(
@@ -51,6 +57,20 @@ app.get('/api', (req, res) => {
 
 app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'API is running' });
+});
+
+app.get('/api/release-info', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      version: releaseInfo.version,
+      tag: releaseInfo.tag,
+      commit: releaseInfo.commit,
+      commit_short: releaseInfo.commitShort,
+      branch: releaseInfo.branch,
+      sources: releaseInfo.sources,
+    },
+  });
 });
 
 // Comentarios, Versiones, Auditoria routes

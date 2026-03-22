@@ -78,6 +78,24 @@ const rechazoTesoreriaSchema = Joi.object({
   usuario: Joi.string().allow('', null)
 });
 
+const uploadTramiteCaratulasSchema = Joi.object({
+  filename: Joi.string().trim().max(255).required(),
+  file_base64: Joi.string().trim().required(),
+  usuario: Joi.string().allow('', null)
+});
+
+const resolveTramiteCaratulasSchema = Joi.object({
+  group_key: Joi.string().trim().required(),
+  provider_factura_id: Joi.number().integer().positive().allow(null),
+  line_matches: Joi.array().items(
+    Joi.object({
+      line_key: Joi.string().trim().required(),
+      factura_id: Joi.number().integer().positive().required()
+    })
+  ).default([]),
+  usuario: Joi.string().allow('', null)
+});
+
 const upsertContabilizacionSchema = Joi.object({
   fecha_documento: Joi.date().iso().allow(null, ''),
   fecha_vencimiento: Joi.date().iso().allow(null, ''),
@@ -299,6 +317,8 @@ module.exports = {
   decisionDocumentoSchema,
   crearTramiteSchema,
   rechazoTesoreriaSchema,
+  uploadTramiteCaratulasSchema,
+  resolveTramiteCaratulasSchema,
   upsertContabilizacionSchema,
   registrarPagoRetencionSchema,
   createUsuarioSchema,

@@ -10,6 +10,7 @@ const filesToCheck = [
   'app.js',
   'server.js',
   'config/env.js',
+  'config/releaseInfo.js',
   'config/runtime.js',
   'db/create_tables.js',
   'db/reset_schema.js',
@@ -17,6 +18,7 @@ const filesToCheck = [
   'db/migrationManager.js',
   'db/migrate.js',
   'db/migrate_status.js',
+  'scripts/release_smoke_checks.js',
 ];
 
 const checkJsSyntax = (relativeFile, { backendRootDir = backendRoot } = {}) => {

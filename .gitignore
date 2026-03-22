@@ -13,6 +13,7 @@ frontend/build/
 .env
 .env.*
 !.env.example
+!backend/.env.production.example
 *.pem
 *.key
 *.crt
@@ -34,6 +35,7 @@ tmp-files-usecases-check-*/
 ## Local runtime/document data (do not version)
 /facturas/
 documentos/
+runtime/
 backend/scripts/salidas/
 backend/backups/
 archivos/resultado_*.csv

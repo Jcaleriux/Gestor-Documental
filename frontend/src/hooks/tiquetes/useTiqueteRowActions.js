@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { buildListScopeKey, readScopedValue } from '../shared/listScope.js';
 
 const getDefaultEventTarget = () => (
   typeof document !== 'undefined' ? document : null
@@ -12,16 +13,13 @@ export const useTiqueteRowActions = ({
   const {
     eventTarget = getDefaultEventTarget(),
   } = dependencies;
+  const scopeKey = buildListScopeKey({ items, resetKey });
 
-  const [openMenuId, setOpenMenuId] = useState(null);
-
-  useEffect(() => {
-    setOpenMenuId(null);
-  }, [items]);
-
-  useEffect(() => {
-    setOpenMenuId(null);
-  }, [resetKey]);
+  const [uiState, setUiState] = useState(() => ({
+    scopeKey,
+    openMenuId: null,
+  }));
+  const openMenuId = readScopedValue(uiState, scopeKey, 'openMenuId', null);
 
   useEffect(() => {
     if (!openMenuId || !eventTarget?.addEventListener || !eventTarget?.removeEventListener) {
@@ -32,12 +30,20 @@ export const useTiqueteRowActions = ({
       if (event.target?.closest?.('[data-factura-menu="true"]')) {
         return;
       }
-      setOpenMenuId(null);
+      setUiState((previous) => ({
+        ...previous,
+        scopeKey,
+        openMenuId: null,
+      }));
     };
 
     const handleEscape = (event) => {
       if (event.key === 'Escape') {
-        setOpenMenuId(null);
+        setUiState((previous) => ({
+          ...previous,
+          scopeKey,
+          openMenuId: null,
+        }));
       }
     };
 
@@ -48,15 +54,23 @@ export const useTiqueteRowActions = ({
       eventTarget.removeEventListener('mousedown', handlePointerDown);
       eventTarget.removeEventListener('keydown', handleEscape);
     };
-  }, [eventTarget, openMenuId]);
+  }, [eventTarget, openMenuId, scopeKey]);
 
   const closeMenu = useCallback(() => {
-    setOpenMenuId(null);
-  }, []);
+    setUiState((previous) => ({
+      ...previous,
+      scopeKey,
+      openMenuId: null,
+    }));
+  }, [scopeKey]);
 
   const toggleMenu = useCallback((tiqueteId) => {
-    setOpenMenuId((current) => (current === tiqueteId ? null : tiqueteId));
-  }, []);
+    setUiState((previous) => ({
+      ...previous,
+      scopeKey,
+      openMenuId: readScopedValue(previous, scopeKey, 'openMenuId', null) === tiqueteId ? null : tiqueteId,
+    }));
+  }, [scopeKey]);
 
   return {
     closeMenu,

@@ -1,5 +1,7 @@
 const pool = require('../db');
 const { FACTURA_ESTADOS } = require('../domain/facturas');
+const { TRAMITE_ESTADOS, DOCUMENTO_ESTADOS } = require('../domain/tramitesPago');
+const { tesoreriaActivaSql } = require('../services/tramitesPagoQueries');
 const {
   createFacturaWorkflowPagoJoin,
   createFacturaEstadoOperativoExpression
@@ -404,6 +406,76 @@ const getTopProveedoresPorPagar = async ({ sociedadId, limit = 10 } = {}) => {
   return rows;
 };
 
+const getTramitesWorkQueueSummary = async ({ sociedadId } = {}) => {
+  const params = [];
+  const whereClauses = [];
+
+  if (sociedadId) {
+    params.push(sociedadId);
+    whereClauses.push(`t.sociedad_id = $${params.length}`);
+  }
+
+  const whereClause = whereClauses.length > 0
+    ? `WHERE ${whereClauses.join(' AND ')}`
+    : '';
+
+  const { rows } = await pool.query(
+    `
+    WITH tramites_base AS (
+      SELECT
+        t.id,
+        t.estado
+      FROM tramites_pago t
+      ${whereClause}
+    ),
+    documentos_activos AS (
+      SELECT
+        tb.id AS tramite_id,
+        tb.estado AS tramite_estado,
+        td.estado_gerencia,
+        td.estado_gerencia_contable,
+        td.estado_financiero
+      FROM tramites_base tb
+      JOIN tramites_pago_documentos td ON td.tramite_id = tb.id
+      WHERE ${tesoreriaActivaSql('td.estado_tesoreria')}
+    )
+    SELECT
+      (SELECT COUNT(*)::int FROM tramites_base WHERE estado NOT IN ('${TRAMITE_ESTADOS.PAGADO}', '${TRAMITE_ESTADOS.CANCELADO}')) AS activos,
+      (SELECT COUNT(*)::int FROM tramites_base WHERE estado = '${TRAMITE_ESTADOS.EN_APROBACION_GERENCIA}') AS estado_en_aprobacion_gerencia,
+      (SELECT COUNT(*)::int FROM tramites_base WHERE estado = '${TRAMITE_ESTADOS.EN_APROBACION_GERENCIA_CONTABLE}') AS estado_en_aprobacion_gerencia_contable,
+      (SELECT COUNT(*)::int FROM tramites_base WHERE estado = '${TRAMITE_ESTADOS.EN_APROBACION_GERENCIA_FINANCIERA}') AS estado_en_aprobacion_gerencia_financiera,
+      (SELECT COUNT(*)::int FROM tramites_base WHERE estado = '${TRAMITE_ESTADOS.EN_REVISION_TESORERIA}') AS estado_en_revision_tesoreria,
+      (SELECT COUNT(*)::int FROM tramites_base WHERE estado = '${TRAMITE_ESTADOS.EN_REVISION_TESORERIA_1}') AS estado_en_revision_tesoreria_1,
+      (SELECT COUNT(*)::int FROM tramites_base WHERE estado = '${TRAMITE_ESTADOS.EN_REVISION_TESORERIA_2}') AS estado_en_revision_tesoreria_2,
+      (SELECT COUNT(*)::int FROM tramites_base WHERE estado = '${TRAMITE_ESTADOS.PAGADO}') AS estado_pagado,
+      (SELECT COUNT(*)::int FROM tramites_base WHERE estado = '${TRAMITE_ESTADOS.CANCELADO}') AS estado_cancelado,
+      (SELECT COUNT(*)::int
+       FROM documentos_activos
+       WHERE tramite_estado = '${TRAMITE_ESTADOS.EN_APROBACION_GERENCIA}'
+         AND estado_gerencia = '${DOCUMENTO_ESTADOS.PENDIENTE}') AS aprobaciones_pendientes_gerencia,
+      (SELECT COUNT(*)::int
+       FROM documentos_activos
+       WHERE tramite_estado = '${TRAMITE_ESTADOS.EN_APROBACION_GERENCIA_CONTABLE}'
+         AND estado_gerencia_contable = '${DOCUMENTO_ESTADOS.PENDIENTE}') AS aprobaciones_pendientes_gerencia_contable,
+      (SELECT COUNT(*)::int
+       FROM documentos_activos
+       WHERE tramite_estado = '${TRAMITE_ESTADOS.EN_APROBACION_GERENCIA_FINANCIERA}'
+         AND estado_financiero = '${DOCUMENTO_ESTADOS.PENDIENTE}') AS aprobaciones_pendientes_financiera,
+      (SELECT COUNT(*)::int
+       FROM documentos_activos
+       WHERE tramite_estado NOT IN ('${TRAMITE_ESTADOS.PAGADO}', '${TRAMITE_ESTADOS.CANCELADO}')
+         AND (
+           estado_gerencia = '${DOCUMENTO_ESTADOS.RECHAZADO}'
+           OR estado_gerencia_contable = '${DOCUMENTO_ESTADOS.RECHAZADO}'
+           OR estado_financiero = '${DOCUMENTO_ESTADOS.RECHAZADO}'
+         )) AS rechazados_activos
+    `,
+    params
+  );
+
+  return rows[0] || null;
+};
+
 module.exports = {
   getFacturasStats,
   countNotasCredito,
@@ -412,6 +484,7 @@ module.exports = {
   getMonedasResumen,
   getCuentasPagarResumenPorMoneda,
   getTopProveedoresPorPagar,
+  getTramitesWorkQueueSummary,
   listRecentFacturas,
   listRecentNotasCredito,
   listRecentMensajesHacienda,

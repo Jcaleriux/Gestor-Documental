@@ -38,6 +38,9 @@ function getPermisosTramite({ userPermissions, estado }) {
   const puedeTesoreria =
     esRevisionTesoreria
     && hasPermission(userPermissions, DOCUMENTOS_TRAMITAR_PAGO);
+  const puedeEnviarGerenciaContable =
+    estado === 'en_revision_tesoreria_1'
+    && hasPermission(userPermissions, DOCUMENTOS_TRAMITAR_PAGO);
   const puedeMarcarPagado =
     estado === 'en_revision_tesoreria_2'
     && hasPermission(userPermissions, DOCUMENTOS_TRAMITAR_PAGO);
@@ -52,7 +55,7 @@ function getPermisosTramite({ userPermissions, estado }) {
     puedeGerenciaContable,
     puedeFinanciera,
     puedeTesoreria,
-    puedeAccionSiguiente: puedeFinanciera || puedeMarcarPagado
+    puedeAccionSiguiente: puedeFinanciera || puedeEnviarGerenciaContable || puedeMarcarPagado
   };
 }
 

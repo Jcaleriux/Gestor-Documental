@@ -15,6 +15,14 @@ test('facturasPageHelpers interpreta dashboard preset y contexto de retorno segu
     'vencidas',
   );
   assert.equal(
+    parseDashboardPresetFromSearch('?dashboardPreset=en_revision'),
+    'en_revision',
+  );
+  assert.equal(
+    parseDashboardPresetFromSearch('?dashboardPreset=en_tramite'),
+    'en_tramite',
+  );
+  assert.equal(
     parseDashboardPresetFromSearch('?dashboardPreset=invalido'),
     '',
   );

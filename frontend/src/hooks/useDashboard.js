@@ -3,6 +3,7 @@ import {
   dashboardApi,
   extractDashboardRecentDocumentsPayload,
   extractDashboardStatsPayload,
+  extractDashboardWorkQueuePayload,
 } from '../services/dashboardApi.js';
 
 export const useDashboard = ({
@@ -12,10 +13,12 @@ export const useDashboard = ({
   const {
     api = dashboardApi,
     extractStats = extractDashboardStatsPayload,
+    extractWorkQueue = extractDashboardWorkQueuePayload,
     extractRecentDocuments = extractDashboardRecentDocumentsPayload,
   } = dependencies;
 
   const [stats, setStats] = useState({});
+  const [workQueue, setWorkQueue] = useState({});
   const [recentDocs, setRecentDocs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -24,6 +27,7 @@ export const useDashboard = ({
   const fetchDashboard = useCallback(async () => {
     if (!sociedadId) {
       setStats({});
+      setWorkQueue({});
       setRecentDocs([]);
       setError('');
       setLoading(false);
@@ -37,8 +41,9 @@ export const useDashboard = ({
       setLoading(true);
       setError('');
       const params = { sociedadId };
-      const [statsRes, recentRes] = await Promise.all([
+      const [statsRes, workQueueRes, recentRes] = await Promise.all([
         api.getStats(params),
+        api.getWorkQueue(params),
         api.getRecentDocuments(params),
       ]);
 
@@ -47,6 +52,7 @@ export const useDashboard = ({
       }
 
       setStats(extractStats(statsRes));
+      setWorkQueue(extractWorkQueue(workQueueRes));
       setRecentDocs(extractRecentDocuments(recentRes));
     } catch (err) {
       if (requestIdRef.current !== requestId) {
@@ -56,13 +62,14 @@ export const useDashboard = ({
       const apiError = err?.response?.data?.error || err?.message || 'No se pudo cargar el dashboard.';
       setError(apiError);
       setStats({});
+      setWorkQueue({});
       setRecentDocs([]);
     } finally {
       if (requestIdRef.current === requestId) {
         setLoading(false);
       }
     }
-  }, [api, extractRecentDocuments, extractStats, sociedadId]);
+  }, [api, extractRecentDocuments, extractStats, extractWorkQueue, sociedadId]);
 
   useEffect(() => {
     fetchDashboard();
@@ -70,6 +77,7 @@ export const useDashboard = ({
 
   return {
     stats,
+    workQueue,
     recentDocs,
     loading,
     error,

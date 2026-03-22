@@ -275,6 +275,30 @@ describe('facturasUseCases', () => {
     });
   });
 
+  test('listFacturas acepta dashboardPreset en_revision y en_tramite', async () => {
+    const repo = createRepoMock();
+    const useCases = createFacturasUseCases({ facturasRepo: repo });
+
+    await useCases.listFacturas({
+      sociedadId: '7',
+      dashboardPreset: 'en_revision',
+    });
+
+    await useCases.listFacturas({
+      sociedadId: '7',
+      dashboardPreset: 'en_tramite',
+    });
+
+    expect(repo.listFacturas).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      sociedadId: 7,
+      dashboardPreset: 'en_revision',
+    }));
+    expect(repo.listFacturas).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      sociedadId: 7,
+      dashboardPreset: 'en_tramite',
+    }));
+  });
+
   test('listFacturas rechaza sortBy invalido', async () => {
     const repo = createRepoMock();
     const useCases = createFacturasUseCases({ facturasRepo: repo });

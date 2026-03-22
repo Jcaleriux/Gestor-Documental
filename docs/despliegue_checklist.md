@@ -11,6 +11,8 @@ Guia manual minima para desplegar `Proyecto Novogar` sin depender de memoria. Es
 - [ ] Confirmar acceso a PostgreSQL, filesystem operativo y credenciales del servidor.
 - [ ] Si el release toca schema o datos, sacar respaldo de la base antes de aplicar cambios.
 - [ ] Verificar que **no** se va a usar `npm run db:reset` en entornos gestionados.
+- [ ] Tener a mano `docs/runbook_backup_rollback.md` y el helper `backend npm run release:backup-plan`.
+- [ ] Si el primer ensayo se hace en esta misma PC, tener a mano `docs/preproduccion_local.md`.
 
 ## 2. Variables Obligatorias
 
@@ -48,6 +50,27 @@ npm install
 ```bash
 cd backend
 npm run check:release
+```
+
+- [ ] Preparar plan de backup y rollback:
+
+```bash
+cd backend
+npm run release:backup-plan
+```
+
+- [ ] Generar reporte de readiness productiva:
+
+```bash
+cd backend
+npm run release:readiness
+```
+
+- [ ] Ejecutar smoke checks de dominio:
+
+```bash
+cd backend
+npm run release:smoke
 ```
 
 - [ ] Ejecutar pruebas relevantes del release.
@@ -111,6 +134,9 @@ npm run db:check
 
 - [ ] Aplicar solo las migraciones/manual scripts necesarios para el release actual.
 - [ ] Si el release no requiere cambios de schema, dejar evidencia de que no hay migraciones pendientes.
+- [ ] Si el release toca schema o datos, ejecutar backup DB y validar el dump con `pg_restore --list`.
+- [ ] Si el entorno usa filesystem operativo real, respaldar `documentos/` y `facturas/` segun el runbook.
+- [ ] Guardar evidencia JSON del readiness report y del backup plan junto al release si el entorno ya es candidato real.
 
 ## 5. Arranque
 
@@ -135,6 +161,7 @@ Nota: hoy el repo documenta `npm run dev` como forma principal de levantar la AP
 ## 6. Smoke Checklist
 
 - [ ] `GET /api/health` responde `200`.
+- [ ] `GET /api/release-info` expone la version y commit esperados del deploy.
 - [ ] Login exitoso con un usuario valido.
 - [ ] Dashboard carga sin errores visibles.
 - [ ] Listado de facturas responde y permite filtrar.

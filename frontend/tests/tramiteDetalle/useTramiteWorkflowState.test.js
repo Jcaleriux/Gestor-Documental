@@ -41,7 +41,7 @@ test('useTramiteWorkflowState calcula pagos sugeridos y permite cambios por fact
   assert.equal(hook.result.pagosFacturas[1], '120.50');
   assert.equal(hook.result.pagosFacturas[3], '50.00');
   assert.equal(hook.result.pagosFacturas[2], undefined);
-  assert.equal(hook.result.accionSiguiente.estado, 'en_aprobacion_gerencia_contable');
+  assert.equal(hook.result.accionSiguiente.estado, 'en_revision_tesoreria_1');
 
   hook.result.handlePagoFacturaChange(1, '45.75');
   hook.result.handleTesoreriaDestinoChange(1, 'en_aprobacion_gerencia_contable');
@@ -49,4 +49,28 @@ test('useTramiteWorkflowState calcula pagos sugeridos y permite cambios por fact
 
   assert.equal(hook.result.pagosFacturas[1], '45.75');
   assert.equal(hook.result.tesoreriaDestino[1], 'en_aprobacion_gerencia_contable');
+});
+
+test('useTramiteWorkflowState resincroniza overrideUser con actorUsuario sin effect de reset', async () => {
+  const hook = createHookHarness({
+    hook: useTramiteWorkflowStateHarness,
+    initialProps: {
+      ...createBaseProps(),
+      actorUsuario: 'ana@novogar.local',
+    },
+  });
+
+  assert.equal(hook.result.overrideUser, 'ana@novogar.local');
+
+  hook.result.setOverrideUser('operador-manual');
+  await hook.flush({ cycles: 2 });
+  assert.equal(hook.result.overrideUser, 'operador-manual');
+
+  hook.rerender({
+    ...createBaseProps(),
+    actorUsuario: 'gerencia@novogar.local',
+  });
+  await hook.flush({ cycles: 2 });
+
+  assert.equal(hook.result.overrideUser, 'gerencia@novogar.local');
 });

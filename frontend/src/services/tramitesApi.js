@@ -6,6 +6,8 @@ const listTramites = (params) => axios.get('/api/tramites-pago', { params });
 const getRetencionesDisponibles = (params) => axios.get('/api/tramites-pago/retenciones-disponibles', { params });
 const crearTramite = (payload) => axios.post('/api/tramites-pago', payload);
 const cambiarEstado = (id, payload) => axios.post(`/api/tramites-pago/${id}/estado`, payload);
+const uploadCaratulas = (id, payload) => axios.post(`/api/tramites-pago/${id}/caratulas`, payload);
+const resolveCaratulas = (id, payload) => axios.post(`/api/tramites-pago/${id}/caratulas/resolver`, payload);
 const decisionDocumento = (id, facturaId, payload) =>
   axios.post(`/api/tramites-pago/${id}/documentos/${facturaId}/decision`, payload);
 const accionTesoreria = (id, facturaId, payload) =>
@@ -19,6 +21,8 @@ export const tramitesApi = {
   getRetencionesDisponibles,
   crearTramite,
   cambiarEstado,
+  uploadCaratulas,
+  resolveCaratulas,
   decisionDocumento,
   accionTesoreria,
   getSociedades

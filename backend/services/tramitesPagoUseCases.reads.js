@@ -10,6 +10,7 @@ const {
   mapRetencionRow,
   mapHistorialRow
 } = require('../mappers/tramitesPagoMapper');
+const { summarizeStoredTramiteCaratula } = require('./tramitesPagoCaratulasSupport');
 
 const createTramitesPagoReadUseCases = ({ tramitesPagoRepo }) => {
   const listTramites = async ({ sociedadId, estado }) => {
@@ -33,15 +34,23 @@ const createTramitesPagoReadUseCases = ({ tramitesPagoRepo }) => {
     const tramite = await tramitesPagoRepo.getTramiteById(tramiteId);
     assertFound(tramite, 'Tramite no encontrado');
 
-    const [documentos, retenciones] = await Promise.all([
+    const [documentos, retenciones, caratulaRow] = await Promise.all([
       tramitesPagoRepo.listDocumentosByTramite(tramiteId, null, { currentUserId: actorUserId }),
-      tramitesPagoRepo.listRetencionesByTramite(tramiteId)
+      tramitesPagoRepo.listRetencionesByTramite(tramiteId),
+      tramitesPagoRepo.getTramiteCaratulaByTramiteId(tramiteId)
     ]);
+    const documentosMapped = documentos.map(mapDocumentoRow);
+    const caratulaSummary = summarizeStoredTramiteCaratula({
+      row: caratulaRow,
+      documents: documentosMapped
+    });
 
     return {
       tramite: mapTramiteRow(tramite),
-      documentos: documentos.map(mapDocumentoRow),
-      retenciones: retenciones.map(mapRetencionRow)
+      documentos: documentosMapped,
+      retenciones: retenciones.map(mapRetencionRow),
+      caratula: caratulaSummary.caratula,
+      provider_groups: caratulaSummary.provider_groups
     };
   };
 

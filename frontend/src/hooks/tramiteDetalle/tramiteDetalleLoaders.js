@@ -3,14 +3,18 @@ const extractTramiteDetalleData = (response) => {
     return {
       tramite: null,
       documentos: [],
-      retenciones: []
+      retenciones: [],
+      caratula: null,
+      providerGroups: []
     };
   }
 
   return {
     tramite: response.data.data?.tramite || null,
     documentos: response.data.data?.documentos || [],
-    retenciones: response.data.data?.retenciones || []
+    retenciones: response.data.data?.retenciones || [],
+    caratula: response.data.data?.caratula || null,
+    providerGroups: response.data.data?.provider_groups || []
   };
 };
 

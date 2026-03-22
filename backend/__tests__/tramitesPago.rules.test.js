@@ -98,7 +98,7 @@ describe('tramitesPagoRules', () => {
       error: 'Transicion no permitida: en_aprobacion_gerencia -> pagado'
     });
 
-    expect(validateTransicion('en_aprobacion_gerencia', 'en_aprobacion_gerencia_contable', false)).toBeNull();
+    expect(validateTransicion('en_aprobacion_gerencia', 'en_revision_tesoreria_1', false)).toBeNull();
     expect(validateTransicion('en_aprobacion_gerencia', 'pagado', true)).toBeNull();
   });
 

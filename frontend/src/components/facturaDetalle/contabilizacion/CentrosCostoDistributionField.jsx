@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { FACTURA_DETALLE_LABELS } from '../../../utils/uiLabels';
 import {
   filterCentrosCosto,
   formatCentroCostoLabel,
 } from '../../../utils/centrosCosto.js';
+import { buildCentroCostoLineScope } from './centroCostoLineScope.js';
 
 function CentroCostoLine({
   line,
@@ -14,13 +15,16 @@ function CentroCostoLine({
   onOpenModal,
   canRemove,
 }) {
-  const [query, setQuery] = useState('');
-  const [showSuggestions, setShowSuggestions] = useState(false);
-
-  useEffect(() => {
-    setQuery('');
-    setShowSuggestions(false);
-  }, [line.centro_costo_id, line.codigo, line.nombre]);
+  const currentScope = buildCentroCostoLineScope(line);
+  const [interactionState, setInteractionState] = useState(() => ({
+    scope: currentScope,
+    query: '',
+    showSuggestions: false,
+  }));
+  const query = interactionState.scope === currentScope ? interactionState.query : '';
+  const showSuggestions = interactionState.scope === currentScope
+    ? interactionState.showSuggestions
+    : false;
 
   const suggestions = useMemo(() => {
     const baseItems = filterCentrosCosto(catalogo, {
@@ -44,16 +48,26 @@ function CentroCostoLine({
             value={inputValue}
             placeholder={FACTURA_DETALLE_LABELS.contabilizacion.centrosCostoBuscar}
             onChange={(event) => {
-              setQuery(event.target.value);
-              setShowSuggestions(true);
+              setInteractionState({
+                scope: currentScope,
+                query: event.target.value,
+                showSuggestions: true,
+              });
             }}
-            onFocus={() => setShowSuggestions(true)}
+            onFocus={() => {
+              setInteractionState((previous) => ({
+                scope: currentScope,
+                query: previous.scope === currentScope ? previous.query : '',
+                showSuggestions: true,
+              }));
+            }}
             onBlur={() => {
               window.setTimeout(() => {
-                setShowSuggestions(false);
-                if (line.codigo) {
-                  setQuery('');
-                }
+                setInteractionState((previous) => ({
+                  scope: currentScope,
+                  query: line.codigo ? '' : (previous.scope === currentScope ? previous.query : ''),
+                  showSuggestions: false,
+                }));
               }, 120);
             }}
             disabled={disabled}
@@ -69,8 +83,11 @@ function CentroCostoLine({
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => {
                     onSelect(line.local_id, item);
-                    setQuery('');
-                    setShowSuggestions(false);
+                    setInteractionState({
+                      scope: buildCentroCostoLineScope(item),
+                      query: '',
+                      showSuggestions: false,
+                    });
                   }}
                 >
                   <div className="fw-semibold">{formatCentroCostoLabel(item)}</div>
@@ -97,8 +114,11 @@ function CentroCostoLine({
           className="btn btn-outline-secondary btn-sm"
           type="button"
           onClick={() => {
-            setQuery('');
-            setShowSuggestions(false);
+            setInteractionState({
+              scope: currentScope,
+              query: '',
+              showSuggestions: false,
+            });
             onOpenModal(line.local_id);
           }}
           disabled={disabled}

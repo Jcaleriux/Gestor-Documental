@@ -48,6 +48,10 @@ Sistema web para gestion de facturas, documentos y tramites de pago con control 
 - `docs/REQUERIMIENTOS.md`: levantamiento inicial conservado como referencia historica.
 - `docs/arquitectura/`: alcance, estados, permisos y decisiones de arquitectura que complementan el estado actual.
 - `docs/despliegue_checklist.md`: checklist manual de despliegue para staging/produccion.
+- `docs/release_readiness.md`: guia y evidencia base para evaluar readiness antes del primer release productivo.
+- `docs/runbook_backup_rollback.md`: runbook explicito de backup y rollback para releases y deployments productivos.
+- `docs/preproduccion_local.md`: receta para montar un entorno local casi-productivo en esta misma PC.
+- `docs/demo_guion_desarrollo.md`: guion sugerido para demo funcional usando el entorno de desarrollo.
 - `docs/proceso_crecimiento_scrum.md`: guia para crecer Novogar con backlog, epics, deuda tecnica y Scrum ligero.
 - `docs/producto/`: vision, goals, roadmap, backlog, epics, sprints y templates para gestionar el crecimiento del producto.
 - `VERSION` y `CHANGELOG.md`: fuente base de version objetivo y notas de release del producto.
@@ -119,13 +123,17 @@ El seed crea usuarios base para varios roles solo para bootstrap local. Hay que 
 
 ## Variables de entorno
 
-El backend carga `backend/.env` y `backend/.env.local` si existen. Variables usadas por la app:
+El backend carga `backend/.env` y `backend/.env.local` si existen. Para entornos separados tambien puede cargar un archivo explicito via `NOVOGAR_ENV_FILE`, por ejemplo `backend/.env.production.local`. Variables usadas por la app:
 
 - `DB_HOST` o `PGHOST` (default dev: `localhost`)
 - `DB_PORT` o `PGPORT` (default dev: `5432`)
 - `DB_USER` o `PGUSER` (default dev: `postgres`)
 - `DB_PASSWORD` o `PGPASSWORD` (default dev: `admin`)
 - `DB_NAME` o `PGDATABASE` (default dev: `novogar_db`)
+- `PG_BIN_DIR` (opcional, para ubicar `pg_dump` y `pg_restore` si PostgreSQL no esta en `PATH`)
+- `NOVOGAR_RELEASE_VERSION` (opcional, override explicito de la version publicada)
+- `NOVOGAR_RELEASE_COMMIT` (opcional, override explicito del commit publicado)
+- `NOVOGAR_RELEASE_BRANCH` (opcional, override explicito de la rama publicada)
 - `PORT` (default: `3002`)
 - `JWT_SECRET` (default solo en dev/test: `dev-secret`; en `production` es obligatorio definirlo)
 - `JWT_EXPIRES_IN` (default: `8h`)
@@ -178,7 +186,18 @@ Por ahora el principio operativo mas importante es `multicurrency-first`: no mez
 ### Backend (`backend/package.json`)
 
 - `npm run dev`: iniciar API
+- `npm run preprod:setup`: preparar `.env.production.local` y runtime `runtime/preprod`
+- `npm run preprod:start`: iniciar API usando `backend/.env.production.local`
+- `npm run preprod:db:init`: bootstrap del schema en la DB preprod local
+- `npm run preprod:db:check`: validar la DB del entorno preprod local
+- `npm run preprod:db:migrate`: aplicar migraciones al entorno preprod local
+- `npm run preprod:backup-plan`: plan de backup/rollback sobre el entorno preprod local
+- `npm run preprod:readiness`: readiness report usando `backend/.env.production.local`
+- `npm run preprod:smoke`: smoke checks de dominio sobre el entorno preprod local
 - `npm run check:release`: chequeos de release de backend (sintaxis, bootstrap DB, migraciones versionadas)
+- `npm run release:backup-plan`: helper no destructivo para preparar backup/rollback antes de un release
+- `npm run release:readiness`: reporte de readiness productiva y evidencia exportable
+- `npm run release:smoke`: smoke checks de dominio para el entorno actual
 - `npm run test`: pruebas con Jest
 - `npm run test:ci`: suite CI de backend (`runInBand`)
 - `npm run db:init`: ejecutar schema si `public` esta vacio
@@ -200,10 +219,12 @@ Por ahora el principio operativo mas importante es `multicurrency-first`: no mez
 - `npm run test:ci`: suite completa de frontend para CI en un solo proceso
 - `npm run lint`: lint con ESLint
 - `npm run preview`: previsualizar build
+- `npm run preprod:preview`: servir el build local como ensayo de release en `127.0.0.1:4173`
 
 ## API base
 
 - `GET /api/health`
+- `GET /api/release-info`
 - `POST /api/auth/login`
 - `GET /api/auth/me`
 - `GET /api/dashboard/stats`

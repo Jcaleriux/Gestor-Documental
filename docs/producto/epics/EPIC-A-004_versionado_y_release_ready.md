@@ -2,7 +2,7 @@
 
 ## Estado
 
-Activo
+Hecho
 
 ## Problema
 
@@ -70,3 +70,12 @@ Un flujo de release mas profesional, trazable y repetible.
 - existe changelog
 - existe criterio claro para crear el tag Git
 - y esta visible lo obligatorio antes del primer paso a produccion
+
+## Progreso actual
+
+- `TECH-004`: hecho
+- `TECH-006`: hecho en Fase 1 con runbook explicito y helper no destructivo de backup/rollback
+- `TECH-005`: hecho con endpoint tecnico `GET /api/release-info` y headers de release en `/api/health`
+- `TECH-007`: hecho con perfil de preproduccion local, readiness en verde, evidencia JSON y smoke checks de dominio sobre `sociedades`, `dashboard`, `facturas` y `tramites-pago`
+- estado local final de `TECH-007`: readiness y smoke checks en verde en esta PC, con evidencia guardada en `backend/backups/v1.0.0/local-preprod/`
+- residual conocido de `TECH-007`: si el deployment final cambia de maquina, hay que repetir readiness, backup plan y smoke checks en el servidor objetivo

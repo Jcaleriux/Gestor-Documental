@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { formatAmount } from '../../utils/formatters';
 import { estadoLabelTramite, estadoClassTramite } from '../../utils/estadosTramite';
 import PageHeader from '../common/PageHeader';
@@ -6,7 +6,6 @@ import ActionAlerts from '../common/ActionAlerts';
 import EmptyState from '../common/EmptyState';
 import SectionCard from '../common/SectionCard';
 import TramiteMeta from '../TramiteMeta';
-import TramiteDocumentoUnificado from '../TramiteDocumentoUnificado';
 import TramiteUnificadaHeader from '../TramiteUnificadaHeader';
 import TramiteDocumentosTable from '../TramiteDocumentosTable';
 import TramiteHistorial from '../TramiteHistorial';
@@ -14,6 +13,9 @@ import TramiteHeaderActions from '../TramiteHeaderActions';
 import TramiteTabs from '../TramiteTabs';
 import TramitePagosSection from './TramitePagosSection';
 import TramiteRetencionesSection from './TramiteRetencionesSection';
+import TramiteCaratulasSection from './TramiteCaratulasSection.jsx';
+import TramiteProveedorGroup from './TramiteProveedorGroup.jsx';
+import { useProtectedObjectUrl } from '../../hooks/useProtectedObjectUrl.js';
 
 const getPdfUrl = (rutaPdf) => (
   rutaPdf ? `/api/files/pdf?path=${encodeURIComponent(rutaPdf)}` : ''
@@ -28,6 +30,7 @@ function TramiteDetalleLayout({ layoutProps }) {
     meta,
     pagos,
     retenciones,
+    caratulas,
     table
   } = layoutProps;
 
@@ -40,45 +43,15 @@ function TramiteDetalleLayout({ layoutProps }) {
     puedeFinanciera,
     puedeTesoreria
   } = table.permisos;
-  const documentosActivosIdsKey = table.documentosActivos
-    .map((doc) => Number(doc.factura_id))
-    .join('|');
-  const [expandedDocIds, setExpandedDocIds] = useState(() => new Set());
-
-  useEffect(() => {
-    setExpandedDocIds((previous) => {
-      const availableIds = new Set(table.documentosActivos.map((doc) => Number(doc.factura_id)));
-      const next = new Set(
-        [...previous].filter((facturaId) => availableIds.has(Number(facturaId)))
-      );
-
-      if (table.activeTab === 'unificada' && next.size === 0 && table.documentosActivos.length > 0) {
-        next.add(Number(table.documentosActivos[0].factura_id));
-      }
-
-      return next;
-    });
-  }, [table.activeTab, table.documentosActivos, documentosActivosIdsKey]);
-
-  const handleToggleExpandedDoc = useCallback((facturaId) => {
-    setExpandedDocIds((previous) => {
-      const next = new Set(previous);
-      if (next.has(facturaId)) {
-        next.delete(facturaId);
-      } else {
-        next.add(facturaId);
-      }
-      return next;
-    });
-  }, []);
-
-  const handleExpandAllDocs = useCallback(() => {
-    setExpandedDocIds(new Set(table.documentosActivos.map((doc) => Number(doc.factura_id))));
-  }, [table.documentosActivos]);
-
-  const handleCollapseAllDocs = useCallback(() => {
-    setExpandedDocIds(new Set());
-  }, []);
+  const caratulaPdfUrl = useMemo(
+    () => getPdfUrl(caratulas.caratula?.ruta_archivo),
+    [caratulas.caratula?.ruta_archivo]
+  );
+  const {
+    objectUrl: caratulaPreviewUrl,
+    error: caratulaPreviewError,
+    loading: caratulaPreviewLoading
+  } = useProtectedObjectUrl(caratulaPdfUrl);
 
   return (
     <div className="documents-page">
@@ -132,6 +105,8 @@ function TramiteDetalleLayout({ layoutProps }) {
         <TramiteRetencionesSection retencionesActivas={retenciones.retencionesActivas} />
       )}
 
+      <TramiteCaratulasSection caratulasProps={caratulas} />
+
       <SectionCard className="table-card" bodyClassName="p-0">
         <div className="table-responsive">
           {table.activeTab === 'individual' && (
@@ -160,27 +135,21 @@ function TramiteDetalleLayout({ layoutProps }) {
                 totalDocs={table.resumenTotales.totalDocs}
                 totalMonto={formatAmount(table.resumenTotales.suma)}
                 resumenMoneda={table.resumenMoneda}
-                actions={table.documentosActivos.length > 0 ? (
-                  <>
-                    <button type="button" className="btn btn-sm btn-outline-secondary" onClick={handleExpandAllDocs}>
-                      Expandir todo
-                    </button>
-                    <button type="button" className="btn btn-sm btn-outline-secondary" onClick={handleCollapseAllDocs}>
-                      Colapsar todo
-                    </button>
-                  </>
-                ) : null}
+                actions={null}
                 labels={table.labelsUnificada}
               />
               <div className="p-3 tramite-unificada-list">
-                {table.documentosActivos.map((doc, index) => (
-                  <TramiteDocumentoUnificado
-                    key={doc.factura_id}
-                    doc={doc}
-                    pdfUrl={getPdfUrl(doc.ruta_pdf)}
-                    sequenceNumber={index + 1}
-                    expanded={expandedDocIds.has(Number(doc.factura_id))}
-                    onToggleExpanded={() => handleToggleExpandedDoc(Number(doc.factura_id))}
+                {table.providerGroups.map((group) => (
+                  <TramiteProveedorGroup
+                    key={group.group_key}
+                    group={group}
+                    labels={caratulas.labels}
+                    pdfPreviewUrl={caratulaPreviewUrl}
+                    pdfPreviewLoading={caratulaPreviewLoading}
+                    pdfPreviewError={caratulaPreviewError}
+                    canResolve={caratulas.permisos?.puedeTesoreria && tramite.estado === 'en_revision_tesoreria_1'}
+                    onResolveGroup={caratulas.onResolveCaratulas}
+                    resolving={caratulas.resolvingCaratulaGroupKey === group.group_key}
                     enEtapaGerencia={enEtapaGerencia}
                     puedeVerGerencia={puedeVerGerencia}
                     puedeGerencia={puedeGerencia}
@@ -189,15 +158,15 @@ function TramiteDetalleLayout({ layoutProps }) {
                     puedeTesoreria={puedeTesoreria}
                     sociedadId={table.sociedadId}
                     destinosTesoreria={table.destinosTesoreria}
-                    destinoSeleccionado={table.tesoreriaDestino[doc.factura_id]}
+                    tesoreriaDestino={table.tesoreriaDestino}
                     onDestinoChange={table.onDestinoChange}
                     onDecision={table.onDecision}
                     onAccionTesoreria={table.onAccionTesoreria}
                   />
                 ))}
-                {table.documentosActivos.length === 0 && (
+                {table.providerGroups.length === 0 && (
                   <EmptyState className="text-center py-2">
-                    {table.labelsDocumentos.emptyActivos}
+                    {caratulas.labels.noGroups}
                   </EmptyState>
                 )}
               </div>

@@ -66,16 +66,39 @@ const parseEnvFile = (content) => {
   return entries;
 };
 
-const loadEnvFiles = () => {
-  if (global[ENV_FILES_LOADED_FLAG]) {
-    return;
-  }
-
+const resolveConfiguredEnvFilePaths = () => {
   const backendRootDir = path.join(__dirname, '..');
   const envFilePaths = [
     path.join(backendRootDir, '.env'),
     path.join(backendRootDir, '.env.local'),
   ];
+  const explicitEnvFile = process.env.NOVOGAR_ENV_FILE;
+
+  if (typeof explicitEnvFile === 'string' && explicitEnvFile.trim()) {
+    envFilePaths.push(
+      path.isAbsolute(explicitEnvFile.trim())
+        ? explicitEnvFile.trim()
+        : path.resolve(backendRootDir, explicitEnvFile.trim())
+    );
+  }
+
+  return envFilePaths;
+};
+
+const resetEnvFilesLoadedState = () => {
+  delete global[ENV_FILES_LOADED_FLAG];
+};
+
+const loadEnvFiles = ({ forceReload = false } = {}) => {
+  if (forceReload) {
+    resetEnvFilesLoadedState();
+  }
+
+  if (global[ENV_FILES_LOADED_FLAG]) {
+    return;
+  }
+
+  const envFilePaths = resolveConfiguredEnvFilePaths();
   const loadedKeys = new Set();
 
   envFilePaths.forEach((filePath) => {
@@ -205,6 +228,10 @@ module.exports = {
   DEFAULT_AUTH_CONFIG,
   DEFAULT_DB_CONFIG,
   loadEnvFiles,
+  parseEnvFile,
+  readEnvSetting,
+  resetEnvFilesLoadedState,
   resolveAuthConfig,
   resolveDbConfig,
+  resolveConfiguredEnvFilePaths,
 };

@@ -4,6 +4,8 @@ export const useTramiteDetalleState = () => {
   const [tramite, setTramite] = useState(null);
   const [documentos, setDocumentos] = useState([]);
   const [retenciones, setRetenciones] = useState([]);
+  const [caratula, setCaratula] = useState(null);
+  const [providerGroups, setProviderGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionMessage, setActionMessage] = useState('');
   const [actionError, setActionError] = useState('');
@@ -18,6 +20,10 @@ export const useTramiteDetalleState = () => {
     setDocumentos,
     retenciones,
     setRetenciones,
+    caratula,
+    setCaratula,
+    providerGroups,
+    setProviderGroups,
     loading,
     setLoading,
     actionMessage,

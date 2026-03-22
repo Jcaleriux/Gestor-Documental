@@ -11,11 +11,16 @@ export const useTramiteWorkflowState = ({
   const [historialVisible, setHistorialVisible] = useState(false);
   const [overrideEstado, setOverrideEstado] = useState('');
   const [overrideMotivo, setOverrideMotivo] = useState('');
-  const [overrideUser, setOverrideUser] = useState(() => actorUsuario || 'system');
+  const [overrideUserState, setOverrideUserState] = useState(() => ({
+    actorUsuario,
+    value: actorUsuario || 'system',
+  }));
   const [overrideError, setOverrideError] = useState('');
   const [tesoreriaDestino, setTesoreriaDestino] = useState({});
   const [pagosFacturas, setPagosFacturas] = useState({});
   const [activeTab, setActiveTab] = useState('individual');
+  const [uploadingCaratulas, setUploadingCaratulas] = useState(false);
+  const [resolvingCaratulaGroupKey, setResolvingCaratulaGroupKey] = useState('');
 
   const accionSiguiente = useMemo(
     () => getNextStateConfig(tramite?.estado),
@@ -28,11 +33,16 @@ export const useTramiteWorkflowState = ({
     }
   }, [historialVisible, id, fetchHistorial]);
 
-  useEffect(() => {
-    if (actorUsuario) {
-      setOverrideUser(actorUsuario);
-    }
-  }, [actorUsuario]);
+  const overrideUser = overrideUserState.actorUsuario === actorUsuario
+    ? overrideUserState.value
+    : (actorUsuario || 'system');
+
+  const setOverrideUser = (value) => {
+    setOverrideUserState({
+      actorUsuario,
+      value,
+    });
+  };
 
   const pagosFacturasConPendiente = useMemo(() => {
     const next = {};
@@ -77,6 +87,10 @@ export const useTramiteWorkflowState = ({
     activeTab,
     setActiveTab,
     accionSiguiente,
+    uploadingCaratulas,
+    setUploadingCaratulas,
+    resolvingCaratulaGroupKey,
+    setResolvingCaratulaGroupKey,
     handleTesoreriaDestinoChange,
     handlePagoFacturaChange
   };

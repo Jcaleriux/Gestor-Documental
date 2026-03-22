@@ -1,6 +1,13 @@
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
 const {
   DEFAULT_AUTH_CONFIG,
   DEFAULT_DB_CONFIG,
+  loadEnvFiles,
+  resetEnvFilesLoadedState,
+  resolveConfiguredEnvFilePaths,
   resolveAuthConfig,
   resolveDbConfig,
 } = require('../config/env');
@@ -20,6 +27,7 @@ const RELEVANT_ENV_KEYS = [
   'JWT_SECRET',
   'JWT_EXPIRES_IN',
   'BCRYPT_ROUNDS',
+  'NOVOGAR_ENV_FILE',
 ];
 
 const ORIGINAL_ENV = new Map(
@@ -143,5 +151,42 @@ describe('env config', () => {
       JWT_EXPIRES_IN: '12h',
       BCRYPT_ROUNDS: 14,
     });
+  });
+
+  test('loadEnvFiles soporta un env file explicito para preproduccion local', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'novogar-env-config-'));
+    const explicitEnvFilePath = path.join(tmpDir, '.env.production.local');
+
+    fs.writeFileSync(
+      explicitEnvFilePath,
+      [
+        'NODE_ENV=production',
+        'DB_HOST=preprod-db.local',
+        'DB_PORT=5544',
+        'DB_USER=preprod_user',
+        'DB_PASSWORD=super-segura',
+        'DB_NAME=novogar_preprod',
+        'JWT_SECRET=jwt-preprod-segura',
+      ].join('\n'),
+      'utf8'
+    );
+
+    process.env.NOVOGAR_ENV_FILE = explicitEnvFilePath;
+    resetEnvFilesLoadedState();
+    loadEnvFiles({ forceReload: true });
+
+    expect(resolveConfiguredEnvFilePaths()).toContain(explicitEnvFilePath);
+    expect(resolveDbConfig()).toEqual({
+      host: 'preprod-db.local',
+      port: 5544,
+      user: 'preprod_user',
+      password: 'super-segura',
+      database: 'novogar_preprod',
+    });
+    expect(resolveAuthConfig()).toMatchObject({
+      JWT_SECRET: 'jwt-preprod-segura',
+    });
+
+    fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 });

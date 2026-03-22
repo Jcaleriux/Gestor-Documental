@@ -1,8 +1,12 @@
 const { createTramitesPagoUseCases } = require('./tramitesPagoUseCases');
 const tramitesPagoRepo = require('../repositories/tramitesPagoRepository');
 const { handleRequest } = require('../utils/http');
+const { runtimeConfig } = require('../config/runtime');
 
-const useCases = createTramitesPagoUseCases({ tramitesPagoRepo });
+const useCases = createTramitesPagoUseCases({
+  tramitesPagoRepo,
+  baseDir: runtimeConfig.storageBaseDir
+});
 const resolveActorUsuario = (req, fallback) => (
   req.user?.email
   || req.user?.nombre
@@ -57,6 +61,34 @@ const getHistorial = handleRequest((req) => {
   return useCases.getHistorial({ id });
 }, 'Error fetching tramite history:', 'Error fetching tramite history');
 
+const uploadCaratulas = handleRequest((req) => {
+  const { id } = req.params;
+  const { filename, file_base64, usuario } = req.body || {};
+  return useCases.uploadCaratulas({
+    id,
+    filename,
+    file_base64,
+    usuario: resolveActorUsuario(req, usuario)
+  });
+}, 'Error uploading tramite caratulas:', 'Error uploading tramite caratulas');
+
+const resolveCaratulas = handleRequest((req) => {
+  const { id } = req.params;
+  const {
+    group_key,
+    provider_factura_id,
+    line_matches,
+    usuario
+  } = req.body || {};
+  return useCases.resolveCaratulas({
+    id,
+    group_key,
+    provider_factura_id,
+    line_matches,
+    usuario: resolveActorUsuario(req, usuario)
+  });
+}, 'Error resolving tramite caratulas:', 'Error resolving tramite caratulas');
+
 const crearTramite = handleRequest((req) => {
   const { sociedad_id, factura_ids, retencion_factura_ids, usuario } = req.body || {};
   return useCases.crearTramite({
@@ -103,6 +135,8 @@ module.exports = {
   getRetencionesDisponibles,
   getTramite,
   getHistorial,
+  uploadCaratulas,
+  resolveCaratulas,
   crearTramite,
   cambiarEstado,
   decisionDocumento
