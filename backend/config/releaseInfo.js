@@ -74,31 +74,37 @@ const readPackedRef = ({ gitDirPath, refPath }) => {
   return match ? match.split(' ')[0].trim() : '';
 };
 
-const readGitMetadata = ({ rootDir = repoRootDir, env = process.env } = {}) => {
+const readFallbackMetadataFromEnv = (env = process.env) => ({
+  branch: readBranchFromEnv(env),
+  commit: readCommitFromEnv(env),
+});
+
+const readGitMetadata = ({
+  rootDir = repoRootDir,
+  env = process.env,
+  allowEnvFallback = path.resolve(rootDir) === repoRootDir,
+} = {}) => {
+  const fallbackMetadata = allowEnvFallback
+    ? readFallbackMetadataFromEnv(env)
+    : { branch: '', commit: '' };
   const gitDirPath = resolveGitDir(rootDir);
 
   if (!gitDirPath) {
-    return {
-      branch: readBranchFromEnv(env),
-      commit: readCommitFromEnv(env),
-    };
+    return fallbackMetadata;
   }
 
   const headPath = path.join(gitDirPath, 'HEAD');
 
   if (!fs.existsSync(headPath)) {
-    return {
-      branch: readBranchFromEnv(env),
-      commit: readCommitFromEnv(env),
-    };
+    return fallbackMetadata;
   }
 
   const headContent = fs.readFileSync(headPath, 'utf8').trim();
 
   if (!headContent.startsWith('ref:')) {
     return {
-      branch: readBranchFromEnv(env),
-      commit: headContent || readCommitFromEnv(env),
+      branch: fallbackMetadata.branch,
+      commit: headContent || fallbackMetadata.commit,
     };
   }
 
@@ -110,8 +116,8 @@ const readGitMetadata = ({ rootDir = repoRootDir, env = process.env } = {}) => {
     : readPackedRef({ gitDirPath, refPath });
 
   return {
-    branch: branch || readBranchFromEnv(env),
-    commit: commit || readCommitFromEnv(env),
+    branch: branch || fallbackMetadata.branch,
+    commit: commit || fallbackMetadata.commit,
   };
 };
 

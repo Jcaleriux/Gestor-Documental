@@ -79,6 +79,27 @@ describe('release info config', () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
+  test('readGitMetadata usa fallback de entorno cuando el repo esta detached y se permite', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'novogar-release-detached-'));
+    const gitDirPath = path.join(tmpDir, '.git');
+    fs.mkdirSync(gitDirPath, { recursive: true });
+    fs.writeFileSync(gitDirPath + path.sep + 'HEAD', 'ec3b6d7aee6dbec614c4b60340d203f58798b0aa\n', 'utf8');
+
+    expect(readGitMetadata({
+      rootDir: tmpDir,
+      env: {
+        GITHUB_HEAD_REF: 'refactor-solid-frontend',
+        GITHUB_SHA: '0fa4083dd1e268db72fe118d317a5d43ada0cf2c',
+      },
+      allowEnvFallback: true,
+    })).toEqual({
+      branch: 'refactor-solid-frontend',
+      commit: 'ec3b6d7aee6dbec614c4b60340d203f58798b0aa',
+    });
+
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
   test('applyReleaseHeaders publica metadata solo cuando existe', () => {
     const headers = {};
     const response = {
