@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { formatAmount, getMoneda, getMontoDocumento } from '../../utils/formatters';
-import { facturasApi } from '../../services/facturasApi.js';
-import { withAuthToken } from '../../utils/auth.js';
+import { extractMensajeHaciendaXmlPath, facturasApi } from '../../services/facturasApi.js';
+import { openProtectedInNewTab } from '../../utils/protectedResources.js';
 import SectionCard from '../common/SectionCard';
 import ActionAlerts from '../common/ActionAlerts';
 import LoadingState from '../common/LoadingState';
@@ -37,17 +37,17 @@ function FacturaTramiteRowActions({
     {
       key: 'pdf',
       label: FACTURAS_LABELS.actionsMenu.openPdf,
-      url: factura.ruta_pdf
-        ? withAuthToken(`/api/files/pdf?path=${encodeURIComponent(factura.ruta_pdf)}`)
-        : '',
+      onClick: factura.ruta_pdf
+        ? () => openProtectedInNewTab(`/api/files/pdf?path=${encodeURIComponent(factura.ruta_pdf)}`)
+        : null,
       disabled: !factura.ruta_pdf,
     },
     {
       key: 'xml',
       label: FACTURAS_LABELS.actionsMenu.openXml,
-      url: factura.ruta_xml
-        ? withAuthToken(`/api/files/xml?path=${encodeURIComponent(factura.ruta_xml)}`)
-        : '',
+      onClick: factura.ruta_xml
+        ? () => openProtectedInNewTab(`/api/files/xml?path=${encodeURIComponent(factura.ruta_xml)}`)
+        : null,
       disabled: !factura.ruta_xml,
     },
     {
@@ -59,9 +59,9 @@ function FacturaTramiteRowActions({
     {
       key: 'manifest',
       label: FACTURAS_LABELS.actionsMenu.viewManifest,
-      url: factura.ruta_xml || factura.ruta_pdf
-        ? withAuthToken(`/api/facturas/${factura.id}/manifest`)
-        : '',
+      onClick: factura.ruta_xml || factura.ruta_pdf
+        ? () => openProtectedInNewTab(`/api/facturas/${factura.id}/manifest`)
+        : null,
       disabled: !factura.ruta_xml && !factura.ruta_pdf,
     },
   ];
@@ -105,31 +105,19 @@ function FacturaTramiteRowActions({
                   <span>{action.label}</span>
                   <span>{FACTURAS_LABELS.actionsMenu.unavailable}</span>
                 </button>
-              ) : action.onClick ? (
+              ) : (
                 <button
                   key={action.key}
                   type="button"
                   className="factura-actions-item"
                   role="menuitem"
-                  onClick={() => {
+                  onClick={async () => {
                     onCloseMenu();
-                    action.onClick();
+                    await action.onClick?.();
                   }}
                 >
                   {action.label}
                 </button>
-              ) : (
-                <a
-                  key={action.key}
-                  className="factura-actions-item"
-                  href={action.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  role="menuitem"
-                  onClick={onCloseMenu}
-                >
-                  {action.label}
-                </a>
               )
             ))}
           </div>
@@ -178,17 +166,14 @@ function TramiteCreatePanel({
       setActionError?.('');
 
       const response = await facturasApi.getMensajeHacienda(factura.id);
-      const rutaXml = response?.data?.data?.ruta_xml;
+      const rutaXml = extractMensajeHaciendaXmlPath(response);
 
       if (!rutaXml) {
         setActionError?.('Mensaje Hacienda sin XML.');
         return;
       }
 
-      const url = withAuthToken(`/api/files/xml?path=${encodeURIComponent(rutaXml)}`);
-      if (typeof window !== 'undefined' && typeof window.open === 'function') {
-        window.open(url, '_blank', 'noopener,noreferrer');
-      }
+      await openProtectedInNewTab(`/api/files/xml?path=${encodeURIComponent(rutaXml)}`);
     } catch (err) {
       const apiError = err?.response?.data?.error || 'Mensaje Hacienda no encontrado.';
       setActionError?.(apiError);

@@ -36,6 +36,7 @@ const createDocumentActionModule = createScopedActionModule({
   createActions: ({ moduleInputs, shared }) => createDocumentActions({
     ...moduleInputs,
     facturaApi: shared.facturaApi,
+    openProtectedResource: shared.openProtectedResource,
     buildAuthUrl: shared.buildAuthUrl,
     openWindow: shared.openWindow
   })

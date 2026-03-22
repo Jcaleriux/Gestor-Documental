@@ -13,6 +13,7 @@ const createAuditoriaSchema = Joi.object({
 });
 
 const createEstadoSchema = Joi.object({
+  dominio: Joi.string().trim().valid('contabilizacion', 'workflow_pago', 'mixto').optional(),
   estado_anterior: Joi.string().allow('', null),
   estado_nuevo: Joi.string().trim().required(),
   usuario: Joi.string().trim().required(),

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { formatAmount, getMoneda, getMontoDocumento } from '../utils/formatters';
+import { formatAmount, getMoneda, getMontoDocumento } from '../utils/formatters.js';
 
 const getMontoRetencion = (item) => {
   const monto = Number(item?.monto_retencion ?? item?.monto_retencion_pendiente ?? 0);

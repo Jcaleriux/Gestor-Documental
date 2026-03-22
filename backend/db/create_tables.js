@@ -1,6 +1,7 @@
 const pool = require('./index');
 const fs = require('fs');
 const path = require('path');
+const { applyPendingMigrations } = require('./migrationManager');
 
 async function runSqlFile(sqlPath, label) {
   const sql = fs.readFileSync(sqlPath, 'utf8');
@@ -28,7 +29,7 @@ async function createTables() {
     `);
 
     if (existingTables.rows[0].total > 0) {
-      console.log('El schema public ya tiene tablas. Usa "npm run db:reset" para reconstruir desde cero.');
+      console.log('El schema public ya tiene tablas. Usa "npm run db:reset" para reconstruir desde cero o "npm run db:migrate" para aplicar cambios incrementales.');
       await pool.end();
       return;
     }
@@ -37,11 +38,22 @@ async function createTables() {
     if (fs.existsSync(seedPath)) {
       await runSqlFile(seedPath, 'seed.sql');
     }
+    await applyPendingMigrations(pool, { logger: console });
 
     const result = await pool.query(`
       SELECT tablename FROM pg_tables
       WHERE schemaname = 'public'
-      AND tablename IN ('comentarios_documento', 'versiones_documento', 'auditoria', 'estados_documento', 'facturas', 'sociedades')
+      AND tablename IN (
+        'comentarios_documento',
+        'versiones_documento',
+        'auditoria',
+        'facturas',
+        'facturas_estado_documental_historial',
+        'facturas_workflow_pago_historial',
+        'facturas_estado_mixto_historial',
+        'schema_migrations',
+        'sociedades'
+      )
     `);
 
     console.log(`Tablas verificadas: ${result.rows.map(r => r.tablename).join(', ')}`);

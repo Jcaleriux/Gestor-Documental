@@ -1,23 +1,20 @@
-const NEW_TAB_TARGET = '_blank';
-const NEW_TAB_FEATURES = 'noopener,noreferrer';
+import { extractMensajeHaciendaXmlPath } from '../../services/facturasApi.js';
+import { createProtectedResourceOpener } from '../../utils/protectedResources.js';
 
 const openUrlInNewTab = ({
   url,
-  openWindow
-}) => {
-  openWindow(url, NEW_TAB_TARGET, NEW_TAB_FEATURES);
-};
+  openProtectedResource
+}) => openProtectedResource(url);
 
 const openApiFilePath = ({
   endpoint,
   ruta,
-  buildAuthUrl,
-  openWindow
+  openProtectedResource
 }) => {
-  const url = buildAuthUrl(`${endpoint}?path=${encodeURIComponent(ruta)}`);
+  const url = `${endpoint}?path=${encodeURIComponent(ruta)}`;
   openUrlInNewTab({
     url,
-    openWindow
+    openProtectedResource
   });
 };
 
@@ -43,13 +40,11 @@ const hasMensajeHacienda = ({ factura }) => (
   factura?.has_mensaje_hacienda !== false
 );
 
-const buildManifestUrl = ({ id, buildAuthUrl }) => (
-  buildAuthUrl(`/api/facturas/${id}/manifest`)
-);
+const buildManifestUrl = ({ id }) => `/api/facturas/${id}/manifest`;
 
 const getMensajeHaciendaRutaXml = async ({ id, facturaApi }) => {
   const response = await facturaApi.getMensajeHacienda(id);
-  return response.data.data?.ruta_xml;
+  return extractMensajeHaciendaXmlPath(response);
 };
 
 export const createDocumentActions = ({
@@ -61,16 +56,22 @@ export const createDocumentActions = ({
   setMhLoading,
   setMhError,
   facturaApi,
+  openProtectedResource,
   buildAuthUrl,
   openWindow
 }) => {
+  const resolvedOpenProtectedResource = createProtectedResourceOpener({
+    openProtectedResource,
+    buildAuthUrl,
+    openWindow,
+  });
+
   const verTablaPagoAsociada = () => {
     if (!tablaPagoActual?.ruta_pdf) return;
     openApiFilePath({
       endpoint: '/api/files/pdf',
       ruta: tablaPagoActual.ruta_pdf,
-      buildAuthUrl,
-      openWindow
+      openProtectedResource: resolvedOpenProtectedResource
     });
   };
 
@@ -82,8 +83,7 @@ export const createDocumentActions = ({
 
     openApiFilePath({
       ...notaFile,
-      buildAuthUrl,
-      openWindow
+      openProtectedResource: resolvedOpenProtectedResource
     });
   };
 
@@ -92,8 +92,7 @@ export const createDocumentActions = ({
     openApiFilePath({
       endpoint: '/api/files/pdf',
       ruta: ordenCompraActual.ruta_pdf,
-      buildAuthUrl,
-      openWindow
+      openProtectedResource: resolvedOpenProtectedResource
     });
   };
 
@@ -120,8 +119,7 @@ export const createDocumentActions = ({
       openApiFilePath({
         endpoint: '/api/files/xml',
         ruta: rutaXml,
-        buildAuthUrl,
-        openWindow
+        openProtectedResource: resolvedOpenProtectedResource
       });
     } catch (err) {
       console.error(err);
@@ -134,8 +132,8 @@ export const createDocumentActions = ({
 
   const verManifest = () => {
     openUrlInNewTab({
-      url: buildManifestUrl({ id, buildAuthUrl }),
-      openWindow
+      url: buildManifestUrl({ id }),
+      openProtectedResource: resolvedOpenProtectedResource
     });
   };
 

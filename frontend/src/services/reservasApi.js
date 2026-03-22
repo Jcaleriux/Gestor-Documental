@@ -70,12 +70,9 @@ const upsertDocumento = (operacionId, payload) =>
 const syncDocumento = (payload) => axios.post('/api/reservas/operaciones/sync-documento', payload);
 const replaceDocumento = (operacionId, documentoId, payload) =>
   axios.post(`/api/reservas/operaciones/${operacionId}/documentos/${documentoId}/reemplazar`, payload);
-const buildPreviewDocumentoUrl = ({ operacionId, documentoId, token }) => {
+const buildPreviewDocumentoUrl = ({ operacionId, documentoId }) => {
   const base = `/api/reservas/operaciones/${operacionId}/documentos/${documentoId}/preview`;
-  if (!token) {
-    return base;
-  }
-  return `${base}?token=${encodeURIComponent(token)}`;
+  return base;
 };
 
 export const reservasApi = {

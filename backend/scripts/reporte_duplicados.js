@@ -1,10 +1,11 @@
 const fs = require("fs");
 const path = require("path");
 const pool = require("../db");
+const { runtimeConfig } = require("../config/runtime");
 const { parseXML } = require("../utils/xmlParser");
 const { resolveDocumentPaths } = require("../utils/documentPaths");
 
-const baseDir = process.env.FACTURAS_BASE_DIR || path.resolve(__dirname, "..", "..");
+const baseDir = runtimeConfig.storageBaseDir;
 const documentPaths = resolveDocumentPaths(baseDir);
 const procesadasDir = documentPaths.facturasProcesadasDir;
 const salidaDir = path.join(__dirname, "salidas");

@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 const { errorMiddleware } = require('./middleware/errorMiddleware');
 const { notFoundMiddleware } = require('./middleware/notFoundMiddleware');
 const { requireAuth } = require('./middleware/authMiddleware');
@@ -9,20 +8,28 @@ const {
   requireAnyPermission
 } = require('./middleware/permissionsMiddleware');
 const { PERMISSIONS } = require('./domain/permissions');
+const { runtimeConfig } = require('./config/runtime');
 const { resolveDocumentPaths } = require('./utils/documentPaths');
 
 const app = express();
-const storageBaseDir = process.env.FACTURAS_BASE_DIR || path.resolve(__dirname, '..');
-const documentPaths = resolveDocumentPaths(storageBaseDir);
-const jsonBodyLimit = process.env.JSON_BODY_LIMIT || '20mb';
+const documentPaths = resolveDocumentPaths(runtimeConfig.storageBaseDir);
 const filesAccessPermission = requireAnyPermission([
   PERMISSIONS.DOCUMENTOS_VER,
   PERMISSIONS.DOCUMENTOS_DESCARGAR
 ]);
 
+app.disable('x-powered-by');
+app.set('query parser', 'simple');
+
 // Middleware
+app.use((req, res, next) => {
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  next();
+});
 app.use(cors());
-app.use(express.json({ limit: jsonBodyLimit }));
+app.use(express.json({ limit: runtimeConfig.jsonBodyLimit }));
 
 // Serve static files from documentos directory.
 app.use(

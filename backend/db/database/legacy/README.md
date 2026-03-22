@@ -2,10 +2,15 @@
 
 Estos scripts corresponden al historial incremental antiguo del proyecto.
 
-- No se ejecutan en el flujo canónico actual.
-- Se conservan solo como referencia histórica.
+- No se ejecutan en el flujo canonico actual.
+- Se conservan solo como referencia historica.
 
-Para construcción limpia de la BD usa:
+Para construccion limpia de la BD usa:
 
 - `backend/db/database/00_init.sql`
 - `backend/db/database/seed.sql`
+
+Para cambios incrementales nuevos usa:
+
+- `backend/db/migrations/`
+- `npm run db:migrate`

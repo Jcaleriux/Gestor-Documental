@@ -81,6 +81,9 @@ test('useFacturaDetalle compone dataDependencies y actionDependencies', async ()
 
   const buildAuthUrl = createMockFn((url) => `auth:${url}`);
   const openWindow = createMockFn();
+  const centrosApi = {
+    listCentros: createMockFn(async () => [])
+  };
 
   try {
     const hook = createHookHarness({
@@ -90,6 +93,7 @@ test('useFacturaDetalle compone dataDependencies y actionDependencies', async ()
         sociedadId: 10,
         dataDependencies: {
           facturaApi: dataFacturaApi,
+          centrosApi,
           nowProvider: () => now
         },
         actionDependencies: {

@@ -15,6 +15,8 @@ const createRepoMock = (overrides = {}) => ({
           TotalComprobante: 1000,
         },
         estado: 'contabilizado',
+        estado_documental: 'contabilizado',
+        estado_workflow_pago: null,
         total_factura: 1000,
         total_rebajos: 0,
         retencion_total: 0,
@@ -137,6 +139,8 @@ describe('facturasUseCases', () => {
         {
           id: 1,
           estado: 'contabilizado',
+          estado_documental: 'contabilizado',
+          estado_workflow_pago: null,
           has_mensaje_hacienda: true,
         },
       ],
@@ -159,6 +163,65 @@ describe('facturasUseCases', () => {
         ],
       },
     });
+  });
+
+  test('listFacturas preserva estado documental y workflow desacoplado', async () => {
+    const repo = createRepoMock({
+      listFacturas: jest.fn().mockResolvedValue({
+        items: [
+          {
+            id: 3,
+            clave: '506999',
+            consecutivo: '00100001010000000003',
+            fecha_emision: '2026-03-05T00:00:00.000Z',
+            emisor: { nombre: 'Proveedor Workflow' },
+            receptor: { nombre: 'Novogar' },
+            resumen: {
+              CodigoTipoMoneda: { CodigoMoneda: 'CRC' },
+              TotalComprobante: 2000,
+            },
+            estado: 'en_tramite_pago',
+            estado_documental: 'contabilizado',
+            estado_workflow_pago: 'en_tramite_pago',
+            total_factura: 2000,
+            total_a_pagar: 2000,
+            total_pendiente_global: 2000,
+          },
+        ],
+        meta: {
+          page: 1,
+          pageSize: 50,
+          totalItems: 1,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+          sortBy: 'fecha_emision',
+          sortDir: 'desc',
+        },
+        summary: {
+          totalItems: 1,
+          totalAmount: 2000,
+          byEstado: [
+            { estado: 'en_tramite_pago', totalItems: 1, totalAmount: 2000 },
+          ],
+          byMoneda: [
+            { moneda: 'CRC', totalItems: 1, totalAmount: 2000 },
+          ],
+        },
+      }),
+    });
+    const useCases = createFacturasUseCases({ facturasRepo: repo });
+
+    const result = await useCases.listFacturas({ sociedadId: '10' });
+
+    expect(result.items).toEqual([
+      expect.objectContaining({
+        id: 3,
+        estado: 'en_tramite_pago',
+        estado_documental: 'contabilizado',
+        estado_workflow_pago: 'en_tramite_pago',
+      }),
+    ]);
   });
 
   test('listFacturas usa defaults cuando no se envian parametros opcionales', async () => {

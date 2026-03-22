@@ -49,8 +49,8 @@ router.post(
   validateBody(createEstadoSchema, { message: 'estado_nuevo y usuario requeridos' }),
   handleRequest(async (req) => {
     const { facturaId } = req.params;
-    const { estado_anterior, estado_nuevo, usuario, motivo } = req.body || {};
-    return useCases.crearEstado({ facturaId, estado_anterior, estado_nuevo, usuario, motivo });
+    const { dominio, estado_anterior, estado_nuevo, usuario, motivo } = req.body || {};
+    return useCases.crearEstado({ facturaId, dominio, estado_anterior, estado_nuevo, usuario, motivo });
   }, 'Error creating state record:', 'Error creating state record')
 );
 

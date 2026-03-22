@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -8,52 +8,30 @@ import {
   useLocation,
   useParams,
 } from 'react-router-dom';
-import axios from 'axios';
-import Dashboard from './components/Dashboard';
-import Usuarios from './components/Usuarios';
-import Facturas from './components/Facturas';
-import FacturaDetalle from './components/FacturaDetalle';
-import RetencionesPendientes from './components/RetencionesPendientes';
-import NotasCredito from './components/NotasCredito';
-import TiquetesElectronicos from './components/TiquetesElectronicos';
-import Login from './components/Login';
-import Tramites from './components/Tramites';
-import TramiteDetalle from './components/TramiteDetalle';
-import Proveedores from './components/Proveedores';
-import CentrosCosto from './components/CentrosCosto';
-import TablasPagoIngenieria from './components/TablasPagoIngenieria';
-import OrdenesCompraIngenieria from './components/OrdenesCompraIngenieria';
-import ReservasOperaciones from './components/ReservasOperaciones';
-import {
-  clearAuthSession,
-  getAuthToken,
-  getAuthUser,
-  saveAuthSession
-} from './utils/auth';
+import { buildNavigationSections } from './app/buildNavigationSections.js';
+import { useAppSession } from './hooks/app/useAppSession.js';
+import LoadingState from './components/common/LoadingState.jsx';
 import './App.css';
+
+const Dashboard = lazy(() => import('./components/Dashboard.jsx'));
+const Usuarios = lazy(() => import('./components/Usuarios.jsx'));
+const Facturas = lazy(() => import('./components/Facturas.jsx'));
+const FacturaDetalle = lazy(() => import('./components/FacturaDetalle.jsx'));
+const RetencionesPendientes = lazy(() => import('./components/RetencionesPendientes.jsx'));
+const NotasCredito = lazy(() => import('./components/NotasCredito.jsx'));
+const TiquetesElectronicos = lazy(() => import('./components/TiquetesElectronicos.jsx'));
+const Login = lazy(() => import('./components/Login.jsx'));
+const Tramites = lazy(() => import('./components/Tramites.jsx'));
+const TramiteDetalle = lazy(() => import('./components/TramiteDetalle.jsx'));
+const Proveedores = lazy(() => import('./components/Proveedores.jsx'));
+const CentrosCosto = lazy(() => import('./components/CentrosCosto.jsx'));
+const TablasPagoIngenieria = lazy(() => import('./components/TablasPagoIngenieria.jsx'));
+const OrdenesCompraIngenieria = lazy(() => import('./components/OrdenesCompraIngenieria.jsx'));
+const ReservasOperaciones = lazy(() => import('./components/ReservasOperaciones.jsx'));
 
 const SIDEBAR_COLLAPSED_KEY = 'novogar.sidebar.collapsed';
 const SIDEBAR_SECTIONS_KEY = 'novogar.sidebar.sections';
-const SELECTED_SOCIEDAD_KEY = 'novogar.sociedad.selected';
 const MOBILE_MEDIA_QUERY = '(max-width: 991.98px)';
-
-const setAxiosAuthHeader = (token) => {
-  if (token) {
-    axios.defaults.headers.common.Authorization = `Bearer ${token}`;
-  } else {
-    delete axios.defaults.headers.common.Authorization;
-  }
-};
-
-const initialsFromName = (name) => {
-  if (!name) return 'US';
-  return String(name)
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((chunk) => chunk[0]?.toUpperCase() || '')
-    .join('') || 'US';
-};
 
 const pathMatches = (pathname, target) => {
   if (target === '/') {
@@ -77,25 +55,6 @@ const parseJsonStorage = (key, fallback) => {
 };
 
 const readCollapsedPreference = () => parseJsonStorage(SIDEBAR_COLLAPSED_KEY, false) === true;
-const readSociedadFromLocation = () => {
-  if (typeof window === 'undefined') {
-    return '';
-  }
-
-  try {
-    return new URLSearchParams(window.location.search).get('sociedad') || '';
-  } catch {
-    return '';
-  }
-};
-
-const readSelectedSociedadPreference = () => {
-  if (typeof window === 'undefined') {
-    return '';
-  }
-
-  return window.localStorage.getItem(SELECTED_SOCIEDAD_KEY) || '';
-};
 
 const buildExpandedSectionsState = (sections, storedValue = {}) => {
   const defaults = Object.fromEntries(sections.map((section) => [section.id, true]));
@@ -273,62 +232,23 @@ const AppIcon = ({ name, className = '' }) => (
   </svg>
 );
 
-const initialAppState = {
-  sociedades: [],
-  sociedadId: readSociedadFromLocation() || readSelectedSociedadPreference(),
-  authToken: '',
-  authUser: null,
-  authLoading: true
-};
-
-const appReducer = (state, action) => {
-  switch (action.type) {
-    case 'applySession':
-      return {
-        ...state,
-        authToken: action.token || '',
-        authUser: action.user || null
-      };
-    case 'clearSession':
-      return {
-        ...state,
-        sociedades: [],
-        sociedadId: '',
-        authToken: '',
-        authUser: null
-      };
-    case 'setAuthLoading':
-      return {
-        ...state,
-        authLoading: Boolean(action.value)
-      };
-    case 'setSociedades': {
-      const nextSociedades = Array.isArray(action.value) ? action.value : [];
-      const hasSelectedSociedad = nextSociedades.some(
-        (sociedad) => String(sociedad.id) === String(state.sociedadId)
-      );
-
-      return {
-        ...state,
-        sociedades: nextSociedades,
-        sociedadId: hasSelectedSociedad ? state.sociedadId : ''
-      };
-    }
-    case 'setSociedadId':
-      return {
-        ...state,
-        sociedadId: action.value || ''
-      };
-    default:
-      return state;
-  }
-};
+function RouteLoadingFallback({ fullPage = false }) {
+  return (
+    <div
+      style={fullPage
+        ? { minHeight: '100vh', display: 'grid', placeItems: 'center' }
+        : { padding: '1rem 1.25rem' }}
+    >
+      <LoadingState label="Cargando pagina..." />
+    </div>
+  );
+}
 
 function AuthenticatedAppShell({
   sociedades,
   sociedadId,
   selectedSociedad,
-  dispatch,
+  setSociedadId,
   handleLogout,
   userInitials,
   userName,
@@ -354,130 +274,19 @@ function AuthenticatedAppShell({
   });
 
   const navigationSections = useMemo(() => {
-    const sections = [
-      {
-        id: 'general',
-        label: 'General',
-        icon: 'general',
-        items: [
-          { id: 'dashboard', label: 'Dashboard', to: '/', icon: 'general', visible: true },
-        ],
-      },
-      {
-        id: 'compras',
-        label: 'Compras',
-        icon: 'compras',
-        items: [
-          { id: 'facturas', label: 'Facturas', to: '/facturas', icon: 'facturas', visible: true },
-          {
-            id: 'retenciones-pendientes',
-            label: 'Retenciones pendientes',
-            to: '/retenciones-pendientes',
-            icon: 'retenciones',
-            visible: true,
-          },
-          {
-            id: 'notas-credito',
-            label: 'Notas de credito',
-            to: '/notas-credito',
-            icon: 'notas',
-            visible: true,
-          },
-          {
-            id: 'tiquetes-electronicos',
-            label: 'Tiquetes electronicos',
-            to: '/tiquetes-electronicos',
-            icon: 'tiquetes',
-            visible: true,
-          },
-        ],
-      },
-      {
-        id: 'tesoreria',
-        label: 'Tesoreria',
-        icon: 'tesoreria',
-        items: [
-          {
-            id: 'tramites',
-            label: 'Tramites de pago',
-            to: '/tramites',
-            icon: 'tramites',
-            visible: canViewTramites,
-          },
-        ],
-      },
-      {
-        id: 'ventas',
-        label: 'Ventas',
-        icon: 'ventas',
-        items: [
-          {
-            id: 'reservas',
-            label: 'Reservas',
-            to: '/reservas',
-            icon: 'reservas',
-            visible: canUseReservas,
-          },
-        ],
-      },
-      {
-        id: 'ingenieria',
-        label: 'Ingenieria',
-        icon: 'ingenieria',
-        items: [
-          {
-            id: 'tablas-pago',
-            label: 'Tablas de pago',
-            to: '/tablas-pago',
-            icon: 'tablasPago',
-            visible: canUseTablasPago,
-          },
-          {
-            id: 'ordenes-compra',
-            label: 'Ordenes de compra',
-            to: '/ordenes-compra',
-            icon: 'ordenesCompra',
-            visible: canUseOrdenesCompra,
-          },
-        ],
-      },
-      {
-        id: 'administracion',
-        label: 'Administracion',
-        icon: 'administracion',
-        items: [
-          { id: 'usuarios', label: 'Usuarios', to: '/usuarios', icon: 'usuarios', visible: canManageUsers },
-          {
-            id: 'proveedores',
-            label: 'Proveedores',
-            to: '/proveedores',
-            icon: 'proveedores',
-            visible: canManageUsers,
-          },
-          {
-            id: 'centros-costo',
-            label: 'Centros de costo',
-            to: '/centros-costo',
-            icon: 'centrosCosto',
-            visible: canManageUsers,
-          },
-        ],
-      },
-    ];
-
-    return sections
-      .map((section) => ({
-        ...section,
-        items: section.items.filter((item) => item.visible),
-      }))
-      .filter((section) => section.items.length > 0);
+    return buildNavigationSections({
+      canManageUsers,
+      canUseOrdenesCompra,
+      canUseReservas,
+      canUseTablasPago,
+      canViewTramites,
+    });
   }, [
     canManageUsers,
     canUseOrdenesCompra,
-    canViewTramites,
-    canTramitarPago,
     canUseReservas,
     canUseTablasPago,
+    canViewTramites,
   ]);
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(readCollapsedPreference);
@@ -690,7 +499,7 @@ function AuthenticatedAppShell({
                 id="sociedad-select"
                 className="sociedad-select"
                 value={sociedadId}
-                onChange={(event) => dispatch({ type: 'setSociedadId', value: event.target.value })}
+                onChange={(event) => setSociedadId(event.target.value)}
               >
                 <option value="">Seleccionar</option>
                 {sociedades.map((sociedad) => (
@@ -718,71 +527,73 @@ function AuthenticatedAppShell({
         </header>
 
         <main className="content">
-          <Routes>
-            <Route
-              path="/"
-              element={(
-                <Dashboard
-                  sociedadId={sociedadId}
-                  selectedSociedadName={selectedSociedad?.nombre_proyecto || selectedSociedad?.razon_social || ''}
-                  authUser={authUser}
-                  userPermissions={userPermissions}
-                />
-              )}
-            />
-            <Route path="/usuarios" element={canManageUsers ? <Usuarios /> : <Navigate to="/" replace />} />
-            <Route
-              path="/facturas"
-              element={<Facturas sociedadId={sociedadId} canEditContabilizacion={canEditContabilizacion} />}
-            />
-            <Route path="/retenciones-pendientes" element={<RetencionesPendientes sociedadId={sociedadId} />} />
-            <Route path="/facturas/:id" element={<LegacyFacturaDetalleRedirect />} />
-            <Route
-              path="/facturas/:id/contabilizacion"
-              element={(
-                <FacturaDetalle
-                  sociedadId={sociedadId}
-                  selectedSociedadName={selectedSociedad?.nombre_proyecto || selectedSociedad?.razon_social || ''}
-                  canEditContabilizacion={canEditContabilizacion}
-                />
-              )}
-            />
-            <Route path="/notas-credito" element={<NotasCredito sociedadId={sociedadId} />} />
-            <Route path="/tiquetes-electronicos" element={<TiquetesElectronicos sociedadId={sociedadId} />} />
-            <Route
-              path="/tramites"
-              element={(
-                <Tramites
-                  sociedadId={sociedadId}
-                  canCreateTramite={canTramitarPago}
-                  authUser={authUser}
-                />
-              )}
-            />
-            <Route
-              path="/tramites/:id"
-              element={(
-                <TramiteDetalle
-                  sociedadId={sociedadId}
-                  authUser={authUser}
-                  userPermissions={userPermissions}
-                />
-              )}
-            />
-            <Route path="/ventas" element={<Navigate to="/reservas" replace />} />
-            <Route
-              path="/reservas"
-              element={canUseReservas
-                ? <ReservasOperaciones sociedadId={sociedadId} canManageDocuments={canManageReservasDocumentos} />
-                : <Navigate to="/" replace />}
-            />
-            <Route path="/proveedores" element={canManageUsers ? <Proveedores sociedadId={sociedadId} /> : <Navigate to="/" replace />} />
-            <Route path="/centros-costo" element={canManageUsers ? <CentrosCosto sociedadId={sociedadId} /> : <Navigate to="/" replace />} />
-            <Route path="/tablas-pago" element={canUseTablasPago ? <TablasPagoIngenieria sociedadId={sociedadId} /> : <Navigate to="/" replace />} />
-            <Route path="/ordenes-compra" element={canUseOrdenesCompra ? <OrdenesCompraIngenieria sociedadId={sociedadId} /> : <Navigate to="/" replace />} />
-            <Route path="/login" element={<Navigate to="/" replace />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <Routes>
+              <Route
+                path="/"
+                element={(
+                  <Dashboard
+                    sociedadId={sociedadId}
+                    selectedSociedadName={selectedSociedad?.nombre_proyecto || selectedSociedad?.razon_social || ''}
+                    authUser={authUser}
+                    userPermissions={userPermissions}
+                  />
+                )}
+              />
+              <Route path="/usuarios" element={canManageUsers ? <Usuarios /> : <Navigate to="/" replace />} />
+              <Route
+                path="/facturas"
+                element={<Facturas sociedadId={sociedadId} canEditContabilizacion={canEditContabilizacion} />}
+              />
+              <Route path="/retenciones-pendientes" element={<RetencionesPendientes sociedadId={sociedadId} />} />
+              <Route path="/facturas/:id" element={<LegacyFacturaDetalleRedirect />} />
+              <Route
+                path="/facturas/:id/contabilizacion"
+                element={(
+                  <FacturaDetalle
+                    sociedadId={sociedadId}
+                    selectedSociedadName={selectedSociedad?.nombre_proyecto || selectedSociedad?.razon_social || ''}
+                    canEditContabilizacion={canEditContabilizacion}
+                  />
+                )}
+              />
+              <Route path="/notas-credito" element={<NotasCredito sociedadId={sociedadId} />} />
+              <Route path="/tiquetes-electronicos" element={<TiquetesElectronicos sociedadId={sociedadId} />} />
+              <Route
+                path="/tramites"
+                element={(
+                  <Tramites
+                    sociedadId={sociedadId}
+                    canCreateTramite={canTramitarPago}
+                    authUser={authUser}
+                  />
+                )}
+              />
+              <Route
+                path="/tramites/:id"
+                element={(
+                  <TramiteDetalle
+                    sociedadId={sociedadId}
+                    authUser={authUser}
+                    userPermissions={userPermissions}
+                  />
+                )}
+              />
+              <Route path="/ventas" element={<Navigate to="/reservas" replace />} />
+              <Route
+                path="/reservas"
+                element={canUseReservas
+                  ? <ReservasOperaciones sociedadId={sociedadId} canManageDocuments={canManageReservasDocumentos} />
+                  : <Navigate to="/" replace />}
+              />
+              <Route path="/proveedores" element={canManageUsers ? <Proveedores sociedadId={sociedadId} /> : <Navigate to="/" replace />} />
+              <Route path="/centros-costo" element={canManageUsers ? <CentrosCosto sociedadId={sociedadId} /> : <Navigate to="/" replace />} />
+              <Route path="/tablas-pago" element={canUseTablasPago ? <TablasPagoIngenieria sociedadId={sociedadId} /> : <Navigate to="/" replace />} />
+              <Route path="/ordenes-compra" element={canUseOrdenesCompra ? <OrdenesCompraIngenieria sociedadId={sociedadId} /> : <Navigate to="/" replace />} />
+              <Route path="/login" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
         </main>
       </div>
     </div>
@@ -795,128 +606,29 @@ function LegacyFacturaDetalleRedirect() {
 }
 
 function App() {
-  const [{
+  const {
     sociedades,
     sociedadId,
-    authToken,
+    authLoading,
     authUser,
-    authLoading
-  }, dispatch] = useReducer(appReducer, initialAppState);
-
-  const selectedSociedad = sociedades.find((sociedad) => String(sociedad.id) === String(sociedadId));
-  const isAuthenticated = Boolean(authToken);
-  const userPermissions = useMemo(
-    () => (Array.isArray(authUser?.permissions) ? authUser.permissions : []),
-    [authUser]
-  );
-  const canManageUsers = userPermissions.includes('acceso_total')
-    || userPermissions.includes('usuarios_administrar');
-  const canUseTablasPago = userPermissions.includes('acceso_total')
-    || userPermissions.includes('usuarios_administrar')
-    || userPermissions.includes('documentos_subir')
-    || userPermissions.includes('documentos_contabilizar');
-  const canUseOrdenesCompra = canUseTablasPago;
-  const canViewTramites = userPermissions.includes('acceso_total')
-    || userPermissions.includes('documentos_ver')
-    || userPermissions.includes('documentos_tramitar_pago')
-    || userPermissions.includes('documentos_aprobar_gerencia')
-    || userPermissions.includes('documentos_aprobar_gerencia_contable')
-    || userPermissions.includes('documentos_aprobar_gerencia_financiera')
-    || userPermissions.includes('documentos_marcar_pagado');
-  const canTramitarPago = userPermissions.includes('acceso_total')
-    || userPermissions.includes('documentos_tramitar_pago');
-  const canEditContabilizacion = userPermissions.includes('acceso_total')
-    || userPermissions.includes('documentos_contabilizar');
-  const canUseReservas = userPermissions.includes('acceso_total')
-    || userPermissions.includes('reservas_ver')
-    || userPermissions.includes('reservas_crear')
-    || userPermissions.includes('reservas_gestionar');
-  const canManageReservasDocumentos = userPermissions.includes('acceso_total')
-    || userPermissions.includes('reservas_gestionar');
-
-  const userName = authUser?.nombre || 'Usuario';
-  const userRole = authUser?.rol_nombre || authUser?.rol_codigo || (authUser?.rol != null ? `Rol ${authUser.rol}` : 'Usuario');
-  const userInitials = useMemo(() => initialsFromName(userName), [userName]);
-
-  const clearSession = useCallback(() => {
-    clearAuthSession();
-    dispatch({ type: 'clearSession' });
-    setAxiosAuthHeader('');
-  }, []);
-
-  const applySession = useCallback(({ token, user }) => {
-    saveAuthSession({ token, user });
-    dispatch({ type: 'applySession', token, user });
-    setAxiosAuthHeader(token || '');
-  }, []);
-
-  const bootstrapAuth = useCallback(async () => {
-    const token = getAuthToken();
-    const storedUser = getAuthUser();
-
-    if (!token) {
-      dispatch({ type: 'setAuthLoading', value: false });
-      return;
-    }
-
-    setAxiosAuthHeader(token);
-
-    try {
-      const res = await axios.get('/api/auth/me');
-      const meUser = res.data?.data?.user || storedUser;
-      applySession({ token, user: meUser || null });
-    } catch {
-      clearSession();
-    } finally {
-      dispatch({ type: 'setAuthLoading', value: false });
-    }
-  }, [applySession, clearSession]);
-
-  useEffect(() => {
-    bootstrapAuth();
-  }, [bootstrapAuth]);
-
-  const fetchSociedades = useCallback(async () => {
-    try {
-      const res = await axios.get('/api/sociedades');
-      if (res.data.success) {
-        dispatch({ type: 'setSociedades', value: res.data.data || [] });
-      }
-    } catch (err) {
-      if (err.response?.status === 401) {
-        clearSession();
-      }
-      console.error(err);
-    }
-  }, [clearSession]);
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      return;
-    }
-    fetchSociedades();
-  }, [isAuthenticated, fetchSociedades]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    if (sociedadId) {
-      window.localStorage.setItem(SELECTED_SOCIEDAD_KEY, sociedadId);
-      return;
-    }
-
-    window.localStorage.removeItem(SELECTED_SOCIEDAD_KEY);
-  }, [sociedadId]);
-
-  const handleLoginSuccess = useCallback(({ token, user }) => {
-    applySession({ token, user });
-  }, [applySession]);
-
-  const handleLogout = useCallback(() => {
-    clearSession();
-  }, [clearSession]);
+    canEditContabilizacion,
+    canManageReservasDocumentos,
+    canManageUsers,
+    canTramitarPago,
+    canUseOrdenesCompra,
+    canUseReservas,
+    canUseTablasPago,
+    canViewTramites,
+    handleLoginSuccess,
+    handleLogout,
+    isAuthenticated,
+    selectedSociedad,
+    setSociedadId,
+    userInitials,
+    userName,
+    userPermissions,
+    userRole,
+  } = useAppSession();
 
   if (authLoading) {
     return (
@@ -929,10 +641,12 @@ function App() {
   if (!isAuthenticated) {
     return (
       <Router>
-        <Routes>
-          <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
+        <Suspense fallback={<RouteLoadingFallback fullPage />}>
+          <Routes>
+            <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </Suspense>
       </Router>
     );
   }
@@ -943,7 +657,7 @@ function App() {
         sociedades={sociedades}
         sociedadId={sociedadId}
         selectedSociedad={selectedSociedad}
-        dispatch={dispatch}
+        setSociedadId={setSociedadId}
         handleLogout={handleLogout}
         userInitials={userInitials}
         userName={userName}

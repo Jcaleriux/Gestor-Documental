@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export const DEFAULT_NOTAS_CREDITO_SORT_BY = 'fecha_emision';
 export const DEFAULT_NOTAS_CREDITO_SORT_DIR = 'desc';
@@ -27,59 +27,61 @@ export const useNotasCreditoFilters = ({ debounceMs = 250 } = {}) => {
     return () => clearTimeout(timeoutId);
   }, [debounceMs, search]);
 
-  const resetPage = () => setPageState(1);
+  const resetPage = useCallback(() => {
+    setPageState(1);
+  }, []);
 
-  const setSearch = (value) => {
+  const setSearch = useCallback((value) => {
     resetPage();
     setSearchState(value);
-  };
+  }, [resetPage]);
 
-  const setEstado = (value) => {
+  const setEstado = useCallback((value) => {
     resetPage();
     setEstadoState(value);
-  };
+  }, [resetPage]);
 
-  const setFechaDesde = (value) => {
+  const setFechaDesde = useCallback((value) => {
     resetPage();
     setFechaDesdeState(value);
-  };
+  }, [resetPage]);
 
-  const setFechaHasta = (value) => {
+  const setFechaHasta = useCallback((value) => {
     resetPage();
     setFechaHastaState(value);
-  };
+  }, [resetPage]);
 
-  const setEmisorNombre = (value) => {
+  const setEmisorNombre = useCallback((value) => {
     resetPage();
     setEmisorNombreState(value);
-  };
+  }, [resetPage]);
 
-  const setMoneda = (value) => {
+  const setMoneda = useCallback((value) => {
     resetPage();
     setMonedaState(value);
-  };
+  }, [resetPage]);
 
-  const setMontoMin = (value) => {
+  const setMontoMin = useCallback((value) => {
     resetPage();
     setMontoMinState(value);
-  };
+  }, [resetPage]);
 
-  const setMontoMax = (value) => {
+  const setMontoMax = useCallback((value) => {
     resetPage();
     setMontoMaxState(value);
-  };
+  }, [resetPage]);
 
-  const setPage = (value) => {
+  const setPage = useCallback((value) => {
     setPageState(Math.max(1, Number(value) || 1));
-  };
+  }, []);
 
-  const setPageSize = (value) => {
+  const setPageSize = useCallback((value) => {
     const normalized = Math.max(1, Number(value) || DEFAULT_NOTAS_CREDITO_PAGE_SIZE);
     setPageState(1);
     setPageSizeState(normalized);
-  };
+  }, []);
 
-  const toggleSort = (nextSortBy) => {
+  const toggleSort = useCallback((nextSortBy) => {
     resetPage();
     if (sortBy === nextSortBy) {
       setSortDir((current) => (current === 'asc' ? 'desc' : 'asc'));
@@ -88,9 +90,9 @@ export const useNotasCreditoFilters = ({ debounceMs = 250 } = {}) => {
 
     setSortBy(nextSortBy);
     setSortDir(nextSortBy === 'emisor' ? 'asc' : DEFAULT_NOTAS_CREDITO_SORT_DIR);
-  };
+  }, [resetPage, sortBy]);
 
-  const resetFilters = () => {
+  const resetFilters = useCallback(() => {
     setSearchState('');
     setDebouncedSearch('');
     setEstadoState('');
@@ -101,14 +103,14 @@ export const useNotasCreditoFilters = ({ debounceMs = 250 } = {}) => {
     setMontoMinState('');
     setMontoMaxState('');
     setPageState(1);
-  };
+  }, []);
 
-  const resetPaginationAndSort = () => {
+  const resetPaginationAndSort = useCallback(() => {
     setPageState(1);
     setPageSizeState(DEFAULT_NOTAS_CREDITO_PAGE_SIZE);
     setSortBy(DEFAULT_NOTAS_CREDITO_SORT_BY);
     setSortDir(DEFAULT_NOTAS_CREDITO_SORT_DIR);
-  };
+  }, []);
 
   const query = useMemo(() => {
     const result = {

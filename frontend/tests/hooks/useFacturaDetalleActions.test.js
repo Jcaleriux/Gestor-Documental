@@ -31,8 +31,18 @@ const createBaseModuleInputs = () => {
         proveedor_id: '5',
         tabla_pago_id: '',
         nota_credito_id: '',
-        monto_nota_credito: 0
+        monto_nota_credito: 0,
+        metadata: {
+          centros_costo_lineas: [{
+            local_id: 'linea-1',
+            centro_costo_id: 1,
+            codigo: 'CC-1',
+            nombre: 'Centro 1',
+            monto: '100',
+          }]
+        }
       },
+      centrosCostoCatalogo: [{ id: 1, codigo: 'CC-1', nombre: 'Centro 1' }],
       proveedoresSociedad: [{ id: 5, identificacion_numero: '3101122334' }],
       setConta: createNoop,
       setContaSaving: createNoop,
@@ -54,6 +64,10 @@ const createBaseModuleInputs = () => {
       setNotasModalOpen: createNoop,
       setNotasError: createNoop,
       setNotasLoading: createNoop,
+      setCentrosCostoModalOpen: createNoop,
+      setCentrosCostoTargetLineId: createNoop,
+      setCentrosCostoError: createNoop,
+      setCentrosCostoLoading: createNoop,
       retencionPagoMonto: '100',
       retencionPagoFecha: '2026-02-18',
       retencionPagoNotas: 'nota',

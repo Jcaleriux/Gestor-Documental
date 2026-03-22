@@ -7,10 +7,12 @@ Sistema web para gestion de facturas, documentos y tramites de pago con control 
 - [Resumen](#resumen)
 - [Arquitectura](#arquitectura)
 - [Estructura del repositorio](#estructura-del-repositorio)
+- [Documentacion funcional](#documentacion-funcional)
 - [Requisitos](#requisitos)
 - [Inicio rapido](#inicio-rapido)
 - [Credenciales iniciales](#credenciales-iniciales)
 - [Variables de entorno](#variables-de-entorno)
+- [Entorno para Codex](#entorno-para-codex)
 - [Convenciones de idioma](#convenciones-de-idioma)
 - [Principios transversales](#principios-transversales)
 - [Scripts](#scripts)
@@ -40,6 +42,16 @@ Sistema web para gestion de facturas, documentos y tramites de pago con control 
 - `docs/`: catalogos y documentos de referencia del negocio
 - `documentos/` y `facturas/`: almacenamiento local operativo (no versionado)
 
+## Documentacion funcional
+
+- `docs/requerimientos_vigentes.md`: resumen funcional vigente y alineado al sistema actual.
+- `docs/REQUERIMIENTOS.md`: levantamiento inicial conservado como referencia historica.
+- `docs/arquitectura/`: alcance, estados, permisos y decisiones de arquitectura que complementan el estado actual.
+- `docs/despliegue_checklist.md`: checklist manual de despliegue para staging/produccion.
+- `docs/proceso_crecimiento_scrum.md`: guia para crecer Novogar con backlog, epics, deuda tecnica y Scrum ligero.
+- `docs/producto/`: vision, goals, roadmap, backlog, epics, sprints y templates para gestionar el crecimiento del producto.
+- `VERSION` y `CHANGELOG.md`: fuente base de version objetivo y notas de release del producto.
+
 ## Requisitos
 
 - Node.js 20 o superior (recomendado)
@@ -66,7 +78,7 @@ npm install
 cd ..
 ```
 
-4. Verificar configuracion de PostgreSQL en `backend/db/index.js`.
+4. Copiar `backend/.env.example` a `backend/.env` y ajustar DB/JWT segun tu entorno.
 
 5. Crear la base (si no existe):
 
@@ -100,27 +112,54 @@ npm run dev
 
 ## Credenciales iniciales
 
-El seed crea usuarios base para varios roles. Cuenta ejemplo:
+El seed crea usuarios base para varios roles solo para bootstrap local. Hay que rotar esas credenciales antes de usar staging, produccion o cualquier entorno compartido. Cuenta ejemplo:
 
 - Email: `admin@novogar.local`
 - Password: `Novogar2026!`
 
 ## Variables de entorno
 
-La conexion de PostgreSQL actualmente se define en `backend/db/index.js`. Variables usadas por la app:
+El backend carga `backend/.env` y `backend/.env.local` si existen. Variables usadas por la app:
 
+- `DB_HOST` o `PGHOST` (default dev: `localhost`)
+- `DB_PORT` o `PGPORT` (default dev: `5432`)
+- `DB_USER` o `PGUSER` (default dev: `postgres`)
+- `DB_PASSWORD` o `PGPASSWORD` (default dev: `admin`)
+- `DB_NAME` o `PGDATABASE` (default dev: `novogar_db`)
 - `PORT` (default: `3002`)
-- `JWT_SECRET` (default: `dev-secret`)
+- `JWT_SECRET` (default solo en dev/test: `dev-secret`; en `production` es obligatorio definirlo)
 - `JWT_EXPIRES_IN` (default: `8h`)
 - `BCRYPT_ROUNDS` (default: `12`)
 - `FACTURAS_BASE_DIR` (default: raiz del repo)
 - `JSON_BODY_LIMIT` (default: `20mb`)
 - `PERMISSIONS_CACHE_TTL_MS` (default: `60000`)
 - `TABLAS_PAGO_MAX_FILE_MB` (default: `10`)
+- `ORDENES_COMPRA_MAX_FILE_MB` (default: `10`)
+- `RESERVAS_DOC_MAX_FILE_MB` (default: `15`)
 - `WATCHER_SCAN_DEBOUNCE_MS` (default: `600`)
 - `WATCHER_LATE_FILES_DELAY_MS` (default: `2000`)
 - `WATCHER_AWF_STABILITY_MS` (default: `2000`)
 - `WATCHER_AWF_POLL_MS` (default: `100`)
+
+## Entorno para Codex
+
+Para sesiones recurrentes con Codex o agentes similares:
+
+- La guia operativa del repo vive en `AGENTS.md`.
+- Hay un chequeo rapido de herramientas y convenciones en `scripts/setup-codex-env.ps1`.
+- La guia detallada del entorno vive en `docs/codex_entorno.md`.
+
+Ejemplo:
+
+```powershell
+.\scripts\setup-codex-env.ps1
+```
+
+Si quieres que el script agregue el repo a `git safe.directory`:
+
+```powershell
+.\scripts\setup-codex-env.ps1 -ConfigureGitSafeDirectory
+```
 
 ## Convenciones de idioma
 
@@ -139,14 +178,14 @@ Por ahora el principio operativo mas importante es `multicurrency-first`: no mez
 ### Backend (`backend/package.json`)
 
 - `npm run dev`: iniciar API
+- `npm run check:release`: chequeos de release de backend (sintaxis, bootstrap DB, migraciones versionadas)
 - `npm run test`: pruebas con Jest
+- `npm run test:ci`: suite CI de backend (`runInBand`)
 - `npm run db:init`: ejecutar schema si `public` esta vacio
 - `npm run db:reset`: reconstruir schema desde cero
 - `npm run db:check`: validar estructura actual
-- `npm run db:migrate:proveedores`
-- `npm run db:migrate:retenciones`
-- `npm run db:migrate:tramites-retenciones`
-- `npm run db:migrate:pagos-parciales`
+- `npm run db:migrate`: aplicar migraciones versionadas pendientes
+- `npm run db:migrate:status`: ver estado del tracking versionado
 - `npm run importar`: importacion por XML
 - `npm run watcher`: watcher de XML
 - `npm run diagnostico`
@@ -157,7 +196,8 @@ Por ahora el principio operativo mas importante es `multicurrency-first`: no mez
 
 - `npm run dev`: levantar Vite
 - `npm run build`: build de produccion
-- `npm run test`: pruebas con Node test runner
+- `npm run test`: suite completa de frontend en un solo proceso
+- `npm run test:ci`: suite completa de frontend para CI en un solo proceso
 - `npm run lint`: lint con ESLint
 - `npm run preview`: previsualizar build
 
@@ -192,12 +232,17 @@ npm test
 
 ## Roadmap
 
-- Mover configuracion de DB desde codigo a variables de entorno.
-- Agregar guia de despliegue productivo (Docker/CI).
+- Expandir la validacion centralizada de entorno a scripts y casos operativos secundarios.
+- Agregar smoke checks de release mas cercanos a dominio/negocio (facturas, reservas, ordenes de compra).
 - Incluir capturas y flujos por rol en documentacion.
 
 ## Notas operativas
 
 - `npm run db:reset` elimina y recrea `public`.
-- Antes de produccion, cambiar secretos y credenciales por defecto.
+- `00_init.sql` define el baseline runtime y `backend/db/migrations/` es el camino canonico para cambios incrementales nuevos.
+- Los aliases legacy `npm run db:migrate:*` ya fueron retirados del flujo oficial del repo.
+- Antes de produccion, definir credenciales de DB y `JWT_SECRET` reales en variables de entorno.
+- El repo ya incluye una CI base en `.github/workflows/ci.yml`.
+- La CI actual ya corre `backend npm run check:release`, `backend npm run test:ci`, `frontend npm run lint`, `frontend npm run build` y `frontend npm run test:ci`.
 - El `.gitignore` excluye dependencias, temporales y datos operativos locales.
+- El historial activo de estados usa tablas dedicadas por dominio; las referencias a `estados_documento` quedan solo en SQL legacy conservado como historial tecnico.

@@ -1,14 +1,13 @@
-const path = require('path');
 const { handleRequest } = require('../utils/http');
 const { createTablasPagoUseCases } = require('./tablasPagoUseCases');
 const tablasPagoRepo = require('../repositories/tablasPagoRepository');
 const proveedoresRepo = require('../repositories/proveedoresRepository');
+const { runtimeConfig } = require('../config/runtime');
 
-const baseDir = process.env.FACTURAS_BASE_DIR || path.resolve(__dirname, '..', '..');
 const useCases = createTablasPagoUseCases({
   tablasPagoRepo,
   proveedoresRepo,
-  baseDir
+  baseDir: runtimeConfig.storageBaseDir
 });
 
 const listTablasPago = handleRequest(async (req) => {

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { formatAmount } from '../../utils/formatters';
 import { estadoLabelTramite, estadoClassTramite } from '../../utils/estadosTramite';
-import { withAuthToken } from '../../utils/auth';
 import PageHeader from '../common/PageHeader';
 import ActionAlerts from '../common/ActionAlerts';
 import EmptyState from '../common/EmptyState';
@@ -17,7 +16,7 @@ import TramitePagosSection from './TramitePagosSection';
 import TramiteRetencionesSection from './TramiteRetencionesSection';
 
 const getPdfUrl = (rutaPdf) => (
-  rutaPdf ? withAuthToken(`/api/files/pdf?path=${encodeURIComponent(rutaPdf)}`) : ''
+  rutaPdf ? `/api/files/pdf?path=${encodeURIComponent(rutaPdf)}` : ''
 );
 
 function TramiteDetalleLayout({ layoutProps }) {
@@ -59,7 +58,7 @@ function TramiteDetalleLayout({ layoutProps }) {
 
       return next;
     });
-  }, [table.activeTab, documentosActivosIdsKey]);
+  }, [table.activeTab, table.documentosActivos, documentosActivosIdsKey]);
 
   const handleToggleExpandedDoc = useCallback((facturaId) => {
     setExpandedDocIds((previous) => {

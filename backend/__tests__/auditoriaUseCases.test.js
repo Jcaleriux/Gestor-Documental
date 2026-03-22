@@ -20,6 +20,7 @@ describe('auditoriaUseCases', () => {
       listEstadosByFacturaId: jest.fn().mockResolvedValue([
         {
           id: 11,
+          dominio: 'workflow_pago',
           estado_anterior: 'en_tramite_pago',
           estado_nuevo: 'pagado',
           usuario: 'tesoreria@novogar.local',
@@ -120,7 +121,8 @@ describe('auditoriaUseCases', () => {
     expect(result[2]).toMatchObject({
       tipo: 'estado_documento',
       titulo: 'Factura marcada como pagada',
-      categoria: 'estado'
+      categoria: 'estado',
+      dominio: 'workflow_pago'
     });
     expect(result).toEqual(
       expect.arrayContaining([

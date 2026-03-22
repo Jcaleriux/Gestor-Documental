@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const fse = require("fs-extra");
 const pool = require("../db");
+const { runtimeConfig } = require("../config/runtime");
 const { parseXML } = require("../utils/xmlParser");
 const { resolveDocumentPaths } = require("../utils/documentPaths");
 const {
@@ -110,7 +111,7 @@ function ensureDir(dir) {
 }
 
 function resolveDirectories(options = {}) {
-  const baseDir = options.baseDir || process.env.FACTURAS_BASE_DIR || path.resolve(__dirname, "..", "..");
+  const baseDir = options.baseDir || runtimeConfig.storageBaseDir;
   const documentPaths = resolveDocumentPaths(baseDir);
   const carpetaEntrada = options.carpetaEntrada || documentPaths.facturasRecibidasDir;
   const carpetaProcesados = options.carpetaProcesados || documentPaths.facturasProcesadasDir;

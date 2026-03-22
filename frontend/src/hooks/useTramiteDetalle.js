@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react';
-import { tramitesApi } from '../services/tramitesApi';
+import { tramitesApi } from '../services/tramitesApi.js';
 import { useTramiteDetalleState } from './tramiteDetalle/useTramiteDetalleState.js';
 import {
   fetchTramiteDetalleData,

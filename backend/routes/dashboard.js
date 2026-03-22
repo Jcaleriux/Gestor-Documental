@@ -1,16 +1,16 @@
 const express = require('express');
-const { requirePermission } = require('../middleware/permissionsMiddleware');
+const { requireAnyPermission } = require('../middleware/permissionsMiddleware');
 const {
   getStats,
   getRecentActivity,
   getRecentDocuments
 } = require('../services/dashboardService');
-const { PERMISSIONS } = require('../domain/permissions');
+const { DASHBOARD_ACCESS_PERMISSIONS } = require('../domain/permissions');
 
 const router = express.Router({ mergeParams: true });
 
-router.get('/dashboard/stats', requirePermission(PERMISSIONS.DOCUMENTOS_VER), getStats);
-router.get('/dashboard/recent-activity', requirePermission(PERMISSIONS.DOCUMENTOS_VER), getRecentActivity);
-router.get('/dashboard/recent-documents', requirePermission(PERMISSIONS.DOCUMENTOS_VER), getRecentDocuments);
+router.get('/dashboard/stats', requireAnyPermission(DASHBOARD_ACCESS_PERMISSIONS), getStats);
+router.get('/dashboard/recent-activity', requireAnyPermission(DASHBOARD_ACCESS_PERMISSIONS), getRecentActivity);
+router.get('/dashboard/recent-documents', requireAnyPermission(DASHBOARD_ACCESS_PERMISSIONS), getRecentDocuments);
 
 module.exports = router;

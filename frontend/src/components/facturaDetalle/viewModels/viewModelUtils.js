@@ -1,5 +1,3 @@
-import { withAuthToken } from '../../../utils/auth.js';
-
 export const toNonNegativeNumber = (value) => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed < 0) {
@@ -10,7 +8,7 @@ export const toNonNegativeNumber = (value) => {
 
 export const buildFileUrl = ({ endpoint, ruta }) => (
   ruta
-    ? withAuthToken(`${endpoint}?path=${encodeURIComponent(ruta)}`)
+    ? `${endpoint}?path=${encodeURIComponent(ruta)}`
     : ''
 );
 

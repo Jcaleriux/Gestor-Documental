@@ -1,6 +1,8 @@
 import { Fragment, useState } from 'react';
 import { useReservaOperationDetails } from '../hooks/reservas/useReservaOperationDetails.js';
 import { useReservasOperations } from '../hooks/reservas/useReservasOperations.js';
+import { useProtectedObjectUrl } from '../hooks/useProtectedObjectUrl.js';
+import { openProtectedInNewTab } from '../utils/protectedResources.js';
 import PageHeader from './common/PageHeader';
 import SectionCard from './common/SectionCard';
 import LoadingState from './common/LoadingState';
@@ -54,6 +56,40 @@ const resolveSellerName = (operation) => {
   ).trim();
   return legacyName || '-';
 };
+
+function ReservaDocumentPreview({ previewType, previewUrl, selectedDoc }) {
+  const {
+    objectUrl,
+    error,
+    loading,
+  } = useProtectedObjectUrl(previewUrl);
+
+  if (loading) {
+    return <div className="small text-muted">Cargando vista previa...</div>;
+  }
+
+  if (!objectUrl) {
+    return <div className="small text-danger">{error || 'No se pudo cargar la vista previa.'}</div>;
+  }
+
+  if (previewType === 'image') {
+    return (
+      <img
+        src={objectUrl}
+        alt={selectedDoc.nombre_archivo}
+        style={{ width: '100%', maxHeight: '520px', objectFit: 'contain' }}
+      />
+    );
+  }
+
+  return (
+    <iframe
+      title={`preview-${selectedDoc.id}`}
+      src={objectUrl}
+      style={{ width: '100%', height: '520px', border: '0' }}
+    />
+  );
+}
 
 function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
   const [filterEstado, setFilterEstado] = useState('');
@@ -130,7 +166,9 @@ function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
       });
       setShowCreatePanel(false);
       setCreateForm(CREATE_FORM_INITIAL);
-    } catch {}
+    } catch (error) {
+      void error;
+    }
   };
 
   const executeStateAction = async ({ operationId, action }) => {
@@ -152,7 +190,9 @@ function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
       resetDetailState();
       setReplaceFile(null);
       setReplaceReason('');
-    } catch {}
+    } catch (error) {
+      void error;
+    }
   };
 
   const startTransfer = (operation) => {
@@ -191,7 +231,9 @@ function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
       resetDetailState();
       setReplaceFile(null);
       setReplaceReason('');
-    } catch {}
+    } catch (error) {
+      void error;
+    }
   };
 
   const handleToggleOperationDetail = async (operationId) => {
@@ -199,7 +241,9 @@ function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
     setReplaceReason('');
     try {
       await toggleOperationDetail(operationId);
-    } catch {}
+    } catch (error) {
+      void error;
+    }
   };
 
   const handleReplaceDocument = async (event, operationId, selectedDoc) => {
@@ -218,7 +262,9 @@ function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
       setReplaceFile(null);
       setReplaceReason('');
       await refetch({ showLoader: false }).catch(() => {});
-    } catch {}
+    } catch (error) {
+      void error;
+    }
   };
 
   if (!sociedadId) {
@@ -427,13 +473,19 @@ function ReservasOperaciones({ sociedadId, canManageDocuments = false }) {
                                       <div className="border rounded bg-white p-2">
                                         <div className="d-flex justify-content-between align-items-center mb-2">
                                           <strong>{selectedDoc.nombre_archivo}</strong>
-                                          <a className="btn btn-outline-secondary btn-sm" href={previewUrl} target="_blank" rel="noreferrer">Abrir</a>
+                                          <button
+                                            type="button"
+                                            className="btn btn-outline-secondary btn-sm"
+                                            onClick={() => openProtectedInNewTab(previewUrl)}
+                                          >
+                                            Abrir
+                                          </button>
                                         </div>
-                                        {previewType === 'image' ? (
-                                          <img src={previewUrl} alt={selectedDoc.nombre_archivo} style={{ width: '100%', maxHeight: '520px', objectFit: 'contain' }} />
-                                        ) : (
-                                          <iframe title={`preview-${selectedDoc.id}`} src={previewUrl} style={{ width: '100%', height: '520px', border: '0' }} />
-                                        )}
+                                        <ReservaDocumentPreview
+                                          previewType={previewType}
+                                          previewUrl={previewUrl}
+                                          selectedDoc={selectedDoc}
+                                        />
                                       </div>
                                     )}
 

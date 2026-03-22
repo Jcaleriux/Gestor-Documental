@@ -11,6 +11,7 @@ import StatusBadge from './common/StatusBadge';
 import SectionCard from './common/SectionCard';
 import TramiteActions from './TramiteActions';
 import { TRAMITES_ACTION_LABELS } from '../utils/uiLabels';
+import { useProtectedObjectUrl } from '../hooks/useProtectedObjectUrl.js';
 
 function TramiteDocumentoUnificado({
   doc,
@@ -59,6 +60,11 @@ function TramiteDocumentoUnificado({
         : [])
     ]
     : [];
+  const {
+    objectUrl: pdfPreviewUrl,
+    error: pdfPreviewError,
+    loading: pdfPreviewLoading,
+  } = useProtectedObjectUrl(pdfUrl);
 
   return (
     <SectionCard className="tramite-unificada-card">
@@ -170,11 +176,17 @@ function TramiteDocumentoUnificado({
           </div>
           <div className="col-12 col-lg-8">
             {pdfUrl ? (
-              <iframe
-                title={`PDF ${doc.factura_id}`}
-                src={pdfUrl}
-                style={{ width: '100%', height: '560px', border: '1px solid #e6ebf2' }}
-              />
+              pdfPreviewLoading ? (
+                <div className="small text-muted">Cargando PDF...</div>
+              ) : pdfPreviewUrl ? (
+                <iframe
+                  title={`PDF ${doc.factura_id}`}
+                  src={pdfPreviewUrl}
+                  style={{ width: '100%', height: '560px', border: '1px solid #e6ebf2' }}
+                />
+              ) : (
+                <EmptyState className="py-2">{pdfPreviewError || 'PDF no disponible.'}</EmptyState>
+              )
             ) : (
               <EmptyState className="py-2">PDF no disponible.</EmptyState>
             )}

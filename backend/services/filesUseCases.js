@@ -13,6 +13,22 @@ const createFilesUseCases = ({ baseDir }) => {
 
   const resolvedPathCache = new Map();
   const basenameCache = new Map();
+  const configuredBase = path.resolve(baseDir);
+  const projectRoot = path.resolve(__dirname, '..', '..');
+  const allowedDocumentRoots = [...new Set([
+    configuredBase,
+    path.resolve(configuredBase, '..'),
+    projectRoot,
+    path.resolve(process.cwd())
+  ].map((basePath) => path.resolve(resolveDocumentPaths(basePath).documentsRootDir)))];
+
+  const isInsideAllowedDocumentRoots = (candidatePath) => {
+    const resolvedCandidate = path.resolve(candidatePath);
+    return allowedDocumentRoots.some((rootDir) => (
+      resolvedCandidate === rootDir
+      || resolvedCandidate.startsWith(`${rootDir}${path.sep}`)
+    ));
+  };
 
   const normalizePath = (raw) => {
     if (!raw) {
@@ -26,7 +42,7 @@ const createFilesUseCases = ({ baseDir }) => {
       throw createError(400, 'Invalid path encoding');
     }
 
-    if (decoded.includes('..')) {
+    if (decoded.includes('..') || decoded.includes('\0')) {
       throw createError(400, 'Invalid path');
     }
 
@@ -82,38 +98,49 @@ const createFilesUseCases = ({ baseDir }) => {
       return { fullPath: cached, filename: path.basename(normalized) };
     }
 
-    const configuredBase = path.resolve(baseDir);
-    const projectRoot = path.resolve(__dirname, '..', '..');
-
     const candidates = [];
+    const addCandidate = (candidatePath) => {
+      const resolvedCandidate = path.resolve(candidatePath);
+      if (isInsideAllowedDocumentRoots(resolvedCandidate)) {
+        candidates.push(resolvedCandidate);
+      }
+    };
 
     if (path.isAbsolute(decoded)) {
-      candidates.push(path.normalize(decoded));
+      const absoluteCandidate = path.resolve(path.normalize(decoded));
+      if (!isInsideAllowedDocumentRoots(absoluteCandidate)) {
+        throw createError(400, 'Invalid path');
+      }
+      candidates.push(absoluteCandidate);
     } else {
       const relativeVariants = getRelativePathVariants(decoded);
       relativeVariants.forEach((variant) => {
-        candidates.push(path.resolve(configuredBase, variant));
-        candidates.push(path.resolve(configuredBase, '..', variant));
-        candidates.push(path.resolve(projectRoot, variant));
-        candidates.push(path.resolve(process.cwd(), variant));
+        addCandidate(path.resolve(configuredBase, variant));
+        addCandidate(path.resolve(configuredBase, '..', variant));
+        addCandidate(path.resolve(projectRoot, variant));
+        addCandidate(path.resolve(process.cwd(), variant));
       });
     }
 
     const uniqueCandidates = [...new Set(candidates)];
+    if (uniqueCandidates.length === 0) {
+      throw createError(400, 'Invalid path');
+    }
+
     const existingPath = uniqueCandidates.find((candidate) => fs.existsSync(candidate));
     const basename = path.basename(normalized);
-    const searchBases = [
-      configuredBase,
-      path.resolve(configuredBase, '..'),
-      projectRoot,
-      path.resolve(process.cwd())
-    ];
-    const documentsRoots = [...new Set(searchBases.flatMap((basePath) => {
-      const paths = resolveDocumentPaths(basePath);
-      return [paths.documentsRootDir];
-    }))];
-    const fallbackPath = existingPath ? null : findByBasename(basename, documentsRoots);
-    const fullPath = existingPath || fallbackPath || uniqueCandidates[0];
+    const fallbackPath = (!existingPath && !path.isAbsolute(decoded))
+      ? findByBasename(basename, allowedDocumentRoots)
+      : null;
+    const fullPath = existingPath || fallbackPath;
+
+    if (!fullPath) {
+      throw createError(404, 'File not found');
+    }
+
+    if (!isInsideAllowedDocumentRoots(fullPath)) {
+      throw createError(400, 'Invalid path');
+    }
 
     resolvedPathCache.set(normalized, fullPath);
 

@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { createError } = require('../../utils/errors');
+const { runtimeConfig } = require('../../config/runtime');
 
 const ALLOWED_UPLOAD_MIME_TYPES = Object.freeze({
   'application/pdf': 'pdf',
@@ -16,12 +17,7 @@ const DOCUMENT_DIRECTORY_ALIASES = Object.freeze([
   ['ventas_operaciones', 'reservas_operaciones'],
 ]);
 
-const parseMaxReservasDocMb = () => {
-  const raw = Number(process.env.RESERVAS_DOC_MAX_FILE_MB);
-  return Number.isFinite(raw) && raw > 0 ? raw : 15;
-};
-
-const MAX_RESERVAS_DOC_MB = parseMaxReservasDocMb();
+const MAX_RESERVAS_DOC_MB = runtimeConfig.maxReservasDocMb;
 const MAX_RESERVAS_DOC_BYTES = MAX_RESERVAS_DOC_MB * 1024 * 1024;
 
 const sanitizeFileName = (value, fallback = 'documento') => {
@@ -66,6 +62,19 @@ const createReservasDocumentStorage = ({
   }
 
   const normalizedBaseDir = path.resolve(baseDir);
+  const allowedDocumentRoots = [...new Set([
+    normalizedBaseDir,
+    path.resolve(normalizedBaseDir, '..'),
+    path.resolve(process.cwd()),
+  ].map((basePath) => path.resolve(basePath, 'documentos')))];
+
+  const isInsideAllowedDocumentRoots = (candidatePath) => {
+    const resolvedCandidate = path.resolve(candidatePath);
+    return allowedDocumentRoots.some((rootDir) => (
+      resolvedCandidate === rootDir
+      || resolvedCandidate.startsWith(`${rootDir}${path.sep}`)
+    ));
+  };
 
   const decodeUploadFile = ({ fileBase64, fileName, mimeType }) => {
     if (!fileBase64 || typeof fileBase64 !== 'string') {
@@ -111,7 +120,11 @@ const createReservasDocumentStorage = ({
     const normalizedStoredPath = path.normalize(normalizeRequiredText(storedPath, 'ruta_archivo'));
     const candidateSet = new Set();
     const addCandidate = (candidatePath) => {
-      const normalizedCandidate = path.normalize(candidatePath);
+      const normalizedCandidate = path.resolve(candidatePath);
+      if (!isInsideAllowedDocumentRoots(normalizedCandidate)) {
+        return;
+      }
+
       candidateSet.add(normalizedCandidate);
 
       for (const [fromSegment, toSegment] of DOCUMENT_DIRECTORY_ALIASES) {
@@ -119,7 +132,10 @@ const createReservasDocumentStorage = ({
         const toPattern = `${path.sep}${toSegment}${path.sep}`;
 
         if (normalizedCandidate.includes(fromPattern)) {
-          candidateSet.add(normalizedCandidate.replace(fromPattern, toPattern));
+          const aliasedCandidate = normalizedCandidate.replace(fromPattern, toPattern);
+          if (isInsideAllowedDocumentRoots(aliasedCandidate)) {
+            candidateSet.add(aliasedCandidate);
+          }
         }
       }
     };
@@ -134,6 +150,9 @@ const createReservasDocumentStorage = ({
 
     const existingPath = Array.from(candidateSet).find((candidate) => fs.existsSync(candidate));
     if (!existingPath) {
+      if (path.isAbsolute(normalizedStoredPath) && !isInsideAllowedDocumentRoots(normalizedStoredPath)) {
+        throw createError(400, 'Ruta fuera del directorio permitido');
+      }
       throw createError(404, 'Ruta no encontrada');
     }
 

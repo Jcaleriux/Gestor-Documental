@@ -1,6 +1,10 @@
 const pool = require('../db');
 const { FACTURA_ESTADOS } = require('../domain/facturas');
 const {
+  createFacturaWorkflowPagoJoin,
+  createFacturaEstadoOperativoExpression
+} = require('./sqlFacturaEstado');
+const {
   createTotalFacturaExpression,
   createRebajosAplicadosExpression,
   createRetencionTotalExpression,
@@ -17,6 +21,11 @@ const retencionPagadaExpression = createRetencionPagadaExpression({ contaAlias: 
 const retencionPendienteExpression = createRetencionPendienteExpression({ contaAlias: 'fc' });
 const totalPagoPrincipalExpression = createTotalPagoPrincipalExpression({ facturaAlias: 'f', contaAlias: 'fc' });
 const totalPendienteGlobalExpression = createTotalPendienteGlobalExpression({ facturaAlias: 'f', contaAlias: 'fc' });
+const facturaWorkflowPagoJoin = createFacturaWorkflowPagoJoin({ facturaAlias: 'f', workflowAlias: 'fwp' });
+const facturaEstadoOperativoExpression = createFacturaEstadoOperativoExpression({
+  facturaAlias: 'f',
+  workflowAlias: 'fwp'
+});
 const estadosFlujoPagoFacturasExpression = `
   (
     '${FACTURA_ESTADOS.CONTABILIZADO}',
@@ -155,10 +164,28 @@ const tiqueteEmisorNombreExpression = `
   )
 `;
 
+const facturaBaseSelectColumns = `
+      f.id,
+      f.clave,
+      f.consecutivo,
+      f.fecha_emision,
+      f.emisor,
+      f.receptor,
+      f.resumen,
+      f.xml_completo,
+      f.creado_en,
+      f.ruta_pdf,
+      f.sociedad_id,
+      f.ruta_xml,
+      f.estado AS estado_documental,
+      fwp.estado AS estado_workflow_pago,
+      ${facturaEstadoOperativoExpression} AS estado
+`;
+
 const buildFacturasListBaseCte = () => `
   WITH facturas_enriquecidas AS (
     SELECT
-      f.*,
+      ${facturaBaseSelectColumns},
       ${totalFacturaExpression} AS total_factura,
       ${totalRebajosExpression} AS total_rebajos,
       ${retencionTotalExpression} AS retencion_total,
@@ -174,6 +201,7 @@ const buildFacturasListBaseCte = () => `
       COALESCE(f.clave::text, '') AS clave_text,
       ${hasMensajeHaciendaExpression} AS has_mensaje_hacienda
     FROM facturas f
+    ${facturaWorkflowPagoJoin}
     LEFT JOIN facturas_contabilizacion fc ON fc.factura_id = f.id
   )
 `;
@@ -423,7 +451,7 @@ const listRetencionesPendientes = async ({ sociedadId } = {}) => {
   const params = [];
   const whereClauses = [
     `${retencionPendienteExpression} > 0`,
-    `f.estado = 'pagado'`
+    `${facturaEstadoOperativoExpression} = '${FACTURA_ESTADOS.PAGADO}'`
   ];
 
   if (sociedadId) {
@@ -438,7 +466,7 @@ const listRetencionesPendientes = async ({ sociedadId } = {}) => {
   const { rows } = await pool.query(
     `
     SELECT
-      f.*,
+      ${facturaBaseSelectColumns},
       ${totalFacturaExpression} AS total_factura,
       ${totalRebajosExpression} AS total_rebajos,
       ${retencionTotalExpression} AS retencion_total,
@@ -460,6 +488,7 @@ const listRetencionesPendientes = async ({ sociedadId } = {}) => {
           AND COALESCE(NULLIF(TRIM(LOWER(tr.estado_tesoreria)), ''), 'pendiente') <> 'excluido'
       ) AS retencion_en_tramite_activo
     FROM facturas f
+    ${facturaWorkflowPagoJoin}
     JOIN facturas_contabilizacion fc ON fc.factura_id = f.id
     LEFT JOIN proveedores p ON p.id = fc.proveedor_id
     ${whereClause}
@@ -475,7 +504,7 @@ const getFacturaById = async (id) => {
   const { rows } = await pool.query(
     `
     SELECT
-      f.*,
+      ${facturaBaseSelectColumns},
       ${totalFacturaExpression} AS total_factura,
       ${totalRebajosExpression} AS total_rebajos,
       ${retencionTotalExpression} AS retencion_total,
@@ -489,6 +518,7 @@ const getFacturaById = async (id) => {
         WHERE m.factura_id = f.id OR m.clave = f.clave
       ) AS has_mensaje_hacienda
     FROM facturas f
+    ${facturaWorkflowPagoJoin}
     LEFT JOIN facturas_contabilizacion fc ON fc.factura_id = f.id
     WHERE f.id = $1
     `,

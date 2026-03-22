@@ -8,18 +8,8 @@
         "db:init": "node db/create_tables.js",
         "db:reset": "node db/reset_schema.js",
         "db:check": "node db/check_structure.js",
-        "db:migrate:proveedores": "node db/migrate_proveedores.js",
-        "db:migrate:retenciones": "node db/migrate_retenciones.js",
-        "db:migrate:tramites-retenciones": "node db/migrate_tramites_retenciones.js",
-        "db:migrate:pagos-parciales": "node db/migrate_facturas_pagos_parciales.js",
-        "db:migrate:ordenes-compra": "node db/migrate_ordenes_compra.js",
-        "db:migrate:centros-costo": "node db/migrate_centros_costo.js",
-        "db:migrate:tramites-aprobadores": "node db/migrate_tramites_aprobadores_centros_costo.js",
-        "db:migrate:tramites-estado-origen": "node db/migrate_tramites_estado_factura_origen.js",
-        "db:migrate:tramites-dev-conta": "node db/migrate_tramites_tesoreria_devolver_contabilidad.js",
-        "db:migrate:tramites-tesoreria-pagado": "node db/migrate_tramites_tesoreria_pagado.js",
-        "db:migrate:tramites-tesoreria-pagado-backfill": "node db/migrate_tramites_tesoreria_pagado_backfill.js",
-        "db:migrate:reservas": "node db/migrate_reservas.js",
+        "db:migrate": "node db/migrate.js",
+        "db:migrate:status": "node db/migrate_status.js",
         "importar": "node scripts/importarFactura.js",
         "watcher": "node scripts/watcher.js",
         "proveedores:backfill": "node scripts/backfill_proveedores.js",
@@ -28,16 +18,19 @@
         "smoke:facturas": "node scripts/smoke_facturas_list.js",
         "reporte-duplicados": "node scripts/reporte_duplicados.js",
         "reset-docs": "node scripts/reset_documentos.js",
+        "reset-facturas-prueba:dry-run": "node scripts/reset_facturas_prueba.js --dry-run",
         "server": "node server.js",
         "dev": "node server.js",
-        "test": "jest"
+        "check:release": "node scripts/release_checks.js",
+        "test": "jest",
+        "test:ci": "node node_modules/jest/bin/jest.js --runInBand"
     },
     "dependencies": {
         "bcrypt": "^6.0.0",
         "chokidar": "^5.0.0",
         "cors": "^2.8.5",
         "express": "^4.18.2",
-        "fast-xml-parser": "^5.3.4",
+        "fast-xml-parser": "^5.5.8",
         "fs-extra": "^11.3.3",
         "joi": "^18.0.2",
         "jsonwebtoken": "^9.0.0",
@@ -50,5 +43,3 @@
         "supertest": "^7.1.3"
     }
 }
-
-

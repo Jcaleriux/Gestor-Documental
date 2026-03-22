@@ -2,6 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { tramitesApi } from '../services/tramitesApi';
 import { facturasApi } from '../services/facturasApi';
 
+const resolveFacturaEstadoOperativo = (factura) => (
+  factura?.estado_workflow_pago
+  || factura?.estado
+  || factura?.estado_documental
+  || ''
+);
+
 export const useTramites = ({ sociedadId }) => {
   const [tramites, setTramites] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,8 +57,11 @@ export const useTramites = ({ sociedadId }) => {
 
     if (facturasResult.status === 'fulfilled') {
       const disponibles = (facturasResult.value || []).filter(
-        (f) => f.estado === 'contabilizado'
-          || f.estado === 'pagado_parcialmente'
+        (f) => {
+          const estadoOperativo = resolveFacturaEstadoOperativo(f);
+          return estadoOperativo === 'contabilizado'
+            || estadoOperativo === 'pagado_parcialmente';
+        }
       );
       setFacturasDisponibles(disponibles);
     } else {

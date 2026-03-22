@@ -79,13 +79,14 @@ const createAuditoriaUseCases = ({ auditoriaRepo }) => {
       .map(({ sort_at, ...event }) => event);
   };
 
-  const crearEstado = async ({ facturaId, estado_anterior, estado_nuevo, usuario, motivo }) => {
+  const crearEstado = async ({ facturaId, dominio, estado_anterior, estado_nuevo, usuario, motivo }) => {
     if (!estado_nuevo || !usuario) {
       throw createError(400, 'estado_nuevo y usuario requeridos');
     }
 
     return auditoriaRepo.createEstado({
       facturaId,
+      dominio,
       estado_anterior,
       estado_nuevo,
       usuario,

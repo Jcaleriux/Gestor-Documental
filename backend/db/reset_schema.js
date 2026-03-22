@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const pool = require('./index');
+const { applyPendingMigrations } = require('./migrationManager');
 
 async function runSqlFile(sqlPath, label) {
   const sql = fs.readFileSync(sqlPath, 'utf8');
@@ -26,6 +27,7 @@ async function resetSchema() {
     if (fs.existsSync(seedPath)) {
       await runSqlFile(seedPath, 'seed.sql');
     }
+    await applyPendingMigrations(pool, { logger: console });
 
     console.log('Base de datos reconstruida desde cero.');
   } catch (error) {
