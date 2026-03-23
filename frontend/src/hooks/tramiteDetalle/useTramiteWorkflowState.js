@@ -21,6 +21,11 @@ export const useTramiteWorkflowState = ({
   const [activeTab, setActiveTab] = useState('individual');
   const [uploadingCaratulas, setUploadingCaratulas] = useState(false);
   const [resolvingCaratulaGroupKey, setResolvingCaratulaGroupKey] = useState('');
+  const [uploadingProviderKey, setUploadingProviderKey] = useState('');
+  const [confirmingProviderKey, setConfirmingProviderKey] = useState('');
+  const [confirmingOrderProviderKey, setConfirmingOrderProviderKey] = useState('');
+  const [orphanActionId, setOrphanActionId] = useState('');
+  const [providerSortDirection, setProviderSortDirection] = useState('asc');
 
   const accionSiguiente = useMemo(
     () => getNextStateConfig(tramite?.estado),
@@ -49,13 +54,17 @@ export const useTramiteWorkflowState = ({
     documentosActivos.forEach((doc) => {
       const facturaId = Number(doc.factura_id);
       const pendiente = Number(doc.total_a_pagar || 0);
+      const montoProgramado = Number(doc.monto_pago_programado);
       if (!Number.isFinite(facturaId) || facturaId <= 0) {
         return;
       }
       if (!Number.isFinite(pendiente) || pendiente <= 0) {
         return;
       }
-      next[facturaId] = pagosFacturas[facturaId] ?? pendiente.toFixed(2);
+      const defaultMonto = Number.isFinite(montoProgramado) && montoProgramado > 0
+        ? montoProgramado
+        : pendiente;
+      next[facturaId] = pagosFacturas[facturaId] ?? defaultMonto.toFixed(2);
     });
     return next;
   }, [documentosActivos, pagosFacturas]);
@@ -91,6 +100,16 @@ export const useTramiteWorkflowState = ({
     setUploadingCaratulas,
     resolvingCaratulaGroupKey,
     setResolvingCaratulaGroupKey,
+    uploadingProviderKey,
+    setUploadingProviderKey,
+    confirmingProviderKey,
+    setConfirmingProviderKey,
+    confirmingOrderProviderKey,
+    setConfirmingOrderProviderKey,
+    orphanActionId,
+    setOrphanActionId,
+    providerSortDirection,
+    setProviderSortDirection,
     handleTesoreriaDestinoChange,
     handlePagoFacturaChange
   };

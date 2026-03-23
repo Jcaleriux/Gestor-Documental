@@ -1,5 +1,6 @@
 import {
   buildContaState,
+  buildDocumentosRespaldoActuales,
   buildNotaCreditoActual,
   buildOrdenCompraActual,
   buildTablaPagoActual,
@@ -20,6 +21,7 @@ export const mapFacturaDetalleDataToViewState = ({
   const tablaActual = buildTablaPagoActual(contaData);
   const ordenActual = buildOrdenCompraActual(contaData);
   const notaActual = buildNotaCreditoActual(contaData);
+  const documentosRespaldoActuales = buildDocumentosRespaldoActuales(contaData);
 
   return {
     factura: facturaData,
@@ -31,6 +33,7 @@ export const mapFacturaDetalleDataToViewState = ({
     tablaPagoActual: tablaActual,
     ordenCompraActual: ordenActual,
     notaCreditoActual: notaActual,
+    documentosRespaldoActuales,
     conta: buildContaState({
       contaData,
       facturaData,

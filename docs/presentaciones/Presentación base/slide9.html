@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arquitectura y despliegue propuesto en Azure</title>
+  <link rel="stylesheet" href="slide-theme.css">
+</head>
+<body class="theme-light">
+  <div class="slide">
+    <header class="slide-header">
+      <div>
+        <div class="brand"><span class="brand-mark"></span>Novogar</div>
+        <p class="eyebrow">Propuesta de despliegue</p>
+        <h1 class="title">Arquitectura objetivo en Azure alineada con la base actual del sistema</h1>
+      </div>
+      <div class="page-pill">09 / 15</div>
+    </header>
+
+    <main class="content architecture-grid">
+      <section class="panel">
+        <p class="eyebrow">Principio de diseño</p>
+        <div class="callout">
+          <p>La propuesta no fuerza reescribir Novogar. Se apoya en el diseño actual: <strong>frontend y backend web + PostgreSQL + storage persistente para documentos</strong>.</p>
+        </div>
+        <div class="stack" style="margin-top: 18px;">
+          <div class="service-box">
+            <strong>Usuarios internos</strong>
+            <p>Acceso a la aplicación desde red corporativa o rutas controladas.</p>
+          </div>
+          <div class="service-box">
+            <strong>App Service</strong>
+            <p>Hospeda frontend y backend como servicios administrados para simplificar operación y despliegue.</p>
+          </div>
+          <div class="service-box">
+            <strong>Azure Database for PostgreSQL Flexible Server</strong>
+            <p>Base de datos administrada compatible con el stack actual y preparada para backups automáticos.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <p class="eyebrow">Componentes propuestos</p>
+        <div class="architecture-stack">
+          <div class="service-box accent-card">
+            <strong>Storage persistente</strong>
+            <p>Azure Files montado para conservar PDFs, XML y adjuntos sin depender del disco efímero de la app.</p>
+          </div>
+          <div class="service-box">
+            <strong>Key Vault</strong>
+            <p>Secretos y credenciales fuera del código y del repositorio.</p>
+          </div>
+          <div class="service-box">
+            <strong>Red privada donde aplique</strong>
+            <p>Private Endpoint y controles de red para reducir exposición innecesaria.</p>
+          </div>
+          <div class="service-box gold-card">
+            <strong>Separación clara</strong>
+            <p>Aplicación, base de datos y storage administrados como capas distintas y recuperables.</p>
+          </div>
+        </div>
+        <div class="quote" style="margin-top: 18px;">Azure permite un <strong>despliegue administrado, secretos externos, respaldo formal y crecimiento incremental</strong> sin cambiar el modelo principal del producto.</div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>Propuesta objetivo, no despliegue ya realizado</span>
+      <span>Azure App Service + PostgreSQL Flexible Server + storage persistente + Key Vault</span>
+    </footer>
+  </div>
+</body>
+</html>

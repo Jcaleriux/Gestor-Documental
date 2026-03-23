@@ -23,6 +23,14 @@ test('facturasPageHelpers interpreta dashboard preset y contexto de retorno segu
     'en_tramite',
   );
   assert.equal(
+    parseDashboardPresetFromSearch('?dashboardPreset=contabilizadas'),
+    'contabilizadas',
+  );
+  assert.equal(
+    parseDashboardPresetFromSearch('?dashboardPreset=recibidas_ultimo_mes'),
+    'recibidas_ultimo_mes',
+  );
+  assert.equal(
     parseDashboardPresetFromSearch('?dashboardPreset=invalido'),
     '',
   );

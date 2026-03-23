@@ -2,8 +2,10 @@ import { useParams } from 'react-router-dom';
 import { useTramiteDetalle } from '../useTramiteDetalle.js';
 import useTramiteResumen from '../useTramiteResumen.js';
 import { useTramiteWorkflowActions } from './useTramiteWorkflowActions.js';
+import { useTramiteReport } from './useTramiteReport.js';
 import {
   buildTramiteWorkflowInputs,
+  buildSociedadLabel,
   buildTramiteDetallePageViewModel,
 } from '../../components/tramiteDetalle/viewModels/buildTramiteDetallePageViewModel.js';
 
@@ -18,6 +20,7 @@ export const useTramiteDetallePage = ({
     useDetalleHook = useTramiteDetalle,
     useResumenHook = useTramiteResumen,
     useWorkflowActionsHook = useTramiteWorkflowActions,
+    useReportHook = useTramiteReport,
   } = dependencies;
 
   const { id } = useParamsHook();
@@ -41,6 +44,18 @@ export const useTramiteDetallePage = ({
   });
 
   const workflow = useWorkflowActionsHook({ workflowInputs });
+  const sociedadLabel = buildSociedadLabel({
+    sociedadInfo: detalle.sociedadInfo,
+    sociedadId,
+  });
+  const report = useReportHook({
+    tramite: detalle.tramite,
+    documentos: documentosActivos,
+    providerGroups: detalle.providerGroups,
+    providerSortDirection: workflow.providerSortDirection,
+    sociedadId,
+    sociedadLabel,
+  });
 
   return buildTramiteDetallePageViewModel({
     id,
@@ -51,6 +66,8 @@ export const useTramiteDetallePage = ({
     resumenTotales,
     resumenMoneda,
     workflow,
+    report,
     userPermissions,
+    sociedadLabel,
   });
 };

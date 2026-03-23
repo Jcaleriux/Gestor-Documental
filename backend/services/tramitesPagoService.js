@@ -89,6 +89,61 @@ const resolveCaratulas = handleRequest((req) => {
   });
 }, 'Error resolving tramite caratulas:', 'Error resolving tramite caratulas');
 
+const confirmProviderCaratulaOrder = handleRequest((req) => {
+  const { id, providerKey } = req.params;
+  const { factura_ids, order_source, usuario } = req.body || {};
+  return useCases.confirmProviderOrder({
+    id,
+    provider_key: providerKey,
+    factura_ids,
+    order_source,
+    usuario: resolveActorUsuario(req, usuario)
+  });
+}, 'Error confirming provider invoice order:', 'Error confirming provider invoice order');
+
+const uploadProviderCaratula = handleRequest((req) => {
+  const { id, providerKey } = req.params;
+  const { filename, file_base64, usuario } = req.body || {};
+  return useCases.uploadProviderCaratula({
+    id,
+    provider_key: providerKey,
+    filename,
+    file_base64,
+    usuario: resolveActorUsuario(req, usuario)
+  });
+}, 'Error uploading provider caratula:', 'Error uploading provider caratula');
+
+const confirmProviderCaratula = handleRequest((req) => {
+  const { id, providerKey } = req.params;
+  const { usuario } = req.body || {};
+  return useCases.confirmProviderCaratula({
+    id,
+    provider_key: providerKey,
+    usuario: resolveActorUsuario(req, usuario)
+  });
+}, 'Error confirming provider caratula:', 'Error confirming provider caratula');
+
+const assignOrphanCaratula = handleRequest((req) => {
+  const { id, orphanId } = req.params;
+  const { provider_key, usuario } = req.body || {};
+  return useCases.assignOrphanCaratula({
+    id,
+    orphan_id: orphanId,
+    provider_key,
+    usuario: resolveActorUsuario(req, usuario)
+  });
+}, 'Error assigning orphan caratula:', 'Error assigning orphan caratula');
+
+const discardOrphanCaratula = handleRequest((req) => {
+  const { id, orphanId } = req.params;
+  const { usuario } = req.body || {};
+  return useCases.discardOrphanCaratula({
+    id,
+    orphan_id: orphanId,
+    usuario: resolveActorUsuario(req, usuario)
+  });
+}, 'Error discarding orphan caratula:', 'Error discarding orphan caratula');
+
 const crearTramite = handleRequest((req) => {
   const { sociedad_id, factura_ids, retencion_factura_ids, usuario } = req.body || {};
   return useCases.crearTramite({
@@ -137,6 +192,11 @@ module.exports = {
   getHistorial,
   uploadCaratulas,
   resolveCaratulas,
+  confirmProviderCaratulaOrder,
+  uploadProviderCaratula,
+  confirmProviderCaratula,
+  assignOrphanCaratula,
+  discardOrphanCaratula,
   crearTramite,
   cambiarEstado,
   decisionDocumento

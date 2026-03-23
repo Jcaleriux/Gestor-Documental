@@ -638,14 +638,31 @@
 }
 
 .tramite-detail-card {
-  padding: 16px;
+  padding: 0;
+}
+
+.tramite-detail-card-body {
+  padding: 14px 18px;
 }
 
 .tramite-detail-meta {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
-  align-items: center;
+  gap: 8px 16px;
+  align-items: start;
+}
+
+.tramite-detail-meta .stat-title {
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+}
+
+.tramite-detail-meta .stat-value-sm {
+  line-height: 1.15;
+}
+
+.tramite-detail-meta .stat-meta {
+  margin-top: 2px;
 }
 
 .stat-value-sm {
@@ -669,12 +686,73 @@
 .tramite-unificada-list {
   display: flex;
   flex-direction: column;
+  gap: 20px;
+}
+
+.tramite-provider-group {
+  position: relative;
+  border: 2px solid #bfd1ef !important;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #f6faff 100%);
+  box-shadow:
+    0 14px 30px rgba(15, 23, 42, 0.07),
+    0 1px 0 rgba(43, 92, 230, 0.06);
+  overflow: hidden;
+}
+
+.tramite-provider-group::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 6px;
+  background: linear-gradient(180deg, #1d4ed8 0%, #76a4ff 100%);
+}
+
+.tramite-provider-group .card-body {
+  padding: 20px 22px 22px;
+}
+
+.tramite-provider-group-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 16px;
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #d9e5f7;
+}
+
+.tramite-provider-lines-header {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid #d8e5f8;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+}
+
+.tramite-provider-documents {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #d9e5f7;
 }
 
 .tramite-unificada-card {
   border: 1px solid #e6ebf2;
   border-radius: 16px;
+}
+
+.tramite-provider-preview-column {
+  min-width: 0;
+}
+
+.tramite-provider-preview-frame {
+  width: 100%;
+  min-height: 640px;
+  border: 1px solid #e6ebf2;
+  border-radius: 16px;
+  background: #fff;
 }
 
 .tramite-unificada-summary {
@@ -697,6 +775,12 @@
   gap: 8px;
   flex-wrap: wrap;
   flex: 0 1 auto;
+}
+
+@media (min-width: 1200px) {
+  .tramite-provider-preview-column {
+    min-width: 520px;
+  }
 }
 
 .documents-filters .search-input {

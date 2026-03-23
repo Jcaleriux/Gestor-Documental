@@ -282,6 +282,12 @@ const buildFacturasListWhere = ({
     `);
   }
 
+  if (dashboardPreset === 'contabilizadas') {
+    clauses.push(`
+      COALESCE(fe.estado, '${FACTURA_ESTADOS.NO_CONTABILIZADO}') = '${FACTURA_ESTADOS.CONTABILIZADO}'
+    `);
+  }
+
   if (dashboardPreset === 'en_revision') {
     clauses.push(`
       COALESCE(fe.estado, '${FACTURA_ESTADOS.NO_CONTABILIZADO}') = '${FACTURA_ESTADOS.EN_REVISION}'
@@ -324,6 +330,10 @@ const buildFacturasListWhere = ({
     clauses.push(`
       COALESCE(fe.estado, '${FACTURA_ESTADOS.NO_CONTABILIZADO}') = '${FACTURA_ESTADOS.PAGADO}'
     `);
+  }
+
+  if (dashboardPreset === 'recibidas_ultimo_mes') {
+    clauses.push("fe.fecha_emision >= (CURRENT_DATE - INTERVAL '30 days')");
   }
 
   return {

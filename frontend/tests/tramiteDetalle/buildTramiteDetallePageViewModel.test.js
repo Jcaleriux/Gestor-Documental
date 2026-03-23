@@ -26,7 +26,7 @@ const createWorkflow = () => {
     resolvingCaratulaGroupKey: '',
     activeTab: 'individual',
     setActiveTab: noop,
-    accionSiguiente: { estado: 'pagado' },
+    accionSiguiente: { estado: 'en_aprobacion_gerencia_contable' },
     handleDecision: noop,
     handleAccionTesoreria: noop,
     handleUploadCaratulas: noop,
@@ -84,7 +84,7 @@ test('buildTramiteDetallePageViewModel retorna layoutProps cuando la pagina esta
     id: '55',
     sociedadId: 10,
     detalle: {
-      tramite: { id: 55, estado: 'en_revision_tesoreria' },
+      tramite: { id: 55, estado: 'en_revision_tesoreria_1' },
       documentos: [{ factura_id: 1 }],
       retenciones: [{ id: 9 }],
       caratula: { id: 11, estado: 'procesada' },

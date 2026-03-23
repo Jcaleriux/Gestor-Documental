@@ -3,12 +3,15 @@ const { PERMISSIONS } = require('../domain/permissions');
 const { validatePagadoSinRechazos } = require('./tramitesPagoRules');
 const { createError, throwIfValidationError } = require('../utils/errors');
 const { ensureEtapaReadyForAdvance } = require('./tramitesPagoGerenciaAprobaciones');
-const { summarizeStoredTramiteCaratula } = require('./tramitesPagoCaratulasSupport');
+const { summarizeStoredTramiteCaratulasV2 } = require('./tramitesPagoCaratulasProviderSupport');
 const {
   normalizePagosDocumentos,
   buildSaldosByFactura,
+  buildPagosProgramadosByFactura,
+  alignPagosInputToSaldos,
   validatePagosInputBySaldos,
-  registrarPagosPrincipales
+  registrarPagosPrincipales,
+  callOptionalRepoMethod
 } = require('./tramitesPagoUseCases.helpers');
 const { permissionsService } = require('./permissionsService');
 
@@ -18,18 +21,36 @@ const NO_OP_STATE_POLICY = Object.freeze({
 });
 
 const validateTramiteCaratulasReady = async ({ tramitesPagoRepo, tramiteId, client }) => {
-  const [caratulaRow, documents] = await Promise.all([
+  const [caratulaRow, documents, providerRows, providerOrderRows, orphanRows] = await Promise.all([
     tramitesPagoRepo.getTramiteCaratulaByTramiteId(tramiteId, client),
-    tramitesPagoRepo.listDocumentosByTramite(tramiteId, client)
+    tramitesPagoRepo.listDocumentosByTramite(tramiteId, client),
+    callOptionalRepoMethod({
+      repo: tramitesPagoRepo,
+      methodName: 'listTramiteCaratulaProvidersByTramiteId',
+      args: [tramiteId, client],
+      defaultValue: []
+    }),
+    callOptionalRepoMethod({
+      repo: tramitesPagoRepo,
+      methodName: 'listTramiteCaratulaProviderFacturasByTramiteId',
+      args: [tramiteId, client],
+      defaultValue: []
+    }),
+    callOptionalRepoMethod({
+      repo: tramitesPagoRepo,
+      methodName: 'listTramiteCaratulaOrphansByTramiteId',
+      args: [tramiteId, client],
+      defaultValue: []
+    })
   ]);
 
-  if (!caratulaRow) {
-    throw createError(400, 'Debe cargar las caratulas del tramite antes de continuar');
-  }
-
-  const summary = summarizeStoredTramiteCaratula({
+  const summary = summarizeStoredTramiteCaratulasV2({
     row: caratulaRow,
-    documents
+    documents,
+    providerRows,
+    providerOrderRows,
+    orphanRows,
+    tramiteEstado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA_1
   });
   const caratula = summary.caratula;
 
@@ -46,6 +67,27 @@ const validateTramiteCaratulasReady = async ({ tramitesPagoRepo, tramiteId, clie
     const blockingWarning = summary.warnings.find(Boolean);
     throw createError(400, blockingWarning || 'Debe resolver todas las caratulas del tramite antes de continuar');
   }
+};
+
+const persistMontosPagoProgramado = async ({
+  tramitesPagoRepo,
+  tramiteId,
+  pagosDocumentos,
+  client
+}) => {
+  const saldosRows = await tramitesPagoRepo.listSaldosPagoPrincipalByTramite(tramiteId, client);
+  const saldosByFactura = buildSaldosByFactura(saldosRows);
+  const pagosInput = alignPagosInputToSaldos(
+    normalizePagosDocumentos(pagosDocumentos),
+    saldosByFactura
+  );
+
+  validatePagosInputBySaldos(pagosInput, saldosByFactura);
+
+  await tramitesPagoRepo.updateMontosPagoProgramadoByTramite({
+    tramiteId,
+    pagosDocumentos: pagosInput
+  }, client);
 };
 
 const createStageAdvanceValidationPolicy = ({ tramitesPagoRepo, etapa }) => ({
@@ -69,7 +111,18 @@ const createStageAdvanceValidationPolicy = ({ tramitesPagoRepo, etapa }) => ({
       });
     }
   },
-  runAfterUpdate: async () => {}
+  runAfterUpdate: async ({ tramiteId, pagosDocumentos, client }) => {
+    if (etapa !== 'gerencia') {
+      return;
+    }
+
+    await persistMontosPagoProgramado({
+      tramitesPagoRepo,
+      tramiteId,
+      pagosDocumentos,
+      client
+    });
+  }
 });
 
 const createPagadoStatePolicy = ({ tramitesPagoRepo }) => ({
@@ -95,7 +148,13 @@ const createPagadoStatePolicy = ({ tramitesPagoRepo }) => ({
   runAfterUpdate: async ({ tramiteId, usuario, pagosDocumentos, client }) => {
     const saldosRows = await tramitesPagoRepo.listSaldosPagoPrincipalByTramite(tramiteId, client);
     const saldosByFactura = buildSaldosByFactura(saldosRows);
-    const pagosInput = normalizePagosDocumentos(pagosDocumentos);
+    const pagosInput = (() => {
+      const explicitPagos = normalizePagosDocumentos(pagosDocumentos);
+      if (explicitPagos.length > 0) {
+        return alignPagosInputToSaldos(explicitPagos, saldosByFactura);
+      }
+      return alignPagosInputToSaldos(buildPagosProgramadosByFactura(saldosRows), saldosByFactura);
+    })();
     validatePagosInputBySaldos(pagosInput, saldosByFactura);
 
     await registrarPagosPrincipales({

@@ -10,7 +10,7 @@ const createBaseProps = () => ({
   id: 33,
   tramite: { estado: 'en_aprobacion_gerencia' },
   documentosActivos: [
-    { factura_id: 1, total_a_pagar: 120.5 },
+    { factura_id: 1, total_a_pagar: 120.5, monto_pago_programado: 75.25 },
     { factura_id: 2, total_a_pagar: 0 },
     { factura_id: 3, total_a_pagar: 50 }
   ],
@@ -38,7 +38,7 @@ test('useTramiteWorkflowState calcula pagos sugeridos y permite cambios por fact
     initialProps: createBaseProps()
   });
 
-  assert.equal(hook.result.pagosFacturas[1], '120.50');
+  assert.equal(hook.result.pagosFacturas[1], '75.25');
   assert.equal(hook.result.pagosFacturas[3], '50.00');
   assert.equal(hook.result.pagosFacturas[2], undefined);
   assert.equal(hook.result.accionSiguiente.estado, 'en_revision_tesoreria_1');

@@ -18,7 +18,7 @@ const createBaseInput = () => {
     },
     tramite: {
       id: 55,
-      estado: 'en_revision_tesoreria'
+      estado: 'en_revision_tesoreria_1'
     },
     documentos: [{ factura_id: 1 }],
     documentosActivos: [{ factura_id: 1, ruta_pdf: 'docs/f1.pdf' }],
@@ -27,7 +27,7 @@ const createBaseInput = () => {
     retencionesActivas: [{ id: 9 }],
     resumenTotales: { totalDocs: 1, suma: 1000 },
     resumenMoneda: { codigo: 'CRC' },
-    accionSiguiente: { estado: 'pagado' },
+    accionSiguiente: { estado: 'en_aprobacion_gerencia_contable' },
     handleAccionSiguiente: noop,
     historialVisible: false,
     setHistorialVisible: noop,
@@ -65,6 +65,7 @@ test('buildTramiteDetalleLayoutProps agrupa secciones y calcula derivados', () =
   const layoutProps = buildTramiteDetalleLayoutProps(input);
 
   assert.equal(layoutProps.header.title, 'Tramite #55');
+  assert.equal(layoutProps.header.canExportReport, true);
   assert.equal(layoutProps.tabs.activeTab, 'individual');
   assert.equal(layoutProps.alerts.message, 'ok');
   assert.equal(layoutProps.historial.visible, false);
@@ -83,14 +84,29 @@ test('buildTramiteDetalleLayoutProps agrupa secciones y calcula derivados', () =
   assert.equal(typeof input.setHistorialVisible.calls[0][0], 'function');
 });
 
-test('buildTramiteDetalleLayoutProps desactiva pagos cuando no aplica estado pagado', () => {
+test('buildTramiteDetalleLayoutProps desactiva pagos cuando no aplica etapa de caratulas', () => {
   const input = createBaseInput();
-  input.accionSiguiente = { estado: 'en_revision_tesoreria' };
+  input.accionSiguiente = { estado: 'pagado' };
   input.documentosActivos = [];
 
   const layoutProps = buildTramiteDetalleLayoutProps(input);
 
   assert.equal(layoutProps.pagos.visible, false);
+});
+
+test('buildTramiteDetalleLayoutProps expone el estado del reporte para el header y las alertas', () => {
+  const input = createBaseInput();
+  input.reportLoading = true;
+  input.reportError = 'No se pudo generar el reporte.';
+  input.reportMessage = 'Reporte generado.';
+  input.exportReport = createMockFn();
+
+  const layoutProps = buildTramiteDetalleLayoutProps(input);
+
+  assert.equal(layoutProps.header.exportReportLoading, true);
+  assert.equal(typeof layoutProps.header.onExportReport, 'function');
+  assert.equal(layoutProps.alerts.reportError, 'No se pudo generar el reporte.');
+  assert.equal(layoutProps.alerts.reportMessage, 'Reporte generado.');
 });
 
 test('buildHeaderLayoutProps conserva header y wiring de acciones', () => {
@@ -110,4 +126,28 @@ test('buildTableLayoutProps calcula permisos y conserva datos de tabla', () => {
   assert.equal(table.permisos.puedeTesoreria, true);
   assert.equal(table.destinosTesoreria.length > 0, true);
   assert.equal(table.labelsDocumentos.emptyActivos, 'No hay documentos activos en el tramite.');
+  assert.equal(table.labelsUnificada.expandAllPdfs, 'Expandir todos los PDFs');
+  assert.equal(table.labelsUnificada.collapseAllPdfs, 'Ocultar todos los PDFs');
+});
+
+test('buildTramiteDetalleLayoutProps expone readiness de caratulas para tesoreria en gerencia', () => {
+  const input = createBaseInput();
+  input.tramite = {
+    id: 55,
+    estado: 'en_aprobacion_gerencia'
+  };
+  input.documentosActivos = [
+    { factura_id: 1, consecutivo: '001', estado_gerencia: 'aprobado' },
+    { factura_id: 2, consecutivo: '002', estado_gerencia: 'pendiente' },
+  ];
+  input.caratula = null;
+  input.providerGroups = [];
+
+  const layoutProps = buildTramiteDetalleLayoutProps(input);
+
+  assert.equal(layoutProps.caratulas.readiness.canManageCaratulas, true);
+  assert.equal(layoutProps.caratulas.readiness.showWaitingMessage, true);
+  assert.equal(layoutProps.caratulas.readiness.gerenciaAprobados, 1);
+  assert.equal(layoutProps.caratulas.readiness.gerenciaPendientes, 1);
+  assert.deepEqual(layoutProps.caratulas.readiness.pendingDocuments, ['002']);
 });

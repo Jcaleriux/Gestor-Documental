@@ -38,6 +38,10 @@ const ETAPA_ESTADO_COLUMN_MAP = Object.freeze({
 const getDb = (client) => client || pool;
 
 const getClient = () => pool.connect();
+const pickValue = (primary, fallback = null) => (
+  primary !== undefined ? primary : fallback
+);
+
 const normalizePositiveIntOrNull = (value) => {
   const normalized = Number(value);
   return Number.isInteger(normalized) && normalized > 0 ? normalized : null;
@@ -152,6 +156,400 @@ const upsertTramiteCaratula = async ({
     ]
   );
   return rows[0] || null;
+};
+
+const listTramiteCaratulaProvidersByTramiteId = async (tramiteId, client) => {
+  const { rows } = await getDb(client).query(
+    `
+    SELECT *
+    FROM tramites_pago_caratulas_proveedor
+    WHERE tramite_id = $1
+    ORDER BY proveedor_nombre ASC, id ASC
+    `,
+    [tramiteId]
+  );
+  return rows;
+};
+
+const listTramiteCaratulaProviderFacturasByTramiteId = async (tramiteId, client) => {
+  const { rows } = await getDb(client).query(
+    `
+    SELECT
+      pcf.*,
+      tcp.provider_key,
+      tcp.tramite_id
+    FROM tramites_pago_caratulas_proveedor_facturas pcf
+    JOIN tramites_pago_caratulas_proveedor tcp
+      ON tcp.id = pcf.provider_caratula_id
+    WHERE tcp.tramite_id = $1
+    ORDER BY pcf.provider_caratula_id ASC, pcf.sort_index ASC
+    `,
+    [tramiteId]
+  );
+  return rows;
+};
+
+const listTramiteCaratulaOrphansByTramiteId = async (tramiteId, client) => {
+  const { rows } = await getDb(client).query(
+    `
+    SELECT *
+    FROM tramites_pago_caratulas_huerfanas
+    WHERE tramite_id = $1
+    ORDER BY id ASC
+    `,
+    [tramiteId]
+  );
+  return rows;
+};
+
+const getTramiteCaratulaProviderByKeyForUpdate = async ({ tramiteId, providerKey }, client) => {
+  const { rows } = await getDb(client).query(
+    `
+    SELECT *
+    FROM tramites_pago_caratulas_proveedor
+    WHERE tramite_id = $1
+      AND provider_key = $2
+    FOR UPDATE
+    `,
+    [tramiteId, providerKey]
+  );
+  return rows[0] || null;
+};
+
+const getTramiteCaratulaOrphanByIdForUpdate = async ({ tramiteId, orphanId }, client) => {
+  const { rows } = await getDb(client).query(
+    `
+    SELECT *
+    FROM tramites_pago_caratulas_huerfanas
+    WHERE tramite_id = $1
+      AND id = $2
+    FOR UPDATE
+    `,
+    [tramiteId, orphanId]
+  );
+  return rows[0] || null;
+};
+
+const upsertTramiteCaratulaProvider = async (payload, client) => {
+  const {
+    tramiteId,
+    providerKey,
+    proveedorId,
+    proveedorNombre,
+    proveedorIdentificacion,
+    providerRawName,
+    providerRawIdentification,
+    providerCode,
+    nombreArchivo,
+    rutaArchivo,
+    attachmentStatus,
+    attachmentOrigin,
+    orderStatus,
+    executionDate,
+    currency,
+    pageStart,
+    pageEnd,
+    pageNumbers,
+    warnings,
+    groupPayload,
+    orderConfirmedBy,
+    orderConfirmedAt,
+    attachmentConfirmedBy,
+    attachmentConfirmedAt
+  } = payload || {};
+  const normalizedProviderKey = pickValue(providerKey, payload?.provider_key);
+  const normalizedProveedorId = pickValue(proveedorId, payload?.proveedor_id);
+  const normalizedProveedorNombre = pickValue(proveedorNombre, payload?.proveedor_nombre);
+  const normalizedProveedorIdentificacion = pickValue(proveedorIdentificacion, payload?.proveedor_identificacion);
+  const normalizedProviderRawName = pickValue(providerRawName, payload?.provider_raw_name);
+  const normalizedProviderRawIdentification = pickValue(providerRawIdentification, payload?.provider_raw_identification);
+  const normalizedProviderCode = pickValue(providerCode, payload?.provider_code);
+  const normalizedNombreArchivo = pickValue(nombreArchivo, payload?.nombre_archivo);
+  const normalizedRutaArchivo = pickValue(rutaArchivo, payload?.ruta_archivo);
+  const normalizedAttachmentStatus = pickValue(attachmentStatus, payload?.attachment_status);
+  const normalizedAttachmentOrigin = pickValue(attachmentOrigin, payload?.attachment_origin);
+  const normalizedOrderStatus = pickValue(orderStatus, payload?.order_status);
+  const normalizedExecutionDate = pickValue(executionDate, payload?.execution_date);
+  const normalizedCurrency = pickValue(currency, payload?.currency);
+  const normalizedPageStart = pickValue(pageStart, payload?.page_start);
+  const normalizedPageEnd = pickValue(pageEnd, payload?.page_end);
+  const normalizedPageNumbers = pickValue(pageNumbers, payload?.page_numbers);
+  const normalizedWarnings = pickValue(warnings, payload?.warnings);
+  const normalizedGroupPayload = pickValue(groupPayload, payload?.group_payload);
+  const normalizedOrderConfirmedBy = pickValue(orderConfirmedBy, payload?.order_confirmed_by);
+  const normalizedOrderConfirmedAt = pickValue(orderConfirmedAt, payload?.order_confirmed_at);
+  const normalizedAttachmentConfirmedBy = pickValue(attachmentConfirmedBy, payload?.attachment_confirmed_by);
+  const normalizedAttachmentConfirmedAt = pickValue(attachmentConfirmedAt, payload?.attachment_confirmed_at);
+
+  const { rows } = await getDb(client).query(
+    `
+    INSERT INTO tramites_pago_caratulas_proveedor (
+      tramite_id,
+      provider_key,
+      proveedor_id,
+      proveedor_nombre,
+      proveedor_identificacion,
+      provider_raw_name,
+      provider_raw_identification,
+      provider_code,
+      nombre_archivo,
+      ruta_archivo,
+      attachment_status,
+      attachment_origin,
+      order_status,
+      execution_date,
+      currency,
+      page_start,
+      page_end,
+      page_numbers,
+      warnings,
+      group_payload,
+      order_confirmed_by,
+      order_confirmed_at,
+      attachment_confirmed_by,
+      attachment_confirmed_at
+    )
+    VALUES (
+      $1, $2, $3, $4, $5, $6, $7, $8,
+      $9, $10, $11, $12, $13, $14, $15, $16,
+      $17, $18::jsonb, $19::jsonb, $20::jsonb, $21, $22, $23, $24
+    )
+    ON CONFLICT (tramite_id, provider_key)
+    DO UPDATE SET
+      proveedor_id = EXCLUDED.proveedor_id,
+      proveedor_nombre = EXCLUDED.proveedor_nombre,
+      proveedor_identificacion = EXCLUDED.proveedor_identificacion,
+      provider_raw_name = EXCLUDED.provider_raw_name,
+      provider_raw_identification = EXCLUDED.provider_raw_identification,
+      provider_code = EXCLUDED.provider_code,
+      nombre_archivo = EXCLUDED.nombre_archivo,
+      ruta_archivo = EXCLUDED.ruta_archivo,
+      attachment_status = EXCLUDED.attachment_status,
+      attachment_origin = EXCLUDED.attachment_origin,
+      order_status = EXCLUDED.order_status,
+      execution_date = EXCLUDED.execution_date,
+      currency = EXCLUDED.currency,
+      page_start = EXCLUDED.page_start,
+      page_end = EXCLUDED.page_end,
+      page_numbers = EXCLUDED.page_numbers,
+      warnings = EXCLUDED.warnings,
+      group_payload = EXCLUDED.group_payload,
+      order_confirmed_by = EXCLUDED.order_confirmed_by,
+      order_confirmed_at = EXCLUDED.order_confirmed_at,
+      attachment_confirmed_by = EXCLUDED.attachment_confirmed_by,
+      attachment_confirmed_at = EXCLUDED.attachment_confirmed_at,
+      actualizado_en = CURRENT_TIMESTAMP
+    RETURNING *
+    `,
+    [
+      tramiteId,
+      normalizedProviderKey,
+      normalizedProveedorId || null,
+      normalizedProveedorNombre,
+      normalizedProveedorIdentificacion || null,
+      normalizedProviderRawName || null,
+      normalizedProviderRawIdentification || null,
+      normalizedProviderCode || null,
+      normalizedNombreArchivo || null,
+      normalizedRutaArchivo || null,
+      normalizedAttachmentStatus,
+      normalizedAttachmentOrigin || null,
+      normalizedOrderStatus,
+      normalizedExecutionDate || null,
+      normalizedCurrency || null,
+      normalizedPageStart || null,
+      normalizedPageEnd || null,
+      JSON.stringify(Array.isArray(normalizedPageNumbers) ? normalizedPageNumbers : []),
+      JSON.stringify(Array.isArray(normalizedWarnings) ? normalizedWarnings : []),
+      JSON.stringify(normalizedGroupPayload && typeof normalizedGroupPayload === 'object' ? normalizedGroupPayload : {}),
+      normalizedOrderConfirmedBy || null,
+      normalizedOrderConfirmedAt || null,
+      normalizedAttachmentConfirmedBy || null,
+      normalizedAttachmentConfirmedAt || null
+    ]
+  );
+  return rows[0] || null;
+};
+
+const replaceTramiteCaratulaProviderFacturas = async ({
+  providerCaratulaId,
+  rows = []
+}, client) => {
+  await getDb(client).query(
+    `
+    DELETE FROM tramites_pago_caratulas_proveedor_facturas
+    WHERE provider_caratula_id = $1
+    `,
+    [providerCaratulaId]
+  );
+
+  for (const row of rows) {
+    await getDb(client).query(
+      `
+      INSERT INTO tramites_pago_caratulas_proveedor_facturas (
+        provider_caratula_id,
+        factura_id,
+        sort_index,
+        order_source
+      )
+      VALUES ($1, $2, $3, $4)
+      `,
+      [
+        providerCaratulaId,
+        Number(row.factura_id),
+        Number(row.sort_index),
+        row.order_source || 'manual'
+      ]
+    );
+  }
+};
+
+const insertTramiteCaratulaOrphan = async (payload, client) => {
+  const {
+    tramiteId,
+    providerRawName,
+    providerRawIdentification,
+    providerCode,
+    nombreArchivo,
+    rutaArchivo,
+    executionDate,
+    currency,
+    pageStart,
+    pageEnd,
+    pageNumbers,
+    warnings,
+    groupPayload,
+    status = 'pendiente',
+    assignedProviderCaratulaId = null,
+    assignedBy = null,
+    assignedAt = null,
+    discardedBy = null,
+    discardedAt = null
+  } = payload || {};
+  const normalizedProviderRawName = pickValue(providerRawName, payload?.provider_raw_name);
+  const normalizedProviderRawIdentification = pickValue(providerRawIdentification, payload?.provider_raw_identification);
+  const normalizedProviderCode = pickValue(providerCode, payload?.provider_code);
+  const normalizedNombreArchivo = pickValue(nombreArchivo, payload?.nombre_archivo);
+  const normalizedRutaArchivo = pickValue(rutaArchivo, payload?.ruta_archivo);
+  const normalizedExecutionDate = pickValue(executionDate, payload?.execution_date);
+  const normalizedCurrency = pickValue(currency, payload?.currency);
+  const normalizedPageStart = pickValue(pageStart, payload?.page_start);
+  const normalizedPageEnd = pickValue(pageEnd, payload?.page_end);
+  const normalizedPageNumbers = pickValue(pageNumbers, payload?.page_numbers);
+  const normalizedWarnings = pickValue(warnings, payload?.warnings);
+  const normalizedGroupPayload = pickValue(groupPayload, payload?.group_payload);
+
+  const { rows } = await getDb(client).query(
+    `
+    INSERT INTO tramites_pago_caratulas_huerfanas (
+      tramite_id,
+      provider_raw_name,
+      provider_raw_identification,
+      provider_code,
+      nombre_archivo,
+      ruta_archivo,
+      execution_date,
+      currency,
+      page_start,
+      page_end,
+      page_numbers,
+      warnings,
+      group_payload,
+      status,
+      assigned_provider_caratula_id,
+      assigned_by,
+      assigned_at,
+      discarded_by,
+      discarded_at
+    )
+    VALUES (
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+      $11::jsonb, $12::jsonb, $13::jsonb, $14, $15, $16, $17, $18, $19
+    )
+    RETURNING *
+    `,
+    [
+      tramiteId,
+      normalizedProviderRawName || null,
+      normalizedProviderRawIdentification || null,
+      normalizedProviderCode || null,
+      normalizedNombreArchivo,
+      normalizedRutaArchivo,
+      normalizedExecutionDate || null,
+      normalizedCurrency || null,
+      normalizedPageStart || null,
+      normalizedPageEnd || null,
+      JSON.stringify(Array.isArray(normalizedPageNumbers) ? normalizedPageNumbers : []),
+      JSON.stringify(Array.isArray(normalizedWarnings) ? normalizedWarnings : []),
+      JSON.stringify(normalizedGroupPayload && typeof normalizedGroupPayload === 'object' ? normalizedGroupPayload : {}),
+      status,
+      assignedProviderCaratulaId,
+      assignedBy,
+      assignedAt,
+      discardedBy,
+      discardedAt
+    ]
+  );
+  return rows[0] || null;
+};
+
+const updateTramiteCaratulaOrphanStatus = async ({
+  orphanId,
+  status,
+  assignedProviderCaratulaId = null,
+  assignedBy = null,
+  assignedAt = null,
+  discardedBy = null,
+  discardedAt = null
+}, client) => {
+  const { rows } = await getDb(client).query(
+    `
+    UPDATE tramites_pago_caratulas_huerfanas
+    SET status = $1,
+        assigned_provider_caratula_id = $2,
+        assigned_by = $3,
+        assigned_at = $4,
+        discarded_by = $5,
+        discarded_at = $6,
+        actualizado_en = CURRENT_TIMESTAMP
+    WHERE id = $7
+    RETURNING *
+    `,
+    [
+      status,
+      assignedProviderCaratulaId,
+      assignedBy,
+      assignedAt,
+      discardedBy,
+      discardedAt,
+      orphanId
+    ]
+  );
+  return rows[0] || null;
+};
+
+const deleteTramiteCaratulaProvidersByTramiteId = async (tramiteId, client) => {
+  const { rows } = await getDb(client).query(
+    `
+    DELETE FROM tramites_pago_caratulas_proveedor
+    WHERE tramite_id = $1
+    RETURNING *
+    `,
+    [tramiteId]
+  );
+  return rows;
+};
+
+const deleteTramiteCaratulaOrphansByTramiteId = async (tramiteId, client) => {
+  const { rows } = await getDb(client).query(
+    `
+    DELETE FROM tramites_pago_caratulas_huerfanas
+    WHERE tramite_id = $1
+    RETURNING *
+    `,
+    [tramiteId]
+  );
+  return rows;
 };
 
 const getFacturaEstado = async (facturaId, client) => {
@@ -550,6 +948,17 @@ const listDocumentosByTramite = async (tramiteId, client, options = {}) => {
       fc.proveedor_id AS proveedor_id,
       p.nombre AS proveedor_nombre,
       p.identificacion_numero AS proveedor_identificacion,
+      fc.tabla_pago_id AS conta_tabla_pago_id,
+      tp.nombre AS conta_tabla_pago_nombre,
+      tp.ruta_pdf AS conta_tabla_pago_ruta_pdf,
+      fc.orden_compra_id AS conta_orden_compra_id,
+      oc.nombre AS conta_orden_compra_nombre,
+      oc.ruta_pdf AS conta_orden_compra_ruta_pdf,
+      fc.nota_credito_id AS conta_nota_credito_id,
+      nc.clave AS conta_nota_credito_clave,
+      nc.ruta_pdf AS conta_nota_credito_ruta_pdf,
+      nc.ruta_xml AS conta_nota_credito_ruta_xml,
+      COALESCE(respaldos.documentos_respaldo, '[]'::jsonb) AS conta_documentos_respaldo,
       fc.fecha_documento AS conta_fecha_documento,
       fc.fecha_vencimiento AS conta_fecha_vencimiento,
       fc.fecha_contabilizacion AS conta_fecha_contabilizacion,
@@ -563,6 +972,7 @@ const listDocumentosByTramite = async (tramiteId, client, options = {}) => {
       ${retencionPendienteExpression} AS conta_retencion_pendiente,
       fc.estado_retencion AS conta_estado_retencion,
       fc.centro_costo AS conta_centro_costo,
+      fc.metadata AS conta_metadata,
       fc.cuenta_contable AS conta_cuenta_contable,
       fc.proyecto AS conta_proyecto,
       fc.orden_compra AS conta_orden_compra,
@@ -585,6 +995,29 @@ const listDocumentosByTramite = async (tramiteId, client, options = {}) => {
     ${facturaWorkflowPagoJoin}
     LEFT JOIN facturas_contabilizacion fc ON fc.factura_id = f.id
     LEFT JOIN proveedores p ON p.id = fc.proveedor_id
+    LEFT JOIN tablas_pago tp ON tp.id = fc.tabla_pago_id
+    LEFT JOIN ordenes_compra oc ON oc.id = fc.orden_compra_id
+    LEFT JOIN notas_credito nc ON nc.id = fc.nota_credito_id
+    LEFT JOIN LATERAL (
+      SELECT COALESCE(
+        jsonb_agg(
+          jsonb_build_object(
+            'id', dr.id,
+            'factura_id', dr.factura_id,
+            'nombre_archivo', dr.nombre_archivo,
+            'ruta_pdf', dr.ruta_pdf,
+            'metadata', dr.metadata,
+            'creado_por', dr.creado_por,
+            'creado_en', dr.creado_en,
+            'actualizado_en', dr.actualizado_en
+          )
+          ORDER BY dr.creado_en ASC, dr.id ASC
+        ),
+        '[]'::jsonb
+      ) AS documentos_respaldo
+      FROM facturas_contabilizacion_documentos_respaldo dr
+      WHERE dr.factura_id = f.id
+    ) respaldos ON true
     LEFT JOIN LATERAL (
       WITH existing_approvers AS (
         SELECT
@@ -652,6 +1085,7 @@ const listSaldosPagoPrincipalByTramite = async (tramiteId, client) => {
     `
     SELECT
       td.factura_id,
+      td.monto_pago_programado,
       ${totalPagoPrincipalExpression} AS saldo_pago_principal
     FROM tramites_pago_documentos td
     JOIN facturas f ON f.id = td.factura_id
@@ -660,6 +1094,59 @@ const listSaldosPagoPrincipalByTramite = async (tramiteId, client) => {
       AND ${tesoreriaActivaSql('td.estado_tesoreria')}
     `,
     [tramiteId]
+  );
+
+  return rows;
+};
+
+const updateMontosPagoProgramadoByTramite = async ({
+  tramiteId,
+  pagosDocumentos = []
+}, client) => {
+  await getDb(client).query(
+    `
+    UPDATE tramites_pago_documentos
+    SET monto_pago_programado = NULL,
+        actualizado_en = CURRENT_TIMESTAMP
+    WHERE tramite_id = $1
+    `,
+    [tramiteId]
+  );
+
+  if (!Array.isArray(pagosDocumentos) || pagosDocumentos.length === 0) {
+    return [];
+  }
+
+  const facturaIds = [];
+  const montos = [];
+  pagosDocumentos.forEach((item) => {
+    const facturaId = Number(item?.facturaId ?? item?.factura_id);
+    const montoPago = Number(item?.montoPago ?? item?.monto_pago);
+    if (!Number.isInteger(facturaId) || facturaId <= 0) {
+      return;
+    }
+    if (!Number.isFinite(montoPago) || montoPago <= 0) {
+      return;
+    }
+    facturaIds.push(facturaId);
+    montos.push(montoPago);
+  });
+
+  if (facturaIds.length === 0) {
+    return [];
+  }
+
+  const { rows } = await getDb(client).query(
+    `
+    UPDATE tramites_pago_documentos td
+    SET monto_pago_programado = x.monto_pago_programado,
+        actualizado_en = CURRENT_TIMESTAMP
+    FROM UNNEST($2::int[], $3::numeric[]) AS x(factura_id, monto_pago_programado)
+    WHERE td.tramite_id = $1
+      AND td.factura_id = x.factura_id
+    RETURNING td.*
+    `,
+    [tramiteId, facturaIds, montos]
   );
 
   return rows;
@@ -1233,6 +1720,17 @@ module.exports = {
   getTramiteByIdForUpdate,
   getTramiteCaratulaByTramiteId,
   upsertTramiteCaratula,
+  listTramiteCaratulaProvidersByTramiteId,
+  listTramiteCaratulaProviderFacturasByTramiteId,
+  listTramiteCaratulaOrphansByTramiteId,
+  getTramiteCaratulaProviderByKeyForUpdate,
+  getTramiteCaratulaOrphanByIdForUpdate,
+  upsertTramiteCaratulaProvider,
+  replaceTramiteCaratulaProviderFacturas,
+  insertTramiteCaratulaOrphan,
+  updateTramiteCaratulaOrphanStatus,
+  deleteTramiteCaratulaProvidersByTramiteId,
+  deleteTramiteCaratulaOrphansByTramiteId,
   getFacturaEstado,
   getDocumentoTesoreriaEstado,
   getTramiteDocumentoByFacturaIdForUpdate,
@@ -1268,6 +1766,7 @@ module.exports = {
   resetTramiteDocumentoAprobadores,
   insertTramiteRetenciones,
   listSaldosPagoPrincipalByTramite,
+  updateMontosPagoProgramadoByTramite,
   countRechazadosActivos,
   getResumenEtapaDocumentos,
   insertPagoFactura,

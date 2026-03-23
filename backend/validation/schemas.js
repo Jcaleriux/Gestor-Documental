@@ -96,6 +96,31 @@ const resolveTramiteCaratulasSchema = Joi.object({
   usuario: Joi.string().allow('', null)
 });
 
+const confirmProviderCaratulaOrderSchema = Joi.object({
+  factura_ids: Joi.array().items(Joi.number().integer().positive()).required(),
+  order_source: Joi.string().trim().valid('auto', 'manual').optional(),
+  usuario: Joi.string().allow('', null)
+});
+
+const uploadProviderCaratulaSchema = Joi.object({
+  filename: Joi.string().trim().max(255).required(),
+  file_base64: Joi.string().trim().required(),
+  usuario: Joi.string().allow('', null)
+});
+
+const confirmProviderCaratulaSchema = Joi.object({
+  usuario: Joi.string().allow('', null)
+});
+
+const assignOrphanCaratulaSchema = Joi.object({
+  provider_key: Joi.string().trim().required(),
+  usuario: Joi.string().allow('', null)
+});
+
+const discardOrphanCaratulaSchema = Joi.object({
+  usuario: Joi.string().allow('', null)
+});
+
 const upsertContabilizacionSchema = Joi.object({
   fecha_documento: Joi.date().iso().allow(null, ''),
   fecha_vencimiento: Joi.date().iso().allow(null, ''),
@@ -116,6 +141,13 @@ const upsertContabilizacionSchema = Joi.object({
   nota_credito_id: Joi.number().integer().positive().allow(null),
   notas: Joi.string().allow('', null),
   workflow_action: Joi.string().trim().valid('save_draft', 'mark_in_review', 'finalize').optional(),
+  metadata: Joi.any(),
+  usuario: Joi.string().allow('', null)
+});
+
+const uploadContabilizacionDocumentoRespaldoSchema = Joi.object({
+  filename: Joi.string().trim().max(255).required(),
+  file_base64: Joi.string().trim().required(),
   metadata: Joi.any(),
   usuario: Joi.string().allow('', null)
 });
@@ -319,7 +351,13 @@ module.exports = {
   rechazoTesoreriaSchema,
   uploadTramiteCaratulasSchema,
   resolveTramiteCaratulasSchema,
+  confirmProviderCaratulaOrderSchema,
+  uploadProviderCaratulaSchema,
+  confirmProviderCaratulaSchema,
+  assignOrphanCaratulaSchema,
+  discardOrphanCaratulaSchema,
   upsertContabilizacionSchema,
+  uploadContabilizacionDocumentoRespaldoSchema,
   registrarPagoRetencionSchema,
   createUsuarioSchema,
   updateUsuarioSchema,

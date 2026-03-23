@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useState } from 'react';
 import { formatAmount } from '../../utils/formatters';
 import { estadoLabelTramite, estadoClassTramite } from '../../utils/estadosTramite';
 import PageHeader from '../common/PageHeader';
@@ -15,11 +15,6 @@ import TramitePagosSection from './TramitePagosSection';
 import TramiteRetencionesSection from './TramiteRetencionesSection';
 import TramiteCaratulasSection from './TramiteCaratulasSection.jsx';
 import TramiteProveedorGroup from './TramiteProveedorGroup.jsx';
-import { useProtectedObjectUrl } from '../../hooks/useProtectedObjectUrl.js';
-
-const getPdfUrl = (rutaPdf) => (
-  rutaPdf ? `/api/files/pdf?path=${encodeURIComponent(rutaPdf)}` : ''
-);
 
 function TramiteDetalleLayout({ layoutProps }) {
   const {
@@ -43,15 +38,13 @@ function TramiteDetalleLayout({ layoutProps }) {
     puedeFinanciera,
     puedeTesoreria
   } = table.permisos;
-  const caratulaPdfUrl = useMemo(
-    () => getPdfUrl(caratulas.caratula?.ruta_archivo),
-    [caratulas.caratula?.ruta_archivo]
-  );
-  const {
-    objectUrl: caratulaPreviewUrl,
-    error: caratulaPreviewError,
-    loading: caratulaPreviewLoading
-  } = useProtectedObjectUrl(caratulaPdfUrl);
+  const [allProviderPdfsExpanded, setAllProviderPdfsExpanded] = useState(true);
+  const [globalPdfExpansionVersion, setGlobalPdfExpansionVersion] = useState(0);
+
+  const applyGlobalPdfExpansion = (expanded) => {
+    setAllProviderPdfsExpanded(Boolean(expanded));
+    setGlobalPdfExpansionVersion((prev) => prev + 1);
+  };
 
   return (
     <div className="documents-page">
@@ -63,7 +56,10 @@ function TramiteDetalleLayout({ layoutProps }) {
           <TramiteHeaderActions
             accionSiguiente={header.accionSiguiente}
             onAccionSiguiente={header.onAccionSiguiente}
+            canExportReport={header.canExportReport}
+            exportReportLoading={header.exportReportLoading}
             historialVisible={header.historialVisible}
+            onExportReport={header.onExportReport}
             onToggleHistorial={header.onToggleHistorial}
             labels={header.labels}
           />
@@ -73,6 +69,7 @@ function TramiteDetalleLayout({ layoutProps }) {
       <TramiteTabs activeTab={tabs.activeTab} onChange={tabs.onChange} labels={tabs.labels} />
 
       <ActionAlerts error={alerts.error} message={alerts.message} />
+      <ActionAlerts error={alerts.reportError} message={alerts.reportMessage} />
 
       {historial.visible && (
         <TramiteHistorial
@@ -82,7 +79,7 @@ function TramiteDetalleLayout({ layoutProps }) {
         />
       )}
 
-      <SectionCard className="table-card tramite-detail-card">
+      <SectionCard className="table-card tramite-detail-card" bodyClassName="tramite-detail-card-body">
         <TramiteMeta
           estado={estadoLabelTramite(tramite.estado)}
           estadoClass={estadoClassTramite(tramite.estado)}
@@ -135,7 +132,24 @@ function TramiteDetalleLayout({ layoutProps }) {
                 totalDocs={table.resumenTotales.totalDocs}
                 totalMonto={formatAmount(table.resumenTotales.suma)}
                 resumenMoneda={table.resumenMoneda}
-                actions={null}
+                actions={table.providerGroups.length > 0 ? (
+                  <>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-primary"
+                      onClick={() => applyGlobalPdfExpansion(true)}
+                    >
+                      {table.labelsUnificada?.expandAllPdfs || 'Expandir todos los PDFs'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-secondary"
+                      onClick={() => applyGlobalPdfExpansion(false)}
+                    >
+                      {table.labelsUnificada?.collapseAllPdfs || 'Ocultar todos los PDFs'}
+                    </button>
+                  </>
+                ) : null}
                 labels={table.labelsUnificada}
               />
               <div className="p-3 tramite-unificada-list">
@@ -144,12 +158,19 @@ function TramiteDetalleLayout({ layoutProps }) {
                     key={group.group_key}
                     group={group}
                     labels={caratulas.labels}
-                    pdfPreviewUrl={caratulaPreviewUrl}
-                    pdfPreviewLoading={caratulaPreviewLoading}
-                    pdfPreviewError={caratulaPreviewError}
+                    defaultExpanded
+                    globalPdfExpanded={allProviderPdfsExpanded}
+                    globalPdfExpansionVersion={globalPdfExpansionVersion}
+                    canManage={caratulas.permisos?.puedeTesoreria && tramite.estado === 'en_revision_tesoreria_1'}
                     canResolve={caratulas.permisos?.puedeTesoreria && tramite.estado === 'en_revision_tesoreria_1'}
                     onResolveGroup={caratulas.onResolveCaratulas}
                     resolving={caratulas.resolvingCaratulaGroupKey === group.group_key}
+                    onConfirmOrder={caratulas.onConfirmProviderOrder}
+                    confirmingOrder={caratulas.confirmingOrderProviderKey === (group.provider_key || group.group_key)}
+                    onUploadProviderCaratula={caratulas.onUploadProviderCaratula}
+                    uploadingProvider={caratulas.uploadingProviderKey === (group.provider_key || group.group_key)}
+                    onConfirmProviderCaratula={caratulas.onConfirmProviderCaratula}
+                    confirmingProvider={caratulas.confirmingProviderKey === (group.provider_key || group.group_key)}
                     enEtapaGerencia={enEtapaGerencia}
                     puedeVerGerencia={puedeVerGerencia}
                     puedeGerencia={puedeGerencia}

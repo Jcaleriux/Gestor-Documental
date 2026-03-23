@@ -17,7 +17,8 @@ test('fetchTramiteDetalleData mapea tramite/documentos/retenciones cuando succes
           documentos: [{ factura_id: 1 }],
           retenciones: [{ id: 10 }],
           caratula: { id: 88, estado: 'procesada' },
-          provider_groups: [{ group_key: 'group_1' }]
+          provider_groups: [{ group_key: 'group_1' }],
+          orphan_groups: [{ orphan_id: 5 }]
         }
       }
     }))
@@ -32,7 +33,8 @@ test('fetchTramiteDetalleData mapea tramite/documentos/retenciones cuando succes
     documentos: [{ factura_id: 1 }],
     retenciones: [{ id: 10 }],
     caratula: { id: 88, estado: 'procesada' },
-    providerGroups: [{ group_key: 'group_1' }]
+    providerGroups: [{ group_key: 'group_1' }],
+    orphanGroups: [{ orphan_id: 5 }]
   });
 });
 
@@ -52,7 +54,8 @@ test('fetchTramiteDetalleData retorna defaults cuando success=false', async () =
     documentos: [],
     retenciones: [],
     caratula: null,
-    providerGroups: []
+    providerGroups: [],
+    orphanGroups: []
   });
 });
 

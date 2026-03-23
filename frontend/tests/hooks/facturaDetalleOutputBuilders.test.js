@@ -77,6 +77,7 @@ const createActionsFixture = () => {
     asociarTablaPago: noop,
     abrirAsociarOrdenCompra: noop,
     asociarOrdenCompra: noop,
+    desenlazarOrdenCompra: noop,
     abrirAsociarNotaCredito: noop,
     asociarNotaCredito: noop,
     verTablaPagoAsociada: noop,
@@ -131,6 +132,7 @@ test('buildFacturaDetalleActionsOutput conserva handlers de acciones', () => {
   assert.equal(output.guardarBorrador, actions.guardarBorrador);
   assert.equal(output.guardarContabilizacion, actions.guardarContabilizacion);
   assert.equal(output.verManifest, actions.verManifest);
+  assert.equal(output.desenlazarOrdenCompra, actions.desenlazarOrdenCompra);
 });
 
 test('buildFacturaDetalleOutputContract compone contrato por secciones', () => {

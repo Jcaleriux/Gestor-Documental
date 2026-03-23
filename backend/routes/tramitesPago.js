@@ -8,6 +8,11 @@ const {
   getHistorial,
   uploadCaratulas,
   resolveCaratulas,
+  confirmProviderCaratulaOrder,
+  uploadProviderCaratula,
+  confirmProviderCaratula,
+  assignOrphanCaratula,
+  discardOrphanCaratula,
   crearTramite,
   cambiarEstado,
   decisionDocumento
@@ -22,7 +27,12 @@ const {
   crearTramiteSchema,
   rechazoTesoreriaSchema,
   uploadTramiteCaratulasSchema,
-  resolveTramiteCaratulasSchema
+  resolveTramiteCaratulasSchema,
+  confirmProviderCaratulaOrderSchema,
+  uploadProviderCaratulaSchema,
+  confirmProviderCaratulaSchema,
+  assignOrphanCaratulaSchema,
+  discardOrphanCaratulaSchema
 } = require('../validation/schemas');
 const { PERMISSIONS, WORKFLOW_PERMISSIONS, TRAMITES_READ_PERMISSIONS } = require('../domain/permissions');
 
@@ -68,6 +78,41 @@ router.post(
   validateBody(resolveTramiteCaratulasSchema, { message: 'resolucion de caratulas invalida' }),
   requirePermission(PERMISSIONS.DOCUMENTOS_TRAMITAR_PAGO),
   resolveCaratulas
+);
+
+router.post(
+  '/tramites-pago/:id/caratulas/proveedores/:providerKey/confirm-order',
+  validateBody(confirmProviderCaratulaOrderSchema, { message: 'orden de caratula invalido' }),
+  requirePermission(PERMISSIONS.DOCUMENTOS_TRAMITAR_PAGO),
+  confirmProviderCaratulaOrder
+);
+
+router.post(
+  '/tramites-pago/:id/caratulas/proveedores/:providerKey/upload',
+  validateBody(uploadProviderCaratulaSchema, { message: 'caratula de proveedor invalida' }),
+  requirePermission(PERMISSIONS.DOCUMENTOS_TRAMITAR_PAGO),
+  uploadProviderCaratula
+);
+
+router.post(
+  '/tramites-pago/:id/caratulas/proveedores/:providerKey/confirm',
+  validateBody(confirmProviderCaratulaSchema, { message: 'confirmacion de caratula invalida' }),
+  requirePermission(PERMISSIONS.DOCUMENTOS_TRAMITAR_PAGO),
+  confirmProviderCaratula
+);
+
+router.post(
+  '/tramites-pago/:id/caratulas/huerfanas/:orphanId/assign',
+  validateBody(assignOrphanCaratulaSchema, { message: 'asignacion de caratula huerfana invalida' }),
+  requirePermission(PERMISSIONS.DOCUMENTOS_TRAMITAR_PAGO),
+  assignOrphanCaratula
+);
+
+router.post(
+  '/tramites-pago/:id/caratulas/huerfanas/:orphanId/discard',
+  validateBody(discardOrphanCaratulaSchema, { message: 'descarte de caratula huerfana invalido' }),
+  requirePermission(PERMISSIONS.DOCUMENTOS_TRAMITAR_PAGO),
+  discardOrphanCaratula
 );
 
 // POST crear tramite

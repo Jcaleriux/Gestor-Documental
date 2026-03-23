@@ -5,7 +5,8 @@ const extractTramiteDetalleData = (response) => {
       documentos: [],
       retenciones: [],
       caratula: null,
-      providerGroups: []
+      providerGroups: [],
+      orphanGroups: []
     };
   }
 
@@ -14,7 +15,8 @@ const extractTramiteDetalleData = (response) => {
     documentos: response.data.data?.documentos || [],
     retenciones: response.data.data?.retenciones || [],
     caratula: response.data.data?.caratula || null,
-    providerGroups: response.data.data?.provider_groups || []
+    providerGroups: response.data.data?.provider_groups || [],
+    orphanGroups: response.data.data?.orphan_groups || []
   };
 };
 

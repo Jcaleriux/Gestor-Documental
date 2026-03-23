@@ -4,6 +4,7 @@ const { mapContabilizacionRow } = require('../mappers/contabilizacionMapper');
 const REQUIRED_REPO_METHODS = [
   'getClient',
   'getContabilizacionByFacturaId',
+  'listDocumentosRespaldoByFacturaId',
   'listRetencionPagosByFacturaId',
   'getFacturaById',
   'getProveedorById',
@@ -14,6 +15,9 @@ const REQUIRED_REPO_METHODS = [
   'getContabilizacionRetencionByFacturaIdForUpdate',
   'normalizeRetencionStateByFacturaId',
   'upsertContabilizacion',
+  'createDocumentoRespaldo',
+  'getDocumentoRespaldoById',
+  'deleteDocumentoRespaldoById',
   'insertRetencionPago',
   'applyRetencionPago',
   'updateFacturaEstado',
@@ -66,14 +70,28 @@ const assertRepoContract = (repo) => {
 
 const mapContabilizacionWithPayments = async ({ contabilizacionRepo, facturaId, client }) => {
   const row = await contabilizacionRepo.getContabilizacionByFacturaId(facturaId, client);
-  if (!row) {
-    return null;
-  }
+  const [documentosRespaldo, retencionPagos] = await Promise.all([
+    contabilizacionRepo.listDocumentosRespaldoByFacturaId(facturaId, client),
+    row
+      ? contabilizacionRepo.listRetencionPagosByFacturaId(facturaId, client)
+      : Promise.resolve([])
+  ]);
 
-  const retencionPagos = await contabilizacionRepo.listRetencionPagosByFacturaId(facturaId, client);
+  if (!row) {
+    if (!Array.isArray(documentosRespaldo) || documentosRespaldo.length === 0) {
+      return null;
+    }
+
+    return mapContabilizacionRow({
+      factura_id: facturaId,
+      documentos_respaldo: documentosRespaldo,
+      retencion_pagos: []
+    });
+  }
 
   return mapContabilizacionRow({
     ...row,
+    documentos_respaldo: documentosRespaldo,
     retencion_pagos: retencionPagos
   });
 };

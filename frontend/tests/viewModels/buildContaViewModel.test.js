@@ -36,6 +36,7 @@ const createDetalleFixture = () => ({
   abrirAsociarTablaPago: createMockFn(),
   abrirAsociarOrdenCompra: createMockFn(),
   abrirAsociarNotaCredito: createMockFn(),
+  desenlazarOrdenCompra: createMockFn(),
   verTablaPagoAsociada: createMockFn(),
   verOrdenCompraAsociada: createMockFn(),
   verNotaCreditoAsociada: createMockFn(),

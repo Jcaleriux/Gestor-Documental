@@ -2,7 +2,8 @@ const { assertFound } = require('../utils/errors');
 const {
   parsePositiveIntOrThrow,
   parseOptionalPositiveIntOrThrow,
-  toNormalizedLowerString
+  toNormalizedLowerString,
+  callOptionalRepoMethod
 } = require('./tramitesPagoUseCases.helpers');
 const {
   mapTramiteRow,
@@ -10,7 +11,7 @@ const {
   mapRetencionRow,
   mapHistorialRow
 } = require('../mappers/tramitesPagoMapper');
-const { summarizeStoredTramiteCaratula } = require('./tramitesPagoCaratulasSupport');
+const { summarizeStoredTramiteCaratulasV2 } = require('./tramitesPagoCaratulasProviderSupport');
 
 const createTramitesPagoReadUseCases = ({ tramitesPagoRepo }) => {
   const listTramites = async ({ sociedadId, estado }) => {
@@ -34,15 +35,37 @@ const createTramitesPagoReadUseCases = ({ tramitesPagoRepo }) => {
     const tramite = await tramitesPagoRepo.getTramiteById(tramiteId);
     assertFound(tramite, 'Tramite no encontrado');
 
-    const [documentos, retenciones, caratulaRow] = await Promise.all([
+    const [documentos, retenciones, caratulaRow, providerRows, providerOrderRows, orphanRows] = await Promise.all([
       tramitesPagoRepo.listDocumentosByTramite(tramiteId, null, { currentUserId: actorUserId }),
       tramitesPagoRepo.listRetencionesByTramite(tramiteId),
-      tramitesPagoRepo.getTramiteCaratulaByTramiteId(tramiteId)
+      tramitesPagoRepo.getTramiteCaratulaByTramiteId(tramiteId),
+      callOptionalRepoMethod({
+        repo: tramitesPagoRepo,
+        methodName: 'listTramiteCaratulaProvidersByTramiteId',
+        args: [tramiteId],
+        defaultValue: []
+      }),
+      callOptionalRepoMethod({
+        repo: tramitesPagoRepo,
+        methodName: 'listTramiteCaratulaProviderFacturasByTramiteId',
+        args: [tramiteId],
+        defaultValue: []
+      }),
+      callOptionalRepoMethod({
+        repo: tramitesPagoRepo,
+        methodName: 'listTramiteCaratulaOrphansByTramiteId',
+        args: [tramiteId],
+        defaultValue: []
+      })
     ]);
     const documentosMapped = documentos.map(mapDocumentoRow);
-    const caratulaSummary = summarizeStoredTramiteCaratula({
+    const caratulaSummary = summarizeStoredTramiteCaratulasV2({
       row: caratulaRow,
-      documents: documentosMapped
+      documents: documentosMapped,
+      providerRows,
+      providerOrderRows,
+      orphanRows,
+      tramiteEstado: tramite.estado
     });
 
     return {
@@ -50,7 +73,8 @@ const createTramitesPagoReadUseCases = ({ tramitesPagoRepo }) => {
       documentos: documentosMapped,
       retenciones: retenciones.map(mapRetencionRow),
       caratula: caratulaSummary.caratula,
-      provider_groups: caratulaSummary.provider_groups
+      provider_groups: caratulaSummary.provider_groups,
+      orphan_groups: caratulaSummary.orphan_groups
     };
   };
 
