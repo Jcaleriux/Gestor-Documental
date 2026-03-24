@@ -100,7 +100,7 @@ test('buildDashboardViewModel arma una vista general unica para todos los usuari
     viewModel.cards.map((card) => card.title),
     [
       'Facturas no contabilizadas',
-      'Facturas contabilizadas',
+      'Facturas disponibles para tramitar',
       'En tramite de pagos',
       'Pagadas',
       'En revision contabilidad',
