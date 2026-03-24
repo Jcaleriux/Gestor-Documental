@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { formatDate } from '../../utils/formatters.js';
 import EmptyState from '../common/EmptyState.jsx';
 import SectionCard from '../common/SectionCard.jsx';
@@ -29,8 +29,6 @@ function TramiteProveedorGroup({
   group,
   labels,
   defaultExpanded = true,
-  globalPdfExpanded = true,
-  globalPdfExpansionVersion = 0,
   canManage,
   canResolve,
   onResolveGroup,
@@ -71,22 +69,6 @@ function TramiteProveedorGroup({
     loading: pdfPreviewLoading,
     error: pdfPreviewError
   } = useProtectedObjectUrl(pdfUrl);
-
-  useEffect(() => {
-    if (globalPdfExpansionVersion <= 0) {
-      setSelectedFile(null);
-      setLineSelections(buildInitialLineSelections(group));
-      setInvoiceOrder(getAllDocumentIds(group));
-      setExpandedDocumentIds(defaultExpanded ? getAllDocumentIds(group) : []);
-      setCaratulaExpanded(Boolean(group.pdf_path) && defaultExpanded);
-      setExpandAllResources(Boolean(defaultExpanded));
-      setLocalError('');
-    } else {
-      setExpandedDocumentIds(globalPdfExpanded ? getAllDocumentIds(group) : []);
-      setCaratulaExpanded(Boolean(group.pdf_path) && globalPdfExpanded);
-      setExpandAllResources(Boolean(globalPdfExpanded));
-    }
-  }, [group, defaultExpanded, globalPdfExpansionVersion, globalPdfExpanded]);
 
   const hasMultipleDocs = group.documents.length > 1;
   const showOrderEditor = hasMultipleDocs && canManage && group.order_status !== 'confirmado';

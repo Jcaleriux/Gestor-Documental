@@ -46,6 +46,19 @@ function TramiteDetalleLayout({ layoutProps }) {
     setGlobalPdfExpansionVersion((prev) => prev + 1);
   };
 
+  const buildProviderGroupRenderKey = (group) => [
+    group.group_key,
+    globalPdfExpansionVersion,
+    group.pdf_path || '',
+    group.attachment_status || '',
+    group.order_status || '',
+    group.unresolved_lines_count || 0,
+    (group.invoice_order || []).join('-'),
+    (group.lines || [])
+      .map((line) => `${line.line_key}:${line.matched_factura_id || ''}`)
+      .join('|')
+  ].join('::');
+
   return (
     <div className="documents-page">
       <PageHeader
@@ -174,12 +187,10 @@ function TramiteDetalleLayout({ layoutProps }) {
               <div className="p-3 tramite-unificada-list">
                 {table.providerGroups.map((group) => (
                   <TramiteProveedorGroup
-                    key={group.group_key}
+                    key={buildProviderGroupRenderKey(group)}
                     group={group}
                     labels={caratulas.labels}
-                    defaultExpanded
-                    globalPdfExpanded={allProviderPdfsExpanded}
-                    globalPdfExpansionVersion={globalPdfExpansionVersion}
+                    defaultExpanded={globalPdfExpansionVersion > 0 ? allProviderPdfsExpanded : true}
                     canManage={caratulas.permisos?.puedeTesoreria && tramite.estado === 'en_revision_tesoreria_1'}
                     canResolve={caratulas.permisos?.puedeTesoreria && tramite.estado === 'en_revision_tesoreria_1'}
                     onResolveGroup={caratulas.onResolveCaratulas}
