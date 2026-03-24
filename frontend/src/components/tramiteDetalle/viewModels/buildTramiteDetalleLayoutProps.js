@@ -4,7 +4,11 @@ import {
   ESTADOS_TRAMITE,
   DESTINOS_TESORERIA
 } from '../../../utils/tramiteConfig.js';
-import getPermisosTramite from '../../../utils/tramitePermissions.js';
+import getPermisosTramite, { hasPermission } from '../../../utils/tramitePermissions.js';
+import {
+  sortDocumentosByProveedor,
+  sortProviderGroupsByProveedor
+} from '../../../utils/tramiteProviderOrdering.js';
 
 const buildOverrideEstados = () => (
   ESTADOS_TRAMITE.map((estado) => ({
@@ -19,11 +23,17 @@ export const buildHeaderLayoutProps = ({
   handleAccionSiguiente,
   historialVisible,
   setHistorialVisible,
-  permisosTramite
+  permisosTramite,
+  documentosActivos,
+  reportLoading,
+  exportReport
 }) => ({
   ...headerViewModel,
   accionSiguiente: permisosTramite?.puedeAccionSiguiente ? accionSiguiente : null,
   onAccionSiguiente: handleAccionSiguiente,
+  canExportReport: Array.isArray(documentosActivos) && documentosActivos.length > 0,
+  exportReportLoading: reportLoading === true,
+  onExportReport: exportReport,
   historialVisible,
   onToggleHistorial: () => setHistorialVisible((prev) => !prev),
   labels: TRAMITE_LABELS.headerActions
@@ -35,9 +45,22 @@ export const buildTabsLayoutProps = ({ activeTab, setActiveTab }) => ({
   labels: TRAMITE_LABELS.tabs
 });
 
-export const buildAlertsLayoutProps = ({ actionError, actionMessage }) => ({
+export const buildAlertsLayoutProps = ({
+  actionError,
+  actionMessage,
+  reportError,
+  reportMessage,
+  downloadUnifiedPdfError,
+  downloadUnifiedPdfMessage,
+  downloadUnifiedPdfWarning
+}) => ({
   error: actionError,
-  message: actionMessage
+  message: actionMessage,
+  reportError,
+  reportMessage,
+  downloadUnifiedPdfError,
+  downloadUnifiedPdfMessage,
+  downloadUnifiedPdfWarning
 });
 
 export const buildHistorialLayoutProps = ({
@@ -58,43 +81,107 @@ export const buildMetaLayoutProps = ({ tramite, resumenTotales, resumenMoneda })
 });
 
 export const buildPagosLayoutProps = ({
+  tramite,
+  userPermissions,
   accionSiguiente,
   documentosActivos,
   pagosFacturas,
   handlePagoFacturaChange
-}) => ({
-  visible: accionSiguiente?.estado === 'pagado' && documentosActivos.length > 0,
-  documentosActivos,
-  pagosFacturas,
-  onPagoFacturaChange: handlePagoFacturaChange
-});
+}) => {
+  const permisos = getPermisosTramite({ userPermissions, estado: tramite?.estado });
+
+  return {
+    visible: permisos?.puedeTesoreria
+      && accionSiguiente?.estado === 'en_aprobacion_gerencia_contable'
+      && documentosActivos.length > 0,
+    documentosActivos,
+    pagosFacturas,
+    onPagoFacturaChange: handlePagoFacturaChange
+  };
+};
 
 export const buildRetencionesLayoutProps = ({ retencionesActivas }) => ({
   retencionesActivas
 });
 
+const buildCaratulasReadiness = ({ tramite, documentosActivos, userPermissions }) => {
+  const canManageCaratulas = hasPermission(userPermissions, 'documentos_tramitar_pago');
+  const activeDocuments = Array.isArray(documentosActivos) ? documentosActivos : [];
+  const gerenciaPendientesDocs = activeDocuments.filter((doc) => doc.estado_gerencia === 'pendiente');
+  const gerenciaRechazadosDocs = activeDocuments.filter((doc) => doc.estado_gerencia === 'rechazado');
+  const gerenciaAprobadosDocs = activeDocuments.filter((doc) => doc.estado_gerencia === 'aprobado');
+
+  return {
+    canManageCaratulas,
+    showWaitingMessage: canManageCaratulas && tramite?.estado === 'en_aprobacion_gerencia',
+    totalDocumentos: activeDocuments.length,
+    gerenciaAprobados: gerenciaAprobadosDocs.length,
+    gerenciaPendientes: gerenciaPendientesDocs.length,
+    gerenciaRechazados: gerenciaRechazadosDocs.length,
+    pendingDocuments: gerenciaPendientesDocs.slice(0, 3).map((doc) => (
+      doc.consecutivo || doc.clave || `Factura ${doc.factura_id}`
+    )),
+  };
+};
+
 export const buildCaratulasLayoutProps = ({
   tramite,
   caratula,
   providerGroups,
+  orphanGroups,
+  documentosActivos,
   userPermissions,
   handleUploadCaratulas,
   handleResolveCaratulas,
+  handleConfirmProviderOrder,
+  handleUploadProviderCaratula,
+  handleConfirmProviderCaratula,
+  handleAssignOrphanCaratula,
+  handleDiscardOrphanCaratula,
   uploadingCaratulas,
   resolvingCaratulaGroupKey,
+  uploadingProviderKey,
+  confirmingProviderKey,
+  confirmingOrderProviderKey,
+  orphanActionId,
+  providerSortDirection,
+  setProviderSortDirection,
   sociedadLabel
-}) => ({
-  caratula,
-  providerGroups,
-  tramiteEstado: tramite.estado,
-  permisos: getPermisosTramite({ userPermissions, estado: tramite.estado }),
-  onUploadCaratulas: handleUploadCaratulas,
-  onResolveCaratulas: handleResolveCaratulas,
-  uploadingCaratulas,
-  resolvingCaratulaGroupKey,
-  sociedadLabel,
-  labels: TRAMITE_LABELS.caratulas
-});
+}) => {
+  const permisos = getPermisosTramite({ userPermissions, estado: tramite.estado });
+  const visible = permisos?.puedeTesoreria && tramite.estado === 'en_revision_tesoreria_1';
+
+  return {
+    visible,
+    caratula,
+    providerGroups,
+    orphanGroups,
+    tramiteEstado: tramite.estado,
+    permisos,
+    providerSortDirection,
+    onToggleProviderSortDirection: () => setProviderSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc')),
+    readiness: buildCaratulasReadiness({
+      tramite,
+      documentosActivos,
+      userPermissions,
+    }),
+    onUploadCaratulas: handleUploadCaratulas,
+    onResolveCaratulas: handleResolveCaratulas,
+    onConfirmProviderOrder: handleConfirmProviderOrder,
+    onUploadProviderCaratula: handleUploadProviderCaratula,
+    onConfirmProviderCaratula: handleConfirmProviderCaratula,
+    onAssignOrphanCaratula: handleAssignOrphanCaratula,
+    onDiscardOrphanCaratula: handleDiscardOrphanCaratula,
+    uploadingCaratulas,
+    resolvingCaratulaGroupKey,
+    uploadingProviderKey,
+    confirmingProviderKey,
+    confirmingOrderProviderKey,
+    orphanActionId,
+    sociedadLabel,
+    labels: TRAMITE_LABELS.caratulas
+  };
+};
 
 export const buildOverrideLayoutProps = ({
   overrideUser,
@@ -124,6 +211,7 @@ export const buildTableLayoutProps = ({
   documentosActivos,
   caratula,
   providerGroups,
+  providerSortDirection,
   tramite,
   userPermissions,
   tesoreriaDestino,
@@ -133,13 +221,22 @@ export const buildTableLayoutProps = ({
   resumenTotales,
   resumenMoneda,
   sociedadLabel,
-  sociedadId
+  sociedadId,
+  downloadUnifiedPdfLoading,
+  downloadUnifiedPdf
 }) => ({
   activeTab,
-  documentos,
+  documentos: sortDocumentosByProveedor({
+    documentos,
+    providerGroups,
+    direction: providerSortDirection
+  }),
   documentosActivos,
   caratula,
-  providerGroups,
+  providerGroups: sortProviderGroupsByProveedor({
+    providerGroups,
+    direction: providerSortDirection
+  }),
   permisos: getPermisosTramite({ userPermissions, estado: tramite.estado }),
   destinosTesoreria: DESTINOS_TESORERIA,
   tesoreriaDestino,
@@ -150,6 +247,9 @@ export const buildTableLayoutProps = ({
   resumenMoneda,
   sociedadLabel,
   sociedadId,
+  canDownloadUnifiedPdf: Array.isArray(documentosActivos) && documentosActivos.length > 0,
+  downloadUnifiedPdfLoading: downloadUnifiedPdfLoading === true,
+  onDownloadUnifiedPdf: downloadUnifiedPdf,
   labelsDocumentos: TRAMITE_LABELS.documentos,
   labelsUnificada: TRAMITE_LABELS.unificada
 });

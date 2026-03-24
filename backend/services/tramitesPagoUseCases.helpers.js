@@ -56,6 +56,38 @@ const parseOptionalPositiveIntOrThrow = (value, fieldName) => {
 };
 
 const PAGO_MONTO_EPSILON = 0.0001;
+const PAGO_DISPLAY_DECIMALS = 2;
+
+const roundPagoForDisplay = (value) => Number(Number(value || 0).toFixed(PAGO_DISPLAY_DECIMALS));
+
+const alignMontoPagoToSaldo = ({ montoPago, saldoFactura }) => {
+  if (!Number.isFinite(montoPago) || !Number.isFinite(saldoFactura)) {
+    return montoPago;
+  }
+
+  if (montoPago - saldoFactura <= PAGO_MONTO_EPSILON) {
+    return montoPago;
+  }
+
+  if (roundPagoForDisplay(montoPago) === roundPagoForDisplay(saldoFactura)) {
+    return saldoFactura;
+  }
+
+  return montoPago;
+};
+
+const alignPagosInputToSaldos = (pagosInput, saldosByFactura) => (
+  (Array.isArray(pagosInput) ? pagosInput : []).map((item) => {
+    const saldoFactura = Number(saldosByFactura.get(item.facturaId) || 0);
+    return {
+      ...item,
+      montoPago: alignMontoPagoToSaldo({
+        montoPago: Number(item.montoPago),
+        saldoFactura
+      })
+    };
+  })
+);
 
 const REQUIRED_REPO_METHODS = [
   'getClient',
@@ -105,6 +137,7 @@ const REQUIRED_REPO_METHODS = [
   'countRechazadosActivos',
   'getResumenEtapaDocumentos',
   'listSaldosPagoPrincipalByTramite',
+  'updateMontosPagoProgramadoByTramite',
   'applyRetencionesPagadasByTramite'
 ];
 
@@ -113,6 +146,19 @@ const assertRepoContract = (repo) => {
   if (missingMethods.length > 0) {
     throw new Error(`tramitesPagoRepo incompleto: faltan ${missingMethods.join(', ')}`);
   }
+};
+
+const callOptionalRepoMethod = async ({
+  repo,
+  methodName,
+  args = [],
+  defaultValue = []
+}) => {
+  if (typeof repo?.[methodName] !== 'function') {
+    return defaultValue;
+  }
+
+  return repo[methodName](...args);
 };
 
 const loadTramiteEstadoOrFail = async ({ tramitesPagoRepo, tramiteId, client }) => {
@@ -220,6 +266,28 @@ const buildSaldosByFactura = (saldosRows) => new Map(
   (saldosRows || []).map((row) => [Number(row.factura_id), Number(row.saldo_pago_principal || 0)])
 );
 
+const buildPagosProgramadosByFactura = (saldosRows) => {
+  const pagosProgramados = [];
+
+  (saldosRows || []).forEach((row) => {
+    const facturaId = Number(row?.factura_id);
+    const montoPago = Number(row?.monto_pago_programado);
+    if (!Number.isInteger(facturaId) || facturaId <= 0) {
+      return;
+    }
+    if (!Number.isFinite(montoPago) || montoPago <= 0) {
+      return;
+    }
+
+    pagosProgramados.push({
+      facturaId,
+      montoPago
+    });
+  });
+
+  return pagosProgramados;
+};
+
 const validatePagosInputBySaldos = (pagosInput, saldosByFactura) => {
   for (const pagoInput of pagosInput) {
     if (!saldosByFactura.has(pagoInput.facturaId)) {
@@ -281,12 +349,16 @@ module.exports = {
   parseOptionalPositiveIntOrThrow,
   REQUIRED_REPO_METHODS,
   assertRepoContract,
+  callOptionalRepoMethod,
   loadTramiteEstadoOrFail,
   ensureFacturaNoPagadaForTesoreria,
   resolveFacturaEstadoOrigen,
   excludeDocumentoEnTesoreria,
   devolverDocumentoAContabilidad,
   buildSaldosByFactura,
+  buildPagosProgramadosByFactura,
+  alignMontoPagoToSaldo,
+  alignPagosInputToSaldos,
   validatePagosInputBySaldos,
   registrarPagosPrincipales
 };

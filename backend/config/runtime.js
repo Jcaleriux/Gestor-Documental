@@ -14,6 +14,7 @@ const DEFAULT_RUNTIME_CONFIG = Object.freeze({
   authLoginRateLimitMax: 20,
   maxTablaPagoMb: 10,
   maxOrdenCompraMb: 10,
+  maxContabilizacionRespaldoMb: 10,
   maxTramitesCaratulaMb: 15,
   maxReservasDocMb: 15,
   watcher: Object.freeze({
@@ -144,6 +145,11 @@ const resolveRuntimeConfig = () => {
       name: 'ORDENES_COMPRA_MAX_FILE_MB',
       fallback: DEFAULT_RUNTIME_CONFIG.maxOrdenCompraMb,
       label: 'ORDENES_COMPRA_MAX_FILE_MB',
+    }),
+    maxContabilizacionRespaldoMb: parsePositiveNumberEnv({
+      name: 'CONTABILIZACION_RESPALDO_MAX_FILE_MB',
+      fallback: DEFAULT_RUNTIME_CONFIG.maxContabilizacionRespaldoMb,
+      label: 'CONTABILIZACION_RESPALDO_MAX_FILE_MB',
     }),
     maxTramitesCaratulaMb: parsePositiveNumberEnv({
       name: 'TRAMITES_CARATULA_MAX_FILE_MB',

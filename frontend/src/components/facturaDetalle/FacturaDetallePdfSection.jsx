@@ -1,34 +1,29 @@
-import { useReducer } from 'react';
+import { useState } from 'react';
 import ActionAlerts from '../common/ActionAlerts';
 import EmptyState from '../common/EmptyState';
 import SectionCard from '../common/SectionCard';
 import { FACTURA_DETALLE_LABELS } from '../../utils/uiLabels';
 import { useProtectedObjectUrl } from '../../hooks/useProtectedObjectUrl.js';
 import { openProtectedInNewTab } from '../../utils/protectedResources.js';
+import { withPdfFitToWidth } from '../../utils/pdfViewer.js';
 
-const buildResetKey = ({ id, tablaPagoActual, ordenCompraActual, notaCreditoActual }) => (
+const buildResetKey = ({
+  id,
+  tablaPagoActual,
+  ordenCompraActual,
+  notaCreditoActual,
+  documentosRespaldoActuales
+}) => (
   [
     id || '',
     tablaPagoActual?.id || '',
     ordenCompraActual?.id || '',
-    notaCreditoActual?.id || ''
+    notaCreditoActual?.id || '',
+    Array.isArray(documentosRespaldoActuales)
+      ? documentosRespaldoActuales.map((documento) => documento.id).join(',')
+      : ''
   ].join('|')
 );
-
-const initialPdfPanelState = {
-  tablaPagoOptionsOpen: false,
-  tablaPagoInlineOpen: false,
-  ordenCompraOptionsOpen: false,
-  ordenCompraInlineOpen: false,
-  notaCreditoOptionsOpen: false,
-  notaCreditoInlineOpen: false
-};
-
-const pdfPanelKeysBySection = {
-  tablaPago: { options: 'tablaPagoOptionsOpen', inline: 'tablaPagoInlineOpen' },
-  ordenCompra: { options: 'ordenCompraOptionsOpen', inline: 'ordenCompraInlineOpen' },
-  notaCredito: { options: 'notaCreditoOptionsOpen', inline: 'notaCreditoInlineOpen' }
-};
 
 function ProtectedPdfEmbed({ resourceUrl, title, unavailableMessage, height = '520px' }) {
   const {
@@ -52,35 +47,96 @@ function ProtectedPdfEmbed({ resourceUrl, title, unavailableMessage, height = '5
   return (
     <iframe
       title={title}
-      src={objectUrl}
+      src={withPdfFitToWidth(objectUrl)}
       style={{ width: '100%', height, border: '1px solid #e6ebf2' }}
     />
   );
 }
 
-const pdfPanelReducer = (state, action) => {
-  const sectionKeys = pdfPanelKeysBySection[action.section];
-  if (!sectionKeys) return state;
+function AssociatedPdfPanel({
+  buttonLabel,
+  headerText,
+  inlineCaption,
+  resourceUrl,
+  title,
+  unavailableMessage,
+  onOpenExternal,
+  canExpand = true,
+  expandUnavailableMessage = ''
+}) {
+  const [optionsOpen, setOptionsOpen] = useState(false);
+  const [inlineOpen, setInlineOpen] = useState(false);
 
-  if (action.type === 'toggleOptions') {
-    const nextOptions = !state[sectionKeys.options];
-    return {
-      ...state,
-      [sectionKeys.options]: nextOptions,
-      [sectionKeys.inline]: nextOptions ? state[sectionKeys.inline] : false
-    };
-  }
+  const handleToggleOptions = () => {
+    setOptionsOpen((previous) => {
+      const nextValue = !previous;
+      if (!nextValue) {
+        setInlineOpen(false);
+      }
+      return nextValue;
+    });
+  };
 
-  if (action.type === 'toggleInline') {
-    return {
-      ...state,
-      [sectionKeys.options]: true,
-      [sectionKeys.inline]: !state[sectionKeys.inline]
-    };
-  }
+  const handleToggleInline = () => {
+    setOptionsOpen(true);
+    setInlineOpen((previous) => !previous);
+  };
 
-  return state;
-};
+  return (
+    <div className="mt-3">
+      {headerText ? (
+        <div className="text-muted small mb-1">{headerText}</div>
+      ) : null}
+
+      <button
+        className="btn btn-outline-success w-100"
+        type="button"
+        onClick={handleToggleOptions}
+      >
+        {buttonLabel}
+      </button>
+
+      {optionsOpen && (
+        <div className="d-flex flex-wrap gap-2 mt-2">
+          <button
+            className="btn btn-outline-success btn-sm"
+            type="button"
+            onClick={onOpenExternal}
+          >
+            Abrir en pestana nueva
+          </button>
+          <button
+            className={`btn btn-sm ${inlineOpen ? 'btn-success' : 'btn-outline-success'}`}
+            type="button"
+            onClick={handleToggleInline}
+            disabled={!canExpand}
+          >
+            {inlineOpen ? 'Ocultar' : 'Expandir'}
+          </button>
+        </div>
+      )}
+
+      {inlineOpen && canExpand && (
+        <div className="mt-2">
+          {inlineCaption ? (
+            <div className="text-muted small mb-1">{inlineCaption}</div>
+          ) : null}
+          <ProtectedPdfEmbed
+            resourceUrl={resourceUrl}
+            title={title}
+            unavailableMessage={unavailableMessage}
+          />
+        </div>
+      )}
+
+      {optionsOpen && !canExpand && expandUnavailableMessage ? (
+        <div className="text-muted small mt-2">
+          {expandUnavailableMessage}
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 function FacturaDetallePdfSectionContent({
   pdfUrl,
@@ -101,42 +157,10 @@ function FacturaDetallePdfSectionContent({
   notaCreditoActual,
   notaCreditoPdfUrl,
   notaCreditoXmlUrl,
-  verNotaCreditoAsociada
+  verNotaCreditoAsociada,
+  documentosRespaldoActuales,
+  verDocumentoRespaldo
 }) {
-  const [pdfPanelState, dispatchPdfPanel] = useReducer(pdfPanelReducer, initialPdfPanelState);
-  const {
-    tablaPagoOptionsOpen,
-    tablaPagoInlineOpen,
-    ordenCompraOptionsOpen,
-    ordenCompraInlineOpen,
-    notaCreditoOptionsOpen,
-    notaCreditoInlineOpen
-  } = pdfPanelState;
-
-  const toggleTablaPagoOptions = () => {
-    dispatchPdfPanel({ type: 'toggleOptions', section: 'tablaPago' });
-  };
-
-  const toggleTablaPagoInline = () => {
-    dispatchPdfPanel({ type: 'toggleInline', section: 'tablaPago' });
-  };
-
-  const toggleOrdenCompraOptions = () => {
-    dispatchPdfPanel({ type: 'toggleOptions', section: 'ordenCompra' });
-  };
-
-  const toggleOrdenCompraInline = () => {
-    dispatchPdfPanel({ type: 'toggleInline', section: 'ordenCompra' });
-  };
-
-  const toggleNotaCreditoOptions = () => {
-    dispatchPdfPanel({ type: 'toggleOptions', section: 'notaCredito' });
-  };
-
-  const toggleNotaCreditoInline = () => {
-    dispatchPdfPanel({ type: 'toggleInline', section: 'notaCredito' });
-  };
-
   return (
     <SectionCard
       title={FACTURA_DETALLE_LABELS.pdf.title}
@@ -204,137 +228,57 @@ function FacturaDetallePdfSectionContent({
         unavailableMessage={FACTURA_DETALLE_LABELS.pdf.pdfUnavailable}
       />
 
-      {tablaPagoActual?.ruta_pdf && (
-        <div className="mt-3">
-          <button
-            className="btn btn-outline-success w-100"
-            type="button"
-            onClick={toggleTablaPagoOptions}
-          >
-            Ver tabla de pagos
-          </button>
-          {tablaPagoOptionsOpen && (
-            <div className="d-flex flex-wrap gap-2 mt-2">
-              <button
-                className="btn btn-outline-success btn-sm"
-                type="button"
-                onClick={verTablaPagoAsociada}
-              >
-                Abrir en pestana nueva
-              </button>
-              <button
-                className={`btn btn-sm ${tablaPagoInlineOpen ? 'btn-success' : 'btn-outline-success'}`}
-                type="button"
-                onClick={toggleTablaPagoInline}
-              >
-                {tablaPagoInlineOpen ? 'Ocultar' : 'Expandir'}
-              </button>
-            </div>
-          )}
-          {tablaPagoInlineOpen && tablaPagoPdfUrl && (
-            <div className="mt-2">
-              <div className="text-muted small mb-1">
-                Tabla asociada: {tablaPagoActual.nombre}
-              </div>
-              <ProtectedPdfEmbed
-                resourceUrl={tablaPagoPdfUrl}
-                title="Tabla de pagos PDF"
-                unavailableMessage="Tabla de pagos no disponible."
-              />
-            </div>
-          )}
-        </div>
-      )}
+      {tablaPagoActual?.ruta_pdf ? (
+        <AssociatedPdfPanel
+          buttonLabel="Ver tabla de pagos"
+          inlineCaption={`Tabla asociada: ${tablaPagoActual.nombre}`}
+          resourceUrl={tablaPagoPdfUrl}
+          title="Tabla de pagos PDF"
+          unavailableMessage="Tabla de pagos no disponible."
+          onOpenExternal={verTablaPagoAsociada}
+        />
+      ) : null}
 
-      {ordenCompraActual?.ruta_pdf && (
-        <div className="mt-3">
-          <button
-            className="btn btn-outline-success w-100"
-            type="button"
-            onClick={toggleOrdenCompraOptions}
-          >
-            Ver orden de compra
-          </button>
-          {ordenCompraOptionsOpen && (
-            <div className="d-flex flex-wrap gap-2 mt-2">
-              <button
-                className="btn btn-outline-success btn-sm"
-                type="button"
-                onClick={verOrdenCompraAsociada}
-              >
-                Abrir en pestana nueva
-              </button>
-              <button
-                className={`btn btn-sm ${ordenCompraInlineOpen ? 'btn-success' : 'btn-outline-success'}`}
-                type="button"
-                onClick={toggleOrdenCompraInline}
-              >
-                {ordenCompraInlineOpen ? 'Ocultar' : 'Expandir'}
-              </button>
-            </div>
-          )}
-          {ordenCompraInlineOpen && ordenCompraPdfUrl && (
-            <div className="mt-2">
-              <div className="text-muted small mb-1">
-                OC asociada: {ordenCompraActual.nombre}
-              </div>
-              <ProtectedPdfEmbed
-                resourceUrl={ordenCompraPdfUrl}
-                title="Orden de compra PDF"
-                unavailableMessage="Orden de compra no disponible."
-              />
-            </div>
-          )}
-        </div>
-      )}
+      {ordenCompraActual?.ruta_pdf ? (
+        <AssociatedPdfPanel
+          buttonLabel="Ver orden de compra"
+          inlineCaption={`OC asociada: ${ordenCompraActual.nombre}`}
+          resourceUrl={ordenCompraPdfUrl}
+          title="Orden de compra PDF"
+          unavailableMessage="Orden de compra no disponible."
+          onOpenExternal={verOrdenCompraAsociada}
+        />
+      ) : null}
 
-      {(notaCreditoActual?.ruta_pdf || notaCreditoActual?.ruta_xml) && (
-        <div className="mt-3">
-          <button
-            className="btn btn-outline-success w-100"
-            type="button"
-            onClick={toggleNotaCreditoOptions}
-          >
-            Ver nota de credito
-          </button>
-          {notaCreditoOptionsOpen && (
-            <div className="d-flex flex-wrap gap-2 mt-2">
-              <button
-                className="btn btn-outline-success btn-sm"
-                type="button"
-                onClick={verNotaCreditoAsociada}
-              >
-                Abrir en pestana nueva
-              </button>
-              <button
-                className={`btn btn-sm ${notaCreditoInlineOpen ? 'btn-success' : 'btn-outline-success'}`}
-                type="button"
-                onClick={toggleNotaCreditoInline}
-                disabled={!notaCreditoPdfUrl}
-              >
-                {notaCreditoInlineOpen ? 'Ocultar' : 'Expandir'}
-              </button>
-            </div>
-          )}
-          {notaCreditoInlineOpen && notaCreditoPdfUrl && (
-            <div className="mt-2">
-              <div className="text-muted small mb-1">
-                Nota asociada: {notaCreditoActual.clave || `Nota #${notaCreditoActual.id}`}
-              </div>
-              <ProtectedPdfEmbed
-                resourceUrl={notaCreditoPdfUrl}
-                title="Nota de credito PDF"
-                unavailableMessage="Nota de credito no disponible."
-              />
-            </div>
-          )}
-          {notaCreditoOptionsOpen && !notaCreditoPdfUrl && notaCreditoXmlUrl && (
-            <div className="text-muted small mt-2">
-              Esta nota no tiene PDF. Solo se puede abrir XML en pestana nueva.
-            </div>
-          )}
-        </div>
-      )}
+      {(notaCreditoActual?.ruta_pdf || notaCreditoActual?.ruta_xml) ? (
+        <AssociatedPdfPanel
+          buttonLabel="Ver nota de credito"
+          inlineCaption={`Nota asociada: ${notaCreditoActual.clave || `Nota #${notaCreditoActual.id}`}`}
+          resourceUrl={notaCreditoPdfUrl}
+          title="Nota de credito PDF"
+          unavailableMessage="Nota de credito no disponible."
+          onOpenExternal={verNotaCreditoAsociada}
+          canExpand={Boolean(notaCreditoPdfUrl)}
+          expandUnavailableMessage={
+            notaCreditoXmlUrl
+              ? 'Esta nota no tiene PDF. Solo se puede abrir XML en pestana nueva.'
+              : ''
+          }
+        />
+      ) : null}
+
+      {Array.isArray(documentosRespaldoActuales) && documentosRespaldoActuales.map((documento) => (
+        <AssociatedPdfPanel
+          key={documento.id}
+          buttonLabel="Ver documento de respaldo"
+          headerText={`Documento de respaldo: ${documento.nombre_archivo}`}
+          inlineCaption={`Documento de respaldo: ${documento.nombre_archivo}`}
+          resourceUrl={documento.pdfUrl}
+          title={`Documento de respaldo ${documento.nombre_archivo}`}
+          unavailableMessage="Documento de respaldo no disponible."
+          onOpenExternal={() => verDocumentoRespaldo(documento)}
+        />
+      ))}
     </SectionCard>
   );
 }
@@ -345,10 +289,17 @@ function FacturaDetallePdfSection({ viewModel }) {
     tablaPagoActual,
     ordenCompraActual,
     notaCreditoActual,
+    documentosRespaldoActuales,
     ...rest
   } = viewModel;
 
-  const resetKey = buildResetKey({ id, tablaPagoActual, ordenCompraActual, notaCreditoActual });
+  const resetKey = buildResetKey({
+    id,
+    tablaPagoActual,
+    ordenCompraActual,
+    notaCreditoActual,
+    documentosRespaldoActuales
+  });
 
   return (
     <FacturaDetallePdfSectionContent
@@ -356,6 +307,7 @@ function FacturaDetallePdfSection({ viewModel }) {
       tablaPagoActual={tablaPagoActual}
       ordenCompraActual={ordenCompraActual}
       notaCreditoActual={notaCreditoActual}
+      documentosRespaldoActuales={documentosRespaldoActuales}
       {...rest}
     />
   );

@@ -3,6 +3,7 @@ import { useReservaOperationDetails } from '../hooks/reservas/useReservaOperatio
 import { useReservasOperations } from '../hooks/reservas/useReservasOperations.js';
 import { useProtectedObjectUrl } from '../hooks/useProtectedObjectUrl.js';
 import { openProtectedInNewTab } from '../utils/protectedResources.js';
+import { withPdfFitToWidth } from '../utils/pdfViewer.js';
 import PageHeader from './common/PageHeader';
 import SectionCard from './common/SectionCard';
 import LoadingState from './common/LoadingState';
@@ -85,7 +86,7 @@ function ReservaDocumentPreview({ previewType, previewUrl, selectedDoc }) {
   return (
     <iframe
       title={`preview-${selectedDoc.id}`}
-      src={objectUrl}
+      src={withPdfFitToWidth(objectUrl)}
       style={{ width: '100%', height: '520px', border: '0' }}
     />
   );

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Respaldo, rollback y continuidad operativa</title>
+  <link rel="stylesheet" href="slide-theme.css">
+</head>
+<body class="theme-light">
+  <div class="slide">
+    <header class="slide-header">
+      <div>
+        <div class="brand"><span class="brand-mark"></span>Proyecto Novogar</div>
+        <p class="eyebrow">Continuidad operativa</p>
+        <h1 class="title">El despliegue propuesto incorpora respaldo y recuperación como parte de la operación</h1>
+      </div>
+      <div class="page-pill">10 / 15</div>
+    </header>
+
+    <main class="content">
+      <section class="grid-4">
+        <article class="card accent-card">
+          <h3>Base de datos</h3>
+          <p>La propuesta con PostgreSQL Flexible Server permite <strong>respaldos automáticos</strong> y restauración a un punto dentro de la ventana de retención configurada.</p>
+        </article>
+        <article class="card">
+          <h3>Storage documental</h3>
+          <p>Los documentos operativos pueden respaldarse como capa separada, evitando que PDFs y XML dependan del nodo de aplicación.</p>
+        </article>
+        <article class="card">
+          <h3>Rollback</h3>
+          <p>El proyecto ya cuenta con runbook de backup y rollback, plan previo de respaldo y criterio para volver atrás si un release falla.</p>
+        </article>
+        <article class="card gold-card">
+          <h3>Readiness</h3>
+          <p>Ya existe checklist de despliegue, reporte de preparación, verificaciones básicas y visibilidad de versión y commit del release.</p>
+        </article>
+      </section>
+
+      <section class="timeline">
+        <article class="timeline-step">
+          <span class="week">Antes del deployment</span>
+          <h3>Validar y respaldar</h3>
+          <p>Versionado, changelog, validación de preparación, plan de backup, validación de entorno y respaldo de DB y storage.</p>
+        </article>
+        <article class="timeline-step">
+          <span class="week">Deployment</span>
+          <h3>Publicar con evidencia</h3>
+          <p>Aplicar release con secrets reales, rutas correctas y verificaciones básicas mínimas sobre endpoints y flujo base.</p>
+        </article>
+        <article class="timeline-step">
+          <span class="week">Si algo falla</span>
+          <h3>Volver con control</h3>
+          <p>Rollback de código, base de datos y storage según el alcance real del incidente, no por improvisación.</p>
+        </article>
+      </section>
+
+      <div class="callout">
+        <p>Además del alojamiento de la aplicación, la propuesta contempla respaldo, recuperación y trazabilidad de la versión desplegada.</p>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <span>Respaldos, preparación, verificaciones básicas y reversión ya documentados</span>
+      <span>Continuidad operativa como parte del diseño</span>
+    </footer>
+  </div>
+</body>
+</html>

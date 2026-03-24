@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import { formatAmount, formatDate, getMoneda, getMontoDocumento } from '../utils/formatters';
 import {
   estadoClassTramite,
@@ -12,6 +13,163 @@ import SectionCard from './common/SectionCard';
 import TramiteActions from './TramiteActions';
 import { TRAMITES_ACTION_LABELS } from '../utils/uiLabels';
 import { useProtectedObjectUrl } from '../hooks/useProtectedObjectUrl.js';
+import { openProtectedInNewTab } from '../utils/protectedResources.js';
+import { withPdfFitToWidth } from '../utils/pdfViewer.js';
+import { ensureCentrosCostoMetadata, formatCentroCostoLabel } from '../utils/centrosCosto.js';
+
+const buildProtectedPdfUrl = (rutaPdf) => (
+  rutaPdf ? `/api/files/pdf?path=${encodeURIComponent(rutaPdf)}` : ''
+);
+
+function ProtectedPdfFrame({ resourceUrl, title, unavailableMessage, height = '560px' }) {
+  const {
+    objectUrl: pdfPreviewUrl,
+    error: pdfPreviewError,
+    loading: pdfPreviewLoading,
+  } = useProtectedObjectUrl(resourceUrl);
+
+  if (!resourceUrl) {
+    return <EmptyState className="py-2">{unavailableMessage}</EmptyState>;
+  }
+
+  if (pdfPreviewLoading) {
+    return <div className="small text-muted">Cargando PDF...</div>;
+  }
+
+  if (!pdfPreviewUrl) {
+    return <EmptyState className="py-2">{pdfPreviewError || unavailableMessage}</EmptyState>;
+  }
+
+  return (
+    <iframe
+      title={title}
+      src={withPdfFitToWidth(pdfPreviewUrl)}
+      style={{ width: '100%', height, border: '1px solid #e6ebf2', borderRadius: '12px' }}
+    />
+  );
+}
+
+function TramiteDocumentoPdfResource({
+  resource,
+  expandedByDefault = false
+}) {
+  const [expanded, setExpanded] = useState(() => Boolean(expandedByDefault));
+
+  return (
+    <div className="border rounded p-3 bg-white mt-3">
+      <div className="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+        <div>
+          <div className="fw-semibold small">{resource.label}</div>
+          {resource.caption ? <div className="small text-muted">{resource.caption}</div> : null}
+        </div>
+        <div className="d-flex gap-2 flex-wrap">
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-secondary"
+            onClick={() => openProtectedInNewTab(resource.resourceUrl)}
+            disabled={!resource.resourceUrl}
+          >
+            Abrir en pestana nueva
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-primary"
+            onClick={() => setExpanded((prev) => !prev)}
+            disabled={!resource.resourceUrl}
+          >
+            {expanded ? 'Ocultar' : 'Expandir'}
+          </button>
+        </div>
+      </div>
+
+      {expanded && (
+        <div className="mt-3">
+          <ProtectedPdfFrame
+            resourceUrl={resource.resourceUrl}
+            title={resource.title}
+            unavailableMessage={resource.unavailableMessage}
+            height={resource.height || '420px'}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+const buildSupportingPdfResources = (doc) => {
+  const resources = [];
+
+  if (doc?.conta_tabla_pago_ruta_pdf) {
+    resources.push({
+      key: `tabla-${doc.factura_id}`,
+      label: 'Tabla de pagos',
+      caption: doc.conta_tabla_pago_nombre || 'Tabla asociada',
+      resourceUrl: buildProtectedPdfUrl(doc.conta_tabla_pago_ruta_pdf),
+      title: `Tabla de pagos ${doc.factura_id}`,
+      unavailableMessage: 'Tabla de pagos no disponible.'
+    });
+  }
+
+  if (doc?.conta_orden_compra_ruta_pdf) {
+    resources.push({
+      key: `orden-${doc.factura_id}`,
+      label: 'Orden de compra',
+      caption: doc.conta_orden_compra_nombre || doc.conta_orden_compra || 'Orden asociada',
+      resourceUrl: buildProtectedPdfUrl(doc.conta_orden_compra_ruta_pdf),
+      title: `Orden de compra ${doc.factura_id}`,
+      unavailableMessage: 'Orden de compra no disponible.'
+    });
+  }
+
+  if (doc?.conta_nota_credito_ruta_pdf) {
+    resources.push({
+      key: `nota-${doc.factura_id}`,
+      label: 'Nota de credito',
+      caption: doc.conta_nota_credito_clave || `Nota #${doc.conta_nota_credito_id || doc.factura_id}`,
+      resourceUrl: buildProtectedPdfUrl(doc.conta_nota_credito_ruta_pdf),
+      title: `Nota de credito ${doc.factura_id}`,
+      unavailableMessage: 'Nota de credito no disponible.'
+    });
+  }
+
+  if (Array.isArray(doc?.conta_documentos_respaldo)) {
+    doc.conta_documentos_respaldo
+      .filter((item) => item?.ruta_pdf)
+      .forEach((item) => {
+        resources.push({
+          key: `respaldo-${doc.factura_id}-${item.id}`,
+          label: 'Documento de respaldo',
+          caption: item.nombre_archivo || `Respaldo #${item.id}`,
+          resourceUrl: buildProtectedPdfUrl(item.ruta_pdf),
+          title: `Documento de respaldo ${item.nombre_archivo || item.id}`,
+          unavailableMessage: 'Documento de respaldo no disponible.'
+        });
+      });
+  }
+
+  return resources;
+};
+
+const buildCentroCostoLabels = (doc) => {
+  const metadata = ensureCentrosCostoMetadata(doc?.conta_metadata || {});
+  const labels = Array.isArray(metadata.centros_costo_lineas)
+    ? metadata.centros_costo_lineas
+      .filter((linea) => linea?.centro_costo_id || linea?.codigo || linea?.nombre)
+      .map((linea) => formatCentroCostoLabel(linea))
+      .filter(Boolean)
+    : [];
+
+  const uniqueLabels = Array.from(new Set(labels));
+  if (uniqueLabels.length > 0) {
+    return uniqueLabels;
+  }
+
+  if (doc?.conta_centro_costo) {
+    return [doc.conta_centro_costo];
+  }
+
+  return [];
+};
 
 function TramiteDocumentoUnificado({
   doc,
@@ -19,6 +177,7 @@ function TramiteDocumentoUnificado({
   sequenceNumber,
   expanded = false,
   onToggleExpanded,
+  expandAllResources = false,
   enEtapaGerencia,
   puedeVerGerencia,
   puedeGerencia,
@@ -60,11 +219,8 @@ function TramiteDocumentoUnificado({
         : [])
     ]
     : [];
-  const {
-    objectUrl: pdfPreviewUrl,
-    error: pdfPreviewError,
-    loading: pdfPreviewLoading,
-  } = useProtectedObjectUrl(pdfUrl);
+  const supportingPdfResources = useMemo(() => buildSupportingPdfResources(doc), [doc]);
+  const centroCostoLabels = useMemo(() => buildCentroCostoLabels(doc), [doc]);
 
   return (
     <SectionCard className="tramite-unificada-card">
@@ -140,13 +296,19 @@ function TramiteDocumentoUnificado({
         <div className="row g-3 mt-1">
           <div className="col-12 col-lg-4">
             <div className="small text-muted">Centro de costo</div>
-            <div>{doc.conta_centro_costo || '-'}</div>
-            <div className="small text-muted mt-2">Cuenta contable</div>
+            {centroCostoLabels.length > 1 ? (
+              <div className="mt-1">
+                {centroCostoLabels.map((label) => (
+                  <div key={`${doc.factura_id}-${label}`}>{label}</div>
+                ))}
+              </div>
+            ) : (
+              <div>{centroCostoLabels[0] || '-'}</div>
+            )}
+            <div className="small text-muted mt-2">Asiento</div>
             <div>{doc.conta_cuenta_contable || '-'}</div>
-            <div className="small text-muted mt-2">Proyecto</div>
-            <div>{doc.conta_proyecto || '-'}</div>
             <div className="small text-muted mt-2">Orden de compra</div>
-            <div>{doc.conta_orden_compra || '-'}</div>
+            <div>{doc.conta_orden_compra || doc.conta_orden_compra_nombre || '-'}</div>
             <div className="small text-muted mt-2">Numero proveedor</div>
             <div>{doc.conta_numero_proveedor || '-'}</div>
             <div className="small text-muted mt-2">Plazo credito (dias)</div>
@@ -175,21 +337,33 @@ function TramiteDocumentoUnificado({
             <div>{doc.conta_notas || '-'}</div>
           </div>
           <div className="col-12 col-lg-8">
-            {pdfUrl ? (
-              pdfPreviewLoading ? (
-                <div className="small text-muted">Cargando PDF...</div>
-              ) : pdfPreviewUrl ? (
-                <iframe
-                  title={`PDF ${doc.factura_id}`}
-                  src={pdfPreviewUrl}
-                  style={{ width: '100%', height: '560px', border: '1px solid #e6ebf2' }}
-                />
-              ) : (
-                <EmptyState className="py-2">{pdfPreviewError || 'PDF no disponible.'}</EmptyState>
-              )
-            ) : (
-              <EmptyState className="py-2">PDF no disponible.</EmptyState>
-            )}
+            <div className="border rounded p-3 bg-white">
+              <div className="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-3">
+                <div className="fw-semibold">PDF de la factura</div>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-secondary"
+                  onClick={() => openProtectedInNewTab(pdfUrl)}
+                  disabled={!pdfUrl}
+                >
+                  Abrir en pestana nueva
+                </button>
+              </div>
+              <ProtectedPdfFrame
+                resourceUrl={pdfUrl}
+                title={`PDF ${doc.factura_id}`}
+                unavailableMessage="PDF no disponible."
+                height="560px"
+              />
+            </div>
+
+            {supportingPdfResources.map((resource) => (
+              <TramiteDocumentoPdfResource
+                key={resource.key}
+                resource={resource}
+                expandedByDefault={expandAllResources}
+              />
+            ))}
           </div>
         </div>
       )}

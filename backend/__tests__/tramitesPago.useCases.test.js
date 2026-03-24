@@ -22,6 +22,17 @@ const createRepoMock = (overrides = {}) => {
     getTramiteByIdForUpdate: jest.fn().mockResolvedValue({ id: 1, estado: TRAMITE_ESTADOS.EN_APROBACION_GERENCIA }),
     getTramiteCaratulaByTramiteId: jest.fn().mockResolvedValue(null),
     upsertTramiteCaratula: jest.fn().mockResolvedValue(null),
+    listTramiteCaratulaProvidersByTramiteId: jest.fn().mockResolvedValue([]),
+    listTramiteCaratulaProviderFacturasByTramiteId: jest.fn().mockResolvedValue([]),
+    listTramiteCaratulaOrphansByTramiteId: jest.fn().mockResolvedValue([]),
+    getTramiteCaratulaProviderByKeyForUpdate: jest.fn().mockResolvedValue(null),
+    getTramiteCaratulaOrphanByIdForUpdate: jest.fn().mockResolvedValue(null),
+    upsertTramiteCaratulaProvider: jest.fn().mockResolvedValue(null),
+    replaceTramiteCaratulaProviderFacturas: jest.fn().mockResolvedValue(undefined),
+    insertTramiteCaratulaOrphan: jest.fn().mockResolvedValue(undefined),
+    updateTramiteCaratulaOrphanStatus: jest.fn().mockResolvedValue(undefined),
+    deleteTramiteCaratulaProvidersByTramiteId: jest.fn().mockResolvedValue(undefined),
+    deleteTramiteCaratulaOrphansByTramiteId: jest.fn().mockResolvedValue(undefined),
     getFacturaEstado: jest.fn().mockResolvedValue({ estado: FACTURA_ESTADOS.EN_REVISION }),
     getDocumentoTesoreriaEstado: jest.fn().mockResolvedValue({ estado_tesoreria: 'pendiente' }),
     getTramiteDocumentoByFacturaIdForUpdate: jest.fn().mockResolvedValue({
@@ -74,6 +85,7 @@ const createRepoMock = (overrides = {}) => {
       rechazados: 0
     }),
     listSaldosPagoPrincipalByTramite: jest.fn().mockResolvedValue([]),
+    updateMontosPagoProgramadoByTramite: jest.fn().mockResolvedValue([]),
     applyRetencionesPagadasByTramite: jest.fn().mockResolvedValue({ pagos_registrados: 0, monto_total: 0 }),
     ...overrides
   };
@@ -266,6 +278,62 @@ describe('tramitesPagoUseCases', () => {
     expect(repo.updateTramiteEstado).not.toHaveBeenCalled();
   });
 
+  test('cambiarEstado a gerencia contable guarda montos programados por factura', async () => {
+    const { repo, client } = createRepoMock({
+      getTramiteById: jest.fn().mockResolvedValue({
+        id: 1,
+        estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA_1
+      }),
+      getTramiteCaratulaByTramiteId: jest.fn().mockResolvedValue({
+        id: 90,
+        estado: 'procesada'
+      }),
+      updateTramiteEstado: jest.fn().mockResolvedValue({
+        id: 1,
+        estado: TRAMITE_ESTADOS.EN_APROBACION_GERENCIA_CONTABLE
+      }),
+      listDocumentosByTramite: jest.fn().mockResolvedValue([
+        {
+          factura_id: 2,
+          estado_gerencia: 'aprobado',
+          total_a_pagar: 100,
+          proveedor_id: 77,
+          proveedor_nombre: 'Proveedor Demo',
+          proveedor_identificacion: '3-101-000000'
+        }
+      ]),
+      listTramiteCaratulaProvidersByTramiteId: jest.fn().mockResolvedValue([
+        {
+          id: 500,
+          tramite_id: 1,
+          provider_key: 'id:77',
+          ruta_archivo: 'caratulas/proveedor-demo.pdf',
+          attachment_status: 'confirmada',
+          order_status: 'no_requerido',
+          warnings: [],
+          group_payload: {}
+        }
+      ]),
+      listSaldosPagoPrincipalByTramite: jest.fn().mockResolvedValue([
+        { factura_id: 2, saldo_pago_principal: 100, monto_pago_programado: null }
+      ])
+    });
+    const useCases = createTramitesPagoUseCases({ tramitesPagoRepo: repo });
+
+    await useCases.cambiarEstado({
+      id: 1,
+      estado: TRAMITE_ESTADOS.EN_APROBACION_GERENCIA_CONTABLE,
+      usuario: 'tesoreria@novogar.local',
+      pagos_documentos: [{ factura_id: 2, monto_pago: 55.5 }],
+      actorPermissions: ['documentos_tramitar_pago']
+    });
+
+    expect(repo.updateMontosPagoProgramadoByTramite).toHaveBeenCalledWith({
+      tramiteId: 1,
+      pagosDocumentos: [{ facturaId: 2, montoPago: 55.5 }]
+    }, client);
+  });
+
   test('cambiarEstado a pagado exige permiso de tesoreria', async () => {
     const { repo, client } = createRepoMock({
       getTramiteById: jest.fn().mockResolvedValue({
@@ -330,6 +398,72 @@ describe('tramitesPagoUseCases', () => {
       usuario: 'tesoreria@novogar.local',
       motivo: null
     }, client);
+  });
+
+  test('cambiarEstado a pagado usa monto programado guardado cuando no recibe pagos_documentos', async () => {
+    const { repo } = createRepoMock({
+      getTramiteById: jest.fn().mockResolvedValue({
+        id: 1,
+        estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA_2
+      }),
+      updateTramiteEstado: jest.fn().mockResolvedValue({
+        id: 1,
+        estado: TRAMITE_ESTADOS.PAGADO
+      }),
+      listSaldosPagoPrincipalByTramite: jest.fn().mockResolvedValue([
+        { factura_id: 2, saldo_pago_principal: 100, monto_pago_programado: 40 }
+      ])
+    });
+    const useCases = createTramitesPagoUseCases({ tramitesPagoRepo: repo });
+
+    await useCases.cambiarEstado({
+      id: 1,
+      estado: TRAMITE_ESTADOS.PAGADO,
+      usuario: 'tesoreria@novogar.local',
+      actorPermissions: ['documentos_tramitar_pago']
+    });
+
+    expect(repo.insertPagoFactura).toHaveBeenCalledWith({
+      facturaId: 2,
+      tramiteId: 1,
+      monto: 40,
+      fechaPago: null,
+      usuario: 'tesoreria@novogar.local',
+      notas: 'Pago principal en tramite #1'
+    }, expect.any(Object));
+  });
+
+  test('cambiarEstado a pagado tolera monto programado redondeado al saldo visible', async () => {
+    const { repo } = createRepoMock({
+      getTramiteById: jest.fn().mockResolvedValue({
+        id: 1,
+        estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA_2
+      }),
+      updateTramiteEstado: jest.fn().mockResolvedValue({
+        id: 1,
+        estado: TRAMITE_ESTADOS.PAGADO
+      }),
+      listSaldosPagoPrincipalByTramite: jest.fn().mockResolvedValue([
+        { factura_id: 2, saldo_pago_principal: 404351.99964, monto_pago_programado: 404352.00 }
+      ])
+    });
+    const useCases = createTramitesPagoUseCases({ tramitesPagoRepo: repo });
+
+    await useCases.cambiarEstado({
+      id: 1,
+      estado: TRAMITE_ESTADOS.PAGADO,
+      usuario: 'tesoreria@novogar.local',
+      actorPermissions: ['documentos_tramitar_pago']
+    });
+
+    expect(repo.insertPagoFactura).toHaveBeenCalledWith({
+      facturaId: 2,
+      tramiteId: 1,
+      monto: 404351.99964,
+      fechaPago: null,
+      usuario: 'tesoreria@novogar.local',
+      notas: 'Pago principal en tramite #1'
+    }, expect.any(Object));
   });
 
   test('crearTramite integra facturas y retenciones con politicas de creacion', async () => {

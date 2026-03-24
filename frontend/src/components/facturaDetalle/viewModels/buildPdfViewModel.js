@@ -38,7 +38,18 @@ export const buildPdfAssociationsViewModel = ({ detalle }) => ({
     endpoint: '/api/files/xml',
     ruta: detalle.notaCreditoActual?.ruta_xml
   }),
-  verNotaCreditoAsociada: detalle.verNotaCreditoAsociada
+  verNotaCreditoAsociada: detalle.verNotaCreditoAsociada,
+  documentosRespaldoActuales: (Array.isArray(detalle.documentosRespaldoActuales)
+    ? detalle.documentosRespaldoActuales
+    : [])
+    .map((documento) => ({
+      ...documento,
+      pdfUrl: buildFileUrl({
+        endpoint: '/api/files/pdf',
+        ruta: documento?.ruta_pdf
+      })
+    })),
+  verDocumentoRespaldo: detalle.verDocumentoRespaldo
 });
 
 export const buildPdfViewModel = ({ id, factura, detalle }) => ({

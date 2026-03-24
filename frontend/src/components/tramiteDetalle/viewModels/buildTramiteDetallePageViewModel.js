@@ -34,6 +34,8 @@ export const buildTramiteDetallePageViewModel = ({
   resumenTotales,
   resumenMoneda,
   workflow,
+  report,
+  sociedadLabel: providedSociedadLabel,
   userPermissions = [],
 }) => {
   const pageState = buildTramiteDetallePageState({
@@ -52,7 +54,7 @@ export const buildTramiteDetallePageViewModel = ({
   const headerViewModel = buildTramiteDetalleHeaderViewModel({
     tramite: detalle.tramite,
   });
-  const sociedadLabel = buildSociedadLabel({
+  const sociedadLabel = providedSociedadLabel || buildSociedadLabel({
     sociedadInfo: detalle.sociedadInfo,
     sociedadId,
   });
@@ -64,6 +66,7 @@ export const buildTramiteDetallePageViewModel = ({
     documentosActivos,
     caratula: detalle.caratula,
     providerGroups: detalle.providerGroups,
+    orphanGroups: detalle.orphanGroups,
     retencionesActivas,
     resumenTotales,
     resumenMoneda,
@@ -94,10 +97,30 @@ export const buildTramiteDetallePageViewModel = ({
     handleAccionTesoreria: workflow.handleAccionTesoreria,
     handleUploadCaratulas: workflow.handleUploadCaratulas,
     handleResolveCaratulas: workflow.handleResolveCaratulas,
+    handleConfirmProviderOrder: workflow.handleConfirmProviderOrder,
+    handleUploadProviderCaratula: workflow.handleUploadProviderCaratula,
+    handleConfirmProviderCaratula: workflow.handleConfirmProviderCaratula,
+    handleAssignOrphanCaratula: workflow.handleAssignOrphanCaratula,
+    handleDiscardOrphanCaratula: workflow.handleDiscardOrphanCaratula,
     uploadingCaratulas: workflow.uploadingCaratulas,
     resolvingCaratulaGroupKey: workflow.resolvingCaratulaGroupKey,
+    uploadingProviderKey: workflow.uploadingProviderKey,
+    confirmingProviderKey: workflow.confirmingProviderKey,
+    confirmingOrderProviderKey: workflow.confirmingOrderProviderKey,
+    orphanActionId: workflow.orphanActionId,
+    providerSortDirection: workflow.providerSortDirection,
+    setProviderSortDirection: workflow.setProviderSortDirection,
     sociedadLabel,
     sociedadId,
+    reportLoading: report?.reportLoading,
+    reportError: report?.reportError,
+    reportMessage: report?.reportMessage,
+    exportReport: report?.exportReport,
+    downloadUnifiedPdfLoading: report?.downloadUnifiedPdfLoading,
+    downloadUnifiedPdfError: report?.downloadUnifiedPdfError,
+    downloadUnifiedPdfMessage: report?.downloadUnifiedPdfMessage,
+    downloadUnifiedPdfWarning: report?.downloadUnifiedPdfWarning,
+    downloadUnifiedPdf: report?.downloadUnifiedPdf,
   });
 
   return {

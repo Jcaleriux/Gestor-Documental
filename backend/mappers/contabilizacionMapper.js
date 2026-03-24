@@ -12,6 +12,12 @@ const mapRetencionPagoRow = (row) => ({
   monto: toNumberOrNull(row.monto)
 });
 
+const mapDocumentoRespaldoRow = (row) => ({
+  ...row,
+  id: toNumberOrNull(row.id) ?? row.id,
+  factura_id: toNumberOrNull(row.factura_id) ?? row.factura_id
+});
+
 const mapContabilizacionRow = (row) => {
   if (!row) return null;
 
@@ -25,6 +31,9 @@ const mapContabilizacionRow = (row) => {
     retencion_pagada: toNumberOrNull(row.retencion_pagada),
     retencion_pendiente: toNumberOrNull(row.retencion_pendiente),
     nota_credito_total_comprobante: toNumberOrNull(row.nota_credito_total_comprobante),
+    documentos_respaldo: Array.isArray(row.documentos_respaldo)
+      ? row.documentos_respaldo.map(mapDocumentoRespaldoRow)
+      : [],
     retencion_pagos: Array.isArray(row.retencion_pagos)
       ? row.retencion_pagos.map(mapRetencionPagoRow)
       : []

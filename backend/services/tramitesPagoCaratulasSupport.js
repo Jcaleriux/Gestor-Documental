@@ -3,6 +3,7 @@ const path = require('path');
 const { PDFParse } = require('pdf-parse');
 const { createError } = require('../utils/errors');
 const { runtimeConfig } = require('../config/runtime');
+const { TRAMITE_ESTADOS } = require('../domain/tramitesPago');
 const {
   DOCUMENTS_DIR_NAME,
   TRAMITES_DIR_NAME,
@@ -12,6 +13,14 @@ const {
 const MAX_TRAMITE_CARATULA_MB = runtimeConfig.maxTramitesCaratulaMb;
 const MAX_TRAMITE_CARATULA_BYTES = MAX_TRAMITE_CARATULA_MB * 1024 * 1024;
 const MATCH_AMOUNT_EPSILON = 0.0001;
+const CARATULA_REQUIRED_STATES = new Set([
+  TRAMITE_ESTADOS.EN_REVISION_TESORERIA,
+  TRAMITE_ESTADOS.EN_REVISION_TESORERIA_1,
+  TRAMITE_ESTADOS.EN_APROBACION_GERENCIA_CONTABLE,
+  TRAMITE_ESTADOS.EN_APROBACION_GERENCIA_FINANCIERA,
+  TRAMITE_ESTADOS.EN_REVISION_TESORERIA_2,
+  TRAMITE_ESTADOS.PAGADO
+]);
 
 const normalizeWhitespace = (value) => String(value || '')
   .replace(/\s+/g, ' ')
@@ -31,13 +40,20 @@ const normalizeName = (value) => stripDiacritics(value)
   .replace(/\s+/g, ' ')
   .trim();
 
+const normalizeSafeFileName = (value) => String(value || '')
+  .replace(/\.{2,}/g, '.')
+  .replace(/^[._-]+/, '')
+  .replace(/[._-]+$/, '');
+
 const sanitizeFileName = (value) => {
   const raw = String(value || '').trim();
-  const cleaned = raw.replace(/[^0-9A-Za-z._-]/g, '_');
+  const cleaned = normalizeSafeFileName(raw.replace(/[^0-9A-Za-z._-]/g, '_'));
   return cleaned || 'caratula_tramite.pdf';
 };
 
-const sanitizePdfBaseName = (value) => sanitizeFileName(value).replace(/\.pdf$/i, '') || 'caratula_tramite';
+const sanitizePdfBaseName = (value) => (
+  normalizeSafeFileName(sanitizeFileName(value).replace(/\.pdf$/i, '')) || 'caratula_tramite'
+);
 
 const decodeCaratulaPdfBase64 = (rawBase64) => {
   if (!rawBase64 || typeof rawBase64 !== 'string') {
@@ -232,6 +248,10 @@ const extractLast11Digits = (value) => {
 
 const matchesAmount = (left, right) => (
   Math.abs(Number(left || 0) - Number(right || 0)) <= MATCH_AMOUNT_EPSILON
+);
+
+const isCaratulaRequiredForEstado = (tramiteEstado) => (
+  CARATULA_REQUIRED_STATES.has(String(tramiteEstado || '').trim())
 );
 
 const scoreNameSimilarity = (candidate, target) => {
@@ -764,8 +784,9 @@ const buildPayloadSummary = ({ payload, view }) => {
   };
 };
 
-const buildProviderGroupsView = ({ payload, documents, rutaArchivo }) => {
+const buildProviderGroupsView = ({ payload, documents, rutaArchivo, tramiteEstado }) => {
   const catalog = buildDocumentsCatalog(documents);
+  const caratulaRequired = isCaratulaRequiredForEstado(tramiteEstado);
   const matchedProviderKeys = new Set();
   const providerGroups = (payload?.provider_groups || []).map((group) => {
     const providerKey = group?.matched_provider?.provider_key || null;
@@ -854,6 +875,7 @@ const buildProviderGroupsView = ({ payload, documents, rutaArchivo }) => {
       })).filter((item) => item.factura_id),
       pdf_path: rutaArchivo || '',
       pdf_page_start: group.page_start,
+      group_status: hasProviderMismatch || hasUnmatchedLines ? 'requires_review' : 'resolved',
       is_blocking: hasProviderMismatch || hasUnmatchedLines
     };
   });
@@ -875,7 +897,7 @@ const buildProviderGroupsView = ({ payload, documents, rutaArchivo }) => {
       proveedor_identificacion: entry.provider_identification,
       provider_match_strategy: null,
       lines: [],
-      warnings: ['Proveedor del tramite sin caratula asignada.'],
+      warnings: caratulaRequired ? ['Proveedor del tramite sin caratula asignada.'] : [],
       documents: entry.documents,
       available_documents: entry.documents.map((doc) => ({
         factura_id: doc.factura_id,
@@ -889,7 +911,8 @@ const buildProviderGroupsView = ({ payload, documents, rutaArchivo }) => {
       })).filter((item) => item.factura_id),
       pdf_path: rutaArchivo || '',
       pdf_page_start: null,
-      is_blocking: true
+      group_status: caratulaRequired ? 'requires_review' : 'pending_caratula',
+      is_blocking: caratulaRequired
     }));
 
   const allGroups = [...providerGroups, ...syntheticGroups];
@@ -904,12 +927,24 @@ const buildProviderGroupsView = ({ payload, documents, rutaArchivo }) => {
   };
 };
 
-const summarizeStoredTramiteCaratula = ({ row, documents }) => {
+const summarizeStoredTramiteCaratula = ({ row, documents, tramiteEstado }) => {
   if (!row) {
+    const view = buildProviderGroupsView({
+      payload: {
+        warnings: [],
+        provider_groups: [],
+        execution_date: null,
+        currency: null
+      },
+      documents,
+      rutaArchivo: '',
+      tramiteEstado
+    });
+
     return {
       caratula: null,
-      provider_groups: [],
-      warnings: []
+      provider_groups: view.provider_groups,
+      warnings: view.warnings
     };
   }
 
@@ -919,7 +954,8 @@ const summarizeStoredTramiteCaratula = ({ row, documents }) => {
   const view = buildProviderGroupsView({
     payload,
     documents,
-    rutaArchivo: row.ruta_archivo
+    rutaArchivo: row.ruta_archivo,
+    tramiteEstado
   });
   const summary = buildPayloadSummary({ payload, view });
 
@@ -1115,6 +1151,12 @@ module.exports = {
   resolveTramiteCaratulaFilePath,
   deleteTramiteCaratulaFileIfExists,
   parseTramiteCaratulaPdf,
+  buildDocumentsCatalog,
+  buildDocumentOptionLabel,
+  resolveSocietyMatch,
+  resolveBestProviderMatch,
+  applyAutomaticLineMatches,
+  isCaratulaRequiredForEstado,
   applyAutomaticMatchingToPayload,
   summarizeStoredTramiteCaratula,
   applyManualResolutionToPayload

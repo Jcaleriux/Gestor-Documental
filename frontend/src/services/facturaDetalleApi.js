@@ -9,6 +9,8 @@ const addEstado = (id, payload) => axios.post(`/api/documentos/${id}/estados`, p
 const patchEstado = (id, payload) => axios.patch(`/api/documentos/${id}/estado`, payload);
 const getContabilizacion = (id) => axios.get(`/api/facturas/${id}/contabilizacion`);
 const saveContabilizacion = (id, payload) => axios.post(`/api/facturas/${id}/contabilizacion`, payload);
+const uploadDocumentoRespaldo = (id, payload) => axios.post(`/api/facturas/${id}/contabilizacion/documentos-respaldo`, payload);
+const deleteDocumentoRespaldo = (id, documentoId) => axios.delete(`/api/facturas/${id}/contabilizacion/documentos-respaldo/${documentoId}`);
 const registrarPagoRetencion = (id, payload) => axios.post(`/api/facturas/${id}/contabilizacion/retencion-pagos`, payload);
 const getMensajeHacienda = (id) => axios.get(`/api/facturas/${id}/mensaje-hacienda`);
 const getProveedores = (sociedadId) => axios.get('/api/proveedores', {
@@ -48,6 +50,8 @@ export const facturaDetalleApi = {
   patchEstado,
   getContabilizacion,
   saveContabilizacion,
+  uploadDocumentoRespaldo,
+  deleteDocumentoRespaldo,
   registrarPagoRetencion,
   getMensajeHacienda,
   getProveedores,

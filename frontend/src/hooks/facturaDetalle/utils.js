@@ -155,6 +155,23 @@ export const buildOrdenCompraActual = (contaData) => {
   };
 };
 
+export const buildDocumentosRespaldoActuales = (contaData) => {
+  const items = Array.isArray(contaData?.documentos_respaldo) ? contaData.documentos_respaldo : [];
+
+  return items
+    .filter((item) => item && item.id && item.ruta_pdf)
+    .map((item) => ({
+      id: item.id,
+      factura_id: item.factura_id,
+      nombre_archivo: item.nombre_archivo || `respaldo_${item.id}.pdf`,
+      ruta_pdf: item.ruta_pdf,
+      metadata: item.metadata || null,
+      creado_por: item.creado_por || '',
+      creado_en: item.creado_en || '',
+      actualizado_en: item.actualizado_en || ''
+    }));
+};
+
 export const buildContaState = ({
   contaData = {},
   facturaData = null,

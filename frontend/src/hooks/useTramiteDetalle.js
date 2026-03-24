@@ -18,6 +18,7 @@ export const useTramiteDetalle = ({ id, sociedadId, dependencies = {} }) => {
     setRetenciones,
     setCaratula,
     setProviderGroups,
+    setOrphanGroups,
     setLoading,
     setActionError,
     setHistorial,
@@ -34,6 +35,7 @@ export const useTramiteDetalle = ({ id, sociedadId, dependencies = {} }) => {
       setRetenciones(data.retenciones);
       setCaratula(data.caratula);
       setProviderGroups(data.providerGroups);
+      setOrphanGroups(data.orphanGroups);
     } catch (err) {
       console.error(err);
       setActionError('No se pudo cargar el tramite.');
@@ -48,6 +50,7 @@ export const useTramiteDetalle = ({ id, sociedadId, dependencies = {} }) => {
     setDocumentos,
     setLoading,
     setProviderGroups,
+    setOrphanGroups,
     setRetenciones,
     setTramite
   ]);

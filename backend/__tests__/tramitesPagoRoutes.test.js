@@ -8,9 +8,15 @@ jest.mock('../services/tramitesPagoService', () => ({
   listTramites: (req, res) => res.json({ success: true, data: [{ id: 1 }] }),
   getRetencionesDisponibles: (req, res) => res.json({ success: true, data: [] }),
   getTramite: (req, res) => res.json({ success: true, data: { id: Number(req.params.id) } }),
+  getTramitePdfUnificado: (req, res) => res.json({ success: true, data: { id: Number(req.params.id), format: 'pdf' } }),
   getHistorial: (req, res) => res.json({ success: true, data: [] }),
   uploadCaratulas: (req, res) => res.json({ success: true, data: {} }),
   resolveCaratulas: (req, res) => res.json({ success: true, data: {} }),
+  confirmProviderCaratulaOrder: (req, res) => res.json({ success: true, data: {} }),
+  uploadProviderCaratula: (req, res) => res.json({ success: true, data: {} }),
+  confirmProviderCaratula: (req, res) => res.json({ success: true, data: {} }),
+  assignOrphanCaratula: (req, res) => res.json({ success: true, data: {} }),
+  discardOrphanCaratula: (req, res) => res.json({ success: true, data: {} }),
   crearTramite: (req, res) => res.json({ success: true, data: { id: 1 } }),
   cambiarEstado: (req, res) => res.json({ success: true, data: {} }),
   decisionDocumento: (req, res) => res.json({ success: true, data: {} })
@@ -77,6 +83,28 @@ describe('Tramites routes permissions', () => {
     expect(response.body).toMatchObject({
       success: true,
       data: { id: 7 }
+    });
+  });
+
+  test('GET /api/tramites-pago/:id/pdf-unificado permite descargar con permiso de workflow', async () => {
+    const response = await withAuth(
+      request(app).get('/api/tramites-pago/7/pdf-unificado?providerSortDirection=desc'),
+      10
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      success: true,
+      data: { id: 7, format: 'pdf' }
+    });
+  });
+
+  test('GET /api/tramites-pago/:id/pdf-unificado rechaza usuario sin permisos de lectura', async () => {
+    const response = await withAuth(request(app).get('/api/tramites-pago/7/pdf-unificado'), 20);
+
+    expect(response.status).toBe(403);
+    expect(response.body).toMatchObject({
+      success: false
     });
   });
 });

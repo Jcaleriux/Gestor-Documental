@@ -1,5 +1,6 @@
 const {
-  applyAutomaticMatchingToPayload
+  applyAutomaticMatchingToPayload,
+  summarizeStoredTramiteCaratula
 } = require('../services/tramitesPagoCaratulasSupport');
 
 describe('tramitesPagoCaratulasSupport', () => {
@@ -155,5 +156,72 @@ describe('tramitesPagoCaratulasSupport', () => {
     expect(result.provider_groups[0].lines[1].matched_factura_id).toBe(102);
     expect(result.provider_groups[0].lines[1].match_strategy).toBe('monto_total');
     expect(result.summary.state).toBe('procesada');
+  });
+
+  test('summarizeStoredTramiteCaratula genera grupos sinteticos cuando no hay PDF cargado', () => {
+    const documents = [
+      {
+        factura_id: 101,
+        proveedor_id: 30,
+        proveedor_nombre: 'UNIFORMES KELINDA S.A.',
+        proveedor_identificacion: '3-101-224478',
+        consecutivo: '10000001865',
+        total_factura: 274025,
+        resumen: { CodigoTipoMoneda: { CodigoMoneda: 'CRC' } }
+      },
+      {
+        factura_id: 202,
+        proveedor_id: 44,
+        proveedor_nombre: 'MANSOCUR S.A.',
+        proveedor_identificacion: '3-101-418328',
+        consecutivo: '10000000589',
+        total_factura: 57065,
+        resumen: { CodigoTipoMoneda: { CodigoMoneda: 'CRC' } }
+      }
+    ];
+
+    const result = summarizeStoredTramiteCaratula({
+      row: null,
+      documents,
+      tramiteEstado: 'en_revision_tesoreria_1'
+    });
+
+    expect(result.caratula).toBeNull();
+    expect(result.provider_groups).toHaveLength(2);
+    expect(result.provider_groups.map((group) => group.proveedor_nombre)).toEqual([
+      'MANSOCUR S.A.',
+      'UNIFORMES KELINDA S.A.'
+    ]);
+    expect(result.provider_groups.every((group) => group.documents.length === 1)).toBe(true);
+    expect(result.provider_groups.every((group) => group.is_blocking)).toBe(true);
+    expect(result.provider_groups.every((group) => (
+      group.warnings.includes('Proveedor del tramite sin caratula asignada.')
+    ))).toBe(true);
+  });
+
+  test('summarizeStoredTramiteCaratula no advierte caratula faltante antes de tesoreria inicial', () => {
+    const documents = [
+      {
+        factura_id: 101,
+        proveedor_id: 30,
+        proveedor_nombre: 'UNIFORMES KELINDA S.A.',
+        proveedor_identificacion: '3-101-224478',
+        consecutivo: '10000001865',
+        total_factura: 274025,
+        resumen: { CodigoTipoMoneda: { CodigoMoneda: 'CRC' } }
+      }
+    ];
+
+    const result = summarizeStoredTramiteCaratula({
+      row: null,
+      documents,
+      tramiteEstado: 'en_aprobacion_gerencia'
+    });
+
+    expect(result.provider_groups).toHaveLength(1);
+    expect(result.provider_groups[0].group_status).toBe('pending_caratula');
+    expect(result.provider_groups[0].is_blocking).toBe(false);
+    expect(result.provider_groups[0].warnings).toEqual([]);
+    expect(result.warnings).toEqual([]);
   });
 });

@@ -6,6 +6,7 @@ export const useTramiteDetalleState = () => {
   const [retenciones, setRetenciones] = useState([]);
   const [caratula, setCaratula] = useState(null);
   const [providerGroups, setProviderGroups] = useState([]);
+  const [orphanGroups, setOrphanGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionMessage, setActionMessage] = useState('');
   const [actionError, setActionError] = useState('');
@@ -24,6 +25,8 @@ export const useTramiteDetalleState = () => {
     setCaratula,
     providerGroups,
     setProviderGroups,
+    orphanGroups,
+    setOrphanGroups,
     loading,
     setLoading,
     actionMessage,

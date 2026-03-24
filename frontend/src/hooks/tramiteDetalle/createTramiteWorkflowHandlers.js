@@ -5,6 +5,13 @@ import { PROMPT_LABELS, TRAMITE_ALERT_LABELS } from '../../utils/uiLabels.js';
 import TRAMITE_LABELS from '../../utils/tramiteLabels.js';
 
 const PAGO_MONTO_EPSILON = 0.0001;
+const PAGO_DISPLAY_DECIMALS = 2;
+
+const roundPagoForDisplay = (value) => Number(Number(value || 0).toFixed(PAGO_DISPLAY_DECIMALS));
+const shouldClampPagoToPendiente = ({ monto, pendiente }) => (
+  monto - pendiente > PAGO_MONTO_EPSILON
+  && roundPagoForDisplay(monto) === roundPagoForDisplay(pendiente)
+);
 
 const buildPagosDocumentosPayload = ({ documentosActivos, pagosFacturas }) => {
   const pagos = [];
@@ -19,7 +26,12 @@ const buildPagosDocumentosPayload = ({ documentosActivos, pagosFacturas }) => {
       continue;
     }
 
-    const rawMonto = pagosFacturas[facturaId] ?? pendiente;
+    const montoProgramado = Number(doc.monto_pago_programado);
+    const rawMonto = pagosFacturas[facturaId] ?? (
+      Number.isFinite(montoProgramado) && montoProgramado > 0
+        ? montoProgramado
+        : pendiente
+    );
     const monto = Number(rawMonto);
     if (!Number.isFinite(monto) || monto <= 0) {
       return {
@@ -27,7 +39,10 @@ const buildPagosDocumentosPayload = ({ documentosActivos, pagosFacturas }) => {
         pagos: []
       };
     }
-    if (monto - pendiente > PAGO_MONTO_EPSILON) {
+    const montoNormalizado = shouldClampPagoToPendiente({ monto, pendiente })
+      ? pendiente
+      : monto;
+    if (montoNormalizado - pendiente > PAGO_MONTO_EPSILON) {
       return {
         error: `El monto para factura #${doc.consecutivo || doc.clave || facturaId} excede su saldo pendiente`,
         pagos: []
@@ -36,7 +51,7 @@ const buildPagosDocumentosPayload = ({ documentosActivos, pagosFacturas }) => {
 
     pagos.push({
       factura_id: facturaId,
-      monto_pago: Number(monto.toFixed(4))
+      monto_pago: Number(montoNormalizado.toFixed(4))
     });
   }
 
@@ -74,6 +89,10 @@ export const createTramiteWorkflowHandlers = ({
     setOverrideError,
     setUploadingCaratulas,
     setResolvingCaratulaGroupKey,
+    setUploadingProviderKey,
+    setConfirmingProviderKey,
+    setConfirmingOrderProviderKey,
+    setOrphanActionId,
     tesoreriaDestino,
     pagosFacturas
   } = workflowState;
@@ -222,8 +241,121 @@ export const createTramiteWorkflowHandlers = ({
     }
   };
 
+  const handleConfirmProviderOrder = async ({ providerKey, facturaIds, orderSource }) => {
+    try {
+      setActionError('');
+      setActionMessage('');
+      setConfirmingOrderProviderKey(providerKey);
+      await api.confirmProviderCaratulaOrder(id, providerKey, {
+        factura_ids: Array.isArray(facturaIds) ? facturaIds : [],
+        order_source: orderSource || 'manual',
+        usuario: actorUsuario
+      });
+      setActionMessage(alertLabels.caratulasResolveSuccess);
+      await fetchDetalle();
+      return true;
+    } catch (err) {
+      const apiError = err.response?.data?.error || alertLabels.caratulasResolveError;
+      setActionError(apiError);
+      return false;
+    } finally {
+      setConfirmingOrderProviderKey('');
+    }
+  };
+
+  const handleUploadProviderCaratula = async ({ providerKey, file }) => {
+    if (!file) {
+      setActionError(alertLabels.caratulasFileRequired);
+      return false;
+    }
+
+    try {
+      setActionError('');
+      setActionMessage('');
+      setUploadingProviderKey(providerKey);
+      const fileBase64 = await toBase64(file);
+      await api.uploadProviderCaratula(id, providerKey, {
+        filename: file.name,
+        file_base64: fileBase64,
+        usuario: actorUsuario
+      });
+      setActionMessage(alertLabels.caratulasUploadSuccess);
+      await fetchDetalle();
+      return true;
+    } catch (err) {
+      const apiError = err.response?.data?.error || alertLabels.caratulasUploadError;
+      setActionError(apiError);
+      return false;
+    } finally {
+      setUploadingProviderKey('');
+    }
+  };
+
+  const handleConfirmProviderCaratula = async ({ providerKey }) => {
+    try {
+      setActionError('');
+      setActionMessage('');
+      setConfirmingProviderKey(providerKey);
+      await api.confirmProviderCaratula(id, providerKey, {
+        usuario: actorUsuario
+      });
+      setActionMessage(alertLabels.caratulasResolveSuccess);
+      await fetchDetalle();
+      return true;
+    } catch (err) {
+      const apiError = err.response?.data?.error || alertLabels.caratulasResolveError;
+      setActionError(apiError);
+      return false;
+    } finally {
+      setConfirmingProviderKey('');
+    }
+  };
+
+  const handleAssignOrphanCaratula = async ({ orphanId, providerKey }) => {
+    try {
+      setActionError('');
+      setActionMessage('');
+      setOrphanActionId(`assign:${orphanId}`);
+      await api.assignOrphanCaratula(id, orphanId, {
+        provider_key: providerKey,
+        usuario: actorUsuario
+      });
+      setActionMessage(alertLabels.caratulasResolveSuccess);
+      await fetchDetalle();
+      return true;
+    } catch (err) {
+      const apiError = err.response?.data?.error || alertLabels.caratulasResolveError;
+      setActionError(apiError);
+      return false;
+    } finally {
+      setOrphanActionId('');
+    }
+  };
+
+  const handleDiscardOrphanCaratula = async ({ orphanId }) => {
+    try {
+      setActionError('');
+      setActionMessage('');
+      setOrphanActionId(`discard:${orphanId}`);
+      await api.discardOrphanCaratula(id, orphanId, {
+        usuario: actorUsuario
+      });
+      setActionMessage(alertLabels.caratulasResolveSuccess);
+      await fetchDetalle();
+      return true;
+    } catch (err) {
+      const apiError = err.response?.data?.error || alertLabels.caratulasResolveError;
+      setActionError(apiError);
+      return false;
+    } finally {
+      setOrphanActionId('');
+    }
+  };
+
   const handleAccionSiguiente = async (estado) => {
-    if (estado !== 'pagado') {
+    const shouldSendPagosDocumentos = estado === 'pagado' || estado === 'en_aprobacion_gerencia_contable';
+
+    if (!shouldSendPagosDocumentos) {
       await handleCambiarEstado(estado);
       return;
     }
@@ -247,6 +379,11 @@ export const createTramiteWorkflowHandlers = ({
     handleAccionTesoreria,
     handleUploadCaratulas,
     handleResolveCaratulas,
+    handleConfirmProviderOrder,
+    handleUploadProviderCaratula,
+    handleConfirmProviderCaratula,
+    handleAssignOrphanCaratula,
+    handleDiscardOrphanCaratula,
     handleOverrideEstado,
     handleAccionSiguiente
   };

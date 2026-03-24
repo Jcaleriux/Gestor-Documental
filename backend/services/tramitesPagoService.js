@@ -56,6 +56,25 @@ const getTramite = handleRequest((req) => {
   });
 }, 'Error fetching tramite:', 'Error fetching tramite');
 
+const getTramitePdfUnificado = handleRequest(async (req, res) => {
+  const { id } = req.params;
+  const pdfDownload = await useCases.getTramitePdfUnificado({
+    id,
+    actorUserId: req.user?.id,
+    providerSortDirection: req.query?.providerSortDirection
+  });
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${pdfDownload.filename}"`);
+  res.setHeader('X-Novogar-Partial-Download', pdfDownload.partialDownload ? '1' : '0');
+  res.setHeader('X-Novogar-Omitted-Count', String(pdfDownload.omittedCount || 0));
+  if (pdfDownload.omittedItemsHeader) {
+    res.setHeader('X-Novogar-Omitted-Items', pdfDownload.omittedItemsHeader);
+  }
+
+  res.send(pdfDownload.buffer);
+}, 'Error downloading unified tramite PDF:', 'Error downloading unified tramite PDF');
+
 const getHistorial = handleRequest((req) => {
   const { id } = req.params;
   return useCases.getHistorial({ id });
@@ -88,6 +107,61 @@ const resolveCaratulas = handleRequest((req) => {
     usuario: resolveActorUsuario(req, usuario)
   });
 }, 'Error resolving tramite caratulas:', 'Error resolving tramite caratulas');
+
+const confirmProviderCaratulaOrder = handleRequest((req) => {
+  const { id, providerKey } = req.params;
+  const { factura_ids, order_source, usuario } = req.body || {};
+  return useCases.confirmProviderOrder({
+    id,
+    provider_key: providerKey,
+    factura_ids,
+    order_source,
+    usuario: resolveActorUsuario(req, usuario)
+  });
+}, 'Error confirming provider invoice order:', 'Error confirming provider invoice order');
+
+const uploadProviderCaratula = handleRequest((req) => {
+  const { id, providerKey } = req.params;
+  const { filename, file_base64, usuario } = req.body || {};
+  return useCases.uploadProviderCaratula({
+    id,
+    provider_key: providerKey,
+    filename,
+    file_base64,
+    usuario: resolveActorUsuario(req, usuario)
+  });
+}, 'Error uploading provider caratula:', 'Error uploading provider caratula');
+
+const confirmProviderCaratula = handleRequest((req) => {
+  const { id, providerKey } = req.params;
+  const { usuario } = req.body || {};
+  return useCases.confirmProviderCaratula({
+    id,
+    provider_key: providerKey,
+    usuario: resolveActorUsuario(req, usuario)
+  });
+}, 'Error confirming provider caratula:', 'Error confirming provider caratula');
+
+const assignOrphanCaratula = handleRequest((req) => {
+  const { id, orphanId } = req.params;
+  const { provider_key, usuario } = req.body || {};
+  return useCases.assignOrphanCaratula({
+    id,
+    orphan_id: orphanId,
+    provider_key,
+    usuario: resolveActorUsuario(req, usuario)
+  });
+}, 'Error assigning orphan caratula:', 'Error assigning orphan caratula');
+
+const discardOrphanCaratula = handleRequest((req) => {
+  const { id, orphanId } = req.params;
+  const { usuario } = req.body || {};
+  return useCases.discardOrphanCaratula({
+    id,
+    orphan_id: orphanId,
+    usuario: resolveActorUsuario(req, usuario)
+  });
+}, 'Error discarding orphan caratula:', 'Error discarding orphan caratula');
 
 const crearTramite = handleRequest((req) => {
   const { sociedad_id, factura_ids, retencion_factura_ids, usuario } = req.body || {};
@@ -134,9 +208,15 @@ module.exports = {
   listTramites,
   getRetencionesDisponibles,
   getTramite,
+  getTramitePdfUnificado,
   getHistorial,
   uploadCaratulas,
   resolveCaratulas,
+  confirmProviderCaratulaOrder,
+  uploadProviderCaratula,
+  confirmProviderCaratula,
+  assignOrphanCaratula,
+  discardOrphanCaratula,
   crearTramite,
   cambiarEstado,
   decisionDocumento

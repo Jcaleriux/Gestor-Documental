@@ -39,6 +39,28 @@ const getContabilizacionByFacturaId = async (facturaId, client) => {
   return rows[0] || null;
 };
 
+const listDocumentosRespaldoByFacturaId = async (facturaId, client) => {
+  const { rows } = await getDb(client).query(
+    `
+    SELECT
+      dr.id,
+      dr.factura_id,
+      dr.nombre_archivo,
+      dr.ruta_pdf,
+      dr.metadata,
+      dr.creado_por,
+      dr.creado_en,
+      dr.actualizado_en
+    FROM facturas_contabilizacion_documentos_respaldo dr
+    WHERE dr.factura_id = $1
+    ORDER BY dr.creado_en ASC, dr.id ASC
+    `,
+    [facturaId]
+  );
+
+  return rows;
+};
+
 const listRetencionPagosByFacturaId = async (facturaId, client) => {
   const { rows } = await getDb(client).query(
     `
@@ -315,6 +337,67 @@ const upsertContabilizacion = async ({
   return rows[0] || null;
 };
 
+const createDocumentoRespaldo = async ({
+  facturaId,
+  nombreArchivo,
+  rutaPdf,
+  metadata,
+  creadoPor
+}, client) => {
+  const { rows } = await getDb(client).query(
+    `
+    INSERT INTO facturas_contabilizacion_documentos_respaldo (
+      factura_id,
+      nombre_archivo,
+      ruta_pdf,
+      metadata,
+      creado_por
+    )
+    VALUES ($1,$2,$3,$4,$5)
+    RETURNING *
+    `,
+    [
+      facturaId,
+      nombreArchivo,
+      rutaPdf,
+      metadata || null,
+      creadoPor || null
+    ]
+  );
+
+  return rows[0] || null;
+};
+
+const getDocumentoRespaldoById = async ({
+  facturaId,
+  documentoId
+}, client) => {
+  const { rows } = await getDb(client).query(
+    `
+    SELECT *
+    FROM facturas_contabilizacion_documentos_respaldo
+    WHERE id = $1
+      AND factura_id = $2
+    `,
+    [documentoId, facturaId]
+  );
+
+  return rows[0] || null;
+};
+
+const deleteDocumentoRespaldoById = async (documentoId, client) => {
+  const { rows } = await getDb(client).query(
+    `
+    DELETE FROM facturas_contabilizacion_documentos_respaldo
+    WHERE id = $1
+    RETURNING *
+    `,
+    [documentoId]
+  );
+
+  return rows[0] || null;
+};
+
 const insertRetencionPago = async ({
   facturaId,
   contabilizacionId,
@@ -449,6 +532,7 @@ const refreshEstadoOrdenCompraById = async (ordenCompraId, client) => {
 module.exports = {
   getClient,
   getContabilizacionByFacturaId,
+  listDocumentosRespaldoByFacturaId,
   listRetencionPagosByFacturaId,
   getFacturaById,
   getProveedorById,
@@ -459,6 +543,9 @@ module.exports = {
   getContabilizacionRetencionByFacturaIdForUpdate,
   normalizeRetencionStateByFacturaId,
   upsertContabilizacion,
+  createDocumentoRespaldo,
+  getDocumentoRespaldoById,
+  deleteDocumentoRespaldoById,
   insertRetencionPago,
   applyRetencionPago,
   updateFacturaEstado,

@@ -15,6 +15,7 @@ export const useFacturaDetalleContabilizacionState = () => {
   const [ordenesError, setOrdenesError] = useState('');
   const [notasCreditoProveedor, setNotasCreditoProveedor] = useState([]);
   const [notaCreditoActual, setNotaCreditoActual] = useState(null);
+  const [documentosRespaldoActuales, setDocumentosRespaldoActuales] = useState([]);
   const [notasModalOpen, setNotasModalOpen] = useState(false);
   const [notasLoading, setNotasLoading] = useState(false);
   const [notasError, setNotasError] = useState('');
@@ -63,6 +64,8 @@ export const useFacturaDetalleContabilizacionState = () => {
     setNotasCreditoProveedor,
     notaCreditoActual,
     setNotaCreditoActual,
+    documentosRespaldoActuales,
+    setDocumentosRespaldoActuales,
     notasModalOpen,
     setNotasModalOpen,
     notasLoading,

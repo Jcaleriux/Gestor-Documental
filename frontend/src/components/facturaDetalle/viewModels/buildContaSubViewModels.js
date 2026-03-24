@@ -37,12 +37,17 @@ export const buildContaAssociationsViewModel = ({ detalle }) => ({
   tablaPagoActual: detalle.tablaPagoActual,
   ordenCompraActual: detalle.ordenCompraActual,
   notaCreditoActual: detalle.notaCreditoActual,
+  documentosRespaldoActuales: detalle.documentosRespaldoActuales,
   abrirAsociarTablaPago: detalle.abrirAsociarTablaPago,
   abrirAsociarOrdenCompra: detalle.abrirAsociarOrdenCompra,
   abrirAsociarNotaCredito: detalle.abrirAsociarNotaCredito,
+  desenlazarOrdenCompra: detalle.desenlazarOrdenCompra,
   verTablaPagoAsociada: detalle.verTablaPagoAsociada,
   verOrdenCompraAsociada: detalle.verOrdenCompraAsociada,
-  verNotaCreditoAsociada: detalle.verNotaCreditoAsociada
+  verNotaCreditoAsociada: detalle.verNotaCreditoAsociada,
+  verDocumentoRespaldo: detalle.verDocumentoRespaldo,
+  subirDocumentosRespaldo: detalle.subirDocumentosRespaldo,
+  eliminarDocumentoRespaldo: detalle.eliminarDocumentoRespaldo
 });
 
 export const buildTablasModalViewModel = ({ detalle }) => ({

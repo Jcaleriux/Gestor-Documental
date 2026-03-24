@@ -96,6 +96,15 @@ export const createDocumentActions = ({
     });
   };
 
+  const verDocumentoRespaldo = (documentoRespaldo) => {
+    if (!documentoRespaldo?.ruta_pdf) return;
+    openApiFilePath({
+      endpoint: '/api/files/pdf',
+      ruta: documentoRespaldo.ruta_pdf,
+      openProtectedResource: resolvedOpenProtectedResource
+    });
+  };
+
   const verMensajeHacienda = async () => {
     if (!hasMensajeHacienda({ factura })) {
       setMhError('Esta factura aun no tiene Mensaje Hacienda registrado.');
@@ -141,6 +150,7 @@ export const createDocumentActions = ({
     verTablaPagoAsociada,
     verOrdenCompraAsociada,
     verNotaCreditoAsociada,
+    verDocumentoRespaldo,
     verMensajeHacienda,
     verManifest
   };

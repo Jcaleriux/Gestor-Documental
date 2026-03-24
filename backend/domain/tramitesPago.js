@@ -65,7 +65,12 @@ const TRAMITE_ACCIONES = Object.freeze({
   CAMBIAR_ESTADO: 'cambiar_estado',
   OVERRIDE_ESTADO: 'override_estado',
   CARGAR_CARATULAS: 'cargar_caratulas',
-  RESOLVER_CARATULAS: 'resolver_caratulas'
+  RESOLVER_CARATULAS: 'resolver_caratulas',
+  CONFIRMAR_CARATULA_PROVEEDOR: 'confirmar_caratula_proveedor',
+  CONFIRMAR_ORDEN_CARATULA: 'confirmar_orden_caratula',
+  SUSTITUIR_CARATULA_PROVEEDOR: 'sustituir_caratula_proveedor',
+  ASIGNAR_CARATULA_HUERFANA: 'asignar_caratula_huerfana',
+  DESCARTAR_CARATULA_HUERFANA: 'descartar_caratula_huerfana'
 });
 
 const TESORERIA_ESTADOS = Object.freeze({

@@ -17,6 +17,7 @@ const mapTramiteRow = (row) => ({
 
 const mapDocumentoRow = (row) => ({
   ...row,
+  monto_pago_programado: toNumberOrNull(row.monto_pago_programado),
   conta_retencion: toNumberOrNull(row.conta_retencion),
   conta_descuento: toNumberOrNull(row.conta_descuento),
   conta_anticipo_aplicado: toNumberOrNull(row.conta_anticipo_aplicado),
@@ -29,6 +30,16 @@ const mapDocumentoRow = (row) => ({
   total_pagado_principal: toNumberOrNull(row.total_pagado_principal),
   total_a_pagar: toNumberOrNull(row.total_a_pagar),
   total_pendiente_global: toNumberOrNull(row.total_pendiente_global),
+  conta_metadata: row.conta_metadata && typeof row.conta_metadata === 'object'
+    ? row.conta_metadata
+    : null,
+  conta_documentos_respaldo: Array.isArray(row.conta_documentos_respaldo)
+    ? row.conta_documentos_respaldo.map((item) => ({
+      ...item,
+      id: toNumberOrNull(item?.id) ?? item?.id,
+      factura_id: toNumberOrNull(item?.factura_id) ?? item?.factura_id
+    }))
+    : [],
   gerencia_aprobadores_total: toNumberOrNull(row.gerencia_aprobadores_total) ?? 0,
   gerencia_aprobadores_aprobados: toNumberOrNull(row.gerencia_aprobadores_aprobados) ?? 0,
   gerencia_aprobadores_pendientes: toNumberOrNull(row.gerencia_aprobadores_pendientes) ?? 0,

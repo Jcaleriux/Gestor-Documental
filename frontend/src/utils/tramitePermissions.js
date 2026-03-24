@@ -60,3 +60,4 @@ function getPermisosTramite({ userPermissions, estado }) {
 }
 
 export default getPermisosTramite;
+export { hasPermission };

@@ -33,6 +33,7 @@ const createDetalleFixture = () => ({
   abrirAsociarTablaPago: createMockFn(),
   abrirAsociarOrdenCompra: createMockFn(),
   abrirAsociarNotaCredito: createMockFn(),
+  desenlazarOrdenCompra: createMockFn(),
   verTablaPagoAsociada: createMockFn(),
   verOrdenCompraAsociada: createMockFn(),
   verNotaCreditoAsociada: createMockFn(),
@@ -81,6 +82,7 @@ test('buildContaAssociationsViewModel conserva asociaciones y acciones', () => {
   assert.equal(associations.tablaPagoActual.id, 11);
   assert.equal(associations.ordenCompraActual.id, 21);
   assert.equal(associations.abrirAsociarNotaCredito, detalle.abrirAsociarNotaCredito);
+  assert.equal(associations.desenlazarOrdenCompra, detalle.desenlazarOrdenCompra);
 });
 
 test('buildContaModalsViewModel arma modales y ejecuta onClose por tipo', () => {

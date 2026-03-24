@@ -35,12 +35,14 @@ const MAX_FACTURAS_PAGE_SIZE = 200;
 const DATE_INPUT_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 const FACTURAS_DASHBOARD_PRESETS = new Set([
   'no_contabilizadas',
+  'contabilizadas',
   'en_revision',
   'en_tramite',
   'por_pagar',
   'vencidas',
   'por_vencer_7',
-  'pagadas'
+  'pagadas',
+  'recibidas_ultimo_mes'
 ]);
 
 const toOptionalPositiveInt = (value, fieldName) => {

@@ -56,7 +56,7 @@ const getFacturasStats = async ({ sociedadId } = {}) => {
       SUM(CASE WHEN ${facturaEstadoOperativoExpression} = '${FACTURA_ESTADOS.RECHAZADO}' THEN 1 ELSE 0 END)::int as rechazados,
       SUM(CASE WHEN ${facturaEstadoOperativoExpression} = '${FACTURA_ESTADOS.EN_REVISION}' THEN 1 ELSE 0 END)::int as en_revision,
       SUM(CASE WHEN ${facturaEstadoOperativoExpression} = '${FACTURA_ESTADOS.NO_CONTABILIZADO}' THEN 1 ELSE 0 END)::int as no_contabilizado,
-      SUM(CASE WHEN f.fecha_emision >= date_trunc('month', CURRENT_DATE) THEN 1 ELSE 0 END)::int as total_mes,
+      SUM(CASE WHEN f.fecha_emision >= (CURRENT_DATE - INTERVAL '30 days') THEN 1 ELSE 0 END)::int as total_mes,
       SUM(CASE WHEN ${facturaEstadoOperativoExpression} = '${FACTURA_ESTADOS.CONTABILIZADO}' THEN 1 ELSE 0 END)::int as contabilizado_simple,
       SUM(CASE WHEN ${facturaEstadoOperativoExpression} = '${FACTURA_ESTADOS.EN_TRAMITE_PAGO}' THEN 1 ELSE 0 END)::int as en_tramite,
       SUM(CASE WHEN ${facturaEstadoOperativoExpression} = '${FACTURA_ESTADOS.PAGADO_PARCIALMENTE}' THEN 1 ELSE 0 END)::int as pagados_parcialmente,

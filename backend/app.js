@@ -30,7 +30,14 @@ app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'DENY');
   next();
 });
-app.use(cors());
+app.use(cors({
+  exposedHeaders: [
+    'Content-Disposition',
+    'X-Novogar-Partial-Download',
+    'X-Novogar-Omitted-Count',
+    'X-Novogar-Omitted-Items'
+  ]
+}));
 app.use(express.json({ limit: runtimeConfig.jsonBodyLimit }));
 app.use((req, res, next) => {
   applyReleaseHeaders(res, releaseInfo);

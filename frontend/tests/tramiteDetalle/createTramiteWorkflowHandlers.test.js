@@ -175,6 +175,63 @@ test('createTramiteWorkflowHandlers.handleAccionSiguiente para pagado envía pag
   ]);
 });
 
+test('createTramiteWorkflowHandlers.handleAccionSiguiente para gerencia contable envÃ­a pagos_documentos cuando es vÃ¡lido', async () => {
+  const deps = createDeps();
+  const workflowInputs = createWorkflowInputs();
+  const workflowState = createWorkflowState();
+  workflowState.pagosFacturas = { 1: '88.25' };
+
+  const handlers = createTramiteWorkflowHandlers({
+    workflowInputs,
+    workflowState,
+    dependencies: deps
+  });
+
+  await handlers.handleAccionSiguiente('en_aprobacion_gerencia_contable');
+
+  assert.equal(deps.api.cambiarEstado.calls.length, 1);
+  assert.deepEqual(deps.api.cambiarEstado.calls[0], [
+    88,
+    {
+      estado: 'en_aprobacion_gerencia_contable',
+      usuario: 'gerencia@novogar.local',
+      motivo: null,
+      force: false,
+      pagos_documentos: [{ factura_id: 1, monto_pago: 88.25 }]
+    }
+  ]);
+});
+
+test('createTramiteWorkflowHandlers tolera redondeo visible del saldo y envía el pendiente real', async () => {
+  const deps = createDeps();
+  const workflowInputs = createWorkflowInputs();
+  workflowInputs.documentosActivos = [
+    { factura_id: 1, total_a_pagar: 404351.99964, consecutivo: '00200009010000167438' }
+  ];
+  const workflowState = createWorkflowState();
+  workflowState.pagosFacturas = { 1: '404352.00' };
+
+  const handlers = createTramiteWorkflowHandlers({
+    workflowInputs,
+    workflowState,
+    dependencies: deps
+  });
+
+  await handlers.handleAccionSiguiente('pagado');
+
+  assert.deepEqual(workflowInputs.setActionError.calls[0], ['']);
+  assert.deepEqual(deps.api.cambiarEstado.calls[0], [
+    88,
+    {
+      estado: 'pagado',
+      usuario: 'gerencia@novogar.local',
+      motivo: null,
+      force: false,
+      pagos_documentos: [{ factura_id: 1, monto_pago: 404351.9996 }]
+    }
+  ]);
+});
+
 test('createTramiteWorkflowHandlers.handleResolveCaratulas llama API y refresca detalle', async () => {
   const deps = createDeps();
   const workflowInputs = createWorkflowInputs();

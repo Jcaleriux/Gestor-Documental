@@ -34,6 +34,16 @@ const createPagosFacturaExpression = ({ facturaAlias = 'f' } = {}) => `
   ), 0)
 `;
 
+const MONTO_MONEDA_SCALE = 2;
+const MONTO_MONEDA_EPSILON = 0.005;
+
+const createNormalizedCurrencyExpression = (valueExpression) => `
+  CASE
+    WHEN ABS(${valueExpression}) < ${MONTO_MONEDA_EPSILON} THEN 0
+    ELSE ROUND(${valueExpression}, ${MONTO_MONEDA_SCALE})
+  END
+`;
+
 const createTotalPagoBaseExpression = ({ facturaAlias = 'f', contaAlias = 'fc' } = {}) => {
   const totalFactura = createTotalFacturaExpression({ facturaAlias });
   const rebajosAplicados = createRebajosAplicadosExpression({ contaAlias });
@@ -44,13 +54,13 @@ const createTotalPagoBaseExpression = ({ facturaAlias = 'f', contaAlias = 'fc' }
 const createTotalPagoPrincipalExpression = ({ facturaAlias = 'f', contaAlias = 'fc' } = {}) => {
   const totalPagoBase = createTotalPagoBaseExpression({ facturaAlias, contaAlias });
   const pagosFactura = createPagosFacturaExpression({ facturaAlias });
-  return `GREATEST((${totalPagoBase} - ${pagosFactura}), 0)`;
+  return `GREATEST(${createNormalizedCurrencyExpression(`(${totalPagoBase} - ${pagosFactura})`)}, 0)`;
 };
 
 const createTotalPendienteGlobalExpression = ({ facturaAlias = 'f', contaAlias = 'fc' } = {}) => {
   const totalPagoPrincipal = createTotalPagoPrincipalExpression({ facturaAlias, contaAlias });
   const retencionPendiente = createRetencionPendienteExpression({ contaAlias });
-  return `(${totalPagoPrincipal} + ${retencionPendiente})`;
+  return createNormalizedCurrencyExpression(`(${totalPagoPrincipal} + ${retencionPendiente})`);
 };
 
 module.exports = {
@@ -60,6 +70,7 @@ module.exports = {
   createRetencionPagadaExpression,
   createRetencionPendienteExpression,
   createPagosFacturaExpression,
+  createNormalizedCurrencyExpression,
   createTotalPagoBaseExpression,
   createTotalPagoPrincipalExpression,
   createTotalPendienteGlobalExpression

@@ -22,6 +22,7 @@ const applyFetchedDetalleState = ({
   contabilizacionSetters.setTablaPagoActual(stateData.tablaPagoActual);
   contabilizacionSetters.setOrdenCompraActual(stateData.ordenCompraActual);
   contabilizacionSetters.setNotaCreditoActual(stateData.notaCreditoActual);
+  contabilizacionSetters.setDocumentosRespaldoActuales(stateData.documentosRespaldoActuales);
   contabilizacionSetters.setCentrosCostoCatalogo(stateData.centrosCostoCatalogo);
   contabilizacionSetters.setConta(stateData.conta);
   contabilizacionSetters.setRetencionPagoFecha(stateData.retencionPagoFecha);
@@ -51,6 +52,7 @@ export const useFacturaDetalleData = ({ id, sociedadId, dependencies = {} }) => 
     setTablaPagoActual,
     setOrdenCompraActual,
     setNotaCreditoActual,
+    setDocumentosRespaldoActuales,
     setCentrosCostoCatalogo,
     setConta,
     setRetencionPagoFecha
@@ -94,6 +96,7 @@ export const useFacturaDetalleData = ({ id, sociedadId, dependencies = {} }) => 
           setTablaPagoActual,
           setOrdenCompraActual,
           setNotaCreditoActual,
+          setDocumentosRespaldoActuales,
           setCentrosCostoCatalogo,
           setConta,
           setRetencionPagoFecha
@@ -121,6 +124,7 @@ export const useFacturaDetalleData = ({ id, sociedadId, dependencies = {} }) => 
     setTablaPagoActual,
     setOrdenCompraActual,
     setNotaCreditoActual,
+    setDocumentosRespaldoActuales,
     setCentrosCostoCatalogo,
     setConta,
     setRetencionPagoFecha

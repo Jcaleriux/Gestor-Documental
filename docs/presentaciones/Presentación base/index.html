@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proyecto Novogar | Presentación ejecutiva</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: radial-gradient(circle at top, #123055 0%, #081526 58%, #050c16 100%);
+      --surface: rgba(8, 21, 38, 0.76);
+      --surface-strong: rgba(12, 31, 56, 0.92);
+      --line: rgba(255, 255, 255, 0.12);
+      --text: #eef4ff;
+      --muted: #b6c5dd;
+      --accent: #4a86f7;
+      --accent-soft: rgba(74, 134, 247, 0.16);
+      --shadow: 0 30px 70px rgba(0, 0, 0, 0.35);
+      --font-sans: "Aptos", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 18px;
+      padding: 22px 24px 18px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      overflow: hidden;
+    }
+
+    .topbar,
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--surface);
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #4a86f7, #1b998b);
+      box-shadow: 0 0 0 6px rgba(74, 134, 247, 0.14);
+      flex-shrink: 0;
+    }
+
+    .brand-copy {
+      min-width: 0;
+    }
+
+    .brand-kicker {
+      margin: 0 0 6px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .brand-title {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .meta-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 0 16px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--surface-strong);
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+
+    .stage-wrap {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 0;
+    }
+
+    .stage {
+      width: min(94vw, calc(78vh * 1.7778));
+      aspect-ratio: 16 / 9;
+      border-radius: 30px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: var(--shadow);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .nav-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 58px;
+      height: 58px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      font: inherit;
+      font-size: 28px;
+      font-weight: 800;
+      cursor: pointer;
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow);
+      transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+      z-index: 2;
+    }
+
+    .nav-arrow:hover {
+      transform: translateY(-50%) scale(1.03);
+      border-color: rgba(255, 255, 255, 0.24);
+      background: rgba(74, 134, 247, 0.16);
+    }
+
+    .nav-arrow:disabled {
+      cursor: not-allowed;
+      opacity: 0.38;
+      transform: translateY(-50%);
+      background: var(--surface);
+    }
+
+    .nav-prev {
+      left: max(6px, calc(50% - min(47vw, calc(39vh * 1.7778)) - 78px));
+    }
+
+    .nav-next {
+      right: max(6px, calc(50% - min(47vw, calc(39vh * 1.7778)) - 78px));
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+      background: #081526;
+    }
+
+    button,
+    .ghost-link {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--surface-strong);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 12px 18px;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      cursor: pointer;
+      transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+      text-decoration: none;
+    }
+
+    button:hover,
+    .ghost-link:hover {
+      transform: translateY(-1px);
+      border-color: rgba(255, 255, 255, 0.24);
+      background: rgba(74, 134, 247, 0.16);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+      transform: none;
+      background: var(--surface-strong);
+    }
+
+    .accent {
+      background: linear-gradient(135deg, #4a86f7, #1b998b);
+      border-color: transparent;
+      color: #ffffff;
+    }
+
+    @media (max-width: 980px) {
+      body {
+        padding: 14px;
+      }
+
+      .topbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .meta {
+        justify-content: center;
+      }
+
+      .brand-title {
+        white-space: normal;
+      }
+
+      .stage {
+        width: 100%;
+      }
+
+      .nav-arrow {
+        width: 50px;
+        height: 50px;
+        font-size: 24px;
+      }
+
+      .nav-prev {
+        left: 8px;
+      }
+
+      .nav-next {
+        right: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"></div>
+      <div class="brand-copy">
+        <p class="brand-kicker">Proyecto Novogar | Presentación ejecutiva</p>
+        <h1 class="brand-title" id="deck-title">Proyecto Novogar</h1>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pill" id="deck-counter">1 de 15</div>
+      <button class="accent" id="fullscreen-button" type="button">Pantalla completa</button>
+    </div>
+  </header>
+
+  <main class="stage-wrap">
+    <button class="nav-arrow nav-prev" id="prev-button" type="button" aria-label="Slide anterior">‹</button>
+    <div class="stage">
+      <iframe id="slide-frame" src="slide1.html" title="Slide de la presentación"></iframe>
+    </div>
+    <button class="nav-arrow nav-next" id="next-button" type="button" aria-label="Slide siguiente">›</button>
+  </main>
+
+  <script>
+    const slides = [
+      { file: "slide1.html", title: "Proyecto Novogar" },
+      { file: "slide2.html", title: "Resumen ejecutivo" },
+      { file: "slide3.html", title: "Problema actual y riesgo operativo" },
+      { file: "slide4.html", title: "Qué resuelve Proyecto Novogar hoy" },
+      { file: "slide5.html", title: "Flujo operativo end-to-end" },
+      { file: "slide6.html", title: "Capacidades implementadas hoy" },
+      { file: "slide7.html", title: "Visibilidad gerencial" },
+      { file: "slide8.html", title: "Seguridad y control actual" },
+      { file: "slide9.html", title: "Arquitectura y despliegue propuesto en Azure" },
+      { file: "slide10.html", title: "Respaldo, rollback y continuidad operativa" },
+      { file: "slide11.html", title: "Por qué Proyecto Novogar puede crecer más" },
+      { file: "slide12.html", title: "Demo 1 | Vista general y entrada a la operación" },
+      { file: "slide13.html", title: "Demo 2 | Documento, contexto y trazabilidad" },
+      { file: "slide14.html", title: "Demo 3 | Trámite, carátulas y aprobación" },
+      { file: "slide15.html", title: "Propuesta de implementación y cierre" }
+    ];
+
+    const frame = document.getElementById("slide-frame");
+    const deckTitle = document.getElementById("deck-title");
+    const deckCounter = document.getElementById("deck-counter");
+    const prevButton = document.getElementById("prev-button");
+    const nextButton = document.getElementById("next-button");
+    const fullscreenButton = document.getElementById("fullscreen-button");
+
+    let currentIndex = 0;
+
+    const clampIndex = (value) => Math.max(0, Math.min(slides.length - 1, value));
+
+    const getSlideFromLocation = () => {
+      const params = new URLSearchParams(window.location.search);
+      const rawValue = Number.parseInt(params.get("slide") || "1", 10);
+      if (Number.isInteger(rawValue)) {
+        return clampIndex(rawValue - 1);
+      }
+
+      const hashMatch = window.location.hash.match(/slide-(\d+)/i);
+      if (hashMatch) {
+        return clampIndex(Number.parseInt(hashMatch[1], 10) - 1);
+      }
+
+      return 0;
+    };
+
+    const updateUrl = (index, mode) => {
+      const url = new URL(window.location.href);
+      url.searchParams.set("slide", String(index + 1));
+      try {
+        if (mode === "push") {
+          window.history.pushState({ slide: index }, "", url);
+        } else {
+          window.history.replaceState({ slide: index }, "", url);
+        }
+      } catch (error) {
+          window.location.hash = `slide-${index + 1}`;
+      }
+    };
+
+    const updateUi = () => {
+      const slide = slides[currentIndex];
+      deckTitle.textContent = slide.title;
+      deckCounter.textContent = `${currentIndex + 1} de ${slides.length}`;
+      document.title = `Proyecto Novogar | ${slide.title}`;
+      frame.src = slide.file;
+      prevButton.disabled = currentIndex === 0;
+      nextButton.disabled = currentIndex === slides.length - 1;
+    };
+
+    const goTo = (index, mode = "push") => {
+      const nextIndex = clampIndex(index);
+      if (nextIndex === currentIndex && mode === "push") {
+        return;
+      }
+      currentIndex = nextIndex;
+      updateUi();
+      updateUrl(currentIndex, mode);
+    };
+
+    const step = (delta) => goTo(currentIndex + delta, "push");
+
+    const handleKeyNavigation = (event) => {
+      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) {
+        return;
+      }
+
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        step(1);
+      } else if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        step(-1);
+      } else if (event.key === "Home") {
+        event.preventDefault();
+        goTo(0, "push");
+      } else if (event.key === "End") {
+        event.preventDefault();
+        goTo(slides.length - 1, "push");
+      }
+    };
+
+    const attachFrameKeyboardProxy = () => {
+      try {
+        const frameWindow = frame.contentWindow;
+        const frameDocument = frameWindow && frameWindow.document;
+        if (!frameDocument) {
+          return;
+        }
+
+        frameDocument.removeEventListener("keydown", handleKeyNavigation);
+        frameDocument.addEventListener("keydown", handleKeyNavigation);
+      } catch (error) {
+        // Same-origin expected for local slides; silently ignore if browser blocks access.
+      }
+    };
+
+    prevButton.addEventListener("click", () => step(-1));
+    nextButton.addEventListener("click", () => step(1));
+    fullscreenButton.addEventListener("click", async () => {
+      const target = document.documentElement;
+      try {
+        if (document.fullscreenElement) {
+          await document.exitFullscreen();
+        } else if (target.requestFullscreen) {
+          await target.requestFullscreen();
+        }
+      } catch (error) {
+        console.warn("No fue posible cambiar a pantalla completa.", error);
+      }
+    });
+
+    window.addEventListener("keydown", handleKeyNavigation);
+    window.addEventListener("popstate", (event) => {
+      const index = event.state && Number.isInteger(event.state.slide)
+        ? clampIndex(event.state.slide)
+        : getSlideFromLocation();
+      currentIndex = index;
+      updateUi();
+    });
+    frame.addEventListener("load", attachFrameKeyboardProxy);
+
+    currentIndex = getSlideFromLocation();
+    updateUi();
+    updateUrl(currentIndex, "replace");
+  </script>
+</body>
+</html>

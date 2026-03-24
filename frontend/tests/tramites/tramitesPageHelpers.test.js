@@ -6,6 +6,7 @@ import {
   getTramitesReturnActionLabel,
   parseTramitesEstadoFromSearch,
   parseTramitesReturnContextFromSearch,
+  resolveTramitesCreateActionState,
 } from '../../src/components/tramites/tramitesPageHelpers.js';
 
 test('tramitesPageHelpers interpreta estado y retorno seguro desde search params', () => {
@@ -76,5 +77,43 @@ test('tramitesPageHelpers construye search canonico sin depender de estado local
       returnLabel: '',
     }),
     '',
+  );
+});
+
+test('tramitesPageHelpers resuelve el CTA principal segun el estado del panel de creacion', () => {
+  assert.deepEqual(
+    resolveTramitesCreateActionState({
+      showCreate: false,
+      hasSelection: false,
+      hasSociedad: true,
+    }),
+    {
+      submitsSelection: false,
+      disabled: false,
+    },
+  );
+
+  assert.deepEqual(
+    resolveTramitesCreateActionState({
+      showCreate: true,
+      hasSelection: false,
+      hasSociedad: true,
+    }),
+    {
+      submitsSelection: true,
+      disabled: true,
+    },
+  );
+
+  assert.deepEqual(
+    resolveTramitesCreateActionState({
+      showCreate: true,
+      hasSelection: true,
+      hasSociedad: true,
+    }),
+    {
+      submitsSelection: true,
+      disabled: false,
+    },
   );
 });

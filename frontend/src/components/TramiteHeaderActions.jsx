@@ -2,13 +2,18 @@ import { Link } from 'react-router-dom';
 
 function TramiteHeaderActions({
   accionSiguiente,
+  canExportReport,
+  exportReportLoading,
   onAccionSiguiente,
+  onExportReport,
   historialVisible,
   onToggleHistorial,
   labels
 }) {
   const headerLabels = labels || {
     back: 'Volver',
+    exportReport: 'Exportar reporte',
+    exportingReport: 'Generando reporte...',
     toggleHistory: {
       show: 'Ver historial',
       hide: 'Ocultar historial'
@@ -29,6 +34,18 @@ function TramiteHeaderActions({
           onClick={() => onAccionSiguiente(accionSiguiente.estado)}
         >
           {accionSiguiente.label}
+        </button>
+      )}
+      {onExportReport && (
+        <button
+          className="btn btn-outline-secondary"
+          type="button"
+          onClick={onExportReport}
+          disabled={!canExportReport || exportReportLoading}
+        >
+          {exportReportLoading
+            ? (headerLabels.exportingReport || 'Generando reporte...')
+            : (headerLabels.exportReport || 'Exportar reporte')}
         </button>
       )}
       <button

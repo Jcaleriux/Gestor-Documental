@@ -8,6 +8,7 @@ export const buildTramiteDetalleOutputContract = ({
   retenciones: state.retenciones,
   caratula: state.caratula,
   providerGroups: state.providerGroups,
+  orphanGroups: state.orphanGroups,
   loading: state.loading,
   actionMessage: state.actionMessage,
   setActionMessage: state.setActionMessage,

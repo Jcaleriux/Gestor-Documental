@@ -5,6 +5,7 @@ import {
   createCentroCostoSnapshot,
   ensureCentrosCostoMetadata,
 } from '../../utils/centrosCosto.js';
+import { toBase64 } from '../tablasPago/utils.js';
 
 const requireFacturaSociedadId = ({ factura, setContaError }) => {
   if (!factura?.sociedad_id) {
@@ -105,6 +106,14 @@ const buildRetencionPayload = ({
   notas: retencionPagoNotas || null,
   usuario: 'admin'
 });
+
+const isPdfLikeFile = (file) => (
+  Boolean(file)
+  && (
+    String(file.type || '').toLowerCase() === 'application/pdf'
+    || String(file.name || '').toLowerCase().endsWith('.pdf')
+  )
+);
 
 const createHandleContaChangeAction = ({ setConta }) => (field) => (event) => {
   const nextValue = event.target.value;
@@ -346,6 +355,19 @@ export const createContabilizacionActions = ({
     });
   };
 
+  const desenlazarOrdenCompra = () => {
+    setOrdenesError('');
+    setContaError('');
+    setContaMessage('Orden de compra retirada del formulario. Guarda la contabilizacion para aplicar el cambio.');
+    setOrdenCompraActual(null);
+    setConta((prev) => ({
+      ...prev,
+      orden_compra_id: '',
+      orden_compra: ''
+    }));
+    setOrdenesModalOpen(false);
+  };
+
   const abrirAsociarNotaCredito = async () => {
     const context = resolveAssociationContext('No se encontro el proveedor de esta factura para asociar la nota de credito.');
     if (!context) {
@@ -415,6 +437,66 @@ export const createContabilizacionActions = ({
     }
   };
 
+  const subirDocumentosRespaldo = async (files) => {
+    const selectedFiles = Array.isArray(files) ? files.filter(Boolean) : [];
+    if (selectedFiles.length === 0) {
+      setContaError('Selecciona al menos un PDF de respaldo.');
+      return false;
+    }
+
+    const invalidFile = selectedFiles.find((file) => !isPdfLikeFile(file));
+    if (invalidFile) {
+      setContaError(`"${invalidFile.name || 'archivo'}" no es un PDF valido.`);
+      return false;
+    }
+
+    try {
+      setContaError('');
+      setContaMessage('');
+
+      for (const file of selectedFiles) {
+        const fileBase64 = await toBase64(file);
+        await facturaApi.uploadDocumentoRespaldo(id, {
+          filename: file.name,
+          file_base64: fileBase64,
+          usuario: 'admin'
+        });
+      }
+
+      setContaMessage(
+        selectedFiles.length === 1
+          ? 'Documento de respaldo cargado correctamente.'
+          : 'Documentos de respaldo cargados correctamente.'
+      );
+      await fetchAll();
+      return true;
+    } catch (err) {
+      const apiError = err.response?.data?.error || 'No se pudieron cargar los documentos de respaldo.';
+      setContaError(apiError);
+      return false;
+    }
+  };
+
+  const eliminarDocumentoRespaldo = async (documento) => {
+    if (!documento?.id) {
+      setContaError('Documento de respaldo invalido.');
+      return false;
+    }
+
+    try {
+      setContaError('');
+      setContaMessage('');
+      await facturaApi.deleteDocumentoRespaldo(id, documento.id);
+      setContaMessage('Documento de respaldo eliminado.');
+      await fetchAll();
+      return true;
+    } catch (err) {
+      const apiError = err.response?.data?.error || 'No se pudo eliminar el documento de respaldo.';
+      setContaError(apiError);
+      return false;
+    }
+  };
+
   const guardarBorrador = async (event) => {
     event?.preventDefault?.();
     await persistContabilizacion({
@@ -477,8 +559,11 @@ export const createContabilizacionActions = ({
     asociarTablaPago,
     abrirAsociarOrdenCompra,
     asociarOrdenCompra,
+    desenlazarOrdenCompra,
     abrirAsociarNotaCredito,
     asociarNotaCredito,
+    subirDocumentosRespaldo,
+    eliminarDocumentoRespaldo,
     addCentroCostoLinea,
     removeCentroCostoLinea,
     actualizarMontoCentroCosto,

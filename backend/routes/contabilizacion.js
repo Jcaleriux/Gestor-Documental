@@ -4,6 +4,7 @@ const { validateBody } = require('../middleware/validate');
 const { requirePermission } = require('../middleware/permissionsMiddleware');
 const {
   upsertContabilizacionSchema,
+  uploadContabilizacionDocumentoRespaldoSchema,
   registrarPagoRetencionSchema
 } = require('../validation/schemas');
 const { createContabilizacionUseCases } = require('../services/contabilizacionUseCases');
@@ -81,6 +82,38 @@ router.post(
     usuario: actorUsuario
   });
   }, 'Error saving contabilizacion:', 'Error saving contabilizacion')
+);
+
+router.post(
+  '/facturas/:facturaId/contabilizacion/documentos-respaldo',
+  requirePermission(PERMISSIONS.DOCUMENTOS_CONTABILIZAR),
+  validateBody(uploadContabilizacionDocumentoRespaldoSchema),
+  handleRequest(async (req) => {
+    const { facturaId } = req.params;
+    const { filename, file_base64, metadata, usuario } = req.body || {};
+    const actorUsuario = usuario || req.user?.email || 'system';
+
+    return useCases.uploadDocumentoRespaldo({
+      facturaId,
+      filename,
+      file_base64,
+      metadata,
+      usuario: actorUsuario
+    });
+  }, 'Error uploading contabilizacion support document:', 'Error uploading contabilizacion support document')
+);
+
+router.delete(
+  '/facturas/:facturaId/contabilizacion/documentos-respaldo/:documentoId',
+  requirePermission(PERMISSIONS.DOCUMENTOS_CONTABILIZAR),
+  handleRequest(async (req) => {
+    const { facturaId, documentoId } = req.params;
+
+    return useCases.deleteDocumentoRespaldo({
+      facturaId,
+      documentoId
+    });
+  }, 'Error deleting contabilizacion support document:', 'Error deleting contabilizacion support document')
 );
 
 router.post(

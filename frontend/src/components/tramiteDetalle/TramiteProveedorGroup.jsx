@@ -1,25 +1,44 @@
 import { useMemo, useState } from 'react';
-import { formatAmount, formatDate } from '../../utils/formatters.js';
+import { formatDate } from '../../utils/formatters.js';
 import EmptyState from '../common/EmptyState.jsx';
 import SectionCard from '../common/SectionCard.jsx';
 import StatusBadge from '../common/StatusBadge.jsx';
 import TramiteDocumentoUnificado from '../TramiteDocumentoUnificado.jsx';
-import {
-  buildInitialLineSelections,
-  buildInitialProviderFacturaId,
-  buildScopedGroupStateValue,
-  buildTramiteProveedorGroupScope,
-} from './tramiteProveedorGroupUiState.js';
+import SortableFacturaList from './SortableFacturaList.jsx';
+import { useProtectedObjectUrl } from '../../hooks/useProtectedObjectUrl.js';
+import { withPdfFitToWidth } from '../../utils/pdfViewer.js';
+
+const getPdfUrl = (rutaPdf) => (
+  rutaPdf ? `/api/files/pdf?path=${encodeURIComponent(rutaPdf)}` : ''
+);
+
+const buildInitialLineSelections = (group) => Object.fromEntries(
+  (group?.lines || []).map((line) => [
+    line.line_key,
+    line.matched_factura_id ? String(line.matched_factura_id) : '',
+  ]),
+);
+
+const getAllDocumentIds = (group) => (
+  Array.isArray(group?.documents)
+    ? group.documents.map((doc) => Number(doc.factura_id))
+    : []
+);
 
 function TramiteProveedorGroup({
   group,
   labels,
-  pdfPreviewUrl,
-  pdfPreviewLoading,
-  pdfPreviewError,
+  defaultExpanded = true,
+  canManage,
   canResolve,
   onResolveGroup,
   resolving,
+  onConfirmOrder,
+  confirmingOrder,
+  onUploadProviderCaratula,
+  uploadingProvider,
+  onConfirmProviderCaratula,
+  confirmingProvider,
   enEtapaGerencia,
   puedeVerGerencia,
   puedeGerencia,
@@ -33,84 +52,65 @@ function TramiteProveedorGroup({
   onDecision,
   onAccionTesoreria
 }) {
-  const groupScope = useMemo(() => buildTramiteProveedorGroupScope(group), [group]);
-  const initialProviderFacturaId = useMemo(
-    () => buildInitialProviderFacturaId(group),
-    [group],
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [lineSelections, setLineSelections] = useState(() => buildInitialLineSelections(group));
+  const [invoiceOrder, setInvoiceOrder] = useState(() => getAllDocumentIds(group));
+  const [expandedDocumentIds, setExpandedDocumentIds] = useState(() => (
+    defaultExpanded ? getAllDocumentIds(group) : []
+  ));
+  const [caratulaExpanded, setCaratulaExpanded] = useState(() => (
+    Boolean(group?.pdf_path) && defaultExpanded
+  ));
+  const [expandAllResources, setExpandAllResources] = useState(Boolean(defaultExpanded));
+  const [localError, setLocalError] = useState('');
+  const pdfUrl = useMemo(() => getPdfUrl(group.pdf_path), [group.pdf_path]);
+  const {
+    objectUrl: pdfPreviewUrl,
+    loading: pdfPreviewLoading,
+    error: pdfPreviewError
+  } = useProtectedObjectUrl(pdfUrl);
+
+  const hasMultipleDocs = group.documents.length > 1;
+  const showOrderEditor = hasMultipleDocs && canManage && group.order_status !== 'confirmado';
+  const showOperationalMetadata = canManage;
+  const allDocumentIds = useMemo(() => getAllDocumentIds(group), [group]);
+  const allDocumentsExpanded = allDocumentIds.length === 0
+    ? true
+    : allDocumentIds.every((facturaId) => expandedDocumentIds.includes(facturaId));
+  const hasExpandableContent = Boolean(group.pdf_path) || allDocumentIds.length > 0;
+  const allProviderPdfsExpanded = (!group.pdf_path || caratulaExpanded) && allDocumentsExpanded;
+  const initialInvoiceOrder = useMemo(
+    () => group.documents.map((doc) => Number(doc.factura_id)),
+    [group.documents]
   );
-  const initialLineSelections = useMemo(
-    () => buildInitialLineSelections(group),
-    [group],
-  );
-  const emptyExpandedDocIds = useMemo(() => new Set(), []);
+  const orderChanged = JSON.stringify(invoiceOrder) !== JSON.stringify(initialInvoiceOrder);
 
-  const [selectedProviderFacturaIdState, setSelectedProviderFacturaIdState] = useState(() => ({
-    scope: groupScope,
-    value: initialProviderFacturaId,
-  }));
-  const [lineSelectionsState, setLineSelectionsState] = useState(() => ({
-    scope: groupScope,
-    value: initialLineSelections,
-  }));
-  const [expandedDocIdsState, setExpandedDocIdsState] = useState(() => ({
-    scope: groupScope,
-    value: emptyExpandedDocIds,
-  }));
-  const [localErrorState, setLocalErrorState] = useState(() => ({
-    scope: groupScope,
-    value: '',
-  }));
+  const attachmentBadgeLabel = group.attachment_status === 'confirmada'
+    ? (labels.providerAttachmentConfirmed || 'Caratula confirmada')
+    : group.attachment_status === 'pendiente_confirmacion'
+      ? (labels.providerAttachmentPending || 'Caratula pendiente')
+      : (labels.pendingCaratulaBadge || 'Caratula pendiente');
 
-  const selectedProviderFacturaId = buildScopedGroupStateValue({
-    scope: groupScope,
-    state: selectedProviderFacturaIdState,
-    fallback: initialProviderFacturaId,
-  });
-  const lineSelections = buildScopedGroupStateValue({
-    scope: groupScope,
-    state: lineSelectionsState,
-    fallback: initialLineSelections,
-  });
-  const expandedDocIds = buildScopedGroupStateValue({
-    scope: groupScope,
-    state: expandedDocIdsState,
-    fallback: emptyExpandedDocIds,
-  });
-  const localError = buildScopedGroupStateValue({
-    scope: groupScope,
-    state: localErrorState,
-    fallback: '',
-  });
+  const attachmentBadgeClass = group.attachment_status === 'confirmada'
+    ? 'badge-soft-success'
+    : group.attachment_status === 'pendiente_confirmacion'
+      ? 'badge-soft-warning'
+      : 'badge-soft-secondary';
 
-  const providerOptions = Array.isArray(group.provider_document_options)
-    ? group.provider_document_options
-    : [];
-  const selectedProviderOption = providerOptions.find(
-    (option) => Number(option.factura_id) === Number(selectedProviderFacturaId)
-  ) || null;
-  const selectedProviderKey = selectedProviderOption?.provider_key || null;
+  const orderBadgeLabel = group.order_status === 'confirmado'
+    ? (labels.orderConfirmed || 'Orden confirmado')
+    : group.order_status === 'pendiente_confirmacion'
+      ? (labels.orderPending || 'Orden pendiente')
+      : (labels.orderNotRequired || 'Orden no requerido');
 
-  const lineDocumentOptions = useMemo(() => {
-    const availableDocuments = Array.isArray(group.available_documents) ? group.available_documents : [];
-    if (!selectedProviderKey) {
-      return availableDocuments;
-    }
-    const filtered = availableDocuments.filter((option) => option.provider_key === selectedProviderKey);
-    return filtered.length > 0 ? filtered : availableDocuments;
-  }, [group.available_documents, selectedProviderKey]);
+  const orderBadgeClass = group.order_status === 'confirmado'
+    ? 'badge-soft-success'
+    : group.order_status === 'pendiente_confirmacion'
+      ? 'badge-soft-warning'
+      : 'badge-soft-secondary';
 
   const handleResolve = async () => {
-    setLocalErrorState({
-      scope: groupScope,
-      value: '',
-    });
-    if (providerOptions.length > 1 && !selectedProviderFacturaId) {
-      setLocalErrorState({
-        scope: groupScope,
-        value: labels.providerSelect,
-      });
-      return;
-    }
+    setLocalError('');
 
     const lineMatches = Object.entries(lineSelections)
       .map(([lineKey, facturaId]) => ({
@@ -121,30 +121,62 @@ function TramiteProveedorGroup({
 
     await onResolveGroup({
       groupKey: group.group_key,
-      providerFacturaId: selectedProviderFacturaId ? Number(selectedProviderFacturaId) : null,
+      providerFacturaId: null,
       lineMatches
     });
   };
 
-  const toggleExpandedDoc = (facturaId) => {
-    setExpandedDocIdsState((previous) => {
-      const currentIds = previous.scope === groupScope ? previous.value : emptyExpandedDocIds;
-      const next = new Set(currentIds);
-      if (next.has(facturaId)) {
-        next.delete(facturaId);
-      } else {
-        next.add(facturaId);
-      }
-      return {
-        scope: groupScope,
-        value: next,
-      };
+  const handleConfirmOrder = async () => {
+    if (!hasMultipleDocs) {
+      return;
+    }
+
+    await onConfirmOrder({
+      providerKey: group.provider_key || group.group_key,
+      facturaIds: invoiceOrder,
+      orderSource: orderChanged ? 'manual' : 'auto'
     });
   };
 
-  const pageAwarePdfUrl = pdfPreviewUrl && group.pdf_page_start
-    ? `${pdfPreviewUrl}#page=${group.pdf_page_start}`
-    : pdfPreviewUrl;
+  const handleUploadProvider = async () => {
+    if (!selectedFile) {
+      setLocalError(labels.fileInputHelp || 'Archivo PDF');
+      return;
+    }
+
+    const ok = await onUploadProviderCaratula({
+      providerKey: group.provider_key || group.group_key,
+      file: selectedFile
+    });
+    if (ok) {
+      setSelectedFile(null);
+    }
+  };
+
+  const toggleExpandedDocument = (facturaId) => {
+    setExpandedDocumentIds((prev) => (
+      prev.includes(facturaId)
+        ? prev.filter((item) => item !== facturaId)
+        : [...prev, facturaId]
+    ));
+  };
+
+  const handleToggleAllProviderPdfs = () => {
+    if (!hasExpandableContent) {
+      return;
+    }
+
+    if (allProviderPdfsExpanded) {
+      setCaratulaExpanded(false);
+      setExpandedDocumentIds([]);
+      setExpandAllResources(false);
+      return;
+    }
+
+    setCaratulaExpanded(Boolean(group.pdf_path));
+    setExpandedDocumentIds(allDocumentIds);
+    setExpandAllResources(true);
+  };
 
   return (
     <SectionCard className="tramite-provider-group">
@@ -157,19 +189,33 @@ function TramiteProveedorGroup({
             {group.proveedor_identificacion || group.provider_raw_identification || '-'}
           </div>
         </div>
-        <div className="d-flex flex-wrap gap-2">
-          <StatusBadge
-            label={group.is_blocking ? labels.unresolvedBadge : labels.resolvedBadge}
-            className={group.is_blocking ? 'badge-soft-warning' : 'badge-soft-success'}
-          />
-          <StatusBadge
-            label={`${labels.pages}: ${group.page_start || '-'}${group.page_end && group.page_end !== group.page_start ? `-${group.page_end}` : ''}`}
-            className="badge-soft-secondary"
-          />
-          <StatusBadge
-            label={`${labels.executionDate}: ${formatDate(group.execution_date)}`}
-            className="badge-soft-secondary"
-          />
+        <div className="d-flex flex-column align-items-end gap-2">
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-secondary"
+            onClick={handleToggleAllProviderPdfs}
+            disabled={!hasExpandableContent}
+          >
+            {allProviderPdfsExpanded ? 'Colapsar PDFs' : 'Expandir PDFs'}
+          </button>
+          <div className="d-flex flex-wrap gap-2 justify-content-end">
+            {showOperationalMetadata && (
+              <StatusBadge label={attachmentBadgeLabel} className={attachmentBadgeClass} />
+            )}
+            {showOperationalMetadata && (
+              <StatusBadge label={orderBadgeLabel} className={orderBadgeClass} />
+            )}
+            {showOperationalMetadata && (
+              <StatusBadge
+                label={`${labels.pages}: ${group.page_start || '-'}${group.page_end && group.page_end !== group.page_start ? `-${group.page_end}` : ''}`}
+                className="badge-soft-secondary"
+              />
+            )}
+            <StatusBadge
+              label={`${labels.executionDate}: ${formatDate(group.execution_date)}`}
+              className="badge-soft-secondary"
+            />
+          </div>
         </div>
       </div>
 
@@ -184,77 +230,55 @@ function TramiteProveedorGroup({
       )}
 
       <div className="row g-3">
-        <div className="col-12 col-xl-5">
-          {group.page_start && pageAwarePdfUrl ? (
-            pdfPreviewLoading ? (
-              <div className="small text-muted">Cargando PDF...</div>
-            ) : pageAwarePdfUrl ? (
-              <iframe
-                title={`Caratula ${group.group_key}`}
-                src={pageAwarePdfUrl}
-                style={{ width: '100%', height: '520px', border: '1px solid #e6ebf2' }}
-              />
-            ) : (
-              <EmptyState className="py-2">{pdfPreviewError || labels.pdfUnavailable}</EmptyState>
-            )
-          ) : (
-            <EmptyState className="py-2">{labels.pdfUnavailable}</EmptyState>
-          )}
-        </div>
-
-        <div className="col-12 col-xl-7">
+        <div className="col-12 col-xl-4">
           <div className="tramite-provider-lines-header">
-            <div>
-              <div className="small text-muted">{labels.strategy}</div>
-              <div>{group.provider_match_strategy || '-'}</div>
-            </div>
-            <div>
-              <div className="small text-muted">{labels.linesTitle}</div>
-              <div>{group.lines.length}</div>
-            </div>
+            {showOperationalMetadata && (
+              <div>
+                <div className="small text-muted">{labels.strategy}</div>
+                <div>{group.provider_match_strategy || '-'}</div>
+              </div>
+            )}
+            {showOperationalMetadata && (
+              <div>
+                <div className="small text-muted">{labels.linesTitle}</div>
+                <div>{group.lines.length}</div>
+              </div>
+            )}
             <div>
               <div className="small text-muted">{labels.documentsTitle}</div>
               <div>{group.documents.length}</div>
             </div>
           </div>
 
-          {canResolve && (
-            <div className="tramite-provider-resolver">
-              <div className="mb-3">
-                <label className="form-label small text-muted">{labels.providerTitle}</label>
-                <select
-                  className="form-select"
-                  value={selectedProviderFacturaId}
-                  onChange={(event) => setSelectedProviderFacturaIdState({
-                    scope: groupScope,
-                    value: event.target.value,
-                  })}
-                  disabled={resolving}
+          {showOrderEditor && (
+            <div className="mb-3">
+              <div className="fw-semibold mb-2">{labels.orderTitle || 'Orden de facturas'}</div>
+              <div className="small text-muted mb-2">{labels.orderHint || 'Arrastra las facturas para ajustar el orden antes de confirmarlo.'}</div>
+              <SortableFacturaList
+                documents={group.documents}
+                disabled={!canManage || confirmingOrder}
+                onOrderChange={setInvoiceOrder}
+              />
+              <div className="d-flex justify-content-end mt-3">
+                <button
+                  type="button"
+                  className="btn btn-outline-primary"
+                  onClick={handleConfirmOrder}
+                  disabled={confirmingOrder}
                 >
-                  <option value="">{labels.providerSelect}</option>
-                  {providerOptions.map((option) => (
-                    <option key={`${group.group_key}-${option.factura_id}`} value={option.factura_id}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                  {confirmingOrder ? (labels.resolving || 'Guardando...') : (labels.confirmOrderButton || 'Confirmar orden')}
+                </button>
               </div>
-
-              {localError && (
-                <div className="alert alert-warning py-2 px-3">{localError}</div>
-              )}
             </div>
           )}
 
-          {group.lines.length > 0 ? (
+          {canResolve && group.lines.length > 0 && (
             <div className="table-responsive">
               <table className="table table-sm align-middle">
                 <thead>
                   <tr>
                     <th>#</th>
                     <th>Linea</th>
-                    <th>Monto</th>
-                    <th>Estado</th>
                     <th>Factura</th>
                   </tr>
                 </thead>
@@ -266,86 +290,123 @@ function TramiteProveedorGroup({
                         <div className="fw-semibold">{line.document_raw}</div>
                         {line.warning && <div className="small text-muted">{line.warning}</div>}
                       </td>
-                      <td>{formatAmount(line.monto_total || line.monto_pago || 0)}</td>
-                      <td>{line.match_status || '-'}</td>
                       <td style={{ minWidth: '240px' }}>
-                        {canResolve ? (
-                          <select
-                            className="form-select form-select-sm"
-                            value={lineSelections[line.line_key] || ''}
-                            onChange={(event) => setLineSelectionsState((previous) => ({
-                              scope: groupScope,
-                              value: {
-                                ...(previous.scope === groupScope ? previous.value : initialLineSelections),
-                                [line.line_key]: event.target.value
-                              },
-                            }))}
-                            disabled={resolving}
-                          >
-                            <option value="">{labels.lineSelect}</option>
-                            {lineDocumentOptions.map((option) => (
-                              <option key={`${line.line_key}-${option.factura_id}`} value={option.factura_id}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <span>{line.matched_document_label || '-'}</span>
-                        )}
+                        <select
+                          className="form-select form-select-sm"
+                          value={lineSelections[line.line_key] || ''}
+                          onChange={(event) => setLineSelections((prev) => ({
+                            ...prev,
+                            [line.line_key]: event.target.value
+                          }))}
+                          disabled={resolving}
+                        >
+                          <option value="">{labels.lineSelect}</option>
+                          {group.available_documents.map((option) => (
+                            <option key={`${line.line_key}-${option.factura_id}`} value={option.factura_id}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              <div className="d-flex justify-content-end mt-3">
+                <button
+                  type="button"
+                  className="btn btn-outline-primary"
+                  onClick={handleResolve}
+                  disabled={resolving}
+                >
+                  {resolving ? labels.resolving : labels.resolveButton}
+                </button>
+              </div>
             </div>
-          ) : (
-            <EmptyState className="py-2">{labels.noGroups}</EmptyState>
           )}
 
-          {canResolve && (
-            <div className="d-flex justify-content-end mt-3">
-              <button
-                type="button"
-                className="btn btn-outline-primary"
-                onClick={handleResolve}
-                disabled={resolving}
-              >
-                {resolving ? labels.resolving : labels.resolveButton}
-              </button>
+          {canManage && (
+            <div className="border rounded p-3 mt-3">
+              <div className="fw-semibold mb-2">{labels.providerAttachmentActions || 'Caratula del proveedor'}</div>
+              <div className="small text-muted mb-2">
+                {group.attachment_status === 'sin_caratula'
+                  ? (labels.providerAttachmentMissingHint || 'Adjunta la caratula del proveedor.')
+                  : (labels.providerAttachmentReplaceHint || 'Puedes sustituir la caratula si no coincide con este proveedor.')}
+              </div>
+              <input
+                type="file"
+                accept="application/pdf,.pdf"
+                className="form-control mb-2"
+                onChange={(event) => setSelectedFile(event.target.files?.[0] || null)}
+                disabled={uploadingProvider}
+              />
+              {localError && <div className="small text-danger mb-2">{localError}</div>}
+              <div className="d-flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="btn btn-outline-primary"
+                  onClick={handleUploadProvider}
+                  disabled={uploadingProvider || !selectedFile}
+                >
+                  {uploadingProvider
+                    ? (labels.uploading || 'Procesando PDF...')
+                    : group.attachment_status === 'sin_caratula'
+                      ? (labels.attachProviderButton || 'Adjuntar caratula')
+                      : (labels.replaceProviderButton || 'Sustituir caratula')}
+                </button>
+                {group.pdf_path && (
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => onConfirmProviderCaratula({ providerKey: group.provider_key || group.group_key })}
+                    disabled={confirmingProvider || !group.can_confirm_attachment}
+                  >
+                    {confirmingProvider
+                      ? (labels.resolving || 'Guardando...')
+                      : (labels.confirmProviderButton || 'Confirmar caratula')}
+                  </button>
+                )}
+              </div>
             </div>
           )}
+        </div>
+
+        <div className="col-12 col-xl-8 tramite-provider-preview-column">
+          <div className="border rounded p-3 bg-white">
+            <div className="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-3">
+              <div className="fw-semibold">Caratula del proveedor</div>
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-secondary"
+                onClick={() => setCaratulaExpanded((prev) => !prev)}
+                disabled={!group.pdf_path}
+              >
+                {caratulaExpanded ? 'Ocultar caratula' : 'Mostrar caratula'}
+              </button>
+            </div>
+            {caratulaExpanded ? (
+              pdfPreviewLoading ? (
+                <div className="small text-muted">Cargando PDF...</div>
+              ) : pdfPreviewUrl ? (
+                <iframe
+                  title={`Caratula ${group.group_key}`}
+                  src={withPdfFitToWidth(pdfPreviewUrl)}
+                  className="tramite-provider-preview-frame"
+                />
+              ) : (
+                <EmptyState className="py-2">{pdfPreviewError || labels.pdfUnavailable}</EmptyState>
+              )
+            ) : (
+              <div className="small text-muted border rounded p-3">
+                Caratula oculta.
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="tramite-provider-documents">
-        <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-          <div className="fw-semibold">{labels.documentsTitle}</div>
-          {group.documents.length > 1 && (
-            <div className="d-flex gap-2">
-              <button
-                type="button"
-                className="btn btn-sm btn-outline-secondary"
-                onClick={() => setExpandedDocIdsState({
-                  scope: groupScope,
-                  value: new Set(group.documents.map((doc) => Number(doc.factura_id))),
-                })}
-              >
-                Expandir
-              </button>
-              <button
-                type="button"
-                className="btn btn-sm btn-outline-secondary"
-                onClick={() => setExpandedDocIdsState({
-                  scope: groupScope,
-                  value: new Set(),
-                })}
-              >
-                Colapsar
-              </button>
-            </div>
-          )}
-        </div>
-
+      <div className="tramite-provider-documents mt-3">
+        <div className="fw-semibold mb-3">{labels.documentsTitle}</div>
         <div className="tramite-unificada-list">
           {group.documents.map((doc, index) => (
             <TramiteDocumentoUnificado
@@ -353,8 +414,9 @@ function TramiteProveedorGroup({
               doc={doc}
               pdfUrl={doc.ruta_pdf ? `/api/files/pdf?path=${encodeURIComponent(doc.ruta_pdf)}` : ''}
               sequenceNumber={index + 1}
-              expanded={expandedDocIds.has(Number(doc.factura_id))}
-              onToggleExpanded={() => toggleExpandedDoc(Number(doc.factura_id))}
+              expanded={expandedDocumentIds.includes(Number(doc.factura_id))}
+              onToggleExpanded={() => toggleExpandedDocument(Number(doc.factura_id))}
+              expandAllResources={expandAllResources}
               enEtapaGerencia={enEtapaGerencia}
               puedeVerGerencia={puedeVerGerencia}
               puedeGerencia={puedeGerencia}

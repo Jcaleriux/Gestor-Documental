@@ -8,6 +8,11 @@ const getUrlApi = () => (
   || (typeof globalThis !== 'undefined' ? globalThis.URL : null)
 );
 
+const getDocumentApi = () => (
+  (typeof document !== 'undefined' && document)
+  || (typeof globalThis !== 'undefined' ? globalThis.document : null)
+);
+
 const getOpenWindow = (openWindow) => {
   if (typeof openWindow === 'function') {
     return openWindow;
@@ -107,6 +112,97 @@ const fetchProtectedResource = async (url, options = {}) => {
   };
 };
 
+const parseContentDispositionFilename = (contentDisposition) => {
+  const headerValue = String(contentDisposition || '').trim();
+  if (!headerValue) {
+    return '';
+  }
+
+  const utf8Match = headerValue.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1].trim());
+    } catch {
+      return utf8Match[1].trim();
+    }
+  }
+
+  const quotedMatch = headerValue.match(/filename\s*=\s*"([^"]+)"/i);
+  if (quotedMatch?.[1]) {
+    return quotedMatch[1].trim();
+  }
+
+  const plainMatch = headerValue.match(/filename\s*=\s*([^;]+)/i);
+  return plainMatch?.[1]?.trim() || '';
+};
+
+const triggerBrowserDownload = ({
+  blob,
+  filename,
+  urlApi = getUrlApi(),
+  documentApi = getDocumentApi(),
+} = {}) => {
+  if (!blob) {
+    throw new Error('No se pudo preparar la descarga del recurso');
+  }
+  if (!urlApi?.createObjectURL || !documentApi?.createElement || !documentApi?.body?.appendChild) {
+    throw new Error('No se pudo iniciar la descarga del recurso');
+  }
+
+  const objectUrl = urlApi.createObjectURL(blob);
+  const link = documentApi.createElement('a');
+  link.href = objectUrl;
+  link.download = filename || 'descarga';
+  link.rel = 'noopener noreferrer';
+  link.style.display = 'none';
+  documentApi.body.appendChild(link);
+
+  try {
+    link.click();
+  } finally {
+    if (typeof link.remove === 'function') {
+      link.remove();
+    } else if (typeof documentApi.body.removeChild === 'function') {
+      documentApi.body.removeChild(link);
+    }
+    urlApi.revokeObjectURL?.(objectUrl);
+  }
+
+  return {
+    filename: link.download,
+    objectUrl,
+  };
+};
+
+const downloadProtectedResource = async (url, options = {}) => {
+  const {
+    fetchResource = fetchProtectedResource,
+    triggerDownload = triggerBrowserDownload,
+    fallbackFilename = 'descarga',
+    urlApi = getUrlApi(),
+    documentApi = getDocumentApi(),
+    ...fetchOptions
+  } = options;
+
+  const { blob, response } = await fetchResource(url, fetchOptions);
+  const filename = parseContentDispositionFilename(
+    response.headers.get('content-disposition')
+  ) || fallbackFilename;
+
+  triggerDownload({
+    blob,
+    filename,
+    urlApi,
+    documentApi,
+  });
+
+  return {
+    blob,
+    response,
+    filename,
+  };
+};
+
 const openProtectedInNewTab = async (url, options = {}) => {
   const { openWindow: customOpenWindow, ...fetchOptions } = options;
   const openWindow = getOpenWindow(customOpenWindow);
@@ -173,6 +269,9 @@ export {
   buildAuthHeaders,
   buildProtectedResourceUrl,
   createProtectedResourceOpener,
+  downloadProtectedResource,
   fetchProtectedResource,
   openProtectedInNewTab,
+  parseContentDispositionFilename,
+  triggerBrowserDownload,
 };
