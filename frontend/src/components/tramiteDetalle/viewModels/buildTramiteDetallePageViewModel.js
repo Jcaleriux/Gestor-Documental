@@ -116,6 +116,11 @@ export const buildTramiteDetallePageViewModel = ({
     reportError: report?.reportError,
     reportMessage: report?.reportMessage,
     exportReport: report?.exportReport,
+    downloadUnifiedPdfLoading: report?.downloadUnifiedPdfLoading,
+    downloadUnifiedPdfError: report?.downloadUnifiedPdfError,
+    downloadUnifiedPdfMessage: report?.downloadUnifiedPdfMessage,
+    downloadUnifiedPdfWarning: report?.downloadUnifiedPdfWarning,
+    downloadUnifiedPdf: report?.downloadUnifiedPdf,
   });
 
   return {

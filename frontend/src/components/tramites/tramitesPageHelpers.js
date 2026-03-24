@@ -76,4 +76,13 @@ export const getTramitesReturnActionLabel = (returnLabel) => {
   return `Volver a ${normalized}`;
 };
 
+export const resolveTramitesCreateActionState = ({
+  showCreate = false,
+  hasSelection = false,
+  hasSociedad = false,
+} = {}) => ({
+  submitsSelection: Boolean(showCreate),
+  disabled: showCreate ? !hasSelection : !hasSociedad,
+});
+
 export { TRAMITES_DASHBOARD_FILTER_LABELS };

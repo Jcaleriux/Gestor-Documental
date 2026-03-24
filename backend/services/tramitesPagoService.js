@@ -56,6 +56,25 @@ const getTramite = handleRequest((req) => {
   });
 }, 'Error fetching tramite:', 'Error fetching tramite');
 
+const getTramitePdfUnificado = handleRequest(async (req, res) => {
+  const { id } = req.params;
+  const pdfDownload = await useCases.getTramitePdfUnificado({
+    id,
+    actorUserId: req.user?.id,
+    providerSortDirection: req.query?.providerSortDirection
+  });
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${pdfDownload.filename}"`);
+  res.setHeader('X-Novogar-Partial-Download', pdfDownload.partialDownload ? '1' : '0');
+  res.setHeader('X-Novogar-Omitted-Count', String(pdfDownload.omittedCount || 0));
+  if (pdfDownload.omittedItemsHeader) {
+    res.setHeader('X-Novogar-Omitted-Items', pdfDownload.omittedItemsHeader);
+  }
+
+  res.send(pdfDownload.buffer);
+}, 'Error downloading unified tramite PDF:', 'Error downloading unified tramite PDF');
+
 const getHistorial = handleRequest((req) => {
   const { id } = req.params;
   return useCases.getHistorial({ id });
@@ -189,6 +208,7 @@ module.exports = {
   listTramites,
   getRetencionesDisponibles,
   getTramite,
+  getTramitePdfUnificado,
   getHistorial,
   uploadCaratulas,
   resolveCaratulas,

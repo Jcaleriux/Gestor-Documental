@@ -1,0 +1,218 @@
+═══════════════════════════════════════════════════════════════
+   ROI / BUSINESS CASE - PROYECTO NOVOGAR
+   COSTA RICA - ANÁLISIS PRELIMINAR
+═══════════════════════════════════════════════════════════════
+
+Fecha: 2026-03-23
+Contexto: Proyecto para Costa Rica, salario empleado ~4,000 CRC/hora (~$8 USD)
+Usuarios activos: 15
+Backlog técnico: Node.js + React + PostgreSQL
+
+───────────────────────────────────────────────────────────────
+1. COSTO ESTIMADO DE INFRAESTRUCTURA AZURE (ANUAL)
+───────────────────────────────────────────────────────────────
+
+App Service (B1): $60/mes (estimado +10% vs USA)
+PostgreSQL Flexible Server: $140/mes
+Azure Blob Storage (documentos PDF/XML): $25/mes
+Backup automático: $25/mes
+Monitoring y Alertas: $20/mes
+────────────────────────────
+Total mensual: ~$270
+Total anual: ~$3,240
+
+Nota: Estos costos pueden variar según:
+- Escalado posterior (más usuarios, más almacenamiento)
+- Tráfico de datos
+- Región seleccionada en Azure
+
+
+───────────────────────────────────────────────────────────────
+2. COSTO DE DESARROLLO (CON SALARIO CR)
+───────────────────────────────────────────────────────────────
+
+Conversión: 4,000 CRC/hora = $8 USD/hora aprox.
+
+Desglose de horas:
+─────────────────
+Infraestructura + migraciones DB (1 Backend Engineer): 35 horas
+  - Setup PostgreSQL en Azure
+  - Migraciones versionadas
+  - Configración de respaldos
+
+Hardening seguridad backend: 20 horas
+  - Gestión de secretos (Azure Key Vault)
+  - Rate limiting mejorado
+  - Validaciones adicionales
+
+Testing e integración frontend: 25 horas
+  - Ajustes para HTTPS/SSL
+  - Testing de endpoints en Azure
+  - UI responsiva confirmada
+
+Setup DevOps, CI/CD, secrets en Azure: 25 horas
+  - GitHub Actions o Azure DevOps
+  - Deploy pipeline
+  - Monitoring de errores
+
+Documentación y ajustes post-piloto: 10 horas
+  - Runbooks
+  - Guías de operación
+  - Lecciones aprendidas
+
+────────────────────────────
+TOTAL: ~115 horas
+
+Costo en CRC: 115 horas × 4,000 CRC = 460,000 CRC
+Costo en USD: ~$920 USD
+
+
+───────────────────────────────────────────────────────────────
+3. RETORNO ANUAL (CONSERVADOR - 15 USUARIOS)
+───────────────────────────────────────────────────────────────
+
+A) REDUCCIÓN DE ERRORES OPERATIVOS
+──────────────────────────────────
+Escenario actual:
+  - ~2 errores/mes por manejo disperso (Excels, correos perdidos)
+  - Costo por error: $400-800 USD (retrasos, ajustes manuales, auditoría)
+
+Con Proyecto Novogar:
+  - Centralización reduce errores a ~0.2-0.3/mes
+  - Auditoría automática evita re-trabajos
+
+Cálculo:
+  Errores evitados anualmente: 12 × 1.7 = ~20 errores
+  Costo promedio por error: $600
+
+RETORNO: $12,000/año (conservador)
+
+
+B) EFICIENCIA DE TIEMPO (CENTRALIZACIÓN)
+─────────────────────────────────────────
+Estimaciones actuales (por semana):
+  - Búsqueda de documentos dispersos: 1 hr
+  - Sincronización manual entre systems: 1 hr
+  - Trazabilidad manual en Excels: 1 hr
+  - Revisiones de auditoría manual: 0.5-1 hr
+
+  TOTAL: 3.5-4.5 horas/semana por equipo (15 usuarios distribuidos)
+
+Con Proyecto Novogar:
+  - Todo centralizado (búsqueda en 5 min vs 30 min)
+  - Auditoría automática (0 horas)
+  - No hay sincronización manual
+  - Ahorro: 3-4 hrs/semana
+
+Cálculo:
+  3.5 hrs × 50 semanas = 175 horas/año
+  Costo hora empleado CR: $8 USD
+
+RETORNO: $1,400/año
+
+
+C) RIESGO MITIGADO (CUMPLIMIENTO, TRAZABILIDAD)
+───────────────────────────────────────────────
+Beneficios estimados:
+  - Auditoría automática = menos riesgo regulatorio
+  - Trazabilidad completa de documentos
+  - Evidencia digital de quién hizo qué y cuándo
+  - Reducción de revisiones manuales post-facto
+
+Cálculo conservador:
+  - Evita multas/incumplimiento: ~$1,000-2,000/año
+  - Reduce tiempo de auditorías externas: $800-1,500/año
+
+RETORNO: $1,800-3,500/año (conservador: $1,800)
+
+
+RETORNO TOTAL ANUAL: $15,200/año
+(Rango: $14,000-17,000 según escenarios)
+
+
+───────────────────────────────────────────────────────────────
+4. TIMELINE DE RECUPERACIÓN DE INVERSIÓN (ROI)
+───────────────────────────────────────────────────────────────
+
+Inversión inicial:
+  - Desarrollo: $920
+  - Año 1 Infraestructura Azure: $3,240
+  ──────────────────
+  TOTAL: $4,160
+
+Retorno anual proyectado: $15,200
+
+Punto de equilibrio:
+  $4,160 / $15,200 = 0.27 años = ~3-4 MESES
+
+ROI Anual: ($15,200 - $4,160) / $4,160 = 265%
+
+
+───────────────────────────────────────────────────────────────
+5. PROYECCIÓN 3 AÑOS
+───────────────────────────────────────────────────────────────
+
+AÑO 1:
+  Inversión inicial: -$4,160
+  Retorno: +$15,200
+  Neto: +$11,040
+
+AÑO 2:
+  Inversión (solo Azure): -$3,240
+  Retorno: +$15,200 (puede aumentar si crece equipo)
+  Neto: +$11,960
+
+AÑO 3:
+  Inversión (solo Azure): -$3,240
+  Retorno: +$15,200
+  Neto: +$11,960
+
+TOTAL 3 AÑOS: +$34,960
+
+
+───────────────────────────────────────────────────────────────
+6. SUPUESTOS Y RIESGOS
+───────────────────────────────────────────────────────────────
+
+SUPUESTOS (pueden no cumplirse):
+  ✓ 15 usuarios permanecen activos
+  ✓ ~2 errores mensuales actuales (sin validar)
+  ✓ 3.5-4 hrs/semana de ahorro (estimado)
+  ✓ Costo Azure no sube significativamente
+  ✓ Development toma 115 horas (puede variar)
+
+RIESGOS A CONSIDERAR:
+  ⚠ Resistencia del equipo a cambiar procesos
+  ⚠ Documentos legacy que requieren procesamiento manual
+  ⚠ Posibles retrasos en Azure/DevOps setup
+  ⚠ Usuarios quizás no adopten todas las features
+
+OPORTUNIDADES:
+  ✓ Si crece a 25-30 usuarios → retorno podría duplicarse
+  ✓ Automatizaciones adicionales no estimadas
+  ✓ Uso como plataforma interna (otros procesos)
+  ✓ Reducción de overhead IT (menos tickets manuales)
+
+
+───────────────────────────────────────────────────────────────
+7. RECOMENDACIONES PARA SIGUIENTE ANÁLISIS
+───────────────────────────────────────────────────────────────
+
+ANTES DE PRESENTAR A DECISORES:
+  1. Validar número real de errores/mes con Tesorería
+  2. Preguntar tiempo real que se invierte en tareas manuales
+  3. Confirmar stack tecnológico exacto
+  4. Presupuestar contingencia (±20%)
+  5. Definir KPIs post-piloto (éxito del proyecto)
+  6. Considerar licensing/training adicional
+
+DATOS A RECOLECTAR:
+  - Estadísticas de errores en últimos 6 meses
+  - Time-tracking de actividades manuales
+  - Costo de incidentes/auditorías fallidas
+  - Feedback de usuarios sobre "pain points"
+
+
+═══════════════════════════════════════════════════════════════
+FIN DEL ANÁLISIS
+═══════════════════════════════════════════════════════════════

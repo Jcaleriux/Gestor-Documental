@@ -76,3 +76,105 @@ test('useTramiteReport no descarga archivo cuando el tramite no tiene documentos
     'No hay documentos activos en el tramite para generar el reporte.'
   );
 });
+
+test('useTramiteReport descarga el PDF unificado con el orden visible actual', async () => {
+  const buildUnifiedPdfUrl = createMockFn(() => '/api/tramites-pago/4/pdf-unificado?providerSortDirection=desc');
+  const downloadProtectedFile = createMockFn(async () => ({
+    response: {
+      headers: {
+        get(name) {
+          if (name === 'X-Novogar-Partial-Download') return '0';
+          return '';
+        }
+      }
+    }
+  }));
+
+  const hook = createHookHarness({
+    hook: useTramiteReportHarness,
+    initialProps: {
+      tramite: { id: 4 },
+      documentos: [{ factura_id: 1 }],
+      providerGroups: [],
+      providerSortDirection: 'desc',
+      dependencies: {
+        buildUnifiedPdfUrl,
+        downloadProtectedFile
+      }
+    }
+  });
+
+  await hook.result.downloadUnifiedPdf();
+  await hook.flush({ cycles: 4 });
+
+  assert.equal(buildUnifiedPdfUrl.calls.length, 1);
+  assert.deepEqual(buildUnifiedPdfUrl.calls[0][0], 4);
+  assert.deepEqual(buildUnifiedPdfUrl.calls[0][1], { providerSortDirection: 'desc' });
+  assert.equal(downloadProtectedFile.calls.length, 1);
+  assert.deepEqual(downloadProtectedFile.calls[0][0], '/api/tramites-pago/4/pdf-unificado?providerSortDirection=desc');
+  assert.deepEqual(downloadProtectedFile.calls[0][1], {
+    fallbackFilename: 'tramite_4_vista_unificada.pdf'
+  });
+  assert.equal(hook.result.downloadUnifiedPdfError, '');
+  assert.equal(hook.result.downloadUnifiedPdfWarning, '');
+  assert.equal(hook.result.downloadUnifiedPdfMessage, 'PDF unificado descargado correctamente.');
+});
+
+test('useTramiteReport muestra advertencia cuando la descarga unificada es parcial', async () => {
+  const hook = createHookHarness({
+    hook: useTramiteReportHarness,
+    initialProps: {
+      tramite: { id: 4 },
+      documentos: [{ factura_id: 1 }],
+      providerGroups: [],
+      dependencies: {
+        buildUnifiedPdfUrl: createMockFn(() => '/api/tramites-pago/4/pdf-unificado'),
+        downloadProtectedFile: createMockFn(async () => ({
+          response: {
+            headers: {
+              get(name) {
+                if (name === 'X-Novogar-Partial-Download') return '1';
+                if (name === 'X-Novogar-Omitted-Count') return '2';
+                if (name === 'X-Novogar-Omitted-Items') return 'Factura F-001 - Tabla de pagos';
+                return '';
+              }
+            }
+          }
+        }))
+      }
+    }
+  });
+
+  await hook.result.downloadUnifiedPdf();
+  await hook.flush({ cycles: 4 });
+
+  assert.equal(hook.result.downloadUnifiedPdfMessage, '');
+  assert.equal(
+    hook.result.downloadUnifiedPdfWarning,
+    'Se descargo el PDF unificado con 2 archivos omitidos. Factura F-001 - Tabla de pagos'
+  );
+});
+
+test('useTramiteReport muestra error cuando falla la descarga del PDF unificado', async () => {
+  const hook = createHookHarness({
+    hook: useTramiteReportHarness,
+    initialProps: {
+      tramite: { id: 4 },
+      documentos: [{ factura_id: 1 }],
+      providerGroups: [],
+      dependencies: {
+        buildUnifiedPdfUrl: createMockFn(() => '/api/tramites-pago/4/pdf-unificado'),
+        downloadProtectedFile: createMockFn(async () => {
+          throw new Error('Fallo de red');
+        })
+      }
+    }
+  });
+
+  await hook.result.downloadUnifiedPdf();
+  await hook.flush({ cycles: 4 });
+
+  assert.equal(hook.result.downloadUnifiedPdfMessage, '');
+  assert.equal(hook.result.downloadUnifiedPdfWarning, '');
+  assert.equal(hook.result.downloadUnifiedPdfError, 'Fallo de red');
+});

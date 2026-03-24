@@ -422,8 +422,13 @@ function TramiteCreatePanel({
           Facturas: {selectedFacturas.size} ({formatAmount(totalFacturasSeleccionadas)}) - Retenciones: {selectedRetenciones.size} ({formatAmount(totalRetencionesSeleccionadas)}) - Total: {formatAmount(totalSeleccionado)}
           {resumenMoneda && <span> - {resumenMoneda}</span>}
         </div>
-        <button className="btn btn-primary" type="button" onClick={crearTramite}>
-          Crear tramite
+        <button
+          className="btn btn-primary"
+          type="button"
+          onClick={crearTramite}
+          disabled={selectedFacturas.size === 0 && selectedRetenciones.size === 0}
+        >
+          {TRAMITES_LABELS.createButton}
         </button>
       </div>
     </SectionCard>

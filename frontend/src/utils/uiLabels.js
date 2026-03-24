@@ -319,6 +319,7 @@ const TRAMITES_LABELS = {
   pageTitle: 'Tramites de pago',
   pageSubtitle: 'Revisa y gestiona los tramites de pago',
   searchPlaceholder: 'Buscar por ID o creador...',
+  openCreateButton: 'Nuevo tramite',
   createButton: 'Crear tramite',
   createTitle: 'Nuevo tramite de pago',
   createSubtitle: 'Selecciona facturas y/o retenciones pendientes para incluir en el tramite.',

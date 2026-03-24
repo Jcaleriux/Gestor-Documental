@@ -11,6 +11,7 @@ import {
   getTramitesReturnActionLabel,
   parseTramitesEstadoFromSearch,
   parseTramitesReturnContextFromSearch,
+  resolveTramitesCreateActionState,
 } from './tramites/tramitesPageHelpers';
 import { TRAMITES_LABELS, LOADING_LABELS } from '../utils/uiLabels';
 
@@ -115,6 +116,24 @@ function Tramites({ sociedadId, canCreateTramite = true, authUser = null }) {
     setActionError,
   });
 
+  const hasCreateSelection = selectedFacturas.size > 0 || selectedRetenciones.size > 0;
+  const createActionState = useMemo(() => (
+    resolveTramitesCreateActionState({
+      showCreate,
+      hasSelection: hasCreateSelection,
+      hasSociedad: Boolean(sociedadId),
+    })
+  ), [hasCreateSelection, showCreate, sociedadId]);
+
+  const handleCreateAction = useCallback(() => {
+    if (createActionState.submitsSelection) {
+      void crearTramite();
+      return;
+    }
+
+    openCreate();
+  }, [createActionState.submitsSelection, crearTramite, openCreate]);
+
   if (!sociedadId) {
     return <p>Seleccione una sociedad para ver los tramites de pago.</p>;
   }
@@ -134,8 +153,13 @@ function Tramites({ sociedadId, canCreateTramite = true, authUser = null }) {
               </Link>
             ) : null}
             {canCreateTramite ? (
-              <button className="btn btn-primary" type="button" onClick={openCreate} disabled={!sociedadId}>
-                {TRAMITES_LABELS.createButton}
+              <button
+                className="btn btn-primary"
+                type="button"
+                onClick={handleCreateAction}
+                disabled={createActionState.disabled}
+              >
+                {showCreate ? TRAMITES_LABELS.createButton : TRAMITES_LABELS.openCreateButton}
               </button>
             ) : null}
           </div>

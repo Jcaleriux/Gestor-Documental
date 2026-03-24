@@ -100,6 +100,11 @@ test('buildTramiteDetalleLayoutProps expone el estado del reporte para el header
   input.reportError = 'No se pudo generar el reporte.';
   input.reportMessage = 'Reporte generado.';
   input.exportReport = createMockFn();
+  input.downloadUnifiedPdfLoading = true;
+  input.downloadUnifiedPdfError = 'No se pudo descargar el PDF unificado.';
+  input.downloadUnifiedPdfMessage = 'PDF unificado descargado.';
+  input.downloadUnifiedPdfWarning = 'La descarga fue parcial.';
+  input.downloadUnifiedPdf = createMockFn();
 
   const layoutProps = buildTramiteDetalleLayoutProps(input);
 
@@ -107,6 +112,11 @@ test('buildTramiteDetalleLayoutProps expone el estado del reporte para el header
   assert.equal(typeof layoutProps.header.onExportReport, 'function');
   assert.equal(layoutProps.alerts.reportError, 'No se pudo generar el reporte.');
   assert.equal(layoutProps.alerts.reportMessage, 'Reporte generado.');
+  assert.equal(layoutProps.alerts.downloadUnifiedPdfError, 'No se pudo descargar el PDF unificado.');
+  assert.equal(layoutProps.alerts.downloadUnifiedPdfMessage, 'PDF unificado descargado.');
+  assert.equal(layoutProps.alerts.downloadUnifiedPdfWarning, 'La descarga fue parcial.');
+  assert.equal(layoutProps.table.downloadUnifiedPdfLoading, true);
+  assert.equal(typeof layoutProps.table.onDownloadUnifiedPdf, 'function');
 });
 
 test('buildHeaderLayoutProps conserva header y wiring de acciones', () => {
@@ -126,6 +136,9 @@ test('buildTableLayoutProps calcula permisos y conserva datos de tabla', () => {
   assert.equal(table.permisos.puedeTesoreria, true);
   assert.equal(table.destinosTesoreria.length > 0, true);
   assert.equal(table.labelsDocumentos.emptyActivos, 'No hay documentos activos en el tramite.');
+  assert.equal(table.canDownloadUnifiedPdf, true);
+  assert.equal(table.labelsUnificada.downloadUnifiedPdf, 'Descargar PDF');
+  assert.equal(table.labelsUnificada.downloadingUnifiedPdf, 'Generando PDF...');
   assert.equal(table.labelsUnificada.expandAllPdfs, 'Expandir todos los PDFs');
   assert.equal(table.labelsUnificada.collapseAllPdfs, 'Ocultar todos los PDFs');
 });

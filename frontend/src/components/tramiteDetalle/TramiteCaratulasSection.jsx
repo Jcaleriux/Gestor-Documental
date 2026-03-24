@@ -31,6 +31,10 @@ function TramiteCaratulasSection({ caratulasProps }) {
   } = caratulasProps;
   const [selectedFile, setSelectedFile] = useState(null);
   const [orphanAssignments, setOrphanAssignments] = useState({});
+  const missingProviderOptions = useMemo(
+    () => providerGroups.filter((group) => group.attachment_status === 'sin_caratula'),
+    [providerGroups]
+  );
 
   if (!visible) {
     return null;
@@ -38,10 +42,6 @@ function TramiteCaratulasSection({ caratulasProps }) {
 
   const canUpload = permisos?.puedeTesoreria && tramiteEstado === 'en_revision_tesoreria_1';
   const showWaitingMessage = readiness?.showWaitingMessage && !canUpload;
-  const missingProviderOptions = useMemo(
-    () => providerGroups.filter((group) => group.attachment_status === 'sin_caratula'),
-    [providerGroups]
-  );
 
   const handleUpload = async () => {
     const ok = await onUploadCaratulas(selectedFile);

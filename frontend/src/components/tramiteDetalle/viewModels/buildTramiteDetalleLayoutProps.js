@@ -49,12 +49,18 @@ export const buildAlertsLayoutProps = ({
   actionError,
   actionMessage,
   reportError,
-  reportMessage
+  reportMessage,
+  downloadUnifiedPdfError,
+  downloadUnifiedPdfMessage,
+  downloadUnifiedPdfWarning
 }) => ({
   error: actionError,
   message: actionMessage,
   reportError,
-  reportMessage
+  reportMessage,
+  downloadUnifiedPdfError,
+  downloadUnifiedPdfMessage,
+  downloadUnifiedPdfWarning
 });
 
 export const buildHistorialLayoutProps = ({
@@ -215,7 +221,9 @@ export const buildTableLayoutProps = ({
   resumenTotales,
   resumenMoneda,
   sociedadLabel,
-  sociedadId
+  sociedadId,
+  downloadUnifiedPdfLoading,
+  downloadUnifiedPdf
 }) => ({
   activeTab,
   documentos: sortDocumentosByProveedor({
@@ -239,6 +247,9 @@ export const buildTableLayoutProps = ({
   resumenMoneda,
   sociedadLabel,
   sociedadId,
+  canDownloadUnifiedPdf: Array.isArray(documentosActivos) && documentosActivos.length > 0,
+  downloadUnifiedPdfLoading: downloadUnifiedPdfLoading === true,
+  onDownloadUnifiedPdf: downloadUnifiedPdf,
   labelsDocumentos: TRAMITE_LABELS.documentos,
   labelsUnificada: TRAMITE_LABELS.unificada
 });

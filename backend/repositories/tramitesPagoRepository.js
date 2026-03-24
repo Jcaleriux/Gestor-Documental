@@ -973,6 +973,7 @@ const listDocumentosByTramite = async (tramiteId, client, options = {}) => {
       fc.estado_retencion AS conta_estado_retencion,
       fc.centro_costo AS conta_centro_costo,
       fc.metadata AS conta_metadata,
+      fc.creado_por AS conta_creado_por,
       fc.cuenta_contable AS conta_cuenta_contable,
       fc.proyecto AS conta_proyecto,
       fc.orden_compra AS conta_orden_compra,

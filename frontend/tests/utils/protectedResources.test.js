@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   NEW_TAB_FEATURES,
+  downloadProtectedResource,
   openProtectedInNewTab,
+  parseContentDispositionFilename,
 } from '../../src/utils/protectedResources.js';
 import { createMockFn } from '../utils/mockFn.js';
 
@@ -174,4 +176,45 @@ test('openProtectedInNewTab cierra la pestana temporal si la descarga falla', as
     restoreFetch();
     restoreUrlApi();
   }
+});
+
+test('parseContentDispositionFilename soporta filename utf8 y quoted filename', () => {
+  assert.equal(
+    parseContentDispositionFilename("attachment; filename*=UTF-8''tramite%20final.pdf"),
+    'tramite final.pdf'
+  );
+  assert.equal(
+    parseContentDispositionFilename('attachment; filename="tramite_7_vista_unificada.pdf"'),
+    'tramite_7_vista_unificada.pdf'
+  );
+});
+
+test('downloadProtectedResource usa el nombre sugerido por Content-Disposition', async () => {
+  const blob = { type: 'application/pdf' };
+  const fetchResource = createMockFn(async () => ({
+    blob,
+    response: createFetchResponse({
+      headers: {
+        'content-disposition': 'attachment; filename="tramite_7_vista_unificada.pdf"',
+      },
+      blob,
+    }),
+  }));
+  const triggerDownload = createMockFn();
+
+  const result = await downloadProtectedResource('/api/tramites-pago/7/pdf-unificado', {
+    fetchResource,
+    triggerDownload,
+    fallbackFilename: 'fallback.pdf',
+  });
+
+  assert.equal(fetchResource.calls.length, 1);
+  assert.equal(result.filename, 'tramite_7_vista_unificada.pdf');
+  assert.equal(triggerDownload.calls.length, 1);
+  assert.deepEqual(triggerDownload.calls[0][0], {
+    blob,
+    filename: 'tramite_7_vista_unificada.pdf',
+    urlApi: globalThis.URL,
+    documentApi: globalThis.document,
+  });
 });

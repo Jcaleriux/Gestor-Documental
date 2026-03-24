@@ -5,6 +5,7 @@ const {
   listTramites,
   getRetencionesDisponibles,
   getTramite,
+  getTramitePdfUnificado,
   getHistorial,
   uploadCaratulas,
   resolveCaratulas,
@@ -60,6 +61,9 @@ router.get('/tramites-pago/retenciones-disponibles', requirePermission(PERMISSIO
 
 // GET detalle de tramite
 router.get('/tramites-pago/:id', requireAnyPermission(TRAMITES_READ_PERMISSIONS), getTramite);
+
+// GET PDF unificado del detalle del tramite
+router.get('/tramites-pago/:id/pdf-unificado', requireAnyPermission(TRAMITES_READ_PERMISSIONS), getTramitePdfUnificado);
 
 // GET historial de tramite
 router.get('/tramites-pago/:id/historial', requireAnyPermission(TRAMITES_READ_PERMISSIONS), getHistorial);

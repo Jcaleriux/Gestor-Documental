@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { formatAmount, formatDate, getMoneda, getMontoDocumento } from '../utils/formatters';
 import {
   estadoClassTramite,
@@ -53,11 +53,7 @@ function TramiteDocumentoPdfResource({
   resource,
   expandedByDefault = false
 }) {
-  const [expanded, setExpanded] = useState(Boolean(expandedByDefault));
-
-  useEffect(() => {
-    setExpanded(Boolean(expandedByDefault));
-  }, [expandedByDefault, resource.key]);
+  const [expanded, setExpanded] = useState(() => Boolean(expandedByDefault));
 
   return (
     <div className="border rounded p-3 bg-white mt-3">

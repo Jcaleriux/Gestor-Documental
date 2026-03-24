@@ -73,24 +73,20 @@ function TramiteProveedorGroup({
   } = useProtectedObjectUrl(pdfUrl);
 
   useEffect(() => {
-    setSelectedFile(null);
-    setLineSelections(buildInitialLineSelections(group));
-    setInvoiceOrder(getAllDocumentIds(group));
-    setExpandedDocumentIds(defaultExpanded ? getAllDocumentIds(group) : []);
-    setCaratulaExpanded(Boolean(group.pdf_path) && defaultExpanded);
-    setExpandAllResources(Boolean(defaultExpanded));
-    setLocalError('');
-  }, [group, defaultExpanded]);
-
-  useEffect(() => {
     if (globalPdfExpansionVersion <= 0) {
-      return;
+      setSelectedFile(null);
+      setLineSelections(buildInitialLineSelections(group));
+      setInvoiceOrder(getAllDocumentIds(group));
+      setExpandedDocumentIds(defaultExpanded ? getAllDocumentIds(group) : []);
+      setCaratulaExpanded(Boolean(group.pdf_path) && defaultExpanded);
+      setExpandAllResources(Boolean(defaultExpanded));
+      setLocalError('');
+    } else {
+      setExpandedDocumentIds(globalPdfExpanded ? getAllDocumentIds(group) : []);
+      setCaratulaExpanded(Boolean(group.pdf_path) && globalPdfExpanded);
+      setExpandAllResources(Boolean(globalPdfExpanded));
     }
-
-    setExpandedDocumentIds(globalPdfExpanded ? getAllDocumentIds(group) : []);
-    setCaratulaExpanded(Boolean(group.pdf_path) && globalPdfExpanded);
-    setExpandAllResources(Boolean(globalPdfExpanded));
-  }, [globalPdfExpansionVersion, globalPdfExpanded, group]);
+  }, [group, defaultExpanded, globalPdfExpansionVersion, globalPdfExpanded]);
 
   const hasMultipleDocs = group.documents.length > 1;
   const showOrderEditor = hasMultipleDocs && canManage && group.order_status !== 'confirmado';

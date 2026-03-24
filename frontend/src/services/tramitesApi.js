@@ -1,5 +1,16 @@
 import axios from 'axios';
 
+export const buildUnifiedPdfDownloadUrl = (id, { providerSortDirection } = {}) => {
+  const query = new URLSearchParams();
+  const normalizedDirection = String(providerSortDirection || '').trim().toLowerCase();
+  if (normalizedDirection) {
+    query.set('providerSortDirection', normalizedDirection);
+  }
+
+  const queryString = query.toString();
+  return `/api/tramites-pago/${encodeURIComponent(id)}/pdf-unificado${queryString ? `?${queryString}` : ''}`;
+};
+
 const getDetalle = (id) => axios.get(`/api/tramites-pago/${id}`);
 const getHistorial = (id) => axios.get(`/api/tramites-pago/${id}/historial`);
 const listTramites = (params) => axios.get('/api/tramites-pago', { params });
@@ -40,5 +51,6 @@ export const tramitesApi = {
   discardOrphanCaratula,
   decisionDocumento,
   accionTesoreria,
-  getSociedades
+  getSociedades,
+  buildUnifiedPdfDownloadUrl
 };

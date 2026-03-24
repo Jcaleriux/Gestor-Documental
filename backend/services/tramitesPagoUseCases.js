@@ -31,7 +31,8 @@ const createTramitesPagoUseCases = ({
       policyRegistry
     }),
     ...createTramitesPagoReadUseCases({
-      tramitesPagoRepo
+      tramitesPagoRepo,
+      baseDir
     }),
     ...createTramitesPagoWorkflowUseCases({
       tramitesPagoRepo,

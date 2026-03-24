@@ -70,6 +70,11 @@ function TramiteDetalleLayout({ layoutProps }) {
 
       <ActionAlerts error={alerts.error} message={alerts.message} />
       <ActionAlerts error={alerts.reportError} message={alerts.reportMessage} />
+      <ActionAlerts
+        error={alerts.downloadUnifiedPdfError}
+        warning={alerts.downloadUnifiedPdfWarning}
+        message={alerts.downloadUnifiedPdfMessage}
+      />
 
       {historial.visible && (
         <TramiteHistorial
@@ -132,24 +137,38 @@ function TramiteDetalleLayout({ layoutProps }) {
                 totalDocs={table.resumenTotales.totalDocs}
                 totalMonto={formatAmount(table.resumenTotales.suma)}
                 resumenMoneda={table.resumenMoneda}
-                actions={table.providerGroups.length > 0 ? (
+                actions={(
                   <>
                     <button
                       type="button"
                       className="btn btn-sm btn-outline-primary"
-                      onClick={() => applyGlobalPdfExpansion(true)}
+                      onClick={table.onDownloadUnifiedPdf}
+                      disabled={!table.canDownloadUnifiedPdf || table.downloadUnifiedPdfLoading}
                     >
-                      {table.labelsUnificada?.expandAllPdfs || 'Expandir todos los PDFs'}
+                      {table.downloadUnifiedPdfLoading
+                        ? (table.labelsUnificada?.downloadingUnifiedPdf || 'Generando PDF...')
+                        : (table.labelsUnificada?.downloadUnifiedPdf || 'Descargar PDF')}
                     </button>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-secondary"
-                      onClick={() => applyGlobalPdfExpansion(false)}
-                    >
-                      {table.labelsUnificada?.collapseAllPdfs || 'Ocultar todos los PDFs'}
-                    </button>
+                    {table.providerGroups.length > 0 && (
+                      <>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-primary"
+                          onClick={() => applyGlobalPdfExpansion(true)}
+                        >
+                          {table.labelsUnificada?.expandAllPdfs || 'Expandir todos los PDFs'}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-secondary"
+                          onClick={() => applyGlobalPdfExpansion(false)}
+                        >
+                          {table.labelsUnificada?.collapseAllPdfs || 'Ocultar todos los PDFs'}
+                        </button>
+                      </>
+                    )}
                   </>
-                ) : null}
+                )}
                 labels={table.labelsUnificada}
               />
               <div className="p-3 tramite-unificada-list">

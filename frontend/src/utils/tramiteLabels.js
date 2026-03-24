@@ -29,6 +29,8 @@ const TRAMITE_LABELS = {
     documentosActivos: 'Documentos activos',
     total: 'Total',
     sociedad: 'Sociedad',
+    downloadUnifiedPdf: 'Descargar PDF',
+    downloadingUnifiedPdf: 'Generando PDF...',
     expandAllPdfs: 'Expandir todos los PDFs',
     collapseAllPdfs: 'Ocultar todos los PDFs'
   },
