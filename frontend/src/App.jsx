@@ -408,7 +408,7 @@ function AuthenticatedAppShell({
           <div className="brand">
             <div className="brand-icon">N</div>
             <div className="brand-copy">
-              <div className="brand-title">Proyecto Novogar</div>
+              <div className="brand-title">Proyecto gestión documental</div>
               <div className="brand-sub">Sistema de Gestion</div>
             </div>
           </div>

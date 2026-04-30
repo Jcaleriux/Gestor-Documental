@@ -6,33 +6,43 @@ export const DEFAULT_FACTURAS_SORT_BY = 'fecha_emision';
 export const DEFAULT_FACTURAS_SORT_DIR = 'desc';
 export const DEFAULT_FACTURAS_PAGE_SIZE = 50;
 
+// --------------------
+// Helpers
+// --------------------
+
+const normalize = (str) =>
+  String(str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+
+const toUpperTrim = (value) => String(value || '').trim().toUpperCase();
+
+const normalizeNullableNumber = (value) => {
+  if (value === undefined || value === null || value === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
 const parseDateInputOrNull = (value) => {
   if (!value) return null;
   const match = DATE_INPUT_PATTERN.exec(String(value).trim());
   if (!match) return null;
 
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-  const parsed = new Date(year, month - 1, day);
-
-  if (
-    parsed.getFullYear() !== year
-    || parsed.getMonth() !== month - 1
-    || parsed.getDate() !== day
-  ) {
-    return null;
-  }
-
-  return parsed;
+  const [_, y, m, d] = match;
+  const date = new Date(`${y}-${m}-${d}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
 };
 
 const toDateOrNull = (value, { fromDateInput = false } = {}) => {
   if (!value) return null;
+
   if (fromDateInput) {
-    const parsedInput = parseDateInputOrNull(value);
-    if (parsedInput) return parsedInput;
+    const parsed = parseDateInputOrNull(value);
+    if (parsed) return parsed;
   }
+
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
@@ -40,91 +50,106 @@ const toDateOrNull = (value, { fromDateInput = false } = {}) => {
 const toDayOrNull = (value, options) => {
   const parsed = toDateOrNull(value, options);
   if (!parsed) return null;
-  const day = new Date(parsed);
-  day.setHours(0, 0, 0, 0);
-  return day;
+  const d = new Date(parsed);
+  d.setHours(0, 0, 0, 0);
+  return d;
 };
 
-const toUpperTrim = (value) => String(value || '').trim().toUpperCase();
-
-const normalizeNullableNumber = (value) => {
-  if (value === undefined || value === null || value === '') {
-    return null;
-  }
-
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-};
+// --------------------
+// Matchers
+// --------------------
 
 const matchesDateRange = ({ fechaEmision, fechaDesde, fechaHasta }) => {
   const fecha = toDayOrNull(fechaEmision);
+  if (!fecha) return false;
+
   const desde = toDayOrNull(fechaDesde, { fromDateInput: true });
   const hasta = toDayOrNull(fechaHasta, { fromDateInput: true });
-  const desdeOk = !desde || (fecha && fecha >= desde);
-  const hastaOk = !hasta || (fecha && fecha <= hasta);
-  return desdeOk && hastaOk;
+
+  return (!desde || fecha >= desde) && (!hasta || fecha <= hasta);
 };
 
 const matchesMontoRange = ({ monto, montoMin, montoMax }) => {
-  const normalizedMin = normalizeNullableNumber(montoMin);
-  const normalizedMax = normalizeNullableNumber(montoMax);
-  const minOk = normalizedMin === null || monto >= normalizedMin;
-  const maxOk = normalizedMax === null || monto <= normalizedMax;
-  return minOk && maxOk;
+  const safeMonto = Number(monto) || 0;
+  const min = normalizeNullableNumber(montoMin);
+  const max = normalizeNullableNumber(montoMax);
+
+  return (min === null || safeMonto >= min) &&
+         (max === null || safeMonto <= max);
 };
 
-const getNotaMoneda = (nota) => String(
-  nota?.resumen?.CodigoTipoMoneda?.CodigoMoneda
-  || nota?.resumen?.CodigoMoneda
-  || nota?.resumen?.codigoMoneda
-  || 'CRC'
-).toUpperCase();
+const getNotaMoneda = (nota) =>
+  String(
+    nota?.resumen?.CodigoTipoMoneda?.CodigoMoneda ||
+    nota?.resumen?.CodigoMoneda ||
+    nota?.resumen?.codigoMoneda ||
+    'CRC'
+  ).toUpperCase();
 
 const getNotaMonto = (nota) => {
   const monto = Number(
-    nota?.monto
-    ?? nota?.resumen?.TotalComprobante
-    ?? nota?.resumen?.totalComprobante
-    ?? 0
+    nota?.monto ??
+    nota?.resumen?.TotalComprobante ??
+    nota?.resumen?.totalComprobante ??
+    0
   );
   return Number.isFinite(monto) ? monto : 0;
 };
 
 const matchesNotaCreditoFiltersForReport = (nota, activeFilters) => {
-  if (activeFilters.estado) {
-    return false;
-  }
+  // Nota: mantiene tu lógica original
+  if (activeFilters.estado) return false;
 
-  const emisor = String(nota.emisor?.Nombre || nota.emisor?.nombre || '').toLowerCase();
-  const consecutivo = String(nota.numero_consecutivo || '').toLowerCase();
-  const clave = String(nota.clave || '').toLowerCase();
+  const emisor = normalize(nota.emisor?.Nombre || nota.emisor?.nombre);
+  const consecutivo = normalize(nota.numero_consecutivo);
+  const clave = normalize(nota.clave);
+
   const monedaNota = getNotaMoneda(nota);
   const totalNota = getNotaMonto(nota);
 
-  const matchesSearch = !activeFilters.searchTerm
-    || emisor.includes(activeFilters.searchTerm)
-    || consecutivo.includes(activeFilters.searchTerm)
-    || clave.includes(activeFilters.searchTerm);
-  const matchesEmisor = !activeFilters.emisorTerm || emisor.includes(activeFilters.emisorTerm);
-  const matchesMoneda = !activeFilters.monedaTerm || monedaNota === activeFilters.monedaTerm;
-  const dateRangeOk = matchesDateRange({
+  // 🔥 búsqueda por palabras
+  const words = activeFilters.searchTerm.split(/\s+/).filter(Boolean);
+
+  const matchesSearch =
+    words.length === 0 ||
+    words.every(word =>
+      emisor.includes(word) ||
+      consecutivo.includes(word) ||
+      clave.includes(word)
+    );
+
+  const matchesEmisor =
+    !activeFilters.emisorTerm ||
+    emisor.includes(activeFilters.emisorTerm);
+
+  const matchesMoneda =
+    !activeFilters.monedaTerm ||
+    monedaNota === activeFilters.monedaTerm;
+
+  const dateOk = matchesDateRange({
     fechaEmision: nota.fecha_emision,
     fechaDesde: activeFilters.fechaDesde,
     fechaHasta: activeFilters.fechaHasta
   });
-  const montoRangeOk = matchesMontoRange({
+
+  const montoOk = matchesMontoRange({
     monto: totalNota,
     montoMin: activeFilters.montoMin,
     montoMax: activeFilters.montoMax
   });
 
-  return matchesSearch && matchesEmisor && matchesMoneda && dateRangeOk && montoRangeOk;
+  return matchesSearch && matchesEmisor && matchesMoneda && dateOk && montoOk;
 };
 
+// --------------------
+// Hook
+// --------------------
+
 export const useFacturasFilters = ({
-  debounceMs = 250,
+  debounceMs = 300, 
   dashboardPreset = ''
 } = {}) => {
+
   const [search, setSearchState] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [estado, setEstadoState] = useState('');
@@ -139,78 +164,49 @@ export const useFacturasFilters = ({
   const [page, setPageState] = useState(1);
   const [pageSize, setPageSizeState] = useState(DEFAULT_FACTURAS_PAGE_SIZE);
 
+  // debounce
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
+    const id = setTimeout(() => {
       setDebouncedSearch(search.trim());
-    }, Math.max(0, debounceMs));
+    }, debounceMs);
+    return () => clearTimeout(id);
+  }, [search, debounceMs]);
 
-    return () => clearTimeout(timeoutId);
-  }, [debounceMs, search]);
+  const resetPage = useCallback(() => setPageState(1), []);
 
-  const resetPage = useCallback(() => {
+  const withReset = (setter) => (value) => {
+    resetPage();
+    setter(value);
+  };
+
+  const setSearch = useCallback(withReset(setSearchState), []);
+  const setEstado = useCallback(withReset(setEstadoState), []);
+  const setFechaDesde = useCallback(withReset(setFechaDesdeState), []);
+  const setFechaHasta = useCallback(withReset(setFechaHastaState), []);
+  const setEmisorNombre = useCallback(withReset(setEmisorNombreState), []);
+  const setMoneda = useCallback(withReset(setMonedaState), []);
+  const setMontoMin = useCallback(withReset(setMontoMinState), []);
+  const setMontoMax = useCallback(withReset(setMontoMaxState), []);
+
+  const setPage = useCallback((v) => {
+    setPageState(Math.max(1, Number(v) || 1));
+  }, []);
+
+  const setPageSize = useCallback((v) => {
+    const size = Math.max(1, Number(v) || DEFAULT_FACTURAS_PAGE_SIZE);
     setPageState(1);
+    setPageSizeState(size);
   }, []);
 
-  const setSearch = useCallback((value) => {
+  const toggleSort = useCallback((next) => {
     resetPage();
-    setSearchState(value);
-  }, [resetPage]);
-
-  const setEstado = useCallback((value) => {
-    resetPage();
-    setEstadoState(value);
-  }, [resetPage]);
-
-  const setFechaDesde = useCallback((value) => {
-    resetPage();
-    setFechaDesdeState(value);
-  }, [resetPage]);
-
-  const setFechaHasta = useCallback((value) => {
-    resetPage();
-    setFechaHastaState(value);
-  }, [resetPage]);
-
-  const setEmisorNombre = useCallback((value) => {
-    resetPage();
-    setEmisorNombreState(value);
-  }, [resetPage]);
-
-  const setMoneda = useCallback((value) => {
-    resetPage();
-    setMonedaState(value);
-  }, [resetPage]);
-
-  const setMontoMin = useCallback((value) => {
-    resetPage();
-    setMontoMinState(value);
-  }, [resetPage]);
-
-  const setMontoMax = useCallback((value) => {
-    resetPage();
-    setMontoMaxState(value);
-  }, [resetPage]);
-
-  const setPage = useCallback((value) => {
-    setPageState(Math.max(1, Number(value) || 1));
-  }, []);
-
-  const setPageSize = useCallback((value) => {
-    const normalized = Math.max(1, Number(value) || DEFAULT_FACTURAS_PAGE_SIZE);
-    setPageState(1);
-    setPageSizeState(normalized);
-  }, []);
-
-  const toggleSort = useCallback((nextSortBy) => {
-    resetPage();
-    if (sortBy === nextSortBy) {
-      setSortDir((current) => (current === 'asc' ? 'desc' : 'asc'));
-      return;
+    if (sortBy === next) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(next);
+      setSortDir(next === 'emisor' ? 'asc' : 'desc');
     }
-
-    setSortBy(nextSortBy);
-    setSortDir(nextSortBy === 'emisor' ? 'asc' : DEFAULT_FACTURAS_SORT_DIR);
-  }, [resetPage, sortBy]);
+  }, [sortBy, resetPage]);
 
   const resetFilters = useCallback(() => {
     setSearchState('');
@@ -233,8 +229,8 @@ export const useFacturasFilters = ({
   }, []);
 
   const activeFilters = useMemo(() => ({
-    searchTerm: debouncedSearch.trim().toLowerCase(),
-    emisorTerm: emisorNombre.trim().toLowerCase(),
+    searchTerm: normalize(debouncedSearch),
+    emisorTerm: normalize(emisorNombre),
     monedaTerm: toUpperTrim(moneda),
     estado,
     fechaDesde,
@@ -244,45 +240,38 @@ export const useFacturasFilters = ({
   }), [debouncedSearch, emisorNombre, moneda, estado, fechaDesde, fechaHasta, montoMin, montoMax]);
 
   const query = useMemo(() => {
-    const result = {
-      page,
-      pageSize,
-      sortBy,
-      sortDir,
-    };
+    const q = { page, pageSize, sortBy, sortDir };
 
-    if (debouncedSearch.trim()) result.search = debouncedSearch.trim();
-    if (estado) result.estado = estado;
-    if (emisorNombre.trim()) result.emisor = emisorNombre.trim();
-    if (moneda) result.moneda = moneda;
-    if (fechaDesde) result.fechaDesde = fechaDesde;
-    if (fechaHasta) result.fechaHasta = fechaHasta;
-    if (montoMin !== '') result.montoMin = montoMin;
-    if (montoMax !== '') result.montoMax = montoMax;
-    if (dashboardPreset) result.dashboardPreset = dashboardPreset;
+    if (debouncedSearch.trim()) q.search = debouncedSearch.trim();
+    if (estado) q.estado = estado;
+    if (emisorNombre.trim()) q.emisor = emisorNombre.trim();
+    if (moneda) q.moneda = moneda;
+    if (fechaDesde) q.fechaDesde = fechaDesde;
+    if (fechaHasta) q.fechaHasta = fechaHasta;
 
-    return result;
+    const min = normalizeNullableNumber(montoMin);
+    const max = normalizeNullableNumber(montoMax);
+
+    if (min !== null) q.montoMin = min;
+    if (max !== null) q.montoMax = max;
+
+    if (dashboardPreset) q.dashboardPreset = dashboardPreset;
+
+    return q;
   }, [
-    dashboardPreset,
-    debouncedSearch,
-    emisorNombre,
-    estado,
-    fechaDesde,
-    fechaHasta,
-    moneda,
-    montoMin,
-    montoMax,
-    page,
-    pageSize,
-    sortBy,
-    sortDir,
+    debouncedSearch, estado, emisorNombre, moneda,
+    fechaDesde, fechaHasta, montoMin, montoMax,
+    page, pageSize, sortBy, sortDir, dashboardPreset
   ]);
 
-  const hasActiveFilters = Boolean(
-    search || estado || fechaDesde || fechaHasta || emisorNombre || moneda || montoMin || montoMax || dashboardPreset
-  );
+  const hasActiveFilters = useMemo(() =>
+    Object.values(activeFilters).some(Boolean) || !!dashboardPreset,
+  [activeFilters, dashboardPreset]);
 
-  const filterNotaCreditoForReport = (nota) => matchesNotaCreditoFiltersForReport(nota, activeFilters);
+  const filterNotaCreditoForReport = useCallback(
+    (nota) => matchesNotaCreditoFiltersForReport(nota, activeFilters),
+    [activeFilters]
+  );
 
   return {
     search,

@@ -1,4 +1,5 @@
 function FiltersPanel({ visible = true, className = '', children }) {
+  
   if (!visible) return null;
 
   return (
