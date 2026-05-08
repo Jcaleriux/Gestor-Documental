@@ -174,19 +174,45 @@ export const useFacturasFilters = ({
 
   const resetPage = useCallback(() => setPageState(1), []);
 
-  const withReset = (setter) => (value) => {
+  const setSearch = useCallback((value) => {
     resetPage();
-    setter(value);
-  };
+    setSearchState(value);
+  }, [resetPage]);
 
-  const setSearch = useCallback(withReset(setSearchState), []);
-  const setEstado = useCallback(withReset(setEstadoState), []);
-  const setFechaDesde = useCallback(withReset(setFechaDesdeState), []);
-  const setFechaHasta = useCallback(withReset(setFechaHastaState), []);
-  const setEmisorNombre = useCallback(withReset(setEmisorNombreState), []);
-  const setMoneda = useCallback(withReset(setMonedaState), []);
-  const setMontoMin = useCallback(withReset(setMontoMinState), []);
-  const setMontoMax = useCallback(withReset(setMontoMaxState), []);
+  const setEstado = useCallback((value) => {
+    resetPage();
+    setEstadoState(value);
+  }, [resetPage]);
+
+  const setFechaDesde = useCallback((value) => {
+    resetPage();
+    setFechaDesdeState(value);
+  }, [resetPage]);
+
+  const setFechaHasta = useCallback((value) => {
+    resetPage();
+    setFechaHastaState(value);
+  }, [resetPage]);
+
+  const setEmisorNombre = useCallback((value) => {
+    resetPage();
+    setEmisorNombreState(value);
+  }, [resetPage]);
+
+  const setMoneda = useCallback((value) => {
+    resetPage();
+    setMonedaState(value);
+  }, [resetPage]);
+
+  const setMontoMin = useCallback((value) => {
+    resetPage();
+    setMontoMinState(value);
+  }, [resetPage]);
+
+  const setMontoMax = useCallback((value) => {
+    resetPage();
+    setMontoMaxState(value);
+  }, [resetPage]);
 
   const setPage = useCallback((v) => {
     setPageState(Math.max(1, Number(v) || 1));
