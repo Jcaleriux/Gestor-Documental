@@ -84,7 +84,7 @@ const downloadTextFile = ({ filename, contents }) => {
     return;
   }
 
-  const blob = new Blob([contents], { type: 'text/csv;charset=utf-8;' });
+  const blob = new Blob(['\uFEFF', contents], { type: 'text/csv;charset=utf-8;' });
   const url = window.URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;
@@ -315,9 +315,9 @@ export const useCentrosCostoCatalog = ({ sociedadId, dependencies = {} }) => {
   const downloadTemplate = useCallback(() => {
     downloadTextFile({
       filename: 'centros_costo_template.csv',
-      contents: buildCentrosCostoTemplateCsv(),
+      contents: buildCentrosCostoTemplateCsv(centros),
     });
-  }, []);
+  }, [centros]);
 
   const importCsv = useCallback(async (file) => {
     if (!file || !sociedadId) {

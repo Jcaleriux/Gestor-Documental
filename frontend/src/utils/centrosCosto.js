@@ -1,4 +1,14 @@
 const ROOT_PARENT_CODE = 'ROOT';
+const CSV_DELIMITER = ';';
+const CSV_HEADERS = [
+  'codigo',
+  'nombre',
+  'codigo_padre',
+  'email_aprobador',
+  'seleccionable_en_contabilizacion',
+  'activo',
+  'orden',
+];
 
 const normalizeText = (value) => String(value || '').trim();
 
@@ -143,6 +153,59 @@ const compareCentrosCosto = (left, right) => {
   return normalizeText(left?.nombre).localeCompare(normalizeText(right?.nombre), 'es');
 };
 
+const escapeCsvCell = (value, delimiter = CSV_DELIMITER) => {
+  const normalized = value == null ? '' : String(value);
+
+  if (
+    normalized.includes('"')
+    || normalized.includes('\n')
+    || normalized.includes('\r')
+    || normalized.includes(delimiter)
+  ) {
+    return `"${normalized.replace(/"/g, '""')}"`;
+  }
+
+  return normalized;
+};
+
+const buildCsvRow = (cells, delimiter = CSV_DELIMITER) => cells
+  .map((cell) => escapeCsvCell(cell, delimiter))
+  .join(delimiter);
+
+const countDelimiter = (line, delimiter) => {
+  let count = 0;
+  let inQuotes = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+
+    if (char === '"') {
+      if (inQuotes && line[index + 1] === '"') {
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (!inQuotes && char === delimiter) {
+      count += 1;
+    }
+  }
+
+  return count;
+};
+
+const detectCsvDelimiter = (text) => {
+  const firstLine = String(text || '')
+    .replace(/^\uFEFF/, '')
+    .split(/\r?\n/, 1)[0] || '';
+
+  return countDelimiter(firstLine, CSV_DELIMITER) >= countDelimiter(firstLine, ',')
+    ? CSV_DELIMITER
+    : ',';
+};
+
 export const buildCentrosCostoTree = (centros = []) => {
   const nodeMap = new Map();
   const roots = [];
@@ -245,20 +308,64 @@ export const suggestParentByCode = (centros = [], codigo, currentId = null) => {
 };
 
 const parseCsvText = (text) => {
-  const lines = String(text || '')
-    .replace(/^\uFEFF/, '')
-    .split(/\r?\n/)
-    .filter((line) => line.trim() !== '');
-
-  if (lines.length === 0) {
+  const source = String(text || '').replace(/^\uFEFF/, '');
+  if (source.trim() === '') {
     return [];
   }
 
-  const delimiter = (lines[0].match(/;/g) || []).length >= (lines[0].match(/,/g) || []).length
-    ? ';'
-    : ',';
+  const delimiter = detectCsvDelimiter(source);
+  const rows = [];
+  let row = [];
+  let cell = '';
+  let inQuotes = false;
 
-  return lines.map((line) => line.split(delimiter).map((cell) => cell.trim()));
+  const flushCell = () => {
+    row.push(cell.trim());
+    cell = '';
+  };
+
+  const flushRow = () => {
+    flushCell();
+    if (row.some((value) => value !== '')) {
+      rows.push(row);
+    }
+    row = [];
+  };
+
+  for (let index = 0; index < source.length; index += 1) {
+    const char = source[index];
+
+    if (char === '"') {
+      if (inQuotes && source[index + 1] === '"') {
+        cell += '"';
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (!inQuotes && char === delimiter) {
+      flushCell();
+      continue;
+    }
+
+    if (!inQuotes && (char === '\n' || char === '\r')) {
+      if (char === '\r' && source[index + 1] === '\n') {
+        index += 1;
+      }
+      flushRow();
+      continue;
+    }
+
+    cell += char;
+  }
+
+  if (cell !== '' || row.length > 0) {
+    flushRow();
+  }
+
+  return rows;
 };
 
 const parseLegacyCell = (cellValue) => {
@@ -373,15 +480,25 @@ export const parseCentrosCostoCsv = (text) => {
   return parseNormalizedImportRows(matrix) || parseLegacyImportRows(matrix);
 };
 
-export const buildCentrosCostoTemplateCsv = () => (
-  [
-    'codigo;nombre;codigo_padre;email_aprobador;seleccionable_en_contabilizacion;activo;orden',
-    '11ROOT;11 - PROYECTO DEMO;ROOT;gerencia.proyecto@novogar.local;false;true;1',
-    '1100000;COSTOS DIRECTOS E INDIRECTOS DE OBRA;11ROOT;gerencia.proyecto@novogar.local;false;true;2',
-    '11Z0000;COSTOS DIRECTOS COMUNES DE OBRA;1100000;gerencia.proyecto@novogar.local;false;true;3',
-    '11Z0100;DIRECTOS COMUNES - TERRENOS;11Z0000;gerencia.proyecto@novogar.local;true;true;4',
-  ].join('\n')
-);
+export const buildCentrosCostoTemplateCsv = (centros = []) => {
+  const rows = [buildCsvRow(CSV_HEADERS)];
+
+  [...(Array.isArray(centros) ? centros : [])]
+    .sort(compareCentrosCosto)
+    .forEach((centro, index) => {
+      rows.push(buildCsvRow([
+        normalizeCode(centro?.codigo),
+        normalizeText(centro?.nombre),
+        normalizeCode(centro?.centro_padre_codigo) || ROOT_PARENT_CODE,
+        normalizeText(centro?.usuario_aprobador_email),
+        centro?.seleccionable_en_contabilizacion !== false,
+        centro?.activo !== false,
+        Number.isFinite(Number(centro?.orden)) ? Number(centro.orden) : index + 1,
+      ]));
+    });
+
+  return rows.join('\n');
+};
 
 export {
   ROOT_PARENT_CODE,

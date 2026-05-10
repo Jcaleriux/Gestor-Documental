@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  buildCentrosCostoTemplateCsv,
   buildCentroCostoResumen,
   createCentroCostoLinea,
   ensureCentrosCostoMetadata,
@@ -21,6 +22,18 @@ test('parseCentrosCostoCsv soporta plantilla normalizada', () => {
   assert.equal(rows[1].seleccionable_en_contabilizacion, true);
 });
 
+test('parseCentrosCostoCsv soporta comillas y delimitadores dentro de celdas', () => {
+  const rows = parseCentrosCostoCsv([
+    'codigo;nombre;codigo_padre;email_aprobador;seleccionable_en_contabilizacion;activo;orden',
+    '11ROOT;"11 - PROYECTO; ""DEMO""";ROOT;demo@novogar.local;false;true;1',
+    '1100000;"COSTOS DIRECTOS, ETAPA 1";11ROOT;demo@novogar.local;true;true;2',
+  ].join('\n'));
+
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].nombre, '11 - PROYECTO; "DEMO"');
+  assert.equal(rows[1].nombre, 'COSTOS DIRECTOS, ETAPA 1');
+});
+
 test('parseCentrosCostoCsv soporta formato legacy por columnas', () => {
   const rows = parseCentrosCostoCsv([
     'Descripcion;Descripcion',
@@ -36,6 +49,41 @@ test('parseCentrosCostoCsv soporta formato legacy por columnas', () => {
   assert.equal(node1100000?.codigo_padre, '11');
   assert.equal(node11Z0100?.codigo_padre, '11Z0000');
   assert.equal(node11Z0100?.seleccionable_en_contabilizacion, true);
+});
+
+test('buildCentrosCostoTemplateCsv exporta el catalogo actual y se puede reimportar', () => {
+  const csv = buildCentrosCostoTemplateCsv([
+    {
+      codigo: '1100000',
+      nombre: 'COSTOS DIRECTOS; ETAPA 1',
+      centro_padre_codigo: '11ROOT',
+      usuario_aprobador_email: 'obra@novogar.local',
+      seleccionable_en_contabilizacion: true,
+      activo: true,
+      orden: 2,
+    },
+    {
+      codigo: '11ROOT',
+      nombre: '11 - PROYECTO "DEMO"',
+      centro_padre_codigo: '',
+      usuario_aprobador_email: 'gerencia@novogar.local',
+      seleccionable_en_contabilizacion: false,
+      activo: true,
+      orden: 1,
+    },
+  ]);
+
+  const rows = parseCentrosCostoCsv(csv);
+
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].codigo, '11ROOT');
+  assert.equal(rows[0].codigo_padre, 'ROOT');
+  assert.equal(rows[0].nombre, '11 - PROYECTO "DEMO"');
+  assert.equal(rows[1].codigo, '1100000');
+  assert.equal(rows[1].codigo_padre, '11ROOT');
+  assert.equal(rows[1].nombre, 'COSTOS DIRECTOS; ETAPA 1');
+  assert.match(csv, /"11 - PROYECTO ""DEMO"""/);
+  assert.match(csv, /"COSTOS DIRECTOS; ETAPA 1"/);
 });
 
 test('buildCentroCostoResumen resume multiples lineas sin perder el primero', () => {
