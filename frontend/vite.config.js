@@ -8,6 +8,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: '0.0.0.0',
+    allowedHosts: ['gothic-taco-ecosphere.ngrok-free.dev'],
     cors: false,
     proxy: {
       '/api': apiProxyTarget
