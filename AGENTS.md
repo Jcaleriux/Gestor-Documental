@@ -81,22 +81,22 @@ Default mode for unattended cleanup is: preserve public behavior, improve intern
 
 ### Backend
 
-From `backend/`:
+From repo root or inside `backend/`:
 
-- Install deps: `npm install`
-- Run API: `npm run dev`
-- Run all tests: `npm test`
+- Install deps: `pnpm install`
+- Run API: `pnpm --dir backend run dev`
+- Run all tests: `pnpm --dir backend run test`
 - Run one Jest file directly: `node node_modules/jest/bin/jest.js --runInBand __tests__/reservasUseCases.test.js`
-- Check DB structure: `npm run db:check`
+- Check DB structure: `pnpm --dir backend run db:check`
 
 ### Frontend
 
-From `frontend/`:
+From repo root or inside `frontend/`:
 
-- Install deps: `npm install`
-- Run app: `npm run dev`
-- Production build: `npm run build`
-- Run full test runner: `npm test`
+- Install deps: `pnpm install`
+- Run app: `pnpm --dir frontend run dev`
+- Production build: `pnpm --dir frontend run build`
+- Run full test runner: `pnpm --dir frontend run test`
 - Run targeted tests directly when sandboxed Node spawn causes `EPERM`:
   - `node tests/hooks/useFacturas.test.js`
   - `node tests/hooks/useAppSession.test.js`

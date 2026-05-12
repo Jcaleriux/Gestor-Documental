@@ -59,30 +59,21 @@ Sistema web para gestion de facturas, procesamiento de XML, documentos y tramite
 ## Requisitos
 
 - Node.js 20 o superior (recomendado)
-- npm 10 o superior (recomendado)
+- pnpm 11 via Corepack (recomendado)
 - PostgreSQL 14 o superior (recomendado)
 
 ## Inicio rapido
 
 1. Clonar el repositorio y entrar a la raiz.
 
-2. Instalar backend:
+2. Habilitar Corepack e instalar dependencias del workspace:
 
 ```bash
-cd backend
-npm install
-cd ..
+corepack enable
+pnpm install
 ```
 
-3. Instalar frontend:
-
-```bash
-cd frontend
-npm install
-cd ..
-```
-
-4. Copiar `backend/.env.example` a `backend/.env` y ajustar DB/JWT segun tu entorno.
+3. Copiar `backend/.env.example` a `backend/.env` y ajustar DB/JWT/CORS segun tu entorno.
 
 5. Crear la base (si no existe):
 
@@ -90,29 +81,25 @@ cd ..
 psql -U postgres -f backend/db/database/01_create_db.sql
 ```
 
-6. Inicializar schema y seed (destructivo sobre `public`):
+5. Inicializar schema y seed (destructivo sobre `public`):
 
 ```bash
-cd backend
-npm run db:reset
-cd ..
+pnpm --dir backend run db:reset
 ```
 
-7. Levantar backend:
+6. Levantar backend:
 
 ```bash
-cd backend
-npm run dev
+pnpm --dir backend run dev
 ```
 
-8. Levantar frontend en otra terminal:
+7. Levantar frontend en otra terminal:
 
 ```bash
-cd frontend
-npm run dev
+pnpm --dir frontend run dev
 ```
 
-9. Abrir `http://localhost:5173`.
+8. Abrir `http://localhost:5173`.
 
 ## Credenciales iniciales
 
@@ -138,6 +125,7 @@ El backend carga `backend/.env` y `backend/.env.local` si existen. Para entornos
 - `JWT_SECRET` (default solo en dev/test: `dev-secret`; en `production` es obligatorio definirlo)
 - `JWT_EXPIRES_IN` (default: `8h`)
 - `BCRYPT_ROUNDS` (default: `12`)
+- `CORS_ALLOWED_ORIGINS` (lista separada por comas; en `production` es obligatoria y no acepta `*`)
 - `FACTURAS_BASE_DIR` (default: raiz del repo)
 - `JSON_BODY_LIMIT` (default: `20mb`)
 - `PERMISSIONS_CACHE_TTL_MS` (default: `60000`)
@@ -148,6 +136,11 @@ El backend carga `backend/.env` y `backend/.env.local` si existen. Para entornos
 - `WATCHER_LATE_FILES_DELAY_MS` (default: `2000`)
 - `WATCHER_AWF_STABILITY_MS` (default: `2000`)
 - `WATCHER_AWF_POLL_MS` (default: `100`)
+
+Nota de seguridad actual:
+
+- El frontend mantiene el token JWT en `localStorage` para preservar compatibilidad con el flujo actual.
+- `CORS_ALLOWED_ORIGINS` reduce la exposicion cross-origin, pero la migracion a cookies `HttpOnly/SameSite` queda como hardening futuro.
 
 ## Entorno para Codex
 

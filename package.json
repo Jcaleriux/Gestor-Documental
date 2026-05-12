@@ -1,0 +1,17 @@
+{
+  "name": "proyecto-novogar-workspace",
+  "private": true,
+  "packageManager": "pnpm@11.0.0",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "check:release": "pnpm --dir backend run check:release",
+    "test:backend": "pnpm --dir backend run test:ci",
+    "test:frontend": "pnpm --dir frontend run test:ci",
+    "lint": "pnpm --dir frontend run lint",
+    "build": "pnpm --dir frontend run build",
+    "audit:backend": "pnpm --dir backend audit --audit-level=high --prod",
+    "audit:frontend": "pnpm --dir frontend audit --audit-level=high --prod"
+  }
+}

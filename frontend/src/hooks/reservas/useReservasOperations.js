@@ -57,6 +57,7 @@ export const useReservasOperations = ({
   }, [api, estado, sociedadId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- limpia feedback stale antes de refrescar el scope activo
     setMessage('');
     refetch().catch(() => {});
   }, [refetch]);

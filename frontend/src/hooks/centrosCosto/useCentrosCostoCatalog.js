@@ -157,10 +157,12 @@ export const useCentrosCostoCatalog = ({ sociedadId, dependencies = {} }) => {
   }, [centrosApi, sociedadId, usuariosService]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga inicial del catalogo al montar o cambiar dependencias
     loadData();
   }, [loadData]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resetea el formulario al cambiar de sociedad
     setForm(EMPTY_FORM);
     setEditingId(null);
     setImportSummary(null);

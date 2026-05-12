@@ -72,6 +72,7 @@ export const useDashboard = ({
   }, [api, extractRecentDocuments, extractStats, extractWorkQueue, sociedadId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hidrata el dashboard al entrar o cambiar de sociedad
     fetchDashboard();
   }, [fetchDashboard]);
 

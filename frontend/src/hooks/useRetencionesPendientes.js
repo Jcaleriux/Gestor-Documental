@@ -24,6 +24,7 @@ export const useRetencionesPendientes = ({ sociedadId }) => {
 
   useEffect(() => {
     if (!sociedadId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- limpia datos derivados cuando no hay sociedad activa
       setRetenciones([]);
       setLoading(false);
       return;

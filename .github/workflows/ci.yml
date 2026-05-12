@@ -4,63 +4,103 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 env:
   CI_NODE_VERSION: 20.19.0
 
 jobs:
-  backend:
+  security:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
-    env:
-      NODE_ENV: test
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           # Vite 7 and @vitejs/plugin-react require Node 20.19+.
           node-version: ${{ env.CI_NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: backend/package-lock.json
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
-      - name: Install backend dependencies
-        run: npm ci
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit backend dependencies
+        run: pnpm --dir backend audit --audit-level=high --prod
+
+      - name: Audit frontend dependencies
+        run: pnpm --dir frontend audit --audit-level=high --prod
+
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          # Vite 7 and @vitejs/plugin-react require Node 20.19+.
+          node-version: ${{ env.CI_NODE_VERSION }}
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Run backend release checks
-        run: npm run check:release
+        run: pnpm --dir backend run check:release
+        env:
+          NODE_ENV: test
 
       - name: Run backend CI tests
-        run: npm run test:ci
+        run: pnpm --dir backend run test:ci
+        env:
+          NODE_ENV: test
 
   frontend:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 1
+          persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           # Vite 7 and @vitejs/plugin-react require Node 20.19+.
           node-version: ${{ env.CI_NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
-      - name: Install frontend dependencies
-        run: npm ci
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Run frontend lint
-        run: npm run lint
+        run: pnpm --dir frontend run lint
 
       - name: Build frontend
-        run: npm run build
+        run: pnpm --dir frontend run build
 
       - name: Run frontend CI tests
-        run: npm run test:ci
+        run: pnpm --dir frontend run test:ci

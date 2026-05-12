@@ -14,6 +14,7 @@ function SortableFacturaList({
   const [draggingId, setDraggingId] = useState(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resincroniza el orden visible con la lista fuente
     setOrderState(initialOrder);
   }, [initialOrder]);
 

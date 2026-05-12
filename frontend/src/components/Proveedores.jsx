@@ -68,6 +68,7 @@ function Proveedores({ sociedadId }) {
   }, [sociedadId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset del filtro al cambiar de sociedad
     setSearch('');
     loadProveedores();
   }, [sociedadId, loadProveedores]);

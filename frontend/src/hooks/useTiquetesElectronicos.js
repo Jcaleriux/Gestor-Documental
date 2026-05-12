@@ -92,6 +92,7 @@ export const useTiquetesElectronicos = ({
   }, [api, query, sociedadId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- dispara la carga paginada al cambiar filtros o sociedad
     fetchTiquetes();
   }, [fetchTiquetes]);
 

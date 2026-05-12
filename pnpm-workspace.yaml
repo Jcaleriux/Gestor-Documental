@@ -1,0 +1,14 @@
+packages:
+  - backend
+  - frontend
+
+allowBuilds:
+  bcrypt: true
+  esbuild: true
+blockExoticSubdeps: true
+minimumReleaseAge: 1440
+minimumReleaseAgeStrict: true
+
+overrides:
+  rollup: ^4.59.0
+strictDepBuilds: true
