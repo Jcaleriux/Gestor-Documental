@@ -1,6 +1,6 @@
-# Proyecto Novogar
+# Gestor documental - Plataforma de automatización de proceso de tesoreria
 
-Sistema web para gestion de facturas, documentos y tramites de pago con control por sociedades, roles y permisos.
+Sistema web para gestion de facturas, procesamiento de XML, documentos y tramites de pago con control por sociedades, roles y permisos.
 
 ## Tabla de contenido
 
