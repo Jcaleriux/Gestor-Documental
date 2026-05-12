@@ -15,6 +15,30 @@ const { resolveDocumentPaths } = require('./utils/documentPaths');
 const app = express();
 const documentPaths = resolveDocumentPaths(runtimeConfig.storageBaseDir);
 const releaseInfo = resolveReleaseInfo();
+const corsExposedHeaders = [
+  'Content-Disposition',
+  'X-Novogar-Partial-Download',
+  'X-Novogar-Omitted-Count',
+  'X-Novogar-Omitted-Items'
+];
+const buildCorsOptions = ({ allowedOrigins, exposedHeaders }) => {
+  if (!Array.isArray(allowedOrigins) || allowedOrigins.length === 0) {
+    return { exposedHeaders };
+  }
+
+  const allowedOriginsSet = new Set(allowedOrigins);
+
+  return {
+    exposedHeaders,
+    origin(origin, callback) {
+      if (!origin || allowedOriginsSet.has(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(null, false);
+    },
+  };
+};
 const filesAccessPermission = requireAnyPermission([
   PERMISSIONS.DOCUMENTOS_VER,
   PERMISSIONS.DOCUMENTOS_DESCARGAR
@@ -30,14 +54,10 @@ app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'DENY');
   next();
 });
-app.use(cors({
-  exposedHeaders: [
-    'Content-Disposition',
-    'X-Novogar-Partial-Download',
-    'X-Novogar-Omitted-Count',
-    'X-Novogar-Omitted-Items'
-  ]
-}));
+app.use(cors(buildCorsOptions({
+  allowedOrigins: runtimeConfig.corsAllowedOrigins,
+  exposedHeaders: corsExposedHeaders,
+})));
 app.use(express.json({ limit: runtimeConfig.jsonBodyLimit }));
 app.use((req, res, next) => {
   applyReleaseHeaders(res, releaseInfo);

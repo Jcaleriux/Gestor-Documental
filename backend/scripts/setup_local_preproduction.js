@@ -16,6 +16,7 @@ const buildLocalPreproductionEnvTemplate = ({
   dbPassword = 'change-this-before-production',
   dbName = 'novogar_preprod',
   jwtSecret = 'change-this-before-production',
+  corsAllowedOrigins = 'http://127.0.0.1:4173,http://localhost:4173',
   runtimeBaseDir = defaultRuntimeBaseDir,
   pgBinDir = 'C:/Program Files/PostgreSQL/18/bin',
 } = {}) => {
@@ -39,6 +40,7 @@ const buildLocalPreproductionEnvTemplate = ({
     `JWT_SECRET=${jwtSecret}`,
     'JWT_EXPIRES_IN=8h',
     'BCRYPT_ROUNDS=12',
+    `CORS_ALLOWED_ORIGINS=${corsAllowedOrigins}`,
     '',
     '# Storage y limites',
     `FACTURAS_BASE_DIR=${relativeRuntimeBaseDir}`,
@@ -113,10 +115,10 @@ const renderSetupSummary = (result) => {
     'Siguientes pasos sugeridos:',
     '- Editar backend/.env.production.local y reemplazar placeholders de DB_PASSWORD y JWT_SECRET.',
     '- Crear o confirmar una base separada, por ejemplo novogar_preprod.',
-    '- Ejecutar: npm run preprod:db:migrate',
-    '- Ejecutar: npm run preprod:readiness',
-    '- Levantar backend con: npm run preprod:start',
-    '- Para frontend local tipo release: cd ../frontend && npm run build && npm run preview -- --host 127.0.0.1 --port 4173',
+    '- Ejecutar: pnpm --dir backend run preprod:db:migrate',
+    '- Ejecutar: pnpm --dir backend run preprod:readiness',
+    '- Levantar backend con: pnpm --dir backend run preprod:start',
+    '- Para frontend local tipo release: pnpm --dir frontend run build && pnpm --dir frontend run preview -- --host 127.0.0.1 --port 4173',
   ].join('\n');
 };
 

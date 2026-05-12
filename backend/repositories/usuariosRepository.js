@@ -41,6 +41,16 @@ const updatePassword = async (userId, passwordHash, client) => {
   );
 };
 
+const countLegacyPasswordUsers = async (client) => {
+  const { rows } = await getDb(client).query(
+    `SELECT COUNT(*)::int AS total
+     FROM usuarios
+     WHERE COALESCE(password, '') NOT LIKE '$2%'`
+  );
+
+  return rows[0]?.total || 0;
+};
+
 const listUsuarios = async (client) => {
   const { rows } = await getDb(client).query(
     `SELECT ${USER_PUBLIC_SELECT}
@@ -113,6 +123,7 @@ const updateUsuario = async ({
 module.exports = {
   getByEmail,
   updatePassword,
+  countLegacyPasswordUsers,
   listUsuarios,
   getUsuarioById,
   createUsuario,

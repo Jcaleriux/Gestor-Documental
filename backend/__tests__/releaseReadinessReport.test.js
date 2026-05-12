@@ -22,6 +22,7 @@ describe('release readiness report', () => {
         DB_PASSWORD: 'admin',
         DB_NAME: 'novogar_db',
         JWT_SECRET: 'dev-secret',
+        CORS_ALLOWED_ORIGINS: '*',
         FACTURAS_BASE_DIR: 'change-this-before-production',
       },
     });
@@ -29,6 +30,7 @@ describe('release readiness report', () => {
     expect(result.issues).toEqual(expect.arrayContaining([
       'JWT_SECRET no puede usar dev-secret para produccion.',
       'DB_PASSWORD sigue usando la credencial dev por defecto.',
+      'CORS_ALLOWED_ORIGINS no puede usar wildcard en produccion.',
       'FACTURAS_BASE_DIR sigue con placeholder de ejemplo.',
     ]));
     expect(result.warnings).toEqual(expect.arrayContaining([
@@ -93,11 +95,17 @@ describe('release readiness report', () => {
           checksumMismatches: [],
         },
       },
+      legacyPasswordAssessment: {
+        issues: ['Hay 2 usuarios con password legacy sin bcrypt.'],
+        count: 2,
+      },
       smokeChecklist: buildSmokeChecklist(),
     });
 
     expect(report.readyForProduction).toBe(false);
     expect(report.blockingIssues).toContain('JWT_SECRET sigue con placeholder de ejemplo.');
+    expect(report.blockingIssues).toContain('Hay 2 usuarios con password legacy sin bcrypt.');
+    expect(report.legacyPasswordUsers).toBe(2);
   });
 
   test('resolveEnvFilePath prioriza el primer candidato existente', () => {

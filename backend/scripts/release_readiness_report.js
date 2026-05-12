@@ -24,6 +24,7 @@ const requiredProductionEnvKeys = [
   'DB_PASSWORD',
   'DB_NAME',
   'JWT_SECRET',
+  'CORS_ALLOWED_ORIGINS',
   'FACTURAS_BASE_DIR',
 ];
 
@@ -100,6 +101,14 @@ const evaluateProductionEnvEntries = ({ entries = {}, envFilePath = '' } = {}) =
     issues.push('DB_PASSWORD sigue usando la credencial dev por defecto.');
   }
 
+  if ((entries.CORS_ALLOWED_ORIGINS || '').trim() === 'change-this-before-production') {
+    issues.push('CORS_ALLOWED_ORIGINS sigue con placeholder de ejemplo.');
+  }
+
+  if ((entries.CORS_ALLOWED_ORIGINS || '').trim() === '*') {
+    issues.push('CORS_ALLOWED_ORIGINS no puede usar wildcard en produccion.');
+  }
+
   if ((entries.DB_HOST || '').trim() === 'localhost') {
     warnings.push('DB_HOST apunta a localhost; confirma que ese valor sea valido en el entorno destino.');
   }
@@ -161,11 +170,12 @@ const classifyBackupPlan = (plan) => {
   };
 };
 
-const getMigrationStatusSafe = async () => {
-  let pool;
+const getMigrationStatusSafe = async ({ pool: sharedPool } = {}) => {
+  let pool = sharedPool;
+  const shouldClosePool = !sharedPool;
 
   try {
-    pool = require('../db');
+    pool = pool || require('../db');
     const { getMigrationStatus } = require('../db/migrationManager');
     const status = await getMigrationStatus(pool);
 
@@ -189,7 +199,34 @@ const getMigrationStatusSafe = async () => {
       status: null,
     };
   } finally {
-    if (pool) {
+    if (shouldClosePool && pool) {
+      await pool.end().catch(() => {});
+    }
+  }
+};
+
+const getLegacyPasswordAssessmentSafe = async ({ pool: sharedPool } = {}) => {
+  let pool = sharedPool;
+  const shouldClosePool = !sharedPool;
+
+  try {
+    pool = pool || require('../db');
+    const { countLegacyPasswordUsers } = require('../repositories/usuariosRepository');
+    const count = await countLegacyPasswordUsers(pool);
+
+    return {
+      issues: count > 0
+        ? [`Hay ${count} usuarios con password legacy sin bcrypt.`]
+        : [],
+      count,
+    };
+  } catch (error) {
+    return {
+      issues: [`No se pudo auditar passwords legacy: ${error.message}`],
+      count: null,
+    };
+  } finally {
+    if (shouldClosePool && pool) {
       await pool.end().catch(() => {});
     }
   }
@@ -214,6 +251,7 @@ const buildReleaseReadinessReport = ({
   backupPlan,
   backupAssessment,
   migrationAssessment,
+  legacyPasswordAssessment = { issues: [], count: 0 },
   smokeChecklist,
 } = {}) => {
   const blockingIssues = [
@@ -222,6 +260,7 @@ const buildReleaseReadinessReport = ({
     ...(!releaseChecksOk ? ['Los release checks de backend no pasaron.'] : []),
     ...backupAssessment.blockingIssues,
     ...migrationAssessment.issues,
+    ...legacyPasswordAssessment.issues,
   ];
 
   const warnings = [
@@ -251,6 +290,7 @@ const buildReleaseReadinessReport = ({
           checksumMismatches: migrationAssessment.status.checksumMismatches.length,
         }
       : null,
+    legacyPasswordUsers: legacyPasswordAssessment.count,
     smokeChecklist,
   };
 };
@@ -346,7 +386,17 @@ const runReleaseReadinessReport = async ({
 
   const backupPlan = runReleaseBackupPlan({ logger: { log: () => {} } });
   const backupAssessment = classifyBackupPlan(backupPlan);
-  const migrationAssessment = await getMigrationStatusSafe();
+  let dbPool;
+  try {
+    dbPool = require('../db');
+  } catch {
+    dbPool = null;
+  }
+  const migrationAssessment = await getMigrationStatusSafe({ pool: dbPool });
+  const legacyPasswordAssessment = await getLegacyPasswordAssessmentSafe({ pool: dbPool });
+  if (dbPool) {
+    await dbPool.end().catch(() => {});
+  }
 
   const report = buildReleaseReadinessReport({
     version,
@@ -358,6 +408,7 @@ const runReleaseReadinessReport = async ({
     backupPlan,
     backupAssessment,
     migrationAssessment,
+    legacyPasswordAssessment,
     smokeChecklist: buildSmokeChecklist(),
   });
 
@@ -373,6 +424,7 @@ module.exports = {
   defaultEnvCandidates,
   evaluateChangelog,
   evaluateProductionEnvEntries,
+  getLegacyPasswordAssessmentSafe,
   loadEnvEntries,
   renderReleaseReadinessReport,
   resolveEnvFilePath,

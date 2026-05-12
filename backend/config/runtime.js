@@ -9,6 +9,7 @@ const repoRootDir = path.resolve(backendRootDir, '..');
 const DEFAULT_RUNTIME_CONFIG = Object.freeze({
   port: 3002,
   jsonBodyLimit: '20mb',
+  corsAllowedOrigins: Object.freeze([]),
   permissionsCacheTtlMs: 60 * 1000,
   authLoginRateLimitWindowMs: 10 * 60 * 1000,
   authLoginRateLimitMax: 20,
@@ -78,6 +79,42 @@ const parseStringEnv = ({ name, fallback, label }) => {
   return rawValue;
 };
 
+const parseCommaSeparatedEnv = ({ name, fallback = [] }) => {
+  const rawValue = readRawEnv(name);
+
+  if (!rawValue) {
+    return [...fallback];
+  }
+
+  return [...new Set(
+    rawValue
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean)
+  )];
+};
+
+const resolveCorsAllowedOrigins = () => {
+  const origins = parseCommaSeparatedEnv({
+    name: 'CORS_ALLOWED_ORIGINS',
+    fallback: DEFAULT_RUNTIME_CONFIG.corsAllowedOrigins,
+  });
+
+  if (origins.includes('*')) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('CORS_ALLOWED_ORIGINS no puede usar "*" en produccion.');
+    }
+
+    return [];
+  }
+
+  if (process.env.NODE_ENV === 'production' && origins.length === 0) {
+    throw new Error('CORS_ALLOWED_ORIGINS debe definir una allowlist explicita en produccion.');
+  }
+
+  return origins;
+};
+
 const resolveStorageBaseDir = () => {
   const rawValue = readRawEnv('FACTURAS_BASE_DIR');
 
@@ -118,6 +155,7 @@ const resolveRuntimeConfig = () => {
       fallback: DEFAULT_RUNTIME_CONFIG.jsonBodyLimit,
       label: 'JSON_BODY_LIMIT',
     }),
+    corsAllowedOrigins: resolveCorsAllowedOrigins(),
     permissionsCacheTtlMs: parsePositiveIntEnv({
       name: 'PERMISSIONS_CACHE_TTL_MS',
       fallback: DEFAULT_RUNTIME_CONFIG.permissionsCacheTtlMs,

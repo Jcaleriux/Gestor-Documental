@@ -1,12 +1,7 @@
 const { Client } = require('pg');
+const { resolveDbConfig } = require('./config/env');
 
-const client = new Client({
-  host: 'localhost',
-  port: 5432,
-  database: 'novogar_db',
-  user: 'postgres',
-  password: 'admin'
-});
+const client = new Client(resolveDbConfig());
 
 async function queryDB() {
   try {

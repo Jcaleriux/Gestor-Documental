@@ -5,9 +5,11 @@ const {
 } = require('../config/runtime');
 
 const RELEVANT_ENV_KEYS = [
+  'NODE_ENV',
   'PORT',
   'FACTURAS_BASE_DIR',
   'JSON_BODY_LIMIT',
+  'CORS_ALLOWED_ORIGINS',
   'PERMISSIONS_CACHE_TTL_MS',
   'AUTH_LOGIN_RATE_LIMIT_WINDOW_MS',
   'AUTH_LOGIN_RATE_LIMIT_MAX',
@@ -57,6 +59,7 @@ describe('runtime config', () => {
 
     expect(config.port).toBe(DEFAULT_RUNTIME_CONFIG.port);
     expect(config.jsonBodyLimit).toBe(DEFAULT_RUNTIME_CONFIG.jsonBodyLimit);
+    expect(config.corsAllowedOrigins).toEqual([]);
     expect(config.permissionsCacheTtlMs).toBe(DEFAULT_RUNTIME_CONFIG.permissionsCacheTtlMs);
     expect(config.authLoginRateLimitWindowMs).toBe(DEFAULT_RUNTIME_CONFIG.authLoginRateLimitWindowMs);
     expect(config.authLoginRateLimitMax).toBe(DEFAULT_RUNTIME_CONFIG.authLoginRateLimitMax);
@@ -88,6 +91,7 @@ describe('runtime config', () => {
   test('resolveRuntimeConfig acepta overrides explicitos y deriva scanDelay', () => {
     process.env.PORT = '4100';
     process.env.JSON_BODY_LIMIT = '25mb';
+    process.env.CORS_ALLOWED_ORIGINS = 'https://app.example.com, https://admin.example.com';
     process.env.PERMISSIONS_CACHE_TTL_MS = '90000';
     process.env.AUTH_LOGIN_RATE_LIMIT_WINDOW_MS = '120000';
     process.env.AUTH_LOGIN_RATE_LIMIT_MAX = '8';
@@ -104,6 +108,7 @@ describe('runtime config', () => {
     expect(config).toMatchObject({
       port: 4100,
       jsonBodyLimit: '25mb',
+      corsAllowedOrigins: ['https://app.example.com', 'https://admin.example.com'],
       permissionsCacheTtlMs: 90000,
       authLoginRateLimitWindowMs: 120000,
       authLoginRateLimitMax: 8,
@@ -138,6 +143,20 @@ describe('runtime config', () => {
     process.env.WATCHER_AWF_POLL_MS = '-1';
     expect(() => resolveRuntimeConfig()).toThrow(
       'WATCHER_AWF_POLL_MS debe ser un entero mayor o igual a 0.'
+    );
+  });
+
+  test('resolveRuntimeConfig exige allowlist explicita de CORS en produccion', () => {
+    process.env.NODE_ENV = 'production';
+    process.env.CORS_ALLOWED_ORIGINS = '';
+
+    expect(() => resolveRuntimeConfig()).toThrow(
+      'CORS_ALLOWED_ORIGINS debe definir una allowlist explicita en produccion.'
+    );
+
+    process.env.CORS_ALLOWED_ORIGINS = '*';
+    expect(() => resolveRuntimeConfig()).toThrow(
+      'CORS_ALLOWED_ORIGINS no puede usar "*" en produccion.'
     );
   });
 });

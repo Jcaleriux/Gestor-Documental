@@ -19,6 +19,7 @@ describe('local preproduction setup', () => {
     expect(content).toContain('DB_USER=novogar_preprod_app');
     expect(content).toContain('PG_BIN_DIR=');
     expect(content).toContain('JWT_SECRET=change-this-before-production');
+    expect(content).toContain('CORS_ALLOWED_ORIGINS=http://127.0.0.1:4173,http://localhost:4173');
     expect(content).toContain('FACTURAS_BASE_DIR=');
   });
 
