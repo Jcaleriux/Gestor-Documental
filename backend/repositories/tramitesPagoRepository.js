@@ -932,6 +932,7 @@ const getRetencionesDisponibles = async ({ sociedadId }, client) => {
 
 const listDocumentosByTramite = async (tramiteId, client, options = {}) => {
   const currentUserId = normalizePositiveIntOrNull(options.currentUserId);
+  const currentUserRoleId = normalizePositiveIntOrNull(options.currentUserRoleId);
   const { rows } = await getDb(client).query(
     `
     SELECT
@@ -1025,49 +1026,113 @@ const listDocumentosByTramite = async (tramiteId, client, options = {}) => {
           tda.usuario_aprobador_id,
           tda.usuario_aprobador_nombre,
           tda.usuario_aprobador_email,
+          tda.rol_aprobador_id,
+          tda.rol_aprobador_codigo,
+          tda.rol_aprobador_nombre,
           tda.estado_gerencia AS estado_aprobacion,
           tda.motivo_gerencia AS motivo_aprobacion,
+          tda.decision_usuario_id,
+          tda.decision_usuario_nombre,
+          tda.decision_usuario_email,
           tda.decision_en
         FROM tramites_pago_documentos_aprobadores tda
         WHERE tda.tramite_id = td.tramite_id
           AND tda.factura_id = td.factura_id
       ),
-      fallback_approvers AS (
+      fallback_user_approvers AS (
         SELECT DISTINCT
           NULLIF(linea->>'usuario_aprobador_id', '')::int AS usuario_aprobador_id,
           NULLIF(BTRIM(COALESCE(linea->>'usuario_aprobador_nombre', '')), '') AS usuario_aprobador_nombre,
           NULLIF(BTRIM(COALESCE(linea->>'usuario_aprobador_email', '')), '') AS usuario_aprobador_email,
+          NULL::int AS rol_aprobador_id,
+          NULL::text AS rol_aprobador_codigo,
+          NULL::text AS rol_aprobador_nombre,
           '${DOCUMENTO_ESTADOS.PENDIENTE}'::character varying AS estado_aprobacion,
           NULL::text AS motivo_aprobacion,
+          NULL::int AS decision_usuario_id,
+          NULL::text AS decision_usuario_nombre,
+          NULL::text AS decision_usuario_email,
           NULL::timestamp without time zone AS decision_en
         FROM jsonb_array_elements(COALESCE(fc.metadata->'centros_costo_lineas', '[]'::jsonb)) AS linea
         WHERE NOT EXISTS (SELECT 1 FROM existing_approvers)
           AND NULLIF(linea->>'usuario_aprobador_id', '') ~ '^[0-9]+$'
       ),
+      fallback_role_approvers AS (
+        SELECT DISTINCT
+          NULL::int AS usuario_aprobador_id,
+          NULL::text AS usuario_aprobador_nombre,
+          NULL::text AS usuario_aprobador_email,
+          NULLIF(linea->>'rol_aprobador_id', '')::int AS rol_aprobador_id,
+          NULLIF(BTRIM(COALESCE(linea->>'rol_aprobador_codigo', '')), '') AS rol_aprobador_codigo,
+          NULLIF(BTRIM(COALESCE(linea->>'rol_aprobador_nombre', '')), '') AS rol_aprobador_nombre,
+          '${DOCUMENTO_ESTADOS.PENDIENTE}'::character varying AS estado_aprobacion,
+          NULL::text AS motivo_aprobacion,
+          NULL::int AS decision_usuario_id,
+          NULL::text AS decision_usuario_nombre,
+          NULL::text AS decision_usuario_email,
+          NULL::timestamp without time zone AS decision_en
+        FROM jsonb_array_elements(COALESCE(fc.metadata->'centros_costo_lineas', '[]'::jsonb)) AS linea
+        WHERE NOT EXISTS (SELECT 1 FROM existing_approvers)
+          AND NULLIF(linea->>'rol_aprobador_id', '') ~ '^[0-9]+$'
+      ),
       approvers AS (
         SELECT * FROM existing_approvers
         UNION ALL
-        SELECT * FROM fallback_approvers
+        SELECT * FROM fallback_user_approvers
+        UNION ALL
+        SELECT * FROM fallback_role_approvers
       )
       SELECT
         COUNT(*)::int AS gerencia_aprobadores_total,
         COUNT(*) FILTER (WHERE estado_aprobacion = '${DOCUMENTO_ESTADOS.APROBADO}')::int AS gerencia_aprobadores_aprobados,
         COUNT(*) FILTER (WHERE estado_aprobacion = '${DOCUMENTO_ESTADOS.PENDIENTE}')::int AS gerencia_aprobadores_pendientes,
         COUNT(*) FILTER (WHERE estado_aprobacion = '${DOCUMENTO_ESTADOS.RECHAZADO}')::int AS gerencia_aprobadores_rechazados,
-        COALESCE(BOOL_OR(usuario_aprobador_id = $2 AND estado_aprobacion = '${DOCUMENTO_ESTADOS.PENDIENTE}'), false) AS gerencia_puede_aprobar_usuario_actual,
-        COALESCE(BOOL_OR(usuario_aprobador_id = $2 AND estado_aprobacion = '${DOCUMENTO_ESTADOS.APROBADO}'), false) AS gerencia_ya_aprobo_usuario_actual,
+        COALESCE(BOOL_OR((
+          (($2::int IS NOT NULL) AND usuario_aprobador_id = $2::int)
+          OR (($3::int IS NOT NULL) AND rol_aprobador_id = $3::int)
+        ) AND estado_aprobacion = '${DOCUMENTO_ESTADOS.PENDIENTE}'), false) AS gerencia_puede_aprobar_usuario_actual,
+        COALESCE(BOOL_OR((
+          (($2::int IS NOT NULL) AND usuario_aprobador_id = $2::int)
+          OR (($3::int IS NOT NULL) AND rol_aprobador_id = $3::int)
+        ) AND estado_aprobacion = '${DOCUMENTO_ESTADOS.APROBADO}'), false) AS gerencia_ya_aprobo_usuario_actual,
         COALESCE(
           jsonb_agg(
             jsonb_build_object(
               'usuario_aprobador_id', usuario_aprobador_id,
               'usuario_aprobador_nombre', usuario_aprobador_nombre,
               'usuario_aprobador_email', usuario_aprobador_email,
+              'rol_aprobador_id', rol_aprobador_id,
+              'rol_aprobador_codigo', rol_aprobador_codigo,
+              'rol_aprobador_nombre', rol_aprobador_nombre,
+              'aprobador_label', COALESCE(
+                rol_aprobador_nombre,
+                rol_aprobador_codigo,
+                usuario_aprobador_nombre,
+                usuario_aprobador_email,
+                usuario_aprobador_id::text,
+                rol_aprobador_id::text
+              ),
               'estado', estado_aprobacion,
               'motivo', motivo_aprobacion,
+              'decision_usuario_id', decision_usuario_id,
+              'decision_usuario_nombre', decision_usuario_nombre,
+              'decision_usuario_email', decision_usuario_email,
+              'decision_usuario_label', COALESCE(
+                decision_usuario_nombre,
+                decision_usuario_email,
+                decision_usuario_id::text
+              ),
               'decision_en', decision_en
             )
-            ORDER BY COALESCE(usuario_aprobador_nombre, usuario_aprobador_email, usuario_aprobador_id::text)
-          ) FILTER (WHERE usuario_aprobador_id IS NOT NULL),
+            ORDER BY COALESCE(
+              rol_aprobador_nombre,
+              rol_aprobador_codigo,
+              usuario_aprobador_nombre,
+              usuario_aprobador_email,
+              usuario_aprobador_id::text,
+              rol_aprobador_id::text
+            )
+          ) FILTER (WHERE usuario_aprobador_id IS NOT NULL OR rol_aprobador_id IS NOT NULL),
           '[]'::jsonb
         ) AS gerencia_aprobadores
       FROM approvers
@@ -1075,7 +1140,7 @@ const listDocumentosByTramite = async (tramiteId, client, options = {}) => {
     WHERE td.tramite_id = $1
     ORDER BY f.fecha_emision DESC NULLS LAST, f.id DESC
     `,
-    [tramiteId, currentUserId]
+    [tramiteId, currentUserId, currentUserRoleId]
   );
 
   return rows;
@@ -1341,19 +1406,54 @@ const listCentroCostoAprobadoresByFacturaIds = async (facturaIds, client) => {
         fc.factura_id,
         NULLIF(linea->>'usuario_aprobador_id', '') AS usuario_aprobador_id_raw,
         NULLIF(BTRIM(COALESCE(linea->>'usuario_aprobador_nombre', '')), '') AS usuario_aprobador_nombre,
-        NULLIF(BTRIM(COALESCE(linea->>'usuario_aprobador_email', '')), '') AS usuario_aprobador_email
+        NULLIF(BTRIM(COALESCE(linea->>'usuario_aprobador_email', '')), '') AS usuario_aprobador_email,
+        NULLIF(linea->>'rol_aprobador_id', '') AS rol_aprobador_id_raw,
+        NULLIF(BTRIM(COALESCE(linea->>'rol_aprobador_codigo', '')), '') AS rol_aprobador_codigo,
+        NULLIF(BTRIM(COALESCE(linea->>'rol_aprobador_nombre', '')), '') AS rol_aprobador_nombre
       FROM facturas_contabilizacion fc
       CROSS JOIN LATERAL jsonb_array_elements(COALESCE(fc.metadata->'centros_costo_lineas', '[]'::jsonb)) AS linea
       WHERE fc.factura_id = ANY($1::int[])
+    ),
+    user_approvers AS (
+      SELECT DISTINCT ON (factura_id, usuario_aprobador_id_raw::int)
+        factura_id,
+        usuario_aprobador_id_raw::int AS usuario_aprobador_id,
+        usuario_aprobador_nombre,
+        usuario_aprobador_email,
+        NULL::int AS rol_aprobador_id,
+        NULL::text AS rol_aprobador_codigo,
+        NULL::text AS rol_aprobador_nombre
+      FROM raw
+      WHERE usuario_aprobador_id_raw ~ '^[0-9]+$'
+      ORDER BY factura_id, usuario_aprobador_id_raw::int, usuario_aprobador_nombre NULLS LAST, usuario_aprobador_email NULLS LAST
+    ),
+    role_approvers AS (
+      SELECT DISTINCT ON (factura_id, rol_aprobador_id_raw::int)
+        factura_id,
+        NULL::int AS usuario_aprobador_id,
+        NULL::text AS usuario_aprobador_nombre,
+        NULL::text AS usuario_aprobador_email,
+        rol_aprobador_id_raw::int AS rol_aprobador_id,
+        rol_aprobador_codigo,
+        rol_aprobador_nombre
+      FROM raw
+      WHERE rol_aprobador_id_raw ~ '^[0-9]+$'
+      ORDER BY factura_id, rol_aprobador_id_raw::int, rol_aprobador_nombre NULLS LAST, rol_aprobador_codigo NULLS LAST
     )
-    SELECT DISTINCT ON (factura_id, usuario_aprobador_id_raw::int)
-      factura_id,
-      usuario_aprobador_id_raw::int AS usuario_aprobador_id,
+    SELECT *
+    FROM (
+      SELECT * FROM user_approvers
+      UNION ALL
+      SELECT * FROM role_approvers
+    ) approvers
+    ORDER BY factura_id ASC, COALESCE(
+      rol_aprobador_nombre,
+      rol_aprobador_codigo,
       usuario_aprobador_nombre,
-      usuario_aprobador_email
-    FROM raw
-    WHERE usuario_aprobador_id_raw ~ '^[0-9]+$'
-    ORDER BY factura_id, usuario_aprobador_id_raw::int, usuario_aprobador_nombre NULLS LAST, usuario_aprobador_email NULLS LAST
+      usuario_aprobador_email,
+      usuario_aprobador_id::text,
+      rol_aprobador_id::text
+    ) ASC
     `,
     [facturaIds]
   );
@@ -1366,32 +1466,60 @@ const insertTramiteDocumentoAprobadores = async ({ tramiteId, aprobadores }, cli
     return;
   }
 
-  const facturaIds = aprobadores.map((item) => Number(item.factura_id));
-  const usuarioIds = aprobadores.map((item) => Number(item.usuario_aprobador_id));
-  const nombres = aprobadores.map((item) => item.usuario_aprobador_nombre || null);
-  const emails = aprobadores.map((item) => item.usuario_aprobador_email || null);
+  for (const item of aprobadores) {
+    const facturaId = Number(item?.factura_id);
+    const usuarioAprobadorId = normalizePositiveIntOrNull(item?.usuario_aprobador_id);
+    const rolAprobadorId = normalizePositiveIntOrNull(item?.rol_aprobador_id);
 
-  await getDb(client).query(
-    `
-    INSERT INTO tramites_pago_documentos_aprobadores (
-      tramite_id,
-      factura_id,
-      usuario_aprobador_id,
-      usuario_aprobador_nombre,
-      usuario_aprobador_email
-    )
-    SELECT
-      $1,
-      x.factura_id,
-      x.usuario_aprobador_id,
-      x.usuario_aprobador_nombre,
-      x.usuario_aprobador_email
-    FROM UNNEST($2::int[], $3::int[], $4::text[], $5::text[])
-      AS x(factura_id, usuario_aprobador_id, usuario_aprobador_nombre, usuario_aprobador_email)
-    ON CONFLICT (tramite_id, factura_id, usuario_aprobador_id) DO NOTHING
-    `,
-    [tramiteId, facturaIds, usuarioIds, nombres, emails]
-  );
+    if (!Number.isInteger(facturaId) || facturaId <= 0) {
+      continue;
+    }
+    if (!usuarioAprobadorId && !rolAprobadorId) {
+      continue;
+    }
+
+    await getDb(client).query(
+      `
+      INSERT INTO tramites_pago_documentos_aprobadores (
+        tramite_id,
+        factura_id,
+        usuario_aprobador_id,
+        usuario_aprobador_nombre,
+        usuario_aprobador_email,
+        rol_aprobador_id,
+        rol_aprobador_codigo,
+        rol_aprobador_nombre
+      )
+      SELECT
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6,
+        $7,
+        $8
+      WHERE NOT EXISTS (
+        SELECT 1
+        FROM tramites_pago_documentos_aprobadores tda
+        WHERE tda.tramite_id = $1
+          AND tda.factura_id = $2
+          AND tda.usuario_aprobador_id IS NOT DISTINCT FROM $3
+          AND tda.rol_aprobador_id IS NOT DISTINCT FROM $6
+      )
+      `,
+      [
+        tramiteId,
+        facturaId,
+        usuarioAprobadorId,
+        item?.usuario_aprobador_nombre || null,
+        item?.usuario_aprobador_email || null,
+        rolAprobadorId,
+        item?.rol_aprobador_codigo || null,
+        item?.rol_aprobador_nombre || null
+      ]
+    );
+  }
 };
 
 const listTramiteDocumentoAprobadores = async ({ tramiteId, facturaIds }, client) => {
@@ -1415,14 +1543,27 @@ const listTramiteDocumentoAprobadores = async ({ tramiteId, facturaIds }, client
       usuario_aprobador_id,
       usuario_aprobador_nombre,
       usuario_aprobador_email,
+      rol_aprobador_id,
+      rol_aprobador_codigo,
+      rol_aprobador_nombre,
       estado_gerencia,
       motivo_gerencia,
+      decision_usuario_id,
+      decision_usuario_nombre,
+      decision_usuario_email,
       decision_en,
       creado_en,
       actualizado_en
     FROM tramites_pago_documentos_aprobadores
     WHERE ${where.join(' AND ')}
-    ORDER BY factura_id ASC, usuario_aprobador_nombre ASC NULLS LAST, usuario_aprobador_email ASC NULLS LAST, usuario_aprobador_id ASC
+    ORDER BY factura_id ASC, COALESCE(
+      rol_aprobador_nombre,
+      rol_aprobador_codigo,
+      usuario_aprobador_nombre,
+      usuario_aprobador_email,
+      usuario_aprobador_id::text,
+      rol_aprobador_id::text
+    ) ASC
     `,
     params
   );
@@ -1440,15 +1581,28 @@ const listTramiteDocumentoAprobadoresForUpdate = async ({ tramiteId, facturaId }
       usuario_aprobador_id,
       usuario_aprobador_nombre,
       usuario_aprobador_email,
+      rol_aprobador_id,
+      rol_aprobador_codigo,
+      rol_aprobador_nombre,
       estado_gerencia,
       motivo_gerencia,
+      decision_usuario_id,
+      decision_usuario_nombre,
+      decision_usuario_email,
       decision_en,
       creado_en,
       actualizado_en
     FROM tramites_pago_documentos_aprobadores
     WHERE tramite_id = $1
       AND factura_id = $2
-    ORDER BY usuario_aprobador_nombre ASC NULLS LAST, usuario_aprobador_email ASC NULLS LAST, usuario_aprobador_id ASC
+    ORDER BY COALESCE(
+      rol_aprobador_nombre,
+      rol_aprobador_codigo,
+      usuario_aprobador_nombre,
+      usuario_aprobador_email,
+      usuario_aprobador_id::text,
+      rol_aprobador_id::text
+    ) ASC
     FOR UPDATE
     `,
     [tramiteId, facturaId]
@@ -1461,23 +1615,53 @@ const updateTramiteDocumentoAprobadorEstado = async ({
   tramiteId,
   facturaId,
   usuarioAprobadorId,
+  rolAprobadorId,
   estado,
-  motivo
+  motivo,
+  decisionUsuarioId,
+  decisionUsuarioNombre,
+  decisionUsuarioEmail
 }, client) => {
+  const normalizedUsuarioAprobadorId = normalizePositiveIntOrNull(usuarioAprobadorId);
+  const normalizedRolAprobadorId = normalizePositiveIntOrNull(rolAprobadorId);
+  const params = [
+    estado,
+    motivo || null,
+    normalizePositiveIntOrNull(decisionUsuarioId),
+    decisionUsuarioNombre || null,
+    decisionUsuarioEmail || null,
+    tramiteId,
+    facturaId
+  ];
+  let approverClause = '';
+
+  if (normalizedUsuarioAprobadorId) {
+    params.push(normalizedUsuarioAprobadorId);
+    approverClause = `usuario_aprobador_id = $${params.length}`;
+  } else if (normalizedRolAprobadorId) {
+    params.push(normalizedRolAprobadorId);
+    approverClause = `usuario_aprobador_id IS NULL AND rol_aprobador_id = $${params.length}`;
+  } else {
+    return null;
+  }
+
   const { rows } = await getDb(client).query(
     `
     UPDATE tramites_pago_documentos_aprobadores
     SET
       estado_gerencia = $1,
       motivo_gerencia = $2,
+      decision_usuario_id = $3,
+      decision_usuario_nombre = $4,
+      decision_usuario_email = $5,
       decision_en = CURRENT_TIMESTAMP,
       actualizado_en = CURRENT_TIMESTAMP
-    WHERE tramite_id = $3
-      AND factura_id = $4
-      AND usuario_aprobador_id = $5
+    WHERE tramite_id = $6
+      AND factura_id = $7
+      AND ${approverClause}
     RETURNING *
     `,
-    [estado, motivo || null, tramiteId, facturaId, usuarioAprobadorId]
+    params
   );
 
   return rows[0] || null;
@@ -1490,6 +1674,9 @@ const resetTramiteDocumentoAprobadores = async ({ tramiteId, facturaId }, client
     SET
       estado_gerencia = '${DOCUMENTO_ESTADOS.PENDIENTE}',
       motivo_gerencia = NULL,
+      decision_usuario_id = NULL,
+      decision_usuario_nombre = NULL,
+      decision_usuario_email = NULL,
       decision_en = NULL,
       actualizado_en = CURRENT_TIMESTAMP
     WHERE tramite_id = $1

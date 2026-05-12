@@ -5,15 +5,16 @@ import {
   buildCentroCostoResumen,
   createCentroCostoLinea,
   ensureCentrosCostoMetadata,
+  getCentroCostoAprobadorNombre,
   calculateCentrosCostoDistribution,
   parseCentrosCostoCsv,
 } from '../../src/utils/centrosCosto.js';
 
 test('parseCentrosCostoCsv soporta plantilla normalizada', () => {
   const rows = parseCentrosCostoCsv([
-    'codigo;nombre;codigo_padre;email_aprobador;seleccionable_en_contabilizacion;activo;orden',
-    '11ROOT;11 - PROYECTO DEMO;ROOT;demo@novogar.local;false;true;1',
-    '1100000;COSTOS DIRECTOS;11ROOT;demo@novogar.local;true;true;2',
+    'codigo;nombre;codigo_padre;email_aprobador;rol_aprobador;seleccionable_en_contabilizacion;activo;orden',
+    '11ROOT;11 - PROYECTO DEMO;ROOT;demo@novogar.local;;false;true;1',
+    '1100000;COSTOS DIRECTOS;11ROOT;demo@novogar.local;;true;true;2',
   ].join('\n'));
 
   assert.equal(rows.length, 2);
@@ -24,9 +25,9 @@ test('parseCentrosCostoCsv soporta plantilla normalizada', () => {
 
 test('parseCentrosCostoCsv soporta comillas y delimitadores dentro de celdas', () => {
   const rows = parseCentrosCostoCsv([
-    'codigo;nombre;codigo_padre;email_aprobador;seleccionable_en_contabilizacion;activo;orden',
-    '11ROOT;"11 - PROYECTO; ""DEMO""";ROOT;demo@novogar.local;false;true;1',
-    '1100000;"COSTOS DIRECTOS, ETAPA 1";11ROOT;demo@novogar.local;true;true;2',
+    'codigo;nombre;codigo_padre;email_aprobador;rol_aprobador;seleccionable_en_contabilizacion;activo;orden',
+    '11ROOT;"11 - PROYECTO; ""DEMO""";ROOT;demo@novogar.local;;false;true;1',
+    '1100000;"COSTOS DIRECTOS, ETAPA 1";11ROOT;demo@novogar.local;;true;true;2',
   ].join('\n'));
 
   assert.equal(rows.length, 2);
@@ -58,6 +59,7 @@ test('buildCentrosCostoTemplateCsv exporta el catalogo actual y se puede reimpor
       nombre: 'COSTOS DIRECTOS; ETAPA 1',
       centro_padre_codigo: '11ROOT',
       usuario_aprobador_email: 'obra@novogar.local',
+      rol_aprobador_codigo: '',
       seleccionable_en_contabilizacion: true,
       activo: true,
       orden: 2,
@@ -66,7 +68,8 @@ test('buildCentrosCostoTemplateCsv exporta el catalogo actual y se puede reimpor
       codigo: '11ROOT',
       nombre: '11 - PROYECTO "DEMO"',
       centro_padre_codigo: '',
-      usuario_aprobador_email: 'gerencia@novogar.local',
+      usuario_aprobador_email: '',
+      rol_aprobador_codigo: 'GERENCIA_OBRA',
       seleccionable_en_contabilizacion: false,
       activo: true,
       orden: 1,
@@ -79,11 +82,20 @@ test('buildCentrosCostoTemplateCsv exporta el catalogo actual y se puede reimpor
   assert.equal(rows[0].codigo, '11ROOT');
   assert.equal(rows[0].codigo_padre, 'ROOT');
   assert.equal(rows[0].nombre, '11 - PROYECTO "DEMO"');
+  assert.equal(rows[0].rol_aprobador, 'GERENCIA_OBRA');
   assert.equal(rows[1].codigo, '1100000');
   assert.equal(rows[1].codigo_padre, '11ROOT');
   assert.equal(rows[1].nombre, 'COSTOS DIRECTOS; ETAPA 1');
   assert.match(csv, /"11 - PROYECTO ""DEMO"""/);
   assert.match(csv, /"COSTOS DIRECTOS; ETAPA 1"/);
+});
+
+test('getCentroCostoAprobadorNombre prioriza el rol cuando existe', () => {
+  assert.equal(getCentroCostoAprobadorNombre({
+    rol_aprobador_id: 4,
+    rol_aprobador_nombre: 'Gerencia de proyecto',
+    usuario_aprobador_nombre: 'Usuario puntual'
+  }), 'Gerencia de proyecto');
 });
 
 test('buildCentroCostoResumen resume multiples lineas sin perder el primero', () => {

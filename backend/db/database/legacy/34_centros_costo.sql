@@ -4,18 +4,27 @@ CREATE TABLE IF NOT EXISTS centros_costo (
   codigo VARCHAR(50) NOT NULL,
   nombre VARCHAR(255) NOT NULL,
   centro_padre_id INTEGER NULL,
-  usuario_aprobador_id INTEGER NOT NULL,
+  usuario_aprobador_id INTEGER NULL,
+  rol_aprobador_id INTEGER NULL,
   seleccionable_en_contabilizacion BOOLEAN NOT NULL DEFAULT TRUE,
   activo BOOLEAN NOT NULL DEFAULT TRUE,
   orden INTEGER NULL,
   metadata JSONB,
   creado_por VARCHAR(100),
   creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT centros_costo_aprobador_check
+    CHECK (num_nonnulls(usuario_aprobador_id, rol_aprobador_id) = 1)
 );
 
 DO $$
 BEGIN
+  ALTER TABLE centros_costo
+    ALTER COLUMN usuario_aprobador_id DROP NOT NULL;
+
+  ALTER TABLE centros_costo
+    ADD COLUMN IF NOT EXISTS rol_aprobador_id INTEGER NULL;
+
   IF NOT EXISTS (
     SELECT 1
     FROM pg_constraint
@@ -69,6 +78,28 @@ BEGIN
       REFERENCES usuarios(id)
       ON DELETE NO ACTION;
   END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'centros_costo_rol_aprobador_id_fkey'
+  ) THEN
+    ALTER TABLE centros_costo
+      ADD CONSTRAINT centros_costo_rol_aprobador_id_fkey
+      FOREIGN KEY (rol_aprobador_id)
+      REFERENCES roles(id)
+      ON DELETE NO ACTION;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'centros_costo_aprobador_check'
+  ) THEN
+    ALTER TABLE centros_costo
+      ADD CONSTRAINT centros_costo_aprobador_check
+      CHECK (num_nonnulls(usuario_aprobador_id, rol_aprobador_id) = 1);
+  END IF;
 END $$;
 
 CREATE INDEX IF NOT EXISTS idx_centros_costo_sociedad
@@ -79,6 +110,9 @@ CREATE INDEX IF NOT EXISTS idx_centros_costo_padre
 
 CREATE INDEX IF NOT EXISTS idx_centros_costo_aprobador
   ON centros_costo(usuario_aprobador_id);
+
+CREATE INDEX IF NOT EXISTS idx_centros_costo_aprobador_rol
+  ON centros_costo(rol_aprobador_id);
 
 CREATE INDEX IF NOT EXISTS idx_centros_costo_activo
   ON centros_costo(sociedad_id, activo);

@@ -5,6 +5,7 @@ const CSV_HEADERS = [
   'nombre',
   'codigo_padre',
   'email_aprobador',
+  'rol_aprobador',
   'seleccionable_en_contabilizacion',
   'activo',
   'orden',
@@ -58,6 +59,24 @@ export const formatCentroCostoLabel = (centro) => {
   return codigo || nombre || 'Centro sin nombre';
 };
 
+export const getCentroCostoAprobadorTipo = (centro) => (
+  centro?.rol_aprobador_id != null ? 'rol' : 'usuario'
+);
+
+export const getCentroCostoAprobadorNombre = (centro) => normalizeText(
+  centro?.rol_aprobador_nombre
+  || centro?.rol_aprobador_codigo
+  || centro?.usuario_aprobador_nombre
+);
+
+export const getCentroCostoAprobadorDetalle = (centro) => {
+  if (centro?.rol_aprobador_id != null) {
+    return normalizeText(centro?.rol_aprobador_codigo) || 'Aprobacion por rol';
+  }
+
+  return normalizeText(centro?.usuario_aprobador_email);
+};
+
 export const createCentroCostoLinea = (overrides = {}) => ({
   local_id: overrides.local_id || createLocalId('linea-cc'),
   centro_costo_id: normalizeText(overrides.centro_costo_id),
@@ -66,6 +85,9 @@ export const createCentroCostoLinea = (overrides = {}) => ({
   usuario_aprobador_id: overrides.usuario_aprobador_id ?? null,
   usuario_aprobador_nombre: normalizeText(overrides.usuario_aprobador_nombre),
   usuario_aprobador_email: normalizeText(overrides.usuario_aprobador_email),
+  rol_aprobador_id: overrides.rol_aprobador_id ?? null,
+  rol_aprobador_codigo: normalizeText(overrides.rol_aprobador_codigo),
+  rol_aprobador_nombre: normalizeText(overrides.rol_aprobador_nombre),
   activo: overrides.activo !== false,
   seleccionable_en_contabilizacion: overrides.seleccionable_en_contabilizacion !== false,
   monto: overrides.monto ?? '',
@@ -96,6 +118,9 @@ export const createCentroCostoSnapshot = (centro, overrides = {}) => createCentr
   usuario_aprobador_id: centro?.usuario_aprobador_id ?? null,
   usuario_aprobador_nombre: centro?.usuario_aprobador_nombre,
   usuario_aprobador_email: centro?.usuario_aprobador_email,
+  rol_aprobador_id: centro?.rol_aprobador_id ?? null,
+  rol_aprobador_codigo: centro?.rol_aprobador_codigo,
+  rol_aprobador_nombre: centro?.rol_aprobador_nombre,
   activo: centro?.activo !== false,
   seleccionable_en_contabilizacion: centro?.seleccionable_en_contabilizacion !== false,
   ...overrides,
@@ -265,6 +290,8 @@ export const filterCentrosCosto = (centros = [], {
       centro.centro_padre_codigo,
       centro.usuario_aprobador_nombre,
       centro.usuario_aprobador_email,
+      centro.rol_aprobador_codigo,
+      centro.rol_aprobador_nombre,
     ].join(' ').toLowerCase();
 
     return haystack.includes(normalizedQuery);
@@ -408,6 +435,7 @@ const parseNormalizedImportRows = (matrix) => {
       nombre: normalizeText(row[fieldMap.get('nombre')]),
       codigo_padre: normalizeCode(row[fieldMap.get('codigo_padre')]) || ROOT_PARENT_CODE,
       email_aprobador: normalizeComparableText(row[fieldMap.get('email_aprobador')]),
+      rol_aprobador: normalizeCode(row[fieldMap.get('rol_aprobador')]),
       seleccionable_en_contabilizacion: parseBooleanLike(
         row[fieldMap.get('seleccionable_en_contabilizacion')],
         true
@@ -438,6 +466,7 @@ const parseLegacyImportRows = (matrix) => {
         nombre: parsed.nombre,
         codigo_padre: previousCode,
         email_aprobador: '',
+        rol_aprobador: '',
         seleccionable_en_contabilizacion: true,
         activo: true,
         orden: rowIndex + 1 + columnIndex,
@@ -491,6 +520,7 @@ export const buildCentrosCostoTemplateCsv = (centros = []) => {
         normalizeText(centro?.nombre),
         normalizeCode(centro?.centro_padre_codigo) || ROOT_PARENT_CODE,
         normalizeText(centro?.usuario_aprobador_email),
+        normalizeText(centro?.rol_aprobador_codigo),
         centro?.seleccionable_en_contabilizacion !== false,
         centro?.activo !== false,
         Number.isFinite(Number(centro?.orden)) ? Number(centro.orden) : index + 1,

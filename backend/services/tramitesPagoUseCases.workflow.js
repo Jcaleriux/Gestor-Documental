@@ -154,6 +154,9 @@ const createTramitesPagoWorkflowUseCases = ({ tramitesPagoRepo, runInTransaction
     motivo,
     usuario,
     actorUserId,
+    actorUserName,
+    actorUserEmail,
+    actorRoleId,
     actorPermissions
   }) => {
     const tramiteId = parsePositiveIntOrThrow(id, 'id');
@@ -210,7 +213,8 @@ const createTramitesPagoWorkflowUseCases = ({ tramitesPagoRepo, runInTransaction
           );
           const actorApprovalRow = validateGerenciaApproverActor({
             approvalRows: lockedDocumentApprovalRows,
-            actorUserId
+            actorUserId,
+            actorRoleId
           });
 
           assertFound(actorApprovalRow, 'Aprobador de gerencia no encontrado para este documento');
@@ -222,8 +226,12 @@ const createTramitesPagoWorkflowUseCases = ({ tramitesPagoRepo, runInTransaction
             tramiteId,
             facturaId: normalizedFacturaId,
             usuarioAprobadorId: actorApprovalRow.usuario_aprobador_id,
+            rolAprobadorId: actorApprovalRow.rol_aprobador_id,
             estado: decisionNormalizada,
-            motivo
+            motivo,
+            decisionUsuarioId: actorUserId,
+            decisionUsuarioNombre: actorUserName || null,
+            decisionUsuarioEmail: actorUserEmail || null
           }, client);
 
           const updatedApprovalRows = await tramitesPagoRepo.listTramiteDocumentoAprobadores({

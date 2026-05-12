@@ -1,11 +1,17 @@
 const PAGE_STATUS = {
   missingSociedad: 'missing_sociedad',
   loading: 'loading',
+  loadError: 'load_error',
   notFound: 'not_found',
   ready: 'ready'
 };
 
-export const buildTramiteDetallePageState = ({ sociedadId, loading, tramite }) => {
+export const buildTramiteDetallePageState = ({
+  sociedadId,
+  loading,
+  tramite,
+  actionError = '',
+}) => {
   if (!sociedadId) {
     return {
       status: PAGE_STATUS.missingSociedad,
@@ -17,6 +23,13 @@ export const buildTramiteDetallePageState = ({ sociedadId, loading, tramite }) =
     return {
       status: PAGE_STATUS.loading,
       message: ''
+    };
+  }
+
+  if (!tramite && actionError) {
+    return {
+      status: PAGE_STATUS.loadError,
+      message: actionError
     };
   }
 

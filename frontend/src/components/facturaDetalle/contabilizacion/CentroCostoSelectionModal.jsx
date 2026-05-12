@@ -2,7 +2,11 @@ import { useMemo, useState } from 'react';
 import DataTable from '../../common/DataTable';
 import EmptyState from '../../common/EmptyState';
 import SearchInput from '../../common/SearchInput';
-import { filterCentrosCosto } from '../../../utils/centrosCosto.js';
+import {
+  filterCentrosCosto,
+  getCentroCostoAprobadorDetalle,
+  getCentroCostoAprobadorNombre,
+} from '../../../utils/centrosCosto.js';
 
 const HEADERS = [
   { key: 'codigo', label: 'Codigo' },
@@ -74,8 +78,8 @@ function CentroCostoSelectionModal({
                 <td>{item.nombre}</td>
                 <td>{item.centro_padre_codigo || 'Raiz'}</td>
                 <td>
-                  <div>{item.usuario_aprobador_nombre || '-'}</div>
-                  <div className="small text-muted">{item.usuario_aprobador_email || 'Sin email'}</div>
+                  <div>{getCentroCostoAprobadorNombre(item) || '-'}</div>
+                  <div className="small text-muted">{getCentroCostoAprobadorDetalle(item) || 'Sin detalle'}</div>
                 </td>
                 <td>{item.activo === false ? 'Inactivo' : 'Activo'}</td>
                 <td className="text-end">

@@ -92,7 +92,14 @@ const buildCentroCostoLabels = (documento = {}) => {
 const buildApprovedByLabel = (documento = {}) => {
   const approvedUsers = (Array.isArray(documento?.gerencia_aprobadores) ? documento.gerencia_aprobadores : [])
     .filter((item) => String(item?.estado || '').trim().toLowerCase() === 'aprobado')
-    .map((item) => toSidebarText(item?.usuario_aprobador_nombre || item?.usuario_aprobador_email))
+    .map((item) => toSidebarText(
+      item?.decision_usuario_label
+      || item?.aprobador_label
+      || item?.rol_aprobador_nombre
+      || item?.rol_aprobador_codigo
+      || item?.usuario_aprobador_nombre
+      || item?.usuario_aprobador_email
+    ))
     .filter(Boolean);
 
   return Array.from(new Set(approvedUsers)).join(', ');

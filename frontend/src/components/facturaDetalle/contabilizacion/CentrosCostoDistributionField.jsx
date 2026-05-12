@@ -3,6 +3,8 @@ import { FACTURA_DETALLE_LABELS } from '../../../utils/uiLabels';
 import {
   filterCentrosCosto,
   formatCentroCostoLabel,
+  getCentroCostoAprobadorDetalle,
+  getCentroCostoAprobadorNombre,
 } from '../../../utils/centrosCosto.js';
 import { buildCentroCostoLineScope } from './centroCostoLineScope.js';
 
@@ -92,7 +94,7 @@ function CentroCostoLine({
                 >
                   <div className="fw-semibold">{formatCentroCostoLabel(item)}</div>
                   <div className="small text-muted">
-                    {item.usuario_aprobador_nombre || 'Sin aprobador'}
+                    {getCentroCostoAprobadorNombre(item) || 'Sin aprobador'}
                   </div>
                 </button>
               ))}
@@ -104,8 +106,8 @@ function CentroCostoLine({
       <div className="cc-line-side">
         <label className="form-label mb-1">{FACTURA_DETALLE_LABELS.contabilizacion.centrosCostoAprobador}</label>
         <div className="cc-line-approver">
-          <div>{line.usuario_aprobador_nombre || 'Sin aprobador'}</div>
-          <div className="small text-muted">{line.usuario_aprobador_email || 'Sin email'}</div>
+          <div>{getCentroCostoAprobadorNombre(line) || 'Sin aprobador'}</div>
+          <div className="small text-muted">{getCentroCostoAprobadorDetalle(line) || 'Sin detalle'}</div>
         </div>
       </div>
 

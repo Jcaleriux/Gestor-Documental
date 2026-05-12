@@ -12,6 +12,9 @@ const CENTRO_COSTO_SELECT = `
   cc.usuario_aprobador_id,
   u.nombre AS usuario_aprobador_nombre,
   u.email AS usuario_aprobador_email,
+  cc.rol_aprobador_id,
+  r.codigo AS rol_aprobador_codigo,
+  r.nombre AS rol_aprobador_nombre,
   cc.seleccionable_en_contabilizacion,
   cc.activo,
   cc.orden,
@@ -27,6 +30,7 @@ const listCentrosCostoBySociedad = async (sociedadId, client) => {
      FROM centros_costo cc
      LEFT JOIN centros_costo parent ON parent.id = cc.centro_padre_id
      LEFT JOIN usuarios u ON u.id = cc.usuario_aprobador_id
+     LEFT JOIN roles r ON r.id = cc.rol_aprobador_id
      WHERE cc.sociedad_id = $1
      ORDER BY COALESCE(cc.orden, 2147483647) ASC, cc.codigo ASC`,
     [sociedadId]
@@ -41,6 +45,7 @@ const getCentroCostoById = async (id, client) => {
      FROM centros_costo cc
      LEFT JOIN centros_costo parent ON parent.id = cc.centro_padre_id
      LEFT JOIN usuarios u ON u.id = cc.usuario_aprobador_id
+     LEFT JOIN roles r ON r.id = cc.rol_aprobador_id
      WHERE cc.id = $1`,
     [id]
   );
@@ -54,6 +59,7 @@ const getCentroCostoBySociedadAndCodigo = async ({ sociedadId, codigo }, client)
      FROM centros_costo cc
      LEFT JOIN centros_costo parent ON parent.id = cc.centro_padre_id
      LEFT JOIN usuarios u ON u.id = cc.usuario_aprobador_id
+     LEFT JOIN roles r ON r.id = cc.rol_aprobador_id
      WHERE cc.sociedad_id = $1
        AND cc.codigo = $2`,
     [sociedadId, codigo]
@@ -68,6 +74,7 @@ const createCentroCosto = async ({
   nombre,
   centroPadreId,
   usuarioAprobadorId,
+  rolAprobadorId,
   seleccionableEnContabilizacion,
   activo,
   orden,
@@ -81,20 +88,22 @@ const createCentroCosto = async ({
       nombre,
       centro_padre_id,
       usuario_aprobador_id,
+      rol_aprobador_id,
       seleccionable_en_contabilizacion,
       activo,
       orden,
       metadata,
       creado_por
     )
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
     RETURNING id`,
     [
       sociedadId,
       codigo,
       nombre,
       centroPadreId || null,
-      usuarioAprobadorId,
+      usuarioAprobadorId || null,
+      rolAprobadorId || null,
       seleccionableEnContabilizacion,
       activo,
       orden,
@@ -112,6 +121,7 @@ const updateCentroCosto = async ({
   nombre,
   centroPadreId,
   usuarioAprobadorId,
+  rolAprobadorId,
   seleccionableEnContabilizacion,
   activo,
   orden,
@@ -124,19 +134,21 @@ const updateCentroCosto = async ({
          nombre = $2,
          centro_padre_id = $3,
          usuario_aprobador_id = $4,
-         seleccionable_en_contabilizacion = $5,
-         activo = $6,
-         orden = $7,
-         metadata = $8,
-         creado_por = $9,
+         rol_aprobador_id = $5,
+         seleccionable_en_contabilizacion = $6,
+         activo = $7,
+         orden = $8,
+         metadata = $9,
+         creado_por = $10,
          actualizado_en = CURRENT_TIMESTAMP
-     WHERE id = $10
+     WHERE id = $11
      RETURNING id`,
     [
       codigo,
       nombre,
       centroPadreId || null,
-      usuarioAprobadorId,
+      usuarioAprobadorId || null,
+      rolAprobadorId || null,
       seleccionableEnContabilizacion,
       activo,
       orden,
@@ -155,6 +167,7 @@ const upsertCentroCostoByCodigo = async ({
   nombre,
   centroPadreId,
   usuarioAprobadorId,
+  rolAprobadorId,
   seleccionableEnContabilizacion,
   activo,
   orden,
@@ -168,18 +181,20 @@ const upsertCentroCostoByCodigo = async ({
       nombre,
       centro_padre_id,
       usuario_aprobador_id,
+      rol_aprobador_id,
       seleccionable_en_contabilizacion,
       activo,
       orden,
       metadata,
       creado_por
     )
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
     ON CONFLICT (sociedad_id, codigo)
     DO UPDATE SET
       nombre = EXCLUDED.nombre,
       centro_padre_id = EXCLUDED.centro_padre_id,
       usuario_aprobador_id = EXCLUDED.usuario_aprobador_id,
+      rol_aprobador_id = EXCLUDED.rol_aprobador_id,
       seleccionable_en_contabilizacion = EXCLUDED.seleccionable_en_contabilizacion,
       activo = EXCLUDED.activo,
       orden = EXCLUDED.orden,
@@ -192,7 +207,8 @@ const upsertCentroCostoByCodigo = async ({
       codigo,
       nombre,
       centroPadreId || null,
-      usuarioAprobadorId,
+      usuarioAprobadorId || null,
+      rolAprobadorId || null,
       seleccionableEnContabilizacion,
       activo,
       orden,

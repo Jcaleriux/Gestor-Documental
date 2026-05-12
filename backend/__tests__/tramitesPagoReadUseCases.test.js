@@ -44,11 +44,12 @@ describe('createTramitesPagoReadUseCases', () => {
     const result = await useCases.getTramitePdfUnificado({
       id: '7',
       actorUserId: 55,
+      actorRoleId: 9,
       providerSortDirection: 'desc'
     });
 
     expect(createFilesUseCasesImpl).toHaveBeenCalledWith({ baseDir: 'C:/storage' });
-    expect(repo.listDocumentosByTramite).toHaveBeenCalledWith(7, null, { currentUserId: 55 });
+    expect(repo.listDocumentosByTramite).toHaveBeenCalledWith(7, null, { currentUserId: 55, currentUserRoleId: 9 });
     expect(repo.getSociedadById).toHaveBeenCalledWith(10);
     expect(buildUnifiedPdfResourcePlanImpl).toHaveBeenCalledWith({
       providerGroups: [],

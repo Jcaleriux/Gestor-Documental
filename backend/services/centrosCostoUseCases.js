@@ -132,6 +132,7 @@ const ensureNoCycleByCodeMap = (parentCodeByCode) => {
 const createCentrosCostoUseCases = ({
   centrosCostoRepo,
   usuariosRepo,
+  rolesRepo,
   runInTransaction,
 }) => {
   if (!centrosCostoRepo) {
@@ -139,6 +140,9 @@ const createCentrosCostoUseCases = ({
   }
   if (!usuariosRepo) {
     throw new Error('usuariosRepo requerido');
+  }
+  if (!rolesRepo) {
+    throw new Error('rolesRepo requerido');
   }
   if (typeof runInTransaction !== 'function') {
     throw new Error('runInTransaction requerido');
@@ -153,6 +157,43 @@ const createCentrosCostoUseCases = ({
     }
 
     return aprobador;
+  };
+
+  const ensureRolAprobadorValido = async (rolAprobadorId, client) => {
+    const normalizedRolId = toPositiveInt(rolAprobadorId, 'rol_aprobador_id');
+    const rol = await rolesRepo.getRoleById(normalizedRolId, client);
+
+    if (!rol) {
+      throw createError(400, 'rol_aprobador_id invalido');
+    }
+
+    return rol;
+  };
+
+  const resolveAprobadorAssignment = async ({
+    usuarioAprobadorId,
+    rolAprobadorId,
+  }, client) => {
+    const hasUsuarioAprobador = usuarioAprobadorId !== null && usuarioAprobadorId !== undefined && usuarioAprobadorId !== '';
+    const hasRolAprobador = rolAprobadorId !== null && rolAprobadorId !== undefined && rolAprobadorId !== '';
+
+    if (hasUsuarioAprobador === hasRolAprobador) {
+      throw createError(400, 'Debe indicar usuario_aprobador_id o rol_aprobador_id, pero no ambos');
+    }
+
+    if (hasUsuarioAprobador) {
+      const aprobador = await ensureAprobadorActivo(usuarioAprobadorId, client);
+      return {
+        usuarioAprobadorId: aprobador.id,
+        rolAprobadorId: null,
+      };
+    }
+
+    const rolAprobador = await ensureRolAprobadorValido(rolAprobadorId, client);
+    return {
+      usuarioAprobadorId: null,
+      rolAprobadorId: rolAprobador.id,
+    };
   };
 
   const ensureParentInSociedad = async ({ sociedadId, centroPadreId }, client) => {
@@ -182,7 +223,10 @@ const createCentrosCostoUseCases = ({
     const codigo = validateCodigo(payload.codigo);
     const nombre = validateNombre(payload.nombre);
     const centroPadreId = normalizeOptionalInt(payload.centro_padre_id);
-    const aprobador = await ensureAprobadorActivo(payload.usuario_aprobador_id);
+    const aprobador = await resolveAprobadorAssignment({
+      usuarioAprobadorId: payload.usuario_aprobador_id,
+      rolAprobadorId: payload.rol_aprobador_id,
+    });
     const existing = await centrosCostoRepo.getCentroCostoBySociedadAndCodigo({
       sociedadId: normalizedSociedadId,
       codigo,
@@ -202,7 +246,8 @@ const createCentrosCostoUseCases = ({
       codigo,
       nombre,
       centroPadreId,
-      usuarioAprobadorId: aprobador.id,
+      usuarioAprobadorId: aprobador.usuarioAprobadorId,
+      rolAprobadorId: aprobador.rolAprobadorId,
       seleccionableEnContabilizacion: payload.seleccionable_en_contabilizacion !== false,
       activo: payload.activo !== false,
       orden: normalizeOrden(payload.orden),
@@ -227,7 +272,10 @@ const createCentrosCostoUseCases = ({
     const codigo = validateCodigo(payload.codigo);
     const nombre = validateNombre(payload.nombre);
     const centroPadreId = normalizeOptionalInt(payload.centro_padre_id);
-    const aprobador = await ensureAprobadorActivo(payload.usuario_aprobador_id);
+    const aprobador = await resolveAprobadorAssignment({
+      usuarioAprobadorId: payload.usuario_aprobador_id,
+      rolAprobadorId: payload.rol_aprobador_id,
+    });
     const duplicate = await centrosCostoRepo.getCentroCostoBySociedadAndCodigo({
       sociedadId: normalizedSociedadId,
       codigo,
@@ -254,7 +302,8 @@ const createCentrosCostoUseCases = ({
       codigo,
       nombre,
       centroPadreId,
-      usuarioAprobadorId: aprobador.id,
+      usuarioAprobadorId: aprobador.usuarioAprobadorId,
+      rolAprobadorId: aprobador.rolAprobadorId,
       seleccionableEnContabilizacion: payload.seleccionable_en_contabilizacion !== false,
       activo: payload.activo !== false,
       orden: normalizeOrden(payload.orden),
@@ -282,7 +331,10 @@ const createCentrosCostoUseCases = ({
         }
 
         const existing = currentByCode.get(codigo) || null;
-        const aprobador = await ensureAprobadorActivo(rawCentro?.usuario_aprobador_id, client);
+        const aprobador = await resolveAprobadorAssignment({
+          usuarioAprobadorId: rawCentro?.usuario_aprobador_id,
+          rolAprobadorId: rawCentro?.rol_aprobador_id,
+        }, client);
         const codigoPadre = normalizeCode(rawCentro?.codigo_padre || rawCentro?.centro_padre_codigo);
 
         payloadByCode.set(codigo, {
@@ -290,7 +342,8 @@ const createCentrosCostoUseCases = ({
           codigo,
           nombre: validateNombre(rawCentro?.nombre),
           codigoPadre: codigoPadre || null,
-          usuarioAprobadorId: aprobador.id,
+          usuarioAprobadorId: aprobador.usuarioAprobadorId,
+          rolAprobadorId: aprobador.rolAprobadorId,
           seleccionableEnContabilizacion: rawCentro?.seleccionable_en_contabilizacion !== false,
           activo: rawCentro?.activo !== false,
           orden: normalizeOrden(rawCentro?.orden),
@@ -341,6 +394,7 @@ const createCentrosCostoUseCases = ({
             nombre: item.nombre,
             centroPadreId: parent?.id || null,
             usuarioAprobadorId: item.usuarioAprobadorId,
+            rolAprobadorId: item.rolAprobadorId,
             seleccionableEnContabilizacion: item.seleccionableEnContabilizacion,
             activo: item.activo,
             orden: item.orden,

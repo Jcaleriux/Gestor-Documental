@@ -655,15 +655,76 @@ describe('tramitesPagoUseCases', () => {
     });
 
     expect(result).toMatchObject({ factura_id: 2, estado_gerencia: 'pendiente' });
-    expect(repo.updateTramiteDocumentoAprobadorEstado).toHaveBeenCalledWith({
+    expect(repo.updateTramiteDocumentoAprobadorEstado).toHaveBeenCalledWith(expect.objectContaining({
       tramiteId: 1,
       facturaId: 2,
       usuarioAprobadorId: 101,
       estado: DOCUMENTO_DECISIONES.APROBADO,
-      motivo: null
-    }, expect.any(Object));
+      motivo: null,
+      decisionUsuarioId: 101
+    }), expect.any(Object));
     expect(repo.updateDocumentoDecision).not.toHaveBeenCalled();
     expect(repo.insertHistorialDocumento).toHaveBeenCalled();
+  });
+
+  test('decisionDocumento permite aprobacion de gerencia por rol asignado', async () => {
+    const pendingApprovalRows = [
+      {
+        factura_id: 2,
+        rol_aprobador_id: 7,
+        rol_aprobador_nombre: 'Gerencia Proyecto',
+        estado_gerencia: 'pendiente'
+      }
+    ];
+    const approvedRows = [
+      {
+        factura_id: 2,
+        rol_aprobador_id: 7,
+        rol_aprobador_nombre: 'Gerencia Proyecto',
+        estado_gerencia: 'aprobado'
+      }
+    ];
+    const listTramiteDocumentoAprobadores = jest.fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce(pendingApprovalRows)
+      .mockResolvedValueOnce(pendingApprovalRows)
+      .mockResolvedValueOnce(approvedRows);
+
+    const { repo } = createRepoMock({
+      listCentroCostoAprobadoresByFacturaIds: jest.fn().mockResolvedValue([
+        { factura_id: 2, rol_aprobador_id: 7, rol_aprobador_codigo: 'GERENCIA_PROYECTO', rol_aprobador_nombre: 'Gerencia Proyecto' }
+      ]),
+      listTramiteDocumentoAprobadores,
+      listTramiteDocumentoAprobadoresForUpdate: jest.fn().mockResolvedValue(pendingApprovalRows),
+      updateDocumentoDecision: jest.fn().mockResolvedValue({ factura_id: 2, estado_gerencia: 'aprobado' })
+    });
+    const useCases = createTramitesPagoUseCases({ tramitesPagoRepo: repo });
+
+    const result = await useCases.decisionDocumento({
+      id: 1,
+      facturaId: 2,
+      etapa: 'gerencia',
+      decision: DOCUMENTO_DECISIONES.APROBADO,
+      motivo: null,
+      usuario: 'backup@novogar.local',
+      actorUserId: 303,
+      actorUserName: 'Gerencia Backup',
+      actorUserEmail: 'backup@novogar.local',
+      actorRoleId: 7,
+      actorPermissions: ['documentos_ver']
+    });
+
+    expect(result).toMatchObject({ factura_id: 2, estado_gerencia: 'aprobado' });
+    expect(repo.updateTramiteDocumentoAprobadorEstado).toHaveBeenCalledWith(expect.objectContaining({
+      tramiteId: 1,
+      facturaId: 2,
+      rolAprobadorId: 7,
+      estado: DOCUMENTO_DECISIONES.APROBADO,
+      decisionUsuarioId: 303,
+      decisionUsuarioNombre: 'Gerencia Backup',
+      decisionUsuarioEmail: 'backup@novogar.local'
+    }), expect.any(Object));
+    expect(repo.updateDocumentoDecision).toHaveBeenCalled();
   });
 
   test('decisionDocumento bloquea una segunda decision de gerencia ya registrada', async () => {

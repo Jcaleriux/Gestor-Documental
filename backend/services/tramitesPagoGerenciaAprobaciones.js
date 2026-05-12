@@ -62,8 +62,9 @@ const ensureGerenciaApprovalSnapshots = async ({
   }, client);
 };
 
-const validateGerenciaApproverActor = ({ approvalRows, actorUserId }) => {
+const validateGerenciaApproverActor = ({ approvalRows, actorUserId, actorRoleId }) => {
   const normalizedActorUserId = toPositiveIntOrNull(actorUserId);
+  const normalizedActorRoleId = toPositiveIntOrNull(actorRoleId);
   if (approvalRows.length === 0) {
     return null;
   }
@@ -71,7 +72,14 @@ const validateGerenciaApproverActor = ({ approvalRows, actorUserId }) => {
     throw createError(403, 'Esta aprobacion requiere un usuario autenticado con asignacion de centro de costo');
   }
 
-  const approvalRow = approvalRows.find((row) => Number(row.usuario_aprobador_id) === normalizedActorUserId) || null;
+  const matchingRows = approvalRows.filter((row) => (
+    Number(row.usuario_aprobador_id) === normalizedActorUserId
+    || (normalizedActorRoleId && Number(row.rol_aprobador_id) === normalizedActorRoleId)
+  ));
+
+  const approvalRow = matchingRows.find((row) => row.estado_gerencia === 'pendiente')
+    || matchingRows[0]
+    || null;
   if (!approvalRow) {
     throw createError(403, 'Este documento no esta asignado a tu gerencia segun sus centros de costo');
   }

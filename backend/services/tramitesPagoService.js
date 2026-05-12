@@ -52,7 +52,8 @@ const getTramite = handleRequest((req) => {
   const { id } = req.params;
   return useCases.getTramite({
     id,
-    actorUserId: req.user?.id
+    actorUserId: req.user?.id,
+    actorRoleId: req.user?.rol
   });
 }, 'Error fetching tramite:', 'Error fetching tramite');
 
@@ -61,6 +62,7 @@ const getTramitePdfUnificado = handleRequest(async (req, res) => {
   const pdfDownload = await useCases.getTramitePdfUnificado({
     id,
     actorUserId: req.user?.id,
+    actorRoleId: req.user?.rol,
     providerSortDirection: req.query?.providerSortDirection
   });
 
@@ -198,6 +200,9 @@ const decisionDocumento = handleRequest((req) => {
     motivo,
     usuario: resolveActorUsuario(req, usuario),
     actorUserId: req.user?.id,
+    actorUserName: req.user?.nombre,
+    actorUserEmail: req.user?.email,
+    actorRoleId: req.user?.rol,
     actorPermissions: req.user?.permissions
   });
 }, 'Error updating document decision:', 'Error updating document decision');

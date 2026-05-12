@@ -332,7 +332,8 @@ CREATE TABLE IF NOT EXISTS public.centros_costo
     codigo character varying(50) NOT NULL,
     nombre character varying(255) NOT NULL,
     centro_padre_id integer,
-    usuario_aprobador_id integer NOT NULL,
+    usuario_aprobador_id integer,
+    rol_aprobador_id integer,
     seleccionable_en_contabilizacion boolean NOT NULL DEFAULT true,
     activo boolean NOT NULL DEFAULT true,
     orden integer,
@@ -341,7 +342,8 @@ CREATE TABLE IF NOT EXISTS public.centros_costo
     creado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     actualizado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT centros_costo_pkey PRIMARY KEY (id),
-    CONSTRAINT centros_costo_sociedad_id_codigo_key UNIQUE (sociedad_id, codigo)
+    CONSTRAINT centros_costo_sociedad_id_codigo_key UNIQUE (sociedad_id, codigo),
+    CONSTRAINT centros_costo_aprobador_check CHECK (num_nonnulls(usuario_aprobador_id, rol_aprobador_id) = 1)
 );
 
 CREATE TABLE IF NOT EXISTS public.tablas_pago
@@ -576,16 +578,23 @@ CREATE TABLE IF NOT EXISTS public.tramites_pago_documentos_aprobadores
     id serial NOT NULL,
     tramite_id integer NOT NULL,
     factura_id integer NOT NULL,
-    usuario_aprobador_id integer NOT NULL,
+    usuario_aprobador_id integer,
     usuario_aprobador_nombre character varying(150),
     usuario_aprobador_email character varying(255),
+    rol_aprobador_id integer,
+    rol_aprobador_codigo character varying(100),
+    rol_aprobador_nombre character varying(150),
     estado_gerencia character varying(20) NOT NULL DEFAULT 'pendiente'::character varying,
     motivo_gerencia text,
+    decision_usuario_id integer,
+    decision_usuario_nombre character varying(150),
+    decision_usuario_email character varying(255),
     decision_en timestamp without time zone,
     creado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     actualizado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT tramites_pago_documentos_aprobadores_pkey PRIMARY KEY (id),
     CONSTRAINT tramites_pago_documentos_aprobadores_unique UNIQUE (tramite_id, factura_id, usuario_aprobador_id),
+    CONSTRAINT tramites_pago_documentos_aprobadores_aprobador_check CHECK (num_nonnulls(usuario_aprobador_id, rol_aprobador_id) = 1),
     CONSTRAINT tramites_pago_documentos_aprobadores_estado_gerencia_check CHECK (estado_gerencia IN (
       'pendiente',
       'aprobado',
@@ -941,12 +950,31 @@ ALTER TABLE IF EXISTS public.centros_costo
     REFERENCES public.centros_costo (id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE SET NULL;
+ALTER TABLE IF EXISTS public.centros_costo
+    ALTER COLUMN usuario_aprobador_id DROP NOT NULL;
+ALTER TABLE IF EXISTS public.centros_costo
+    ADD COLUMN IF NOT EXISTS rol_aprobador_id integer;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'centros_costo_aprobador_check'
+    ) THEN
+        ALTER TABLE public.centros_costo
+            ADD CONSTRAINT centros_costo_aprobador_check
+            CHECK (num_nonnulls(usuario_aprobador_id, rol_aprobador_id) = 1);
+    END IF;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_centros_costo_sociedad
     ON public.centros_costo(sociedad_id);
 CREATE INDEX IF NOT EXISTS idx_centros_costo_padre
     ON public.centros_costo(centro_padre_id);
 CREATE INDEX IF NOT EXISTS idx_centros_costo_aprobador
     ON public.centros_costo(usuario_aprobador_id);
+CREATE INDEX IF NOT EXISTS idx_centros_costo_aprobador_rol
+    ON public.centros_costo(rol_aprobador_id);
 CREATE INDEX IF NOT EXISTS idx_centros_costo_activo
     ON public.centros_costo(sociedad_id, activo);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_centros_costo_sociedad_codigo
@@ -1061,6 +1089,33 @@ CREATE INDEX IF NOT EXISTS idx_tramites_pago_docs_tramite
     ON public.tramites_pago_documentos(tramite_id);
 
 ALTER TABLE IF EXISTS public.tramites_pago_documentos_aprobadores
+    ALTER COLUMN usuario_aprobador_id DROP NOT NULL;
+ALTER TABLE IF EXISTS public.tramites_pago_documentos_aprobadores
+    ADD COLUMN IF NOT EXISTS rol_aprobador_id integer;
+ALTER TABLE IF EXISTS public.tramites_pago_documentos_aprobadores
+    ADD COLUMN IF NOT EXISTS rol_aprobador_codigo character varying(100);
+ALTER TABLE IF EXISTS public.tramites_pago_documentos_aprobadores
+    ADD COLUMN IF NOT EXISTS rol_aprobador_nombre character varying(150);
+ALTER TABLE IF EXISTS public.tramites_pago_documentos_aprobadores
+    ADD COLUMN IF NOT EXISTS decision_usuario_id integer;
+ALTER TABLE IF EXISTS public.tramites_pago_documentos_aprobadores
+    ADD COLUMN IF NOT EXISTS decision_usuario_nombre character varying(150);
+ALTER TABLE IF EXISTS public.tramites_pago_documentos_aprobadores
+    ADD COLUMN IF NOT EXISTS decision_usuario_email character varying(255);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'tramites_pago_documentos_aprobadores_aprobador_check'
+    ) THEN
+        ALTER TABLE public.tramites_pago_documentos_aprobadores
+            ADD CONSTRAINT tramites_pago_documentos_aprobadores_aprobador_check
+            CHECK (num_nonnulls(usuario_aprobador_id, rol_aprobador_id) = 1);
+    END IF;
+END $$;
+
+ALTER TABLE IF EXISTS public.tramites_pago_documentos_aprobadores
     ADD CONSTRAINT tramites_pago_documentos_aprobadores_tramite_id_fkey FOREIGN KEY (tramite_id)
     REFERENCES public.tramites_pago (id) MATCH SIMPLE
     ON UPDATE NO ACTION
@@ -1075,12 +1130,29 @@ ALTER TABLE IF EXISTS public.tramites_pago_documentos_aprobadores
     REFERENCES public.usuarios (id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE CASCADE;
+ALTER TABLE IF EXISTS public.tramites_pago_documentos_aprobadores
+    ADD CONSTRAINT tramites_pago_documentos_aprobadores_rol_aprobador_id_fkey FOREIGN KEY (rol_aprobador_id)
+    REFERENCES public.roles (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION;
+ALTER TABLE IF EXISTS public.tramites_pago_documentos_aprobadores
+    ADD CONSTRAINT tramites_pago_documentos_aprobadores_decision_usuario_id_fkey FOREIGN KEY (decision_usuario_id)
+    REFERENCES public.usuarios (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_tramites_pago_doc_aprobadores_tramite
     ON public.tramites_pago_documentos_aprobadores(tramite_id);
 CREATE INDEX IF NOT EXISTS idx_tramites_pago_doc_aprobadores_factura
     ON public.tramites_pago_documentos_aprobadores(factura_id);
 CREATE INDEX IF NOT EXISTS idx_tramites_pago_doc_aprobadores_usuario
     ON public.tramites_pago_documentos_aprobadores(usuario_aprobador_id);
+CREATE INDEX IF NOT EXISTS idx_tramites_pago_doc_aprobadores_rol
+    ON public.tramites_pago_documentos_aprobadores(rol_aprobador_id);
+CREATE INDEX IF NOT EXISTS idx_tramites_pago_doc_aprobadores_decision_usuario
+    ON public.tramites_pago_documentos_aprobadores(decision_usuario_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_tramites_pago_doc_aprobadores_rol_unique
+    ON public.tramites_pago_documentos_aprobadores(tramite_id, factura_id, rol_aprobador_id)
+    WHERE usuario_aprobador_id IS NULL AND rol_aprobador_id IS NOT NULL;
 
 ALTER TABLE IF EXISTS public.tramites_pago_retenciones
     ADD CONSTRAINT tramites_pago_retenciones_factura_id_fkey FOREIGN KEY (factura_id)
@@ -1126,6 +1198,11 @@ ALTER TABLE IF EXISTS public.usuarios
 ALTER TABLE IF EXISTS public.centros_costo
     ADD CONSTRAINT centros_costo_usuario_aprobador_id_fkey FOREIGN KEY (usuario_aprobador_id)
     REFERENCES public.usuarios (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE NO ACTION;
+ALTER TABLE IF EXISTS public.centros_costo
+    ADD CONSTRAINT centros_costo_rol_aprobador_id_fkey FOREIGN KEY (rol_aprobador_id)
+    REFERENCES public.roles (id) MATCH SIMPLE
     ON UPDATE NO ACTION
     ON DELETE NO ACTION;
 CREATE INDEX IF NOT EXISTS idx_usuarios_rol_id

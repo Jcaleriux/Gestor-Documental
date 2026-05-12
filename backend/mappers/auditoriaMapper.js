@@ -222,10 +222,19 @@ const mapTramiteHistorialTimelineRow = (row) => {
 };
 
 const mapGerenciaAprobacionTimelineRow = (row) => {
-  const actorLabel = resolveActorLabel(
+  const aprobadorObjetivoLabel = resolveActorLabel(
+    row.rol_aprobador_nombre,
+    row.rol_aprobador_codigo,
     row.usuario_aprobador_nombre,
     row.usuario_aprobador_email,
-    row.usuario_aprobador_id ? `Usuario ${row.usuario_aprobador_id}` : ''
+    row.usuario_aprobador_id ? `Usuario ${row.usuario_aprobador_id}` : '',
+    row.rol_aprobador_id ? `Rol ${row.rol_aprobador_id}` : ''
+  );
+  const actorLabel = resolveActorLabel(
+    row.decision_usuario_nombre,
+    row.decision_usuario_email,
+    row.decision_usuario_id ? `Usuario ${row.decision_usuario_id}` : '',
+    aprobadorObjetivoLabel
   );
 
   return buildTimelineEvent({
@@ -235,7 +244,9 @@ const mapGerenciaAprobacionTimelineRow = (row) => {
     titulo: row.estado_gerencia === 'rechazado'
       ? 'Rechazo de gerencia registrado'
       : 'Aprobacion de gerencia registrada',
-    descripcion: actorLabel,
+    descripcion: row.rol_aprobador_id && actorLabel && actorLabel !== aprobadorObjetivoLabel
+      ? `${aprobadorObjetivoLabel} - resuelto por ${actorLabel}`
+      : aprobadorObjetivoLabel,
     usuario: actorLabel,
     creado_en: row.decision_en || row.actualizado_en || row.creado_en,
     motivo: row.motivo_gerencia || '',

@@ -8,7 +8,12 @@ import SearchInput from './common/SearchInput';
 import DataTable from './common/DataTable';
 import { useCentrosCostoCatalog } from '../hooks/centrosCosto/useCentrosCostoCatalog.js';
 import { formatDate } from '../utils/formatters.js';
-import { ROOT_PARENT_CODE, formatCentroCostoLabel } from '../utils/centrosCosto.js';
+import {
+  ROOT_PARENT_CODE,
+  formatCentroCostoLabel,
+  getCentroCostoAprobadorDetalle,
+  getCentroCostoAprobadorNombre,
+} from '../utils/centrosCosto.js';
 
 const TABLE_HEADERS = [
   { key: 'codigo', label: 'Codigo' },
@@ -72,7 +77,7 @@ function CentroTreeNode({ node, onEdit, onToggleActive }) {
         <div className="centros-costo-tree-copy">
           <div className="centros-costo-tree-title">{formatCentroCostoLabel(node)}</div>
           <div className="centros-costo-tree-meta">
-            {node.usuario_aprobador_nombre || 'Sin aprobador asignado'}
+            {getCentroCostoAprobadorNombre(node) || 'Sin aprobador asignado'}
           </div>
           <CentroBadges centro={node} />
         </div>
@@ -115,6 +120,7 @@ function CentrosCosto({ sociedadId }) {
   const fileInputRef = useRef(null);
   const {
     usuarios,
+    roles,
     loading,
     saving,
     message,
@@ -270,21 +276,52 @@ function CentrosCosto({ sociedadId }) {
               ) : null}
 
               <label className="form-label mb-0">
-                Usuario aprobador
+                Tipo de aprobador
                 <select
                   className="form-select"
-                  value={form.usuario_aprobador_id}
-                  onChange={(event) => setFormField('usuario_aprobador_id', event.target.value)}
-                  required
+                  value={form.aprobador_tipo}
+                  onChange={(event) => setFormField('aprobador_tipo', event.target.value)}
                 >
-                  <option value="">Seleccionar aprobador</option>
-                  {usuarios.map((usuario) => (
-                    <option key={usuario.id} value={usuario.id}>
-                      {usuario.nombre} ({usuario.email})
-                    </option>
-                  ))}
+                  <option value="usuario">Usuario especifico</option>
+                  <option value="rol">Rol compartido</option>
                 </select>
               </label>
+
+              {form.aprobador_tipo === 'rol' ? (
+                <label className="form-label mb-0">
+                  Rol aprobador
+                  <select
+                    className="form-select"
+                    value={form.rol_aprobador_id}
+                    onChange={(event) => setFormField('rol_aprobador_id', event.target.value)}
+                    required
+                  >
+                    <option value="">Seleccionar rol</option>
+                    {roles.map((rol) => (
+                      <option key={rol.id} value={rol.id}>
+                        {rol.nombre} ({rol.codigo})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <label className="form-label mb-0">
+                  Usuario aprobador
+                  <select
+                    className="form-select"
+                    value={form.usuario_aprobador_id}
+                    onChange={(event) => setFormField('usuario_aprobador_id', event.target.value)}
+                    required
+                  >
+                    <option value="">Seleccionar aprobador</option>
+                    {usuarios.map((usuario) => (
+                      <option key={usuario.id} value={usuario.id}>
+                        {usuario.nombre} ({usuario.email})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
 
               <label className="form-label mb-0">
                 Orden
@@ -401,8 +438,8 @@ function CentrosCosto({ sociedadId }) {
                     <td>{centro.nombre}</td>
                     <td>{centro.centro_padre_codigo || 'Raiz'}</td>
                     <td>
-                      <div>{centro.usuario_aprobador_nombre || '-'}</div>
-                      <div className="small text-muted">{centro.usuario_aprobador_email || 'Sin email'}</div>
+                      <div>{getCentroCostoAprobadorNombre(centro) || '-'}</div>
+                      <div className="small text-muted">{getCentroCostoAprobadorDetalle(centro) || 'Sin detalle'}</div>
                     </td>
                     <td>{centro.seleccionable_en_contabilizacion === false ? 'No' : 'Si'}</td>
                     <td>{centro.activo === false ? 'Inactivo' : 'Activo'}</td>

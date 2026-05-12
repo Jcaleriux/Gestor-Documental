@@ -35,6 +35,18 @@ test('buildTramiteDetallePageState retorna not_found cuando no hay tramite', () 
   assert.equal(state.message, 'No se encontro el tramite.');
 });
 
+test('buildTramiteDetallePageState retorna load_error cuando falla la carga inicial', () => {
+  const state = buildTramiteDetallePageState({
+    sociedadId: 10,
+    loading: false,
+    tramite: null,
+    actionError: 'No se pudo cargar el tramite.'
+  });
+
+  assert.equal(state.status, 'load_error');
+  assert.equal(state.message, 'No se pudo cargar el tramite.');
+});
+
 test('buildTramiteDetallePageState retorna ready cuando hay contexto completo', () => {
   const state = buildTramiteDetallePageState({
     sociedadId: 10,

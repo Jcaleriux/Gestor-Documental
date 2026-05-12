@@ -11,6 +11,7 @@ const normalizeCentroPayload = (centro = {}) => ({
   centro_padre_id: toNumericOrNull(centro.centro_padre_id),
   codigo_padre: centro.centro_padre_codigo || centro.codigo_padre || null,
   usuario_aprobador_id: toNumericOrNull(centro.usuario_aprobador_id),
+  rol_aprobador_id: toNumericOrNull(centro.rol_aprobador_id),
   seleccionable_en_contabilizacion: centro.seleccionable_en_contabilizacion !== false,
   activo: centro.activo !== false,
   orden: centro.orden === '' || centro.orden == null ? null : Number(centro.orden),

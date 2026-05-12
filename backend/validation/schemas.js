@@ -216,20 +216,36 @@ const centroCostoBaseSchema = {
   centro_padre_id: Joi.number().integer().positive().allow(null),
   codigo_padre: Joi.string().trim().max(50).allow('', null),
   centro_padre_codigo: Joi.string().trim().max(50).allow('', null),
-  usuario_aprobador_id: Joi.number().integer().positive().required(),
+  usuario_aprobador_id: Joi.number().integer().positive().allow(null),
+  rol_aprobador_id: Joi.number().integer().positive().allow(null),
   seleccionable_en_contabilizacion: Joi.boolean().optional(),
   activo: Joi.boolean().optional(),
   orden: Joi.number().integer().min(0).allow(null),
   metadata: Joi.any(),
 };
 
+const validateCentroCostoAprobador = (value, helpers) => {
+  const hasUsuarioAprobador = Number.isInteger(value?.usuario_aprobador_id) && value.usuario_aprobador_id > 0;
+  const hasRolAprobador = Number.isInteger(value?.rol_aprobador_id) && value.rol_aprobador_id > 0;
+
+  if (hasUsuarioAprobador === hasRolAprobador) {
+    return helpers.error('any.invalid');
+  }
+
+  return value;
+};
+
 const createCentroCostoSchema = Joi.object({
   sociedad_id: Joi.number().integer().positive().required(),
   ...centroCostoBaseSchema,
+}).custom(validateCentroCostoAprobador, 'centro costo approver validation').messages({
+  'any.invalid': 'Debe indicar usuario_aprobador_id o rol_aprobador_id, pero no ambos'
 });
 
 const updateCentroCostoSchema = Joi.object({
   ...centroCostoBaseSchema,
+}).custom(validateCentroCostoAprobador, 'centro costo approver validation').messages({
+  'any.invalid': 'Debe indicar usuario_aprobador_id o rol_aprobador_id, pero no ambos'
 });
 
 const bulkUpsertCentrosCostoSchema = Joi.object({
@@ -241,6 +257,8 @@ const bulkUpsertCentrosCostoSchema = Joi.object({
         Joi.string().trim().allow('', null)
       ).optional(),
       ...centroCostoBaseSchema,
+    }).custom(validateCentroCostoAprobador, 'centro costo approver validation').messages({
+      'any.invalid': 'Debe indicar usuario_aprobador_id o rol_aprobador_id, pero no ambos'
     })
   ).required(),
 });

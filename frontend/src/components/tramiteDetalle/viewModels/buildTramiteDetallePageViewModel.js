@@ -42,6 +42,7 @@ export const buildTramiteDetallePageViewModel = ({
     sociedadId,
     loading: detalle.loading,
     tramite: detalle.tramite,
+    actionError: detalle.actionError,
   });
 
   if (pageState.status !== 'ready') {

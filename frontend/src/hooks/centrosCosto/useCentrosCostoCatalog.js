@@ -19,7 +19,9 @@ const EMPTY_FORM = Object.freeze({
   codigo: '',
   nombre: '',
   centro_padre_id: ROOT_PARENT_CODE,
+  aprobador_tipo: 'usuario',
   usuario_aprobador_id: '',
+  rol_aprobador_id: '',
   seleccionable_en_contabilizacion: true,
   activo: true,
   orden: '',
@@ -30,7 +32,9 @@ const toFormFromCentro = (centro) => ({
   codigo: centro?.codigo || '',
   nombre: centro?.nombre || '',
   centro_padre_id: centro?.centro_padre_id ? String(centro.centro_padre_id) : ROOT_PARENT_CODE,
+  aprobador_tipo: centro?.rol_aprobador_id != null ? 'rol' : 'usuario',
   usuario_aprobador_id: centro?.usuario_aprobador_id != null ? String(centro.usuario_aprobador_id) : '',
+  rol_aprobador_id: centro?.rol_aprobador_id != null ? String(centro.rol_aprobador_id) : '',
   seleccionable_en_contabilizacion: centro?.seleccionable_en_contabilizacion !== false,
   activo: centro?.activo !== false,
   orden: centro?.orden != null ? String(centro.orden) : '',
@@ -69,6 +73,8 @@ const filterTreeNodes = (nodes, query, includeInactive, onlySelectable) => {
       node.nombre,
       node.usuario_aprobador_nombre,
       node.usuario_aprobador_email,
+      node.rol_aprobador_codigo,
+      node.rol_aprobador_nombre,
     ].join(' ').toLowerCase();
 
     if (haystack.includes(normalizedQuery) || filteredChildren.length > 0) {
@@ -101,6 +107,7 @@ export const useCentrosCostoCatalog = ({ sociedadId, dependencies = {} }) => {
 
   const [centros, setCentros] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -117,6 +124,7 @@ export const useCentrosCostoCatalog = ({ sociedadId, dependencies = {} }) => {
     if (!sociedadId) {
       setCentros([]);
       setUsuarios([]);
+      setRoles([]);
       setLoading(false);
       return;
     }
@@ -124,17 +132,22 @@ export const useCentrosCostoCatalog = ({ sociedadId, dependencies = {} }) => {
     try {
       setLoading(true);
       setError('');
-      const [centrosData, usuariosRes] = await Promise.all([
+      const [centrosData, usuariosRes, rolesRes] = await Promise.all([
         centrosApi.listCentros({ sociedadId }),
         usuariosService.listUsuarios(),
+        usuariosService.listRoles(),
       ]);
 
       const usuariosActivos = Array.isArray(usuariosRes.data?.data)
         ? usuariosRes.data.data.filter((usuario) => usuario.activo !== false)
         : [];
+      const rolesData = Array.isArray(rolesRes.data?.data)
+        ? rolesRes.data.data
+        : [];
 
       setCentros(sortCentros(centrosData));
       setUsuarios(usuariosActivos);
+      setRoles(rolesData);
     } catch (err) {
       const apiError = err.response?.data?.error || 'No se pudo cargar el catalogo de centros de costo.';
       setError(apiError);
@@ -189,7 +202,18 @@ export const useCentrosCostoCatalog = ({ sociedadId, dependencies = {} }) => {
   ), [blockedParentIds, centros, editingId]);
 
   const setFormField = useCallback((field, value) => {
-    setForm((previous) => ({ ...previous, [field]: value }));
+    setForm((previous) => {
+      if (field === 'aprobador_tipo') {
+        return {
+          ...previous,
+          aprobador_tipo: value === 'rol' ? 'rol' : 'usuario',
+          usuario_aprobador_id: value === 'rol' ? '' : previous.usuario_aprobador_id,
+          rol_aprobador_id: value === 'usuario' ? '' : previous.rol_aprobador_id,
+        };
+      }
+
+      return { ...previous, [field]: value };
+    });
   }, []);
 
   const resetForm = useCallback(() => {
@@ -224,11 +248,17 @@ export const useCentrosCostoCatalog = ({ sociedadId, dependencies = {} }) => {
 
     const codigo = normalizeCode(form.codigo);
     const nombre = normalizeText(form.nombre);
-    const usuarioAprobadorId = form.usuario_aprobador_id ? Number(form.usuario_aprobador_id) : null;
-    const aprobador = usuarios.find((usuario) => usuario.id === usuarioAprobadorId) || null;
+    const usuarioAprobadorId = form.aprobador_tipo === 'usuario' && form.usuario_aprobador_id
+      ? Number(form.usuario_aprobador_id)
+      : null;
+    const rolAprobadorId = form.aprobador_tipo === 'rol' && form.rol_aprobador_id
+      ? Number(form.rol_aprobador_id)
+      : null;
+    const aprobadorUsuario = usuarios.find((usuario) => usuario.id === usuarioAprobadorId) || null;
+    const aprobadorRol = roles.find((rol) => rol.id === rolAprobadorId) || null;
 
-    if (!codigo || !nombre || !form.centro_padre_id || !aprobador) {
-      setError('Completa codigo, nombre, centro padre y usuario aprobador.');
+    if (!codigo || !nombre || !form.centro_padre_id || (!aprobadorUsuario && !aprobadorRol)) {
+      setError('Completa codigo, nombre, centro padre y un aprobador por usuario o rol.');
       return;
     }
 
@@ -266,9 +296,12 @@ export const useCentrosCostoCatalog = ({ sociedadId, dependencies = {} }) => {
           nombre,
           centro_padre_id: centroPadre?.id ? String(centroPadre.id) : null,
           centro_padre_codigo: centroPadre?.codigo || '',
-          usuario_aprobador_id: aprobador.id,
-          usuario_aprobador_nombre: aprobador.nombre,
-          usuario_aprobador_email: aprobador.email,
+          usuario_aprobador_id: aprobadorUsuario?.id ?? null,
+          usuario_aprobador_nombre: aprobadorUsuario?.nombre ?? '',
+          usuario_aprobador_email: aprobadorUsuario?.email ?? '',
+          rol_aprobador_id: aprobadorRol?.id ?? null,
+          rol_aprobador_codigo: aprobadorRol?.codigo ?? '',
+          rol_aprobador_nombre: aprobadorRol?.nombre ?? '',
           seleccionable_en_contabilizacion: Boolean(form.seleccionable_en_contabilizacion),
           activo: Boolean(form.activo),
           orden: form.orden === '' ? centros.length + 1 : Number(form.orden),
@@ -288,7 +321,7 @@ export const useCentrosCostoCatalog = ({ sociedadId, dependencies = {} }) => {
     } finally {
       setSaving(false);
     }
-  }, [centros, centrosApi, editingId, form, resetForm, sociedadId, usuarios]);
+  }, [centros, centrosApi, editingId, form, resetForm, roles, sociedadId, usuarios]);
 
   const toggleActivo = useCallback(async (centro) => {
     try {
@@ -340,6 +373,9 @@ export const useCentrosCostoCatalog = ({ sociedadId, dependencies = {} }) => {
       const usersByEmail = new Map(
         usuarios.map((usuario) => [normalizeComparableText(usuario.email), usuario])
       );
+      const rolesByCode = new Map(
+        roles.map((rol) => [normalizeCode(rol.codigo), rol])
+      );
       const existingByCode = new Map(
         centros.map((centro) => [normalizeCode(centro.codigo), centro])
       );
@@ -352,7 +388,14 @@ export const useCentrosCostoCatalog = ({ sociedadId, dependencies = {} }) => {
       importedRows.forEach((row, index) => {
         const existing = existingByCode.get(row.codigo);
         const approverFromCsv = row.email_aprobador ? usersByEmail.get(row.email_aprobador) : null;
-        const usuarioAprobadorId = approverFromCsv?.id ?? existing?.usuario_aprobador_id ?? null;
+        const roleFromCsv = row.rol_aprobador ? rolesByCode.get(row.rol_aprobador) : null;
+        const existingUsesRole = existing?.rol_aprobador_id != null;
+
+        if (row.email_aprobador && row.rol_aprobador) {
+          warnings.push(`Se omitio ${row.codigo}: indique solo email_aprobador o rol_aprobador, no ambos.`);
+          skipped += 1;
+          return;
+        }
 
         if (row.email_aprobador && !approverFromCsv && !existing?.usuario_aprobador_id) {
           warnings.push(`Se omitio ${row.codigo}: no se encontro aprobador activo para ${row.email_aprobador}.`);
@@ -360,14 +403,37 @@ export const useCentrosCostoCatalog = ({ sociedadId, dependencies = {} }) => {
           return;
         }
 
-        if (!usuarioAprobadorId) {
-          warnings.push(`Se omitio ${row.codigo}: no tiene usuario aprobador resoluble.`);
+        if (row.rol_aprobador && !roleFromCsv && !existing?.rol_aprobador_id) {
+          warnings.push(`Se omitio ${row.codigo}: no se encontro rol aprobador para ${row.rol_aprobador}.`);
           skipped += 1;
           return;
         }
 
         if (row.email_aprobador && !approverFromCsv && existing?.usuario_aprobador_id) {
           warnings.push(`No se encontro aprobador activo para ${row.codigo} (${row.email_aprobador}); se mantuvo el aprobador existente.`);
+        }
+
+        if (row.rol_aprobador && !roleFromCsv && existing?.rol_aprobador_id) {
+          warnings.push(`No se encontro rol aprobador para ${row.codigo} (${row.rol_aprobador}); se mantuvo el aprobador existente.`);
+        }
+
+        const nextUsesRole = row.rol_aprobador
+          ? Boolean(roleFromCsv || existing?.rol_aprobador_id)
+          : row.email_aprobador
+            ? false
+            : existingUsesRole;
+
+        const usuarioAprobadorId = nextUsesRole
+          ? null
+          : approverFromCsv?.id ?? existing?.usuario_aprobador_id ?? null;
+        const rolAprobadorId = nextUsesRole
+          ? roleFromCsv?.id ?? existing?.rol_aprobador_id ?? null
+          : null;
+
+        if (!usuarioAprobadorId && !rolAprobadorId) {
+          warnings.push(`Se omitio ${row.codigo}: no tiene aprobador resoluble por usuario o rol.`);
+          skipped += 1;
+          return;
         }
 
         const nextCentro = {
@@ -378,8 +444,11 @@ export const useCentrosCostoCatalog = ({ sociedadId, dependencies = {} }) => {
           centro_padre_codigo: row.codigo_padre === ROOT_PARENT_CODE ? '' : row.codigo_padre,
           centro_padre_id: existing?.centro_padre_id || null,
           usuario_aprobador_id: usuarioAprobadorId,
-          usuario_aprobador_nombre: approverFromCsv?.nombre ?? existing?.usuario_aprobador_nombre ?? '',
-          usuario_aprobador_email: approverFromCsv?.email ?? existing?.usuario_aprobador_email ?? '',
+          usuario_aprobador_nombre: nextUsesRole ? '' : (approverFromCsv?.nombre ?? existing?.usuario_aprobador_nombre ?? ''),
+          usuario_aprobador_email: nextUsesRole ? '' : (approverFromCsv?.email ?? existing?.usuario_aprobador_email ?? ''),
+          rol_aprobador_id: rolAprobadorId,
+          rol_aprobador_codigo: nextUsesRole ? (roleFromCsv?.codigo ?? existing?.rol_aprobador_codigo ?? '') : '',
+          rol_aprobador_nombre: nextUsesRole ? (roleFromCsv?.nombre ?? existing?.rol_aprobador_nombre ?? '') : '',
           seleccionable_en_contabilizacion: row.seleccionable_en_contabilizacion,
           activo: row.activo,
           orden: row.orden || existing?.orden || index + 1,
@@ -437,11 +506,12 @@ export const useCentrosCostoCatalog = ({ sociedadId, dependencies = {} }) => {
     } finally {
       setSaving(false);
     }
-  }, [centros, persistCentros, sociedadId, usuarios]);
+  }, [centros, persistCentros, roles, sociedadId, usuarios]);
 
   return {
     centros,
     usuarios,
+    roles,
     loading,
     saving,
     message,

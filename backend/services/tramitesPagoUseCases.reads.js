@@ -26,12 +26,16 @@ const loadTramiteReadModel = async ({
   tramitesPagoRepo,
   tramiteId,
   actorUserId,
+  actorRoleId,
 }) => {
   const tramite = await tramitesPagoRepo.getTramiteById(tramiteId);
   assertFound(tramite, 'Tramite no encontrado');
 
   const [documentos, retenciones, caratulaRow, providerRows, providerOrderRows, orphanRows, sociedad] = await Promise.all([
-    tramitesPagoRepo.listDocumentosByTramite(tramiteId, null, { currentUserId: actorUserId }),
+    tramitesPagoRepo.listDocumentosByTramite(tramiteId, null, {
+      currentUserId: actorUserId,
+      currentUserRoleId: actorRoleId
+    }),
     tramitesPagoRepo.listRetencionesByTramite(tramiteId),
     tramitesPagoRepo.getTramiteCaratulaByTramiteId(tramiteId),
     callOptionalRepoMethod({
@@ -113,16 +117,17 @@ const createTramitesPagoReadUseCases = ({
     return rows.map(mapRetencionRow);
   };
 
-  const getTramite = async ({ id, actorUserId }) => {
+  const getTramite = async ({ id, actorUserId, actorRoleId }) => {
     const tramiteId = parsePositiveIntOrThrow(id, 'id');
     return loadTramiteReadModel({
       tramitesPagoRepo,
       tramiteId,
       actorUserId,
+      actorRoleId,
     });
   };
 
-  const getTramitePdfUnificado = async ({ id, actorUserId, providerSortDirection }) => {
+  const getTramitePdfUnificado = async ({ id, actorUserId, actorRoleId, providerSortDirection }) => {
     const tramiteId = parsePositiveIntOrThrow(id, 'id');
     const normalizedDirectionInput = String(providerSortDirection || '').trim().toLowerCase();
     if (normalizedDirectionInput && normalizedDirectionInput !== 'asc' && normalizedDirectionInput !== 'desc') {
@@ -133,6 +138,7 @@ const createTramitesPagoReadUseCases = ({
       tramitesPagoRepo,
       tramiteId,
       actorUserId,
+      actorRoleId,
     });
     const direction = normalizeSortDirection(providerSortDirection);
     const resources = buildUnifiedPdfResourcePlanImpl({

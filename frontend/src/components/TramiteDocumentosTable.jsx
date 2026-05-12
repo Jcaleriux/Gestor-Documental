@@ -41,7 +41,7 @@ function TramiteDocumentosTable({
     const pendientes = Array.isArray(doc.gerencia_aprobadores)
       ? doc.gerencia_aprobadores
         .filter((item) => item?.estado === 'pendiente')
-        .map((item) => item?.usuario_aprobador_nombre || item?.usuario_aprobador_email || '')
+        .map((item) => item?.aprobador_label || item?.rol_aprobador_nombre || item?.rol_aprobador_codigo || item?.usuario_aprobador_nombre || item?.usuario_aprobador_email || '')
         .filter(Boolean)
       : [];
 

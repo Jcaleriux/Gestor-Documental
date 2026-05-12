@@ -3,6 +3,7 @@ const { withTransaction } = require('../db/withTransaction');
 const contabilizacionRepo = require('../repositories/contabilizacionRepository');
 const centrosCostoRepo = require('../repositories/centrosCostoRepository');
 const usuariosRepo = require('../repositories/usuariosRepository');
+const rolesRepo = require('../repositories/rolesRepository');
 const { createCentrosCostoUseCases } = require('./centrosCostoUseCases');
 
 const runInTransaction = (handler) => withTransaction(contabilizacionRepo.getClient, handler);
@@ -10,6 +11,7 @@ const runInTransaction = (handler) => withTransaction(contabilizacionRepo.getCli
 const useCases = createCentrosCostoUseCases({
   centrosCostoRepo,
   usuariosRepo,
+  rolesRepo,
   runInTransaction,
 });
 
