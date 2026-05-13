@@ -44,14 +44,15 @@ Sistema web para gestion de facturas, procesamiento de XML, documentos y tramite
 
 ## Documentacion funcional
 
+- `docs/README.md`: mapa de entrada para ubicar la documentacion del proyecto.
 - `docs/requerimientos_vigentes.md`: resumen funcional vigente y alineado al sistema actual.
-- `docs/REQUERIMIENTOS.md`: levantamiento inicial conservado como referencia historica.
+- `docs/historico/REQUERIMIENTOS.md`: levantamiento inicial conservado como referencia historica.
 - `docs/arquitectura/`: alcance, estados, permisos y decisiones de arquitectura que complementan el estado actual.
-- `docs/despliegue_checklist.md`: checklist manual de despliegue para staging/produccion.
-- `docs/release_readiness.md`: guia y evidencia base para evaluar readiness antes del primer release productivo.
-- `docs/runbook_backup_rollback.md`: runbook explicito de backup y rollback para releases y deployments productivos.
-- `docs/preproduccion_local.md`: receta para montar un entorno local casi-productivo en esta misma PC.
-- `docs/demo_guion_desarrollo.md`: guion sugerido para demo funcional usando el entorno de desarrollo.
+- `docs/operaciones/despliegue_checklist.md`: checklist manual de despliegue para staging/produccion.
+- `docs/operaciones/release_readiness.md`: guia y evidencia base para evaluar readiness antes del primer release productivo.
+- `docs/operaciones/runbook_backup_rollback.md`: runbook explicito de backup y rollback para releases y deployments productivos.
+- `docs/operaciones/preproduccion_local.md`: receta para montar un entorno local casi-productivo en esta misma PC.
+- `docs/operaciones/demo_guion_desarrollo.md`: guion sugerido para demo funcional usando el entorno de desarrollo.
 - `docs/proceso_crecimiento_scrum.md`: guia para crecer Novogar con backlog, epics, deuda tecnica y Scrum ligero.
 - `docs/producto/`: vision, goals, roadmap, backlog, epics, sprints y templates para gestionar el crecimiento del producto.
 - `VERSION` y `CHANGELOG.md`: fuente base de version objetivo y notas de release del producto.

@@ -27,7 +27,7 @@ La configuracion de Codex para `Proyecto Novogar` no es un archivo magico unico.
 
 - `git`
 - `node` 20+
-- `npm` 10+
+- `pnpm` 11+
 - `PostgreSQL` 14+
 - `psql`
 - `gh` para PRs y trabajo continuo con GitHub
@@ -39,7 +39,7 @@ La configuracion de Codex para `Proyecto Novogar` no es un archivo magico unico.
 - `README.md`: arranque general del proyecto.
 - `docs/convenciones_idioma_codigo.md`: mezcla correcta de ingles tecnico y dominio en espanol.
 - `docs/principios_transversales.md`: principios de negocio que nunca deben romperse.
-- `docs/despliegue_checklist.md`: checklist manual para staging/produccion.
+- `docs/operaciones/despliegue_checklist.md`: checklist manual para staging/produccion.
 - `.github/workflows/ci.yml`: build/tests automatizados del repo.
 
 Nota de arquitectura vigente:

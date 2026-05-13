@@ -14,7 +14,7 @@ No automatiza restores ni despliegues. Eso queda deliberadamente fuera para evit
 
 ## Referencias
 
-- `docs/despliegue_checklist.md`
+- `docs/operaciones/despliegue_checklist.md`
 - `docs/producto/06_versionado_y_releases.md`
 - `VERSION`
 - `CHANGELOG.md`

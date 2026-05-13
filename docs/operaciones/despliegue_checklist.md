@@ -11,8 +11,8 @@ Guia manual minima para desplegar `Proyecto Novogar` sin depender de memoria. Es
 - [ ] Confirmar acceso a PostgreSQL, filesystem operativo y credenciales del servidor.
 - [ ] Si el release toca schema o datos, sacar respaldo de la base antes de aplicar cambios.
 - [ ] Verificar que **no** se va a usar `npm run db:reset` en entornos gestionados.
-- [ ] Tener a mano `docs/runbook_backup_rollback.md` y el helper `backend npm run release:backup-plan`.
-- [ ] Si el primer ensayo se hace en esta misma PC, tener a mano `docs/preproduccion_local.md`.
+- [ ] Tener a mano `docs/operaciones/runbook_backup_rollback.md` y el helper `backend npm run release:backup-plan`.
+- [ ] Si el primer ensayo se hace en esta misma PC, tener a mano `docs/operaciones/preproduccion_local.md`.
 
 ## 2. Variables Obligatorias
 

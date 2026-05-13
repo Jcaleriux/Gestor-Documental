@@ -85,5 +85,5 @@ Una consola mas util para seguimiento y accion, no solo para consulta general.
 
 ## Referencias
 
-- `docs/dashboard_redisenio.md`
+- `docs/historico/dashboard_redisenio.md`
 - `docs/principios_transversales.md`

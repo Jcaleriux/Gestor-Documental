@@ -172,7 +172,7 @@ Hoy, despues de esta Fase 1, siguen siendo importantes:
 
 Mientras ese entorno final llega, el repo ya deja una ruta intermedia util:
 
-- `docs/preproduccion_local.md`
+- `docs/operaciones/preproduccion_local.md`
 - `backend npm run preprod:setup`
 - `backend npm run preprod:readiness`
 - `backend npm run preprod:start`
@@ -236,6 +236,6 @@ Cobertura base de la Fase 2:
 - `../../CHANGELOG.md`
 - `../../VERSION`
 - `../proceso_crecimiento_scrum.md`
-- `../despliegue_checklist.md`
-- `../runbook_backup_rollback.md`
-- `../release_readiness.md`
+- `../operaciones/despliegue_checklist.md`
+- `../operaciones/runbook_backup_rollback.md`
+- `../operaciones/release_readiness.md`

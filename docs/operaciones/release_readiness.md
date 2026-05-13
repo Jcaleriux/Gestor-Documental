@@ -9,9 +9,9 @@ Dar una forma clara de responder:
 
 Esta guia complementa:
 
-- `docs/despliegue_checklist.md`
-- `docs/runbook_backup_rollback.md`
-- `docs/preproduccion_local.md`
+- `docs/operaciones/despliegue_checklist.md`
+- `docs/operaciones/runbook_backup_rollback.md`
+- `docs/operaciones/preproduccion_local.md`
 - `docs/producto/06_versionado_y_releases.md`
 
 ## Fase 1 Disponible Hoy

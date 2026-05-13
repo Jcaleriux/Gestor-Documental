@@ -482,7 +482,7 @@ Para Novogar, esta parte de gobierno vive en:
 - `VERSION`
 - `CHANGELOG.md`
 - `docs/producto/06_versionado_y_releases.md`
-- `docs/despliegue_checklist.md`
+- `docs/operaciones/despliegue_checklist.md`
 
 ## Como Meter Deuda Tecnica Dentro De Scrum
 

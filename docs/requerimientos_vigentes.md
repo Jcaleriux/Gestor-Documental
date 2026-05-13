@@ -4,7 +4,7 @@
 
 Este documento resume el alcance funcional vigente del proyecto al `2026-03-19`.
 
-El archivo `docs/REQUERIMIENTOS.md` se conserva como levantamiento inicial e historia del arranque. Si existe conflicto entre ambos, prevalecen este documento, `README.md`, la documentacion en `docs/arquitectura/` y el comportamiento real del codigo.
+El archivo `docs/historico/REQUERIMIENTOS.md` se conserva como levantamiento inicial e historia del arranque. Si existe conflicto entre ambos, prevalecen este documento, `README.md`, la documentacion en `docs/arquitectura/` y el comportamiento real del codigo.
 
 ## Referencias principales
 
@@ -100,7 +100,7 @@ Roles activos en el seed base:
 
 ### 1. Ingesta por correo
 
-- Existe un flujo real de apoyo para correo en `docs/Script_Correo.txt`.
+- Existe un flujo real de apoyo para correo en `docs/integraciones/correo/`.
 - Existen scripts de importacion y watcher en backend.
 - Aun no debe asumirse como un modulo productizado de extremo a extremo dentro de la UI principal.
 
@@ -138,7 +138,7 @@ Roles activos en el seed base:
 
 ## Regla de mantenimiento documental
 
-- `docs/REQUERIMIENTOS.md`: historia del inicio del proyecto.
+- `docs/historico/REQUERIMIENTOS.md`: historia del inicio del proyecto.
 - `docs/requerimientos_vigentes.md`: resumen funcional vigente.
 - `docs/arquitectura/`: detalle tecnico y reglas que deben mantenerse consistentes con el codigo.
 

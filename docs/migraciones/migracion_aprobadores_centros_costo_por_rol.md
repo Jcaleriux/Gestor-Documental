@@ -4,6 +4,15 @@
 
 Aplicar de forma segura la migracion `backend/db/migrations/20260511_0006_centros_costo_aprobadores_por_rol.sql` sobre una base existente.
 
+## Estado
+
+Migracion aplicada localmente sin pendientes al `2026-05-13`.
+
+Los SQL manuales de precheck y postcheck se conservan solo como evidencia historica en:
+
+- `docs/historico/migraciones/20260511_0006_aprobadores_por_rol/precheck.sql`
+- `docs/historico/migraciones/20260511_0006_aprobadores_por_rol/postcheck.sql`
+
 Esta migracion:
 
 - habilita `rol_aprobador_id` en `centros_costo`
@@ -15,7 +24,7 @@ Esta migracion:
 
 - No ejecutes `npm run db:reset`.
 - Programa una ventana corta sin cambios concurrentes en centros de costo, contabilizacion o aprobaciones de tramites.
-- Ten a mano `docs/runbook_backup_rollback.md`.
+- Ten a mano `docs/operaciones/runbook_backup_rollback.md`.
 - Confirma que la DB objetivo es la correcta antes de correr cualquier comando.
 
 ## Paso 1. Confirmar Estado De Migraciones
@@ -65,13 +74,13 @@ Luego:
 3. Si el entorno tiene storage operativo real, respalda `documentos/` y `facturas/`.
 4. Guarda el JSON del plan si quieres evidencia del corte.
 
-Referencia completa: `docs/runbook_backup_rollback.md`
+Referencia completa: `docs/operaciones/runbook_backup_rollback.md`
 
 ## Paso 3. Ejecutar Precheck SQL
 
 Archivo listo para correr:
 
-- `docs/sql/20260511_0006_precheck_aprobadores_por_rol.sql`
+- `docs/historico/migraciones/20260511_0006_aprobadores_por_rol/precheck.sql`
 
 Opciones:
 
@@ -82,7 +91,7 @@ Opciones:
 Ejemplo con `psql`:
 
 ```bash
-psql -h <host> -U <user> -d <database> -f docs/sql/20260511_0006_precheck_aprobadores_por_rol.sql
+psql -h <host> -U <user> -d <database> -f docs/historico/migraciones/20260511_0006_aprobadores_por_rol/precheck.sql
 ```
 
 No sigas si el precheck muestra:
@@ -115,12 +124,12 @@ La migracion versionada que debe aplicarse es:
 
 Archivo listo para correr:
 
-- `docs/sql/20260511_0006_postcheck_aprobadores_por_rol.sql`
+- `docs/historico/migraciones/20260511_0006_aprobadores_por_rol/postcheck.sql`
 
 Ejemplo con `psql`:
 
 ```bash
-psql -h <host> -U <user> -d <database> -f docs/sql/20260511_0006_postcheck_aprobadores_por_rol.sql
+psql -h <host> -U <user> -d <database> -f docs/historico/migraciones/20260511_0006_aprobadores_por_rol/postcheck.sql
 ```
 
 Esperado:
