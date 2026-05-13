@@ -98,3 +98,4 @@ jobs:
 
       - name: Run frontend CI tests
         run: pnpm --dir frontend run test:ci
+
