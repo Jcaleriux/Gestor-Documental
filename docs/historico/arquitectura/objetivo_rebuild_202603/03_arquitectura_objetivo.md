@@ -1,5 +1,7 @@
 ﻿# Arquitectura Objetivo
 
+> Nota: este documento describe una arquitectura objetivo. No es una descripcion exacta del runtime actual. Para el estado vigente consultar `estado_actual.md`; para prioridades de mejora consultar `brechas_y_mejoras.md`.
+
 ## Objetivo
 Separar completamente los contextos de negocio para que el procesamiento documental sea estable y el workflow sea reemplazable sin romper reportes ni consultas base.
 

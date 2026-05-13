@@ -1,5 +1,7 @@
 ﻿# Modelo de Datos y ERD Objetivo
 
+> Nota: este documento conserva el modelo objetivo con tabla canonica `documentos`. El schema vigente aun usa tablas por tipo documental. Para el modelo actual consultar `estado_actual.md`.
+
 ## Objetivo
 Definir un modelo relacional limpio que preserve integridad documental y desacople estados/workflow.
 

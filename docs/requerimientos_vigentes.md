@@ -9,8 +9,8 @@ El archivo `docs/historico/REQUERIMIENTOS.md` se conserva como levantamiento ini
 ## Referencias principales
 
 - `README.md`: arranque, stack, scripts y panorama general.
-- `docs/arquitectura/01_vision_y_alcance.md`: alcance arquitectonico y criterios de exito.
-- `docs/arquitectura/05_catalogo_estados.md`: separacion de estados por dominio.
+- `docs/arquitectura/estado_actual.md`: arquitectura y modulos vigentes.
+- `docs/arquitectura/brechas_y_mejoras.md`: mejoras pendientes respecto al objetivo arquitectonico.
 - `docs/arquitectura/06_matriz_permisos.md`: permisos minimos por accion y endpoint.
 - `docs/principios_transversales.md`: principios de negocio que deben mantenerse, especialmente `multicurrency-first`.
 

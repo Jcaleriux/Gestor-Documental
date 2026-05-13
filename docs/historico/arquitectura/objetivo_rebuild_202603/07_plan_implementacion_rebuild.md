@@ -1,5 +1,7 @@
 ﻿# Plan de Implementacion (Rebuild)
 
+> Nota: este plan describe el rebuild propuesto en marzo de 2026. Ya no debe usarse como plan operativo vigente sin contrastarlo contra `estado_actual.md` y `brechas_y_mejoras.md`.
+
 ## Objetivo
 Rehacer el sistema con arquitectura limpia, manteniendo aprendizaje funcional del sistema actual.
 

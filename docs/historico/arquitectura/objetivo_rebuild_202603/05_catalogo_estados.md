@@ -1,5 +1,7 @@
 ﻿# Catalogo de Estados por Dominio
 
+> Nota: este catalogo es direccion objetivo. El sistema actual ya tiene avances de historiales/estado por workflow, pero no implementa todavia el modelo general `documento_estado_actual` para todos los tipos documentales.
+
 ## Objetivo
 Separar y formalizar estados para evitar mezclar ciclo documental con workflow de pagos.
 

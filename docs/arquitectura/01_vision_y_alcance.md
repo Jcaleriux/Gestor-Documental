@@ -1,46 +1,56 @@
-﻿# Vision y Alcance de Arquitectura
+# Vision Y Alcance De Arquitectura
+
+## Estado
+
+Esta es la vision arquitectonica vigente: **Novogar se evoluciona sobre la aplicacion actual**. Ya no se contempla rehacer la app desde cero ni crear una aplicacion paralela.
+
+Los documentos y diagramas de rebuild de marzo de 2026 se conservan solo como referencia historica en `docs/historico/arquitectura/objetivo_rebuild_202603/`.
 
 ## Objetivo
-Definir la arquitectura objetivo para rehacer el sistema desde cero, usando el proyecto actual como referencia funcional, pero corrigiendo acoplamientos entre procesamiento documental, estados y workflow.
 
-## Principios de diseno
-1. Source of truth documental: los datos canonicamente validos del documento viven en el contexto Documentos.
-2. Separacion de responsabilidades: Documentos, Estados y Workflow son modulos independientes.
-3. Integridad en base de datos: FK, UNIQUE, CHECK, NOT NULL e indices desde el diseno inicial.
-4. Transacciones obligatorias en operaciones multi-tabla.
-5. Contratos explicitos: API, reglas de negocio y permisos versionados.
-6. Trazabilidad completa: historial de estado, auditoria de acciones y actor responsable.
-7. Arquitectura evolutiva: cambios por migraciones versionadas y ADR.
+Fortalecer la aplicacion existente para que siga creciendo con claridad operativa, trazabilidad, seguridad y bajo riesgo tecnico.
 
-## Alcance V1
-1. Ingesta y persistencia de documentos (facturas, notas de credito, tiquetes, mensajes hacienda).
-2. Consultas y filtros documentales por sociedad.
-3. Modelo de estados por dominio (hacienda, contabilizacion, workflow_pago).
-4. Workflow de pago desacoplado del modelo canonico documental.
-5. Seguridad por permisos y acceso por sociedades.
-6. Reportes operativos de documentos y estados.
+La arquitectura debe acompañar el producto actual:
 
-## Fuera de alcance V1
-1. Integraciones ERP externas en tiempo real.
-2. Motor BPM externo.
-3. Multi-tenant con aislamiento fisico por cliente.
-4. Firma digital avanzada certificada (si aplica, queda para fase posterior).
+- documentos fiscales y adjuntos en filesystem con rutas en DB,
+- workflow de tramites de pago,
+- control por sociedades, roles y permisos,
+- dashboards y reportes multicurrency,
+- reservas y operaciones relacionadas,
+- release y operacion mas confiables.
 
-## Restricciones tecnicas base
-1. Backend Node.js + Express.
-2. Base de datos PostgreSQL relacional.
-3. Driver SQL directo (`pg`), sin ORM en V1.
-4. Frontend React (consumo REST).
+## Principios De Diseno
 
-## Decisiones iniciales
-1. Mantener PostgreSQL como modelo principal.
-2. Reemplazar acoplamiento actual `facturas.estado` -> workflow por modelo de estado por dominio.
-3. Definir migraciones versionadas desde el inicio (no editar historial aplicado).
-4. Mantener auditoria y trazabilidad como requerimiento no negociable.
+1. Evolucion incremental antes que reescrituras amplias.
+2. Preservar contratos HTTP, permisos, payloads y flujos visibles salvo cambio aprobado.
+3. Mantener separacion entre estado documental, workflow de pago y reporteria.
+4. Mantener moneda como dato obligatorio de dominio en montos y reportes.
+5. Usar migraciones versionadas para todo cambio de DB.
+6. Proteger trazabilidad: auditoria, historial, actor, fecha y motivo cuando aplique.
+7. Concentrar reglas de negocio en backend, no en frontend.
+8. Mejorar hotspots por slices verticales, con validacion focalizada.
 
-## Criterios de exito arquitectonico
-1. Ningun modulo de workflow modifica tablas canonicas documentales.
-2. Todo cambio de estado deja rastro historico con usuario, fecha y motivo.
-3. API publica con contratos y permisos documentados.
-4. Tests de integracion para casos criticos (ingesta, estado, workflow, reportes).
-5. Runbook de operacion DB (backup, restore, rollback de release).
+## Alcance Arquitectonico Vigente
+
+1. Consolidar el modelo actual documentado en `estado_actual.md`.
+2. Mantener el desacople logrado entre workflow y estado documental.
+3. Mejorar reportes y dashboard sin mezclar monedas ni estados de dominios distintos.
+4. Fortalecer reservas, reemplazos documentales y acciones operativas transversales.
+5. Reducir deuda tecnica priorizada en backlog, especialmente frontend, smoke checks y observabilidad.
+6. Formalizar contratos y ADRs solo cuando el impacto lo justifique.
+
+## Fuera De Alcance Actual
+
+1. Rebuild completo desde cero.
+2. Migracion inmediata a una tabla canonica unica `documentos`.
+3. Cambio masivo de API, rutas, payloads o permisos solo por limpieza.
+4. Cambio de framework backend/frontend.
+5. Automatizacion destructiva de deploy, restore o reset.
+
+## Criterios De Exito
+
+1. Los cambios importantes tienen backlog visible o decision documentada.
+2. Las mejoras tecnicas no rompen comportamiento publico.
+3. Los modulos criticos mantienen pruebas, smoke checks o validacion manual documentada.
+4. La documentacion distingue claramente entre funcionamiento actual, historico y mejora pendiente.
+5. Cada release puede explicar version, alcance, migraciones y rollback.

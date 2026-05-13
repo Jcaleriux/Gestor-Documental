@@ -12,13 +12,12 @@ Este directorio agrupa la documentacion funcional, tecnica, operativa e historic
 
 ## Carpetas
 
-- `arquitectura/`: vision, inventario, modelo de datos, estados, permisos y diagramas.
-- `producto/`: vision de producto, goals, roadmap, backlog, releases, epics, sprints y templates.
+- `arquitectura/`: estado actual, inventario, permisos y brechas/mejoras arquitectonicas.
+- `producto/`: vision de producto, goals, roadmap, backlog, tarjetas pendientes para Trello, releases, epics, sprints y templates.
 - `operaciones/`: despliegue, preproduccion local, readiness, backup, rollback y demo.
-- `migraciones/`: guias operativas para aplicar migraciones puntuales.
 - `integraciones/`: notas y scripts de apoyo para integraciones externas.
 - `datos/`: plantillas, CSVs y estructuras de carga vigentes o de apoyo.
-- `historico/`: levantamientos iniciales, diagnosticos, propuestas y exports conservados como referencia.
+- `historico/`: levantamientos iniciales, diagnosticos, propuestas, migraciones ya aplicadas y exports conservados como referencia.
 - `presentaciones/`: materiales HTML de presentacion.
 
 ## Regla Practica

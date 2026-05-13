@@ -11,6 +11,7 @@ Evitar que ideas, prioridades, deuda tecnica y decisiones de roadmap vivan solo 
 Mientras no se use una herramienta externa como Jira, la fuente de verdad operativa debe ser:
 
 - `04_backlog.md` para trabajo vivo,
+- `trello_pendiente.md` para cargar en Trello solo lo pendiente,
 - `epics/` para iniciativas grandes,
 - `sprints/` para planificacion de ejecucion,
 - y `historico/` para contexto ya cerrado.
@@ -21,13 +22,15 @@ Mientras no se use una herramienta externa como Jira, la fuente de verdad operat
 2. `02_product_goals.md`
 3. `03_roadmap.md`
 4. `04_backlog.md`
-5. `05_guia_prompts_codex.md`
-6. `06_versionado_y_releases.md`
-7. `epics/`
+5. `trello_pendiente.md`
+6. `05_guia_prompts_codex.md`
+7. `06_versionado_y_releases.md`
+8. `epics/`
 
 ## Regla simple
 
 - backlog actual: lo pendiente, priorizable y accionable,
+- trello pendiente: solo tarjetas no cerradas para ejecucion,
 - historico: solo lo cerrado que aun aporta contexto,
 - templates: punto de partida para items nuevos.
 
