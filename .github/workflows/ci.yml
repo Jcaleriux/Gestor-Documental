@@ -15,21 +15,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          fetch-depth: 1
-          persist-credentials: false
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        uses: actions/setup-node@v4
         with:
-          # Vite 7 and @vitejs/plugin-react require Node 20.19+.
+          node-version: ${{ env.CI_NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup pnpm cache
+        uses: actions/setup-node@v4
+        with:
           node-version: ${{ env.CI_NODE_VERSION }}
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-
-      - name: Enable Corepack
-        run: corepack enable
 
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
@@ -44,21 +47,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          fetch-depth: 1
-          persist-credentials: false
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        uses: actions/setup-node@v4
         with:
-          # Vite 7 and @vitejs/plugin-react require Node 20.19+.
+          node-version: ${{ env.CI_NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup pnpm cache
+        uses: actions/setup-node@v4
+        with:
           node-version: ${{ env.CI_NODE_VERSION }}
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-
-      - name: Enable Corepack
-        run: corepack enable
 
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
@@ -77,21 +83,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          fetch-depth: 1
-          persist-credentials: false
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        uses: actions/setup-node@v4
         with:
-          # Vite 7 and @vitejs/plugin-react require Node 20.19+.
+          node-version: ${{ env.CI_NODE_VERSION }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup pnpm cache
+        uses: actions/setup-node@v4
+        with:
           node-version: ${{ env.CI_NODE_VERSION }}
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-
-      - name: Enable Corepack
-        run: corepack enable
 
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
