@@ -17,12 +17,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          version: 9
+          node-version: ${{ env.CI_NODE_VERSION }}
 
-      - name: Setup Node.js with cache
+      - name: Install pnpm
+        run: npm install -g pnpm@9
+
+      - name: Setup pnpm cache
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.CI_NODE_VERSION }}
@@ -44,12 +47,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          version: 9
+          node-version: ${{ env.CI_NODE_VERSION }}
 
-      - name: Setup Node.js with cache
+      - name: Install pnpm
+        run: npm install -g pnpm@9
+
+      - name: Setup pnpm cache
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.CI_NODE_VERSION }}
@@ -75,12 +81,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          version: 9
+          node-version: ${{ env.CI_NODE_VERSION }}
 
-      - name: Setup Node.js with cache
+      - name: Install pnpm
+        run: npm install -g pnpm@9
+
+      - name: Setup pnpm cache
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.CI_NODE_VERSION }}
@@ -98,4 +107,3 @@ jobs:
 
       - name: Run frontend CI tests
         run: pnpm --dir frontend run test:ci
-
