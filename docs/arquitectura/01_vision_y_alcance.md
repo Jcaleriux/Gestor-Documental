@@ -1,11 +1,5 @@
 # Vision Y Alcance De Arquitectura
 
-## Estado
-
-Esta es la vision arquitectonica vigente: **Novogar se evoluciona sobre la aplicacion actual**. Ya no se contempla rehacer la app desde cero ni crear una aplicacion paralela.
-
-Los documentos y diagramas de rebuild de marzo de 2026 se conservan solo como referencia historica en `docs/historico/arquitectura/objetivo_rebuild_202603/`.
-
 ## Objetivo
 
 Fortalecer la aplicacion existente para que siga creciendo con claridad operativa, trazabilidad, seguridad y bajo riesgo tecnico.
