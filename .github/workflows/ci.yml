@@ -33,7 +33,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install workspace dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Audit backend dependencies
         run: pnpm --dir backend audit --audit-level=high --prod
@@ -63,7 +63,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install workspace dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Run backend release checks
         run: pnpm --dir backend run check:release
@@ -97,7 +97,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install workspace dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Run frontend lint
         run: pnpm --dir frontend run lint
@@ -107,3 +107,4 @@ jobs:
 
       - name: Run frontend CI tests
         run: pnpm --dir frontend run test:ci
+
