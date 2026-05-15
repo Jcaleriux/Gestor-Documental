@@ -75,7 +75,7 @@ function RetencionPagoPanel({ viewModel }) {
           </div>
         ) : (
           <div className="small text-muted mb-2">
-            El registro de pagos de retencion solo esta disponible en modo edicion.
+            El registro de pagos de retención solo está disponible en modo edición.
           </div>
         )}
         <ActionAlerts error={retencionPagoError} message={retencionPagoMessage} className="small mt-2" />

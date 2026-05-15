@@ -117,7 +117,7 @@ function ContaAssociationsActions({ viewModel }) {
             onClick={abrirAsociarNotaCredito}
             disabled={notasLoading || !conta.proveedor_id}
           >
-            {notasLoading ? 'Cargando notas...' : 'Asociar nota de credito'}
+            {notasLoading ? 'Cargando notas...' : 'Asociar nota de crédito'}
           </button>
           <button
             className="btn btn-outline-primary btn-sm"
@@ -172,7 +172,7 @@ function ContaAssociationsActions({ viewModel }) {
             type="button"
             onClick={verNotaCreditoAsociada}
           >
-            Ver nota de credito
+            Ver nota de crédito
           </button>
         )}
       </div>
@@ -199,7 +199,7 @@ function ContaAssociationsActions({ viewModel }) {
       {notaCreditoActual && (
         <div className="col-12">
           <div className="alert alert-info py-2 mb-0">
-            Nota de credito asociada: {notaCreditoActual.clave || `#${notaCreditoActual.id}`}
+            Nota de crédito asociada: {notaCreditoActual.clave || `#${notaCreditoActual.id}`}
           </div>
         </div>
       )}

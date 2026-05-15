@@ -11,7 +11,8 @@
     "test:watch": "node --test --watch --experimental-specifier-resolution=node tests/**/*.test.js",
     "lint": "eslint .",
     "preview": "vite preview",
-    "preprod:preview": "node scripts/run_preprod_preview.mjs"
+    "preprod:preview": "node scripts/run_preprod_preview.mjs",
+    "qa:contabilizacion": "node scripts/visual_qa_contabilizacion.mjs"
   },
   "dependencies": {
     "@popperjs/core": "^2.11.8",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.60.0",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",

@@ -28,14 +28,14 @@ function FacturaDetalleLayout({ layoutProps }) {
 
       <FacturaDetalleSummaryCard viewModel={summary} />
 
-      <div className="row g-3">
-        <div className="col-12 col-lg-5">
+      <div className="row g-3 factura-detalle-grid">
+        <div className="col-12 col-lg-5 col-xl-4">
           <div className="factura-conta-sticky">
             <FacturaDetalleContabilizacionSection viewModel={leftColumn.contabilizacion} />
           </div>
         </div>
 
-        <div className="col-12 col-lg-7">
+        <div className="col-12 col-lg-7 col-xl-8">
           <FacturaDetallePdfSection viewModel={rightColumn.pdf} />
 
           <FacturaDetalleHistorialSection viewModel={rightColumn.historial} />

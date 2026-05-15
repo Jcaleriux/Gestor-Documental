@@ -7,7 +7,7 @@ test('buildFacturaDetalleHeaderViewModel arma title/subtitle/back con consecutiv
     factura: { id: 101, consecutivo: '00100001010000001606' }
   });
 
-  assert.equal(header.title, 'Contabilizacion de factura');
+  assert.equal(header.title, 'Contabilización de factura');
   assert.equal(header.subtitle, 'Factura #00100001010000001606');
   assert.equal(header.backTo, '/facturas');
   assert.equal(header.backLabel, 'Volver a facturas');
@@ -18,6 +18,6 @@ test('buildFacturaDetalleHeaderViewModel soporta factura sin id', () => {
     factura: {}
   });
 
-  assert.equal(header.title, 'Contabilizacion de factura');
+  assert.equal(header.title, 'Contabilización de factura');
   assert.equal(header.backTo, '/facturas');
 });

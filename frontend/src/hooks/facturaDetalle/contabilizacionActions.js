@@ -151,7 +151,7 @@ const validateCentrosCostoDistribution = ({
   }
 
   if (hasIncompleteLines) {
-    setContaError('Completa todas las lineas de centros de costo antes de continuar.');
+    setContaError('Completa todas las líneas de centros de costo antes de continuar.');
     return false;
   }
 
@@ -358,7 +358,7 @@ export const createContabilizacionActions = ({
   const desenlazarOrdenCompra = () => {
     setOrdenesError('');
     setContaError('');
-    setContaMessage('Orden de compra retirada del formulario. Guarda la contabilizacion para aplicar el cambio.');
+    setContaMessage('Orden de compra retirada del formulario. Guarda la contabilización para aplicar el cambio.');
     setOrdenCompraActual(null);
     setConta((prev) => ({
       ...prev,
@@ -369,7 +369,7 @@ export const createContabilizacionActions = ({
   };
 
   const abrirAsociarNotaCredito = async () => {
-    const context = resolveAssociationContext('No se encontro el proveedor de esta factura para asociar la nota de credito.');
+    const context = resolveAssociationContext('No se encontró el proveedor de esta factura para asociar la nota de crédito.');
     if (!context) {
       return;
     }
@@ -390,7 +390,7 @@ export const createContabilizacionActions = ({
       setError: setNotasError,
       setItems: setNotasCreditoProveedor,
       setModalOpen: setNotasModalOpen,
-      fallbackError: 'No se pudieron cargar las notas de credito.'
+      fallbackError: 'No se pudieron cargar las notas de crédito.'
     });
   };
 
@@ -501,7 +501,7 @@ export const createContabilizacionActions = ({
     event?.preventDefault?.();
     await persistContabilizacion({
       workflowAction: 'save_draft',
-      successMessage: 'Borrador guardado en revision contable.',
+      successMessage: 'Borrador guardado en revisión contable.',
       errorMessage: 'No se pudo guardar el borrador.'
     });
   };
@@ -510,8 +510,8 @@ export const createContabilizacionActions = ({
     event?.preventDefault?.();
     await persistContabilizacion({
       workflowAction: 'mark_in_review',
-      successMessage: 'Documento marcado en revision contable.',
-      errorMessage: 'No se pudo marcar el documento en revision.'
+      successMessage: 'Documento marcado en revisión contable.',
+      errorMessage: 'No se pudo marcar el documento en revisión.'
     });
   };
 
@@ -520,7 +520,7 @@ export const createContabilizacionActions = ({
     await persistContabilizacion({
       workflowAction: 'finalize',
       successMessage: 'Contabilizacion guardada correctamente.',
-      errorMessage: 'No se pudo guardar la contabilizacion.'
+      errorMessage: 'No se pudo guardar la contabilización.'
     });
   };
 
@@ -543,10 +543,10 @@ export const createContabilizacionActions = ({
       }));
       setRetencionPagoMonto('');
       setRetencionPagoNotas('');
-      setRetencionPagoMessage('Pago de retencion registrado.');
+      setRetencionPagoMessage('Pago de retención registrado.');
       await fetchAll();
     } catch (err) {
-      const apiError = err.response?.data?.error || 'No se pudo registrar el pago de retencion.';
+      const apiError = err.response?.data?.error || 'No se pudo registrar el pago de retención.';
       setRetencionPagoError(apiError);
     } finally {
       setRetencionPagoSaving(false);

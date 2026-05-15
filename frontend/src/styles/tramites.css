@@ -1,0 +1,302 @@
+.documents-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.documents-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.page-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.page-subtitle {
+  color: #7b8796;
+}
+
+.documents-filters {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.tramites-filter {
+  min-width: 220px;
+}
+
+.tramite-create-card {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tramite-create-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.tramite-create-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.tramite-create-subtitle {
+  margin: 4px 0 0;
+  color: #7b8796;
+}
+
+.tramite-create-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.tramite-create-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  background: #f8fafc;
+  border: 1px solid #e6ebf2;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.tramite-filter-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.tramite-filter-item label {
+  font-size: 0.8rem;
+  color: #667085;
+  margin-bottom: 4px;
+}
+
+.tramite-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.tramite-detail-card {
+  padding: 0;
+}
+
+.tramite-detail-card-body {
+  padding: 14px 18px;
+}
+
+.tramite-detail-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px 16px;
+  align-items: start;
+}
+
+.tramite-detail-meta .stat-title {
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+}
+
+.tramite-detail-meta .stat-value-sm {
+  line-height: 1.15;
+}
+
+.tramite-detail-meta .stat-meta {
+  margin-top: 2px;
+}
+
+.stat-value-sm {
+  font-weight: 600;
+  color: #1d2939;
+}
+
+.stat-meta {
+  font-size: 0.8rem;
+  color: #667085;
+  margin-top: 4px;
+}
+
+.tramite-doc-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.tramite-unificada-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.tramite-provider-group {
+  position: relative;
+  border: 2px solid #bfd1ef !important;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #f6faff 100%);
+  box-shadow:
+    0 14px 30px rgba(15, 23, 42, 0.07),
+    0 1px 0 rgba(43, 92, 230, 0.06);
+  overflow: hidden;
+}
+
+.tramite-provider-group::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 6px;
+  background: linear-gradient(180deg, #1d4ed8 0%, #76a4ff 100%);
+}
+
+.tramite-provider-group .card-body {
+  padding: 20px 22px 22px;
+}
+
+.tramite-provider-group-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #d9e5f7;
+}
+
+.tramite-provider-lines-header {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid #d8e5f8;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #f8fbff 0%, #f2f7ff 100%);
+}
+
+.tramite-provider-documents {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #d9e5f7;
+}
+
+.tramite-unificada-card {
+  border: 1px solid #e6ebf2;
+  border-radius: 16px;
+}
+
+.tramite-provider-preview-column {
+  min-width: 0;
+}
+
+.tramite-provider-preview-frame {
+  width: 100%;
+  min-height: 640px;
+  border: 1px solid #e6ebf2;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.tramite-unificada-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.tramite-unificada-summary-main {
+  min-width: 240px;
+  flex: 1 1 320px;
+}
+
+.tramite-unificada-summary-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex: 0 1 auto;
+}
+
+@media (min-width: 1200px) {
+.tramite-provider-preview-column {
+    min-width: 520px;
+  }
+}
+
+/* Compact document and tramite surfaces. */
+.documents-page {
+  gap: 12px;
+}
+
+.documents-header {
+  gap: 10px;
+}
+
+.page-title {
+  font-size: 1.28rem;
+  margin-bottom: 2px;
+}
+
+.page-subtitle {
+  font-size: 0.84rem;
+}
+
+.documents-filters {
+  gap: 8px;
+}
+
+.tramite-create-card {
+  padding: 11px;
+  gap: 8px;
+}
+
+.tramite-create-title {
+  font-size: 0.98rem;
+}
+
+.tramite-create-subtitle {
+  font-size: 0.8rem;
+}
+
+.tramite-create-filters {
+  gap: 8px;
+  padding: 9px;
+}
+
+.tramite-detail-card-body {
+  padding: 10px 12px;
+}
+
+.tramite-provider-group {
+  border-radius: var(--app-radius-lg);
+}
+
+.tramite-provider-group .card-body {
+  padding: 14px 16px;
+}
+
+.tramite-provider-group-header {
+  gap: 10px;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+}
+
+.tramite-provider-lines-header {
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--app-radius-lg);
+}
