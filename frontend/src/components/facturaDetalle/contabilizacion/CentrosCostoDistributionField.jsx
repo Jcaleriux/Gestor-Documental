@@ -181,8 +181,8 @@ function CentrosCostoDistributionField({
 
       {!hasCatalog ? (
         <div className="alert alert-warning mt-2 mb-0">
-          {FACTURA_DETALLE_LABELS.contabilizacion.centrosCostoSinCatalogo} Cargalo primero desde
-          {' '}Administracion &gt; Centros de costo.
+          {FACTURA_DETALLE_LABELS.contabilizacion.centrosCostoSinCatalogo} Cárgalo primero desde
+          {' '}Administración &gt; Centros de costo.
         </div>
       ) : null}
 

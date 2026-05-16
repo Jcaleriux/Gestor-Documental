@@ -149,7 +149,7 @@ export const useCentrosCostoCatalog = ({ sociedadId, dependencies = {} }) => {
       setUsuarios(usuariosActivos);
       setRoles(rolesData);
     } catch (err) {
-      const apiError = err.response?.data?.error || 'No se pudo cargar el catalogo de centros de costo.';
+      const apiError = err.response?.data?.error || 'No se pudo cargar el catálogo de centros de costo.';
       setError(apiError);
     } finally {
       setLoading(false);

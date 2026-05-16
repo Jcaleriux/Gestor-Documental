@@ -5,11 +5,11 @@ import { formatAmount } from '../../utils/formatters';
 
 const CATEGORY_LABELS = Object.freeze({
   estado: 'Estado',
-  aprobacion: 'Aprobacion',
-  tesoreria: 'Tesoreria',
-  tramite: 'Tramite',
+  aprobacion: 'Aprobación',
+  tesoreria: 'Tesorería',
+  tramite: 'Trámite',
   pago: 'Pago',
-  retencion: 'Retencion'
+  retencion: 'Retención'
 });
 
 const formatDateTime = (value) => {

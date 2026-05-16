@@ -16,7 +16,7 @@ import {
 import { buildNavigationSections } from './app/buildNavigationSections.js';
 import { useAppSession } from './hooks/app/useAppSession.js';
 import LoadingState from './components/common/LoadingState.jsx';
-import './App.css';
+import './styles/app.css';
 
 const Dashboard = lazy(() => import('./components/Dashboard.jsx'));
 const Usuarios = lazy(() => import('./components/Usuarios.jsx'));
@@ -260,7 +260,7 @@ function RouteLoadingFallback({ fullPage = false }) {
         ? { minHeight: '100vh', display: 'grid', placeItems: 'center' }
         : { padding: '1rem 1.25rem' }}
     >
-      <LoadingState label="Cargando pagina..." />
+      <LoadingState label="Cargando página..." />
     </div>
   );
 }
@@ -398,7 +398,7 @@ function AuthenticatedAppShell({
         <button
           type="button"
           className="sidebar-overlay"
-          aria-label="Cerrar menu lateral"
+          aria-label="Cerrar menú lateral"
           onClick={closeMobileSidebar}
         />
       )}
@@ -409,15 +409,15 @@ function AuthenticatedAppShell({
             <div className="brand-icon">N</div>
             <div className="brand-copy">
               <div className="brand-title">Proyecto Gestión documental</div>
-              <div className="brand-sub">Sistema de Gestion</div>
+              <div className="brand-sub">Sistema de Gestión</div>
             </div>
           </div>
 
           <button
             type="button"
             className="sidebar-toggle"
-            aria-label={isMobileView ? 'Cerrar menu lateral' : sidebarCollapsed ? 'Expandir menu lateral' : 'Contraer menu lateral'}
-            title={isMobileView ? 'Cerrar menu lateral' : sidebarCollapsed ? 'Expandir menu lateral' : 'Contraer menu lateral'}
+            aria-label={isMobileView ? 'Cerrar menú lateral' : sidebarCollapsed ? 'Expandir menú lateral' : 'Contraer menú lateral'}
+            title={isMobileView ? 'Cerrar menú lateral' : sidebarCollapsed ? 'Expandir menú lateral' : 'Contraer menú lateral'}
             onClick={toggleSidebar}
           >
             <AppIcon name={isMobileView ? 'close' : sidebarCollapsed ? 'expand' : 'collapse'} />
@@ -494,7 +494,7 @@ function AuthenticatedAppShell({
             <button
               className="mobile-menu-btn"
               type="button"
-              aria-label="Abrir menu lateral"
+              aria-label="Abrir menú lateral"
               onClick={openMobileSidebar}
             >
               <AppIcon name="menu" />
@@ -526,7 +526,7 @@ function AuthenticatedAppShell({
               N
             </button>
             <button className="btn btn-sm btn-outline-secondary" type="button" onClick={handleLogout}>
-              Cerrar sesion
+              Cerrar sesión
             </button>
             <div className="user-chip">
               <div className="avatar small">{userInitials}</div>
@@ -645,7 +645,7 @@ function App() {
   if (authLoading) {
     return (
       <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
-        Validando sesion...
+        Validando sesión...
       </div>
     );
   }

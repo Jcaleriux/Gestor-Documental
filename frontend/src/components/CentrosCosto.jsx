@@ -152,7 +152,7 @@ function CentrosCosto({ sociedadId }) {
   const editing = Boolean(editingId);
   const selectedParentLabel = useMemo(() => {
     if (form.centro_padre_id === ROOT_PARENT_CODE) {
-      return 'Raiz de la sociedad';
+      return 'Raíz de la sociedad';
     }
 
     return parentOptions.find((option) => String(option.id) === String(form.centro_padre_id))?.nombre || '';
@@ -190,7 +190,7 @@ function CentrosCosto({ sociedadId }) {
 
       <PageHeader
         title="Centros de costo"
-        subtitle="Crea la jerarquia por sociedad y define los aprobadores que se usaran en contabilizacion."
+        subtitle="Crea la jerarquía por sociedad y define los aprobadores que se usarán en contabilización."
         actions={(
           <div className="facturas-toolbar-actions">
             <button className="btn btn-outline-secondary" type="button" onClick={downloadTemplate}>
@@ -215,7 +215,7 @@ function CentrosCosto({ sociedadId }) {
       <ImportSummary summary={importSummary} />
 
       <div className="facturas-summary-grid mb-3">
-        <SummaryCard label="Total catalogo" value={stats.total} />
+        <SummaryCard label="Total catálogo" value={stats.total} />
         <SummaryCard label="Activos" value={stats.activos} />
         <SummaryCard label="Seleccionables" value={stats.seleccionables} />
         <SummaryCard label="Inactivos" value={stats.inactivos} />
@@ -253,7 +253,7 @@ function CentrosCosto({ sociedadId }) {
                   onChange={(event) => setFormField('centro_padre_id', event.target.value)}
                   required
                 >
-                  <option value={ROOT_PARENT_CODE}>Raiz de la sociedad</option>
+                  <option value={ROOT_PARENT_CODE}>Raíz de la sociedad</option>
                   {parentOptions.map((option) => (
                     <option key={option.id} value={option.id}>
                       {option.codigo} - {option.nombre}
@@ -341,7 +341,7 @@ function CentrosCosto({ sociedadId }) {
                   checked={form.seleccionable_en_contabilizacion}
                   onChange={(event) => setFormField('seleccionable_en_contabilizacion', event.target.checked)}
                 />
-                <span className="form-check-label">Seleccionable en contabilizacion</span>
+                <span className="form-check-label">Seleccionable en contabilización</span>
               </label>
 
               <label className="form-check">
@@ -355,7 +355,7 @@ function CentrosCosto({ sociedadId }) {
               </label>
 
               <div className="small text-muted">
-                Padre actual: {selectedParentLabel || 'Raiz de la sociedad'}
+                Padre actual: {selectedParentLabel || 'Raíz de la sociedad'}
               </div>
 
               <div className="d-flex gap-2">
@@ -373,7 +373,7 @@ function CentrosCosto({ sociedadId }) {
         </div>
 
         <div className="col-12 col-xl-8">
-          <SectionCard title="Vista del catalogo" className="mb-3">
+          <SectionCard title="Vista del catálogo" className="mb-3">
             <div className="row g-2 align-items-end">
               <div className="col-12 col-lg-7">
                 <label className="form-label mb-1">Buscar</label>
@@ -436,12 +436,12 @@ function CentrosCosto({ sociedadId }) {
                   <tr key={centro.id}>
                     <td className="fw-semibold">{centro.codigo}</td>
                     <td>{centro.nombre}</td>
-                    <td>{centro.centro_padre_codigo || 'Raiz'}</td>
+                    <td>{centro.centro_padre_codigo || 'Raíz'}</td>
                     <td>
                       <div>{getCentroCostoAprobadorNombre(centro) || '-'}</div>
                       <div className="small text-muted">{getCentroCostoAprobadorDetalle(centro) || 'Sin detalle'}</div>
                     </td>
-                    <td>{centro.seleccionable_en_contabilizacion === false ? 'No' : 'Si'}</td>
+                    <td>{centro.seleccionable_en_contabilizacion === false ? 'No' : 'Sí'}</td>
                     <td>{centro.activo === false ? 'Inactivo' : 'Activo'}</td>
                     <td>{formatDate(centro.actualizado_en)}</td>
                     <td className="text-end">

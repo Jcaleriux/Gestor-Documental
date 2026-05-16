@@ -1,0 +1,315 @@
+.factura-summary-card .card-body {
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+.factura-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.factura-summary-item {
+  min-width: 0;
+  border: 1px solid #e6ebf2;
+  border-radius: 14px;
+  background: #f8fafc;
+  padding: 10px 12px;
+}
+
+.factura-summary-label {
+  font-size: 0.74rem;
+  color: #667085;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+
+.factura-summary-value {
+  color: #1d2939;
+  font-weight: 600;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.factura-conta-sticky {
+  position: sticky;
+  top: 16px;
+}
+
+.factura-conta-panel .card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.factura-conta-mode-copy {
+  color: #667085;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.factura-conta-group-title {
+  font-size: 0.8rem;
+  color: #475467;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.factura-field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.factura-help-icon {
+  width: 20px;
+  height: 20px;
+  border: 1px solid #d0d7e2;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #526075;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0;
+}
+
+.factura-field-help {
+  margin-top: 6px;
+  font-size: 0.84rem;
+  color: #667085;
+  line-height: 1.45;
+}
+
+.factura-timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.factura-timeline-item {
+  border: 1px solid #e6ebf2;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  padding: 14px 16px;
+}
+
+.factura-timeline-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.factura-timeline-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.factura-timeline-title {
+  color: #1d2939;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.factura-timeline-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 6px;
+  color: #667085;
+  font-size: 0.84rem;
+}
+
+.factura-timeline-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.factura-timeline-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.factura-timeline-badge.categoria-estado {
+  background: #eef4ff;
+  border-color: #d9e6ff;
+  color: #2452b8;
+}
+
+.factura-timeline-badge.categoria-aprobacion {
+  background: #ecfdf3;
+  border-color: #d0f5e0;
+  color: #067647;
+}
+
+.factura-timeline-badge.categoria-tesoreria {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #c2410c;
+}
+
+.factura-timeline-badge.categoria-tramite {
+  background: #f2f4f7;
+  border-color: #e4e7ec;
+  color: #475467;
+}
+
+.factura-timeline-badge.categoria-pago {
+  background: #eff8ff;
+  border-color: #d1e9ff;
+  color: #175cd3;
+}
+
+.factura-timeline-badge.categoria-retencion {
+  background: #fdf2fa;
+  border-color: #f4d7ec;
+  color: #c11574;
+}
+
+.factura-timeline-description {
+  margin-top: 10px;
+  color: #344054;
+  line-height: 1.5;
+}
+
+.factura-timeline-amount {
+  margin-top: 10px;
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.factura-timeline-motivo {
+  margin-top: 10px;
+  border: 1px solid #e6ebf2;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #475467;
+  padding: 10px 12px;
+  line-height: 1.45;
+}
+.factura-static-field {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  background: #f8fafc;
+  color: #1d2939;
+}
+
+.factura-conta-panel input[type="number"]::-webkit-outer-spin-button,
+.factura-conta-panel input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.factura-conta-panel input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.factura-conta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Compact factura detail and accounting workspace. */
+.factura-detalle-grid .section-card {
+  margin-bottom: 0.75rem;
+}
+
+.factura-summary-card .card-body {
+  padding-top: 0.65rem;
+  padding-bottom: 0.65rem;
+}
+
+.factura-summary-grid {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.factura-summary-item {
+  padding: 7px 9px;
+  border-radius: var(--app-radius-md);
+}
+
+.factura-summary-label {
+  font-size: 0.66rem;
+}
+
+.factura-summary-value {
+  font-size: 0.84rem;
+}
+
+.factura-conta-sticky {
+  top: 12px;
+  max-height: calc(100vh - 76px);
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.factura-conta-panel .card-body {
+  gap: 2px;
+}
+
+.factura-conta-panel .row {
+  --bs-gutter-x: 0.55rem;
+  --bs-gutter-y: 0.45rem;
+}
+
+.factura-conta-mode-copy {
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.factura-conta-group-title {
+  font-size: 0.68rem;
+  margin-top: 2px;
+}
+
+.factura-field-help {
+  font-size: 0.74rem;
+}
+
+.factura-timeline-list {
+  gap: 8px;
+}
+
+.factura-timeline-item {
+  padding: 10px 12px;
+  border-radius: var(--app-radius-lg);
+}
+
+.factura-timeline-title,
+.factura-timeline-amount {
+  font-size: 0.84rem;
+}
+
+.factura-timeline-meta,
+.factura-timeline-description {
+  font-size: 0.76rem;
+}
+
+.factura-conta-actions {
+  gap: 7px;
+}

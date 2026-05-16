@@ -112,10 +112,10 @@ function FacturaDetalleContabilizacionSection({ viewModel }) {
 
         {canEditContabilizacion && modals.notas.isOpen && (
           <SelectionListModal
-            title="Seleccionar nota de credito"
+            title="Seleccionar nota de crédito"
             error={modals.notas.error}
             items={modals.notas.items}
-            emptyMessage="No hay notas de credito para este proveedor."
+            emptyMessage="No hay notas de crédito para este proveedor."
             onClose={modals.notas.onClose}
             onSelect={modals.notas.onSelect}
             renderLabel={modals.notas.renderLabel}

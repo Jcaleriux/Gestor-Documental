@@ -103,7 +103,7 @@ function AssociatedPdfPanel({
             type="button"
             onClick={onOpenExternal}
           >
-            Abrir en pestana nueva
+            Abrir en pestaña nueva
           </button>
           <button
             className={`btn btn-sm ${inlineOpen ? 'btn-success' : 'btn-outline-success'}`}
@@ -224,7 +224,7 @@ function FacturaDetallePdfSectionContent({
       <ProtectedPdfEmbed
         resourceUrl={pdfUrl}
         title="PDF"
-        height="600px"
+        height="min(66vh, 680px)"
         unavailableMessage={FACTURA_DETALLE_LABELS.pdf.pdfUnavailable}
       />
 
@@ -252,16 +252,16 @@ function FacturaDetallePdfSectionContent({
 
       {(notaCreditoActual?.ruta_pdf || notaCreditoActual?.ruta_xml) ? (
         <AssociatedPdfPanel
-          buttonLabel="Ver nota de credito"
+          buttonLabel="Ver nota de crédito"
           inlineCaption={`Nota asociada: ${notaCreditoActual.clave || `Nota #${notaCreditoActual.id}`}`}
           resourceUrl={notaCreditoPdfUrl}
-          title="Nota de credito PDF"
-          unavailableMessage="Nota de credito no disponible."
+          title="Nota de crédito PDF"
+          unavailableMessage="Nota de crédito no disponible."
           onOpenExternal={verNotaCreditoAsociada}
           canExpand={Boolean(notaCreditoPdfUrl)}
           expandUnavailableMessage={
             notaCreditoXmlUrl
-              ? 'Esta nota no tiene PDF. Solo se puede abrir XML en pestana nueva.'
+              ? 'Esta nota no tiene PDF. Solo se puede abrir XML en pestaña nueva.'
               : ''
           }
         />

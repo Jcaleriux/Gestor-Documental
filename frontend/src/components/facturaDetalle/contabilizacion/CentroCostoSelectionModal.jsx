@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import DataTable from '../../common/DataTable';
 import EmptyState from '../../common/EmptyState';
 import SearchInput from '../../common/SearchInput';
@@ -9,7 +10,7 @@ import {
 } from '../../../utils/centrosCosto.js';
 
 const HEADERS = [
-  { key: 'codigo', label: 'Codigo' },
+  { key: 'codigo', label: 'Código' },
   { key: 'nombre', label: 'Nombre' },
   { key: 'padre', label: 'Padre' },
   { key: 'aprobador', label: 'Aprobador' },
@@ -34,20 +35,34 @@ function CentroCostoSelectionModal({
     onlySelectable: true,
   }), [items, search]);
 
-  return (
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
+  const modal = (
     <div className="cc-modal-backdrop" role="presentation" onClick={onClose}>
       <div
         className="cc-modal-dialog"
         role="dialog"
         aria-modal="true"
         aria-label={title}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            onClose();
+          }
+        }}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="cc-modal-header">
           <div>
             <div className="cc-modal-title">{title}</div>
             <div className="cc-modal-copy">
-              Busca por codigo o nombre y selecciona el centro correcto para esta linea.
+              Busca por código o nombre y selecciona el centro correcto para esta línea.
             </div>
           </div>
           <button className="btn btn-outline-secondary btn-sm" type="button" onClick={onClose}>
@@ -67,16 +82,16 @@ function CentroCostoSelectionModal({
         {error ? <div className="alert alert-danger py-2 mb-3">{error}</div> : null}
 
         {loading ? (
-          <div className="text-muted small">Cargando catalogo...</div>
+          <div className="text-muted small">Cargando catálogo...</div>
         ) : filteredItems.length === 0 ? (
-          <EmptyState className="py-2">No hay centros de costo seleccionables para esta busqueda.</EmptyState>
+          <EmptyState className="py-2">No hay centros de costo seleccionables para esta búsqueda.</EmptyState>
         ) : (
           <DataTable headers={HEADERS} stickyHeader className="cc-modal-table-wrap">
             {filteredItems.map((item) => (
               <tr key={item.id}>
                 <td className="fw-semibold">{item.codigo}</td>
                 <td>{item.nombre}</td>
-                <td>{item.centro_padre_codigo || 'Raiz'}</td>
+                <td>{item.centro_padre_codigo || 'Raíz'}</td>
                 <td>
                   <div>{getCentroCostoAprobadorNombre(item) || '-'}</div>
                   <div className="small text-muted">{getCentroCostoAprobadorDetalle(item) || 'Sin detalle'}</div>
@@ -104,6 +119,8 @@ function CentroCostoSelectionModal({
       </div>
     </div>
   );
+
+  return createPortal(modal, document.body);
 }
 
 export default CentroCostoSelectionModal;
