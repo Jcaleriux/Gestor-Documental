@@ -67,8 +67,8 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
-  background: #f8fafc;
-  border: 1px solid #e6ebf2;
+  background: var(--app-surface-muted);
+  border: 1px solid var(--app-border);
   border-radius: 12px;
   padding: 12px;
 }
@@ -80,7 +80,7 @@
 
 .tramite-filter-item label {
   font-size: 0.8rem;
-  color: #667085;
+  color: var(--app-muted);
   margin-bottom: 4px;
 }
 
@@ -121,12 +121,12 @@
 
 .stat-value-sm {
   font-weight: 600;
-  color: #1d2939;
+  color: var(--app-text);
 }
 
 .stat-meta {
   font-size: 0.8rem;
-  color: #667085;
+  color: var(--app-muted);
   margin-top: 4px;
 }
 
@@ -193,7 +193,7 @@
 }
 
 .tramite-unificada-card {
-  border: 1px solid #e6ebf2;
+  border: 1px solid var(--app-border);
   border-radius: 16px;
 }
 
@@ -204,7 +204,7 @@
 .tramite-provider-preview-frame {
   width: 100%;
   min-height: 640px;
-  border: 1px solid #e6ebf2;
+  border: 1px solid var(--app-border);
   border-radius: 16px;
   background: #fff;
 }
