@@ -8,7 +8,7 @@
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: #98a2b3;
+  color: #667085;
 }
 
 .documents-filters .search-input input {
@@ -83,7 +83,7 @@
 .data-table-sort-icon {
   width: 14px;
   height: 14px;
-  color: #98a2b3;
+  color: #667085;
   flex-shrink: 0;
 }
 
@@ -203,7 +203,7 @@
 
 .data-table thead th {
   padding: 0.48rem 0.55rem;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   letter-spacing: 0.035em;
 }
 

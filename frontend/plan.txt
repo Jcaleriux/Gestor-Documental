@@ -1,0 +1,29 @@
+Summary
+
+Agregué frontend/scripts/visual_qa_contabilizacion.mjs y el script pnpm --dir frontend run qa:contabilizacion.
+El QA ahora hace login por API, guarda novogar_auth_token y la sociedad correcta en localStorage, abre /facturas/4390/contabilizacion, captura página + modal en 1920x1080 y 1366x768, y falla si hay errores de consola.
+Commit creado y push hecho en la rama frontend-compact-visual-qa: ba6fa41 Compactar UI de facturas y agregar QA visual.
+Cómo correrlo
+
+$env:NOVOGAR_QA_EMAIL="tu-email"
+$env:NOVOGAR_QA_PASSWORD="tu-password"
+$env:NOVOGAR_QA_FACTURA_ID="4390"
+corepack pnpm --dir frontend run qa:contabilizacion
+Validación
+
+corepack pnpm --dir frontend run qa:contabilizacion pasó.
+corepack pnpm --dir frontend run build pasó.
+corepack pnpm --dir frontend run test pasó: 220/220.
+corepack pnpm --dir frontend run lint pasó.
+Browser plugin no estaba disponible; usé Playwright directo.
+QA Visual
+
+URL: http://127.0.0.1:5173/facturas/4390/contabilizacion
+Viewports: 1920x1080, 1366x768
+Interacción probada: abrir modal Ver todos de centros de costo y cerrarlo.
+Consola: sin errores relevantes.
+Capturas generadas en:
+C:\Users\JOSANT~1\AppData\Local\Temp\novogar-visual-qa\desktop-1920x1080-page.png
+C:\Users\JOSANT~1\AppData\Local\Temp\novogar-visual-qa\desktop-1920x1080-modal.png
+C:\Users\JOSANT~1\AppData\Local\Temp\novogar-visual-qa\laptop-1366x768-page.png
+C:\Users\JOSANT~1\AppData\Local\Temp\novogar-visual-qa\laptop-1366x768-modal.png

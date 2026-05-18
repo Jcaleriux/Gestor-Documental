@@ -370,7 +370,7 @@
 }
 
 .search-icon {
-  color: #98a2b3;
+  color: #667085;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -384,7 +384,7 @@
 
 .search-shortcut {
   font-size: 0.75rem;
-  color: #98a2b3;
+  color: #667085;
   padding: 2px 6px;
   border: 1px solid #e6ebf2;
   border-radius: 6px;

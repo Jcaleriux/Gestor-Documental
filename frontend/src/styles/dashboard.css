@@ -42,8 +42,8 @@
 }
 
 .dashboard-status-dot {
-  width: 0.68rem;
-  height: 0.68rem;
+  width: 0.75rem;
+  height: 0.75rem;
   border-radius: 999px;
   flex: 0 0 auto;
 }
@@ -95,7 +95,7 @@
 }
 
 .dashboard-work-queue-link-hint {
-  margin-top: 0.7rem;
+  margin-top: 0.75rem;
   font-size: 0.82rem;
   font-weight: 600;
   color: #2b5ce6;
@@ -428,7 +428,7 @@
 }
 
 .activity-meta {
-  color: #98a2b3;
+  color: #667085;
   font-size: 0.85rem;
 }
 
@@ -444,7 +444,7 @@
 }
 
 .status-value {
-  color: #98a2b3;
+  color: #667085;
 }
 
 .status-bar {

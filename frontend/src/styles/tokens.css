@@ -1,20 +1,66 @@
 :root {
+  /* COLORS - Neutral & Semantic */
   --app-bg: #f5f7fb;
   --app-surface: #ffffff;
   --app-surface-muted: #f8fafc;
   --app-border: #e6ebf2;
   --app-text: #1d2939;
+  --app-text-secondary: #344054;
   --app-muted: #667085;
+  --app-muted-light: #98a2b3;
   --app-primary: #1d4ed8;
   --app-primary-soft: #eef4ff;
+  --app-success: #12b76a;
+  --app-success-soft: #ecfdf3;
+  --app-warning: #f79009;
+  --app-warning-soft: #fff7e6;
+  --app-danger: #f04438;
+  --app-danger-soft: #fef3f2;
+  --app-info: #1570ef;
+  --app-info-soft: #eef4ff;
+
+  /* BORDER RADIUS - Complete scale */
+  --app-radius-xs: 6px;
   --app-radius-sm: 8px;
   --app-radius-md: 10px;
   --app-radius-lg: 14px;
+  --app-radius-xl: 16px;
+  --app-radius-2xl: 18px;
+
+  /* SHADOWS - Complete scale */
+  --app-shadow-xs: 0 4px 12px rgba(15, 23, 42, 0.04);
   --app-shadow-sm: 0 8px 20px rgba(15, 23, 42, 0.06);
-  --app-shadow-md: 0 18px 38px rgba(15, 23, 42, 0.12);
+  --app-shadow-md: 0 12px 24px rgba(15, 23, 42, 0.08);
+  --app-shadow-lg: 0 18px 32px rgba(15, 23, 42, 0.14);
+  --app-shadow-xl: 0 28px 60px rgba(15, 23, 42, 0.24);
+
+  /* SPACING - Complete scale */
+  --app-space-xs: 4px;
+  --app-space-sm: 8px;
+  --app-space-md: 12px;
+  --app-space-lg: 16px;
+  --app-space-xl: 20px;
+  --app-space-2xl: 24px;
+  --app-space-3xl: 32px;
+
+  /* TYPOGRAPHY - Font sizes */
+  --app-font-size-xs: 0.75rem;      /* 12px */
+  --app-font-size-sm: 0.84rem;      /* 13.4px */
+  --app-font-size-base: 0.9rem;     /* 14.4px */
+  --app-font-size-md: 1rem;         /* 16px */
+  --app-font-size-lg: 1.15rem;      /* 18.4px */
+  --app-font-size-xl: 1.375rem;     /* 22px */
+
+  /* LINE HEIGHT - Readability */
+  --app-line-height-tight: 1.3;
+  --app-line-height-normal: 1.4;
+  --app-line-height-relaxed: 1.5;
+  --app-line-height-loose: 1.6;
+
+  /* LEGACY - Keep for backward compatibility */
   --app-font-size: 14px;
   --app-control-font-size: 0.84rem;
-  --app-label-font-size: 0.74rem;
+  --app-label-font-size: 0.75rem;
   --app-compact-gap: 0.65rem;
   --app-compact-padding: 0.75rem;
 }
