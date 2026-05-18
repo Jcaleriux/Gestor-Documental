@@ -1,0 +1,45 @@
+{
+  "generatedAt": "2026-05-18T04:43:12.955Z",
+  "frontendUrl": "http://127.0.0.1:5173",
+  "backendUrl": "http://127.0.0.1:3002",
+  "sociedadId": "1",
+  "sociedadNombre": "PULPERIA LA ESQUINA",
+  "captures": [
+    {
+      "fileName": "01-dashboard.png",
+      "route": "/",
+      "slug": "01-dashboard",
+      "description": "Dashboard general con KPIs operativos, moneda y actividad reciente."
+    },
+    {
+      "fileName": "02-facturas.png",
+      "route": "/facturas",
+      "slug": "02-facturas",
+      "description": "Listado de facturas con filtros, resumen y vista operativa."
+    },
+    {
+      "fileName": "03-tramites.png",
+      "route": "/tramites",
+      "slug": "03-tramites",
+      "description": "Workflow de tramites de pago con seguimiento por estado."
+    },
+    {
+      "fileName": "04-reservas.png",
+      "route": "/reservas",
+      "slug": "04-reservas",
+      "description": "Modulo de reservas con trazabilidad documental y acciones operativas."
+    },
+    {
+      "fileName": "05-ordenes-compra.png",
+      "route": "/ordenes-compra",
+      "slug": "05-ordenes-compra",
+      "description": "Carga y consulta de ordenes de compra por proveedor."
+    },
+    {
+      "fileName": "06-usuarios.png",
+      "route": "/usuarios",
+      "slug": "06-usuarios",
+      "description": "Administracion de usuarios, roles y acceso por sociedades."
+    }
+  ]
+}

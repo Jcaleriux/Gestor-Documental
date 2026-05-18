@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Resumen de Proyecto - Gestión Documental Novogar</title>
+    <style>
+      :root {
+        --ink: #16213e;
+        --muted: #5f6b85;
+        --line: #d8e0ee;
+        --soft: #eef3fb;
+        --panel: #ffffff;
+        --accent: #1f5eff;
+        --accent-soft: #dfe9ff;
+        --success: #0a7f56;
+        --shadow: 0 18px 50px rgba(18, 31, 62, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Arial, sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(31, 94, 255, 0.12),
+            transparent 32%
+          ),
+          linear-gradient(180deg, #f7faff 0%, #eef3fb 100%);
+        line-height: 1.5;
+      }
+
+      .page {
+        width: 210mm;
+        min-height: 297mm;
+        margin: 0 auto;
+        padding: 16mm 14mm 18mm;
+      }
+
+      .hero,
+      .card,
+      .shot {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        box-shadow: var(--shadow);
+      }
+
+      .hero {
+        padding: 18px 22px;
+        margin-bottom: 18px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .hero::after {
+        content: "";
+        position: absolute;
+        inset: auto -80px -80px auto;
+        width: 220px;
+        height: 220px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle,
+          rgba(31, 94, 255, 0.18),
+          transparent 68%
+        );
+      }
+
+      .eyebrow {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 28px;
+        line-height: 1.15;
+        margin-bottom: 10px;
+        max-width: 85%;
+      }
+
+      h2 {
+        font-size: 18px;
+        margin-bottom: 10px;
+      }
+
+      h3 {
+        font-size: 15px;
+        margin-bottom: 8px;
+      }
+
+      .hero p {
+        max-width: 88%;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .meta {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .meta-item {
+        padding: 12px;
+        border-radius: 14px;
+        background: var(--soft);
+        border: 1px solid var(--line);
+      }
+
+      .meta-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+
+      .meta-value {
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1.05fr 0.95fr;
+        gap: 14px;
+        margin-bottom: 14px;
+      }
+
+      .card {
+        padding: 16px 18px;
+      }
+
+      .card p,
+      .card li {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      li + li {
+        margin-top: 7px;
+      }
+
+      .impact {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin: 14px 0;
+      }
+
+      .impact-box {
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: linear-gradient(180deg, #ffffff 0%, #f5f8ff 100%);
+      }
+
+      .impact-number {
+        font-size: 22px;
+        font-weight: 800;
+        color: var(--accent);
+        margin-bottom: 6px;
+      }
+
+      .impact-note {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .section-title {
+        margin: 18px 0 10px;
+        font-size: 18px;
+      }
+
+      .shots {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .shot {
+        padding: 10px;
+        break-inside: avoid;
+      }
+
+      .shot img {
+        width: 100%;
+        display: block;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+      }
+
+      .shot h3 {
+        margin-top: 10px;
+      }
+
+      .shot p {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .footer {
+        margin-top: 14px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        background: #f7faff;
+        border: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .accent-list li::marker {
+        color: var(--accent);
+      }
+
+      .success {
+        color: var(--success);
+        font-weight: 700;
+      }
+
+      @page {
+        size: A4;
+        margin: 10mm;
+      }
+
+      @media print {
+        body {
+          background: #fff;
+        }
+
+        .page {
+          width: auto;
+          min-height: auto;
+          margin: 0;
+          padding: 0;
+        }
+
+        .hero,
+        .card,
+        .shot,
+        .footer,
+        .impact-box {
+          box-shadow: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <div class="eyebrow">Proyecto destacado</div>
+        <h1>Plataforma de gestión documental y workflow de pagos</h1>
+        <p>
+          Sistema interno orientado a centralizar facturas, trazabilidad
+          documental, contabilización, workflow de trámites de pago y operación
+          administrativa. La solución combina producto, arquitectura y ejecución
+          full stack para resolver procesos financieros sensibles con mayor
+          control y visibilidad.
+        </p>
+
+        <div class="meta">
+          <div class="meta-item">
+            <div class="meta-label">Stack</div>
+            <div class="meta-value">
+              React, Vite, Node.js, Express, PostgreSQL
+            </div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Tipo de sistema</div>
+            <div class="meta-value">Backoffice financiero y documental</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Dominios</div>
+            <div class="meta-value">Facturas, trámites, reservas, usuarios</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Enfoque</div>
+            <div class="meta-value">Escalabilidad operativa y trazabilidad</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h2>Alcance funcional</h2>
+          <p>
+            La plataforma reemplaza procesos dispersos entre correos, archivos y
+            hojas de cálculo. Centraliza documentos fiscales, su estado
+            operativo, la relación con sociedades, proveedores, centros de costo
+            y el flujo de aprobación y pago.
+          </p>
+          <ul class="accent-list" style="margin-top: 12px">
+            <li>Login con JWT, roles y acceso por sociedades.</li>
+            <li>
+              Gestión de facturas, notas de crédito, tiquetes y adjuntos
+              PDF/XML.
+            </li>
+            <li>
+              Contabilización con asociaciones operativas y respaldo documental.
+            </li>
+            <li>Workflow de trámites de pago con historial por etapa.</li>
+            <li>
+              Dashboard operativo con métricas y separación monetaria por
+              divisa.
+            </li>
+            <li>
+              Módulos adicionales para reservas, órdenes de compra y
+              administración.
+            </li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <h2>Contribución técnica</h2>
+          <ul class="accent-list">
+            <li>
+              Construcción y evolución de frontend modular en React con rutas
+              lazy-loaded.
+            </li>
+            <li>
+              Diseño de pantallas operativas para dashboard, facturas, trámites,
+              reservas y administración.
+            </li>
+            <li>
+              Integración de backend en Express con repositorios SQL sobre
+              PostgreSQL.
+            </li>
+            <li>
+              Soporte a permisos, sesión autenticada, filtros por sociedad y
+              flujo documental.
+            </li>
+            <li>
+              Trabajo sobre trazabilidad, auditoría e historiales de estados.
+            </li>
+            <li>
+              Automatización de evidencia visual con Playwright para QA y
+              presentaciones.
+            </li>
+          </ul>
+        </article>
+      </section>
+
+      <section class="grid">
+        <article class="card">
+          <h2>Decisiones de ingeniería relevantes</h2>
+          <ul class="accent-list">
+            <li>Separación clara entre frontend React y backend Express.</li>
+            <li>
+              Persistencia en PostgreSQL con SQL directo y filesystem para
+              documentos.
+            </li>
+            <li>
+              Manejo de moneda como dato de dominio, evitando mezclar CRC y USD.
+            </li>
+            <li>Desacople entre estado documental y workflow de pago.</li>
+            <li>
+              Diseño por módulos para crecer sin reescribir todo el sistema.
+            </li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <h2>Valor del proyecto</h2>
+          <ul class="accent-list">
+            <li>
+              Producto de uso interno con enfoque en operación financiera real y
+              trazabilidad.
+            </li>
+            <li>
+              Trabajo full stack sobre UI, backend, datos, permisos y reglas de
+              negocio.
+            </li>
+            <li>
+              Diseñado para reducir errores manuales y centralizar información
+              crítica.
+            </li>
+            <li>
+              Arquitectura preparada para crecer por módulos sin perder claridad
+              operativa.
+            </li>
+          </ul>
+        </article>
+      </section>
+
+      <h2 class="section-title">Capturas reales de la aplicación</h2>
+      <section class="shots">
+        <article class="shot">
+          <img
+            src="./capturas-app/01-dashboard.png"
+            alt="Dashboard del sistema"
+          />
+          <h3>Dashboard</h3>
+          <p>
+            Vista ejecutiva con KPIs, cola operativa, totales por moneda y
+            resumen del estado documental.
+          </p>
+        </article>
+
+        <article class="shot">
+          <img
+            src="./capturas-app/02-facturas.png"
+            alt="Pantalla de facturas"
+          />
+          <h3>Facturas</h3>
+          <p>
+            Listado operativo con filtros, búsqueda, resumen y navegación hacia
+            la contabilización.
+          </p>
+        </article>
+
+        <article class="shot">
+          <img
+            src="./capturas-app/03-tramites.png"
+            alt="Pantalla de trámites de pago"
+          />
+          <h3>Trámites de pago</h3>
+          <p>
+            Seguimiento del workflow de pago con estados, aprobaciones y
+            trazabilidad de documentos.
+          </p>
+        </article>
+
+        <article class="shot">
+          <img
+            src="./capturas-app/04-reservas.png"
+            alt="Pantalla de reservas"
+          />
+          <h3>Reservas</h3>
+          <p>
+            Módulo para gestión de reservas y control documental asociado por
+            sociedad y unidad.
+          </p>
+        </article>
+
+        <article class="shot">
+          <img
+            src="./capturas-app/05-ordenes-compra.png"
+            alt="Pantalla de órdenes de compra"
+          />
+          <h3>Órdenes de compra</h3>
+          <p>
+            Carga y consulta de órdenes por proveedor como parte del flujo de
+            contabilización.
+          </p>
+        </article>
+
+        <article class="shot">
+          <img
+            src="./capturas-app/06-usuarios.png"
+            alt="Pantalla de administración de usuarios"
+          />
+          <h3>Administración</h3>
+          <p>
+            Gestión de usuarios, roles y acceso por sociedades dentro del
+            backoffice.
+          </p>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>
