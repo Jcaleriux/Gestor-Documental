@@ -20,8 +20,8 @@
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
   background: #ffffff;
-  border: 1px solid #e6ebf2;
-  border-radius: 12px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-md);
   padding: 12px;
 }
 
@@ -42,9 +42,9 @@
 }
 
 .table-card {
-  border-radius: 16px;
+  border-radius: var(--app-radius-xl);
   overflow: hidden;
-  border: 1px solid #e6ebf2;
+  border: 1px solid var(--app-border);
 }
 
 .data-table thead th {
@@ -54,7 +54,7 @@
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  border-bottom: 1px solid #e6ebf2;
+  border-bottom: 1px solid var(--app-border);
   white-space: nowrap;
 }
 
@@ -146,7 +146,7 @@
   gap: 8px;
 }
 .section-card {
-  border-radius: 18px;
+  border-radius: var(--app-radius-2xl);
 }
 
 .section-title {
@@ -227,9 +227,9 @@
 }
 
 .section-card {
-  border: 1px solid var(--app-border) !important;
+  border: 1px solid var(--app-border);
   border-radius: var(--app-radius-lg);
-  box-shadow: var(--app-shadow-sm) !important;
+  box-shadow: var(--app-shadow-sm);
 }
 
 .section-card .card-body {
@@ -237,7 +237,7 @@
 }
 
 .section-card-header {
-  margin-bottom: 0.65rem !important;
+  margin-bottom: 0.65rem;
 }
 
 .section-card-title {

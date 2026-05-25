@@ -1,5 +1,6 @@
 @import './tokens.css';
 @import './_utilities-accessibility.css';
+@import './_components-badges.css';
 @import './layout.css';
 @import './tramites.css';
 @import './components.css';

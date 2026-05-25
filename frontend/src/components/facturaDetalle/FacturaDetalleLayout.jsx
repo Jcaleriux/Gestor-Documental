@@ -18,7 +18,6 @@ function FacturaDetalleLayout({ layoutProps }) {
     <div className="container-fluid">
       <PageHeader
         title={header.title}
-        subtitle={header.subtitle}
         actions={(
           <Link className="btn btn-light" to={header.backTo}>
             {header.backLabel}

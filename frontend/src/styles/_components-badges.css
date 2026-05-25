@@ -1,0 +1,24 @@
+/**
+ * Badge Components - Soft variants
+ * Color-coded badges for status indicators
+ */
+
+.badge-soft-success {
+  background-color: var(--app-success-soft);
+  color: var(--app-success);
+}
+
+.badge-soft-warning {
+  background-color: var(--app-warning-soft);
+  color: var(--app-warning);
+}
+
+.badge-soft-danger {
+  background-color: var(--app-danger-soft);
+  color: var(--app-danger);
+}
+
+.badge-soft-info {
+  background-color: var(--app-info-soft);
+  color: var(--app-info);
+}

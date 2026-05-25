@@ -21,7 +21,7 @@
 
   .sidebar.mobile-open {
     transform: translateX(0);
-    box-shadow: 0 28px 60px rgba(15, 23, 42, 0.24);
+    box-shadow: var(--app-shadow-xl);
   }
 
   .mobile-menu-btn {

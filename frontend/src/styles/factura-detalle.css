@@ -11,8 +11,8 @@
 
 .factura-summary-item {
   min-width: 0;
-  border: 1px solid #e6ebf2;
-  border-radius: 14px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-lg);
   background: #f8fafc;
   padding: 10px 12px;
 }
@@ -98,8 +98,8 @@
 }
 
 .factura-timeline-item {
-  border: 1px solid #e6ebf2;
-  border-radius: 16px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-xl);
   background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
   padding: 14px 16px;
 }
@@ -200,8 +200,8 @@
 
 .factura-timeline-motivo {
   margin-top: 10px;
-  border: 1px solid #e6ebf2;
-  border-radius: 12px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-md);
   background: #f8fafc;
   color: #475467;
   padding: 10px 12px;
