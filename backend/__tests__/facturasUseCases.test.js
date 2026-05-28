@@ -323,6 +323,21 @@ describe('facturasUseCases', () => {
     }));
   });
 
+  test('listFacturas acepta sortBy documento', async () => {
+    const repo = createRepoMock();
+    const useCases = createFacturasUseCases({ facturasRepo: repo });
+
+    await useCases.listFacturas({
+      sortBy: 'documento',
+      sortDir: 'asc',
+    });
+
+    expect(repo.listFacturas).toHaveBeenCalledWith(expect.objectContaining({
+      sortBy: 'documento',
+      sortDir: 'asc',
+    }));
+  });
+
   test('listFacturas rechaza sortBy invalido', async () => {
     const repo = createRepoMock();
     const useCases = createFacturasUseCases({ facturasRepo: repo });

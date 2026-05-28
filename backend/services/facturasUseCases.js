@@ -15,6 +15,8 @@ const FACTURAS_SORT_FIELDS = new Set([
   'emisor',
   'estado',
   'total_factura',
+  'documento',
+  'consecutivo',
 ]);
 const NOTAS_CREDITO_SORT_FIELDS = new Set([
   'fecha_emision',
@@ -125,7 +127,9 @@ const normalizeDateInput = (value, fieldName) => {
 };
 
 const normalizeSortField = (value) => {
-  const normalized = normalizeOptionalText(value) || 'fecha_emision';
+  let normalized = normalizeOptionalText(value) || 'fecha_emision';
+  // Permitir que "documento" y "consecutivo" sean equivalentes
+  if (normalized === 'documento') normalized = 'consecutivo';
   if (!FACTURAS_SORT_FIELDS.has(normalized)) {
     throw createError(400, 'sortBy invalido');
   }

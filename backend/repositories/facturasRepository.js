@@ -352,6 +352,9 @@ const buildFacturasOrderBy = (sortBy, sortDir) => {
       return `COALESCE(fe.estado, '') ${sortDir}, fe.fecha_emision DESC NULLS LAST, fe.id DESC`;
     case 'total_factura':
       return `fe.total_factura ${sortDir} NULLS LAST, fe.fecha_emision DESC NULLS LAST, fe.id DESC`;
+    case 'documento':
+    case 'consecutivo':
+      return `LOWER(COALESCE(NULLIF(fe.numero_documento, ''), fe.clave_text, '')) ${sortDir} NULLS LAST, fe.fecha_emision DESC NULLS LAST, fe.id DESC`;
     case 'fecha_emision':
     default:
       return `fe.fecha_emision ${sortDir} NULLS LAST, fe.id DESC`;

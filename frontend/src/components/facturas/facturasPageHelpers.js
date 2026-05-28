@@ -20,6 +20,8 @@ export const FACTURAS_TABLE_HEADERS = Object.freeze([
   {
     key: 'documento',
     label: FACTURAS_LABELS.columns.documento,
+    sortable: true,
+    sortKey: 'consecutivo', // El backend acepta 'consecutivo' como campo válido
   },
   {
     key: 'emisor',
@@ -120,6 +122,18 @@ export const getReturnActionLabel = (returnLabel) => {
   return `Volver a ${normalized}`;
 };
 
+const decodeHtmlEntities = (value) => {
+  const normalized = String(value ?? '');
+
+  if (!normalized || typeof document === 'undefined') {
+    return normalized;
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.innerHTML = normalized;
+  return textarea.value;
+};
+
 export const getDocumentoPrincipal = (factura) => (
   factura.consecutivo
   || factura.numero_consecutivo
@@ -127,11 +141,10 @@ export const getDocumentoPrincipal = (factura) => (
   || `ID ${factura.id}`
 );
 
-export const getEmisorNombre = (factura) => (
-  factura.emisor?.Nombre
-  || factura.emisor?.nombre
-  || '-'
-);
+export const getEmisorNombre = (factura) => {
+  const candidate = factura.emisor?.Nombre || factura.emisor?.nombre || '';
+  return decodeHtmlEntities(candidate) || '-';
+};
 
 export const getEmisorIdentificacion = (factura) => (
   factura.emisor?.Identificacion?.Numero
