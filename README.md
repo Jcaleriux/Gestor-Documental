@@ -48,6 +48,7 @@ Sistema web para gestion de facturas, procesamiento de XML, documentos y tramite
 - `docs/requerimientos_vigentes.md`: resumen funcional vigente y alineado al sistema actual.
 - `docs/historico/REQUERIMIENTOS.md`: levantamiento inicial conservado como referencia historica.
 - `docs/arquitectura/`: alcance, estados, permisos y decisiones de arquitectura que complementan el estado actual.
+- `docs/tecnica/README.md`: guia tecnica para desarrolladores, stack, capas, contratos, datos y validacion.
 - `docs/operaciones/despliegue_checklist.md`: checklist manual de despliegue para staging/produccion.
 - `docs/operaciones/release_readiness.md`: guia y evidencia base para evaluar readiness antes del primer release productivo.
 - `docs/operaciones/runbook_backup_rollback.md`: runbook explicito de backup y rollback para releases y deployments productivos.

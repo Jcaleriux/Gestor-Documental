@@ -13,6 +13,7 @@ Este directorio agrupa la documentacion funcional, tecnica, operativa e historic
 ## Carpetas
 
 - `arquitectura/`: estado actual, inventario, permisos y brechas/mejoras arquitectonicas.
+- `tecnica/`: guia tecnica para desarrolladores, stack, capas, contratos, datos y validacion.
 - `producto/`: vision de producto, goals, roadmap, backlog, tarjetas pendientes para Trello, releases, epics, sprints y templates.
 - `operaciones/`: despliegue, preproduccion local, readiness, backup, rollback y demo.
 - `integraciones/`: notas y scripts de apoyo para integraciones externas.
