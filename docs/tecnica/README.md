@@ -6,7 +6,8 @@ Esta guia es el punto de entrada tecnico para entender, cambiar y validar el sis
 
 ## Documentos Tecnicos
 
-- `endpoints.md`: catalogo inicial de endpoints criticos, permisos, requests, errores y tests relacionados.
+- `endpoints.md`: catalogo de endpoints, permisos, requests, errores y tests relacionados.
+- `flujos_estado.md`: mapa de estados de facturas, tramites de pago, decisiones por documento y tesoreria.
 
 ## Estado General De Documentacion Tecnica
 
@@ -181,9 +182,9 @@ Para cambios acotados, preferir pruebas dirigidas del modulo tocado y luego un b
 
 Prioridad alta:
 
-- Completar el catalogo de endpoints para todos los modulos y evolucionarlo a OpenAPI si el proyecto lo requiere.
+- Evolucionar el catalogo de endpoints a OpenAPI si el proyecto requiere contratos ejecutables o generacion de clientes.
 - Diagrama C4 o Mermaid de contexto/contenedores vigente, no historico.
-- Mapa de flujo de estados de `facturas`, `tramites_pago` y aprobaciones por etapa.
+- Mantener el mapa de flujos de estado sincronizado cuando cambien reglas de `facturas`, `tramites_pago` o aprobaciones por etapa.
 
 Prioridad media:
 

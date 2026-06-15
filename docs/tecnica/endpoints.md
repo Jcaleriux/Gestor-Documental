@@ -402,6 +402,506 @@ Notas:
 - Los archivos via base64 estan sujetos a limites runtime como `TRAMITES_CARATULA_MAX_FILE_MB`.
 - No cambiar el flujo de caratulas como refactor interno; afecta workflow operativo y evidencia documental.
 
+## Usuarios, Roles Y Sociedades
+
+Fuente: `backend/routes/usuarios.js`, `backend/routes/sociedades.js`, `backend/validation/schemas.js`.
+
+| Metodo | Endpoint | Permiso | Descripcion | Tests relacionados |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/usuarios` | `USUARIOS_ADMINISTRAR` | Lista usuarios. | Sin test dedicado identificado |
+| `GET` | `/api/roles` | `USUARIOS_ADMINISTRAR` | Lista roles. | Sin test dedicado identificado |
+| `POST` | `/api/usuarios` | `USUARIOS_ADMINISTRAR` | Crea usuario. | Sin test dedicado identificado |
+| `PATCH` | `/api/usuarios/:id` | `USUARIOS_ADMINISTRAR` | Actualiza usuario. | Sin test dedicado identificado |
+| `GET` | `/api/usuarios/:id/sociedades` | `USUARIOS_ADMINISTRAR` | Lista sociedades asignadas a usuario. | Sin test dedicado identificado |
+| `PUT` | `/api/usuarios/:id/sociedades` | `USUARIOS_ADMINISTRAR` | Reemplaza sociedades asignadas a usuario. | Sin test dedicado identificado |
+| `GET` | `/api/sociedades` | Alguno de `SOCIEDADES_ACCESS_PERMISSIONS` | Lista sociedades visibles para el usuario. | Sin test dedicado identificado |
+
+### POST /api/usuarios
+
+Request:
+
+```json
+{
+  "nombre": "Usuario Demo",
+  "email": "usuario@novogar.local",
+  "password": "Password2026!",
+  "rol_id": 1,
+  "activo": true
+}
+```
+
+### PATCH /api/usuarios/:id
+
+Request:
+
+```json
+{
+  "nombre": "Usuario Demo",
+  "email": "usuario@novogar.local",
+  "rol_id": 1,
+  "activo": true,
+  "password": ""
+}
+```
+
+Notas:
+
+- `password` acepta vacio o `null` en actualizacion para conservar la clave vigente.
+- Crear usuario requiere password de 8 a 255 caracteres.
+
+### PUT /api/usuarios/:id/sociedades
+
+Request:
+
+```json
+{
+  "sociedad_ids": [1, 2]
+}
+```
+
+## Proveedores
+
+Fuente: `backend/routes/proveedores.js`, `backend/validation/schemas.js`.
+
+| Metodo | Endpoint | Permiso | Descripcion | Tests relacionados |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/proveedores` | `USUARIOS_ADMINISTRAR` o `DOCUMENTOS_CONTABILIZAR` o `DOCUMENTOS_SUBIR` | Lista proveedores. | Sin test dedicado identificado |
+| `POST` | `/api/proveedores` | `USUARIOS_ADMINISTRAR` | Crea proveedor. | Sin test dedicado identificado |
+| `PATCH` | `/api/proveedores/:id` | `USUARIOS_ADMINISTRAR` | Actualiza proveedor. | Sin test dedicado identificado |
+
+### POST /api/proveedores
+
+Request:
+
+```json
+{
+  "sociedad_id": 1,
+  "identificacion_tipo": "JURIDICA",
+  "identificacion_numero": "3-101-000000",
+  "nombre": "Proveedor Demo S.A.",
+  "nombre_comercial": "Proveedor Demo",
+  "correo_electronico": "proveedor@demo.local",
+  "telefono_codigo_pais": "506",
+  "telefono_numero": "22222222"
+}
+```
+
+### PATCH /api/proveedores/:id
+
+Request:
+
+```json
+{
+  "identificacion_tipo": "JURIDICA",
+  "identificacion_numero": "3-101-000000",
+  "nombre": "Proveedor Demo S.A.",
+  "nombre_comercial": "Proveedor Demo",
+  "correo_electronico": "proveedor@demo.local",
+  "telefono_codigo_pais": "506",
+  "telefono_numero": "22222222"
+}
+```
+
+## Centros De Costo
+
+Fuente: `backend/routes/centrosCosto.js`, `backend/validation/schemas.js`.
+
+| Metodo | Endpoint | Permiso | Descripcion | Tests relacionados |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/centros-costo` | `USUARIOS_ADMINISTRAR` o `DOCUMENTOS_CONTABILIZAR` o `DOCUMENTOS_VER` | Lista centros de costo. | Sin test dedicado identificado |
+| `POST` | `/api/centros-costo` | `USUARIOS_ADMINISTRAR` | Crea centro de costo. | Sin test dedicado identificado |
+| `PUT` | `/api/centros-costo/bulk` | `USUARIOS_ADMINISTRAR` | Carga o actualiza centros de costo en lote. | Sin test dedicado identificado |
+| `PATCH` | `/api/centros-costo/:id` | `USUARIOS_ADMINISTRAR` | Actualiza centro de costo. | Sin test dedicado identificado |
+
+### POST /api/centros-costo
+
+Request:
+
+```json
+{
+  "sociedad_id": 1,
+  "codigo": "CC-001",
+  "nombre": "Administracion",
+  "centro_padre_id": null,
+  "codigo_padre": "",
+  "centro_padre_codigo": "",
+  "usuario_aprobador_id": 1,
+  "rol_aprobador_id": null,
+  "seleccionable_en_contabilizacion": true,
+  "activo": true,
+  "orden": 1,
+  "metadata": {}
+}
+```
+
+Reglas:
+
+- Debe indicar `usuario_aprobador_id` o `rol_aprobador_id`, pero no ambos.
+- `PATCH /api/centros-costo/:id` usa los mismos campos salvo `sociedad_id`.
+
+### PUT /api/centros-costo/bulk
+
+Request:
+
+```json
+{
+  "sociedad_id": 1,
+  "centros": [
+    {
+      "id": 1,
+      "codigo": "CC-001",
+      "nombre": "Administracion",
+      "usuario_aprobador_id": 1,
+      "rol_aprobador_id": null,
+      "activo": true
+    }
+  ]
+}
+```
+
+## Tablas De Pago
+
+Fuente: `backend/routes/tablasPago.js`, `backend/validation/schemas.js`.
+
+| Metodo | Endpoint | Permiso | Descripcion | Tests relacionados |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/tablas-pago` | `DOCUMENTOS_CONTABILIZAR` o `DOCUMENTOS_SUBIR` o `USUARIOS_ADMINISTRAR` | Lista tablas de pago. | Sin test dedicado identificado |
+| `POST` | `/api/tablas-pago` | `DOCUMENTOS_SUBIR` o `USUARIOS_ADMINISTRAR` | Carga tabla de pago. | Sin test dedicado identificado |
+| `DELETE` | `/api/tablas-pago/:tablaPagoId` | `DOCUMENTOS_SUBIR` o `USUARIOS_ADMINISTRAR` | Elimina tabla de pago. | Sin test dedicado identificado |
+
+### POST /api/tablas-pago
+
+Request:
+
+```json
+{
+  "sociedad_id": 1,
+  "proveedor_id": 1,
+  "nombre": "Tabla Junio",
+  "filename": "tabla-pago.pdf",
+  "file_base64": "base64",
+  "metadata": {},
+  "usuario": "usuario@novogar.local"
+}
+```
+
+Notas:
+
+- Los archivos estan sujetos a `TABLAS_PAGO_MAX_FILE_MB`.
+
+## Ordenes De Compra
+
+Fuente: `backend/routes/ordenesCompra.js`, `backend/validation/schemas.js`.
+
+| Metodo | Endpoint | Permiso | Descripcion | Tests relacionados |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/ordenes-compra` | `DOCUMENTOS_CONTABILIZAR` o `DOCUMENTOS_SUBIR` o `USUARIOS_ADMINISTRAR` | Lista ordenes de compra. | Sin test dedicado identificado |
+| `POST` | `/api/ordenes-compra` | `DOCUMENTOS_SUBIR` o `USUARIOS_ADMINISTRAR` | Crea orden de compra con archivo. | Sin test dedicado identificado |
+| `POST` | `/api/ordenes-compra/auto-import` | `DOCUMENTOS_SUBIR` o `USUARIOS_ADMINISTRAR` | Importa orden de compra desde archivo. | Sin test dedicado identificado |
+| `PATCH` | `/api/ordenes-compra/:ordenCompraId/estado-manual` | `DOCUMENTOS_CONTABILIZAR` o `USUARIOS_ADMINISTRAR` | Cambia estado manual de orden de compra. | Sin test dedicado identificado |
+| `DELETE` | `/api/ordenes-compra/:ordenCompraId` | `DOCUMENTOS_SUBIR` o `USUARIOS_ADMINISTRAR` | Elimina orden de compra. | Sin test dedicado identificado |
+
+### POST /api/ordenes-compra
+
+Request:
+
+```json
+{
+  "sociedad_id": 1,
+  "proveedor_id": 1,
+  "numero_oc": "OC-001",
+  "nombre": "Orden demo",
+  "monto": 1000,
+  "moneda": "CRC",
+  "fecha": "2026-06-08",
+  "filename": "orden.pdf",
+  "file_base64": "base64",
+  "metadata": {},
+  "usuario": "usuario@novogar.local"
+}
+```
+
+Reglas:
+
+- Debe venir `numero_oc` o `nombre`.
+- `monto` debe ser positivo.
+- `moneda` es obligatoria. No omitirla en UI, reportes ni validaciones.
+
+### POST /api/ordenes-compra/auto-import
+
+Request:
+
+```json
+{
+  "sociedad_id": 1,
+  "filename": "orden.pdf",
+  "file_base64": "base64",
+  "metadata": {},
+  "usuario": "usuario@novogar.local"
+}
+```
+
+### PATCH /api/ordenes-compra/:ordenCompraId/estado-manual
+
+Request:
+
+```json
+{
+  "estado": "cerrada"
+}
+```
+
+Valores validos:
+
+- `abierta`
+- `cerrada`
+
+## Reservas
+
+Fuente: `backend/routes/reservas.js`, `backend/validation/schemas.js`.
+
+Permisos de lectura de reservas:
+
+- `RESERVAS_VER`
+- `RESERVAS_CREAR`
+- `RESERVAS_GESTIONAR`
+
+| Metodo | Endpoint | Permiso | Descripcion | Tests relacionados |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/reservas/operaciones` | Alguno de permisos de lectura | Lista operaciones de reserva. | `reservasUseCases.test.js` |
+| `GET` | `/api/reservas/operaciones/:operacionId` | Alguno de permisos de lectura | Obtiene detalle de operacion. | `reservasUseCases.test.js` |
+| `POST` | `/api/reservas/operaciones` | `RESERVAS_CREAR` o `RESERVAS_GESTIONAR` | Crea operacion de reserva. | `reservasUseCases.test.js` |
+| `POST` | `/api/reservas/operaciones/sync-documento` | `RESERVAS_CREAR` o `RESERVAS_GESTIONAR` | Sincroniza documento con operacion de reserva. | `reservasDocumentStorage.test.js` |
+| `POST` | `/api/reservas/operaciones/:operacionId/documentos` | `RESERVAS_CREAR` o `RESERVAS_GESTIONAR` | Registra o actualiza metadata de documento. | `reservasDocumentStorage.test.js` |
+| `GET` | `/api/reservas/operaciones/:operacionId/documentos/:documentoId/preview` | Alguno de permisos de lectura | Preview de documento. | `reservasDocumentStorage.test.js` |
+| `POST` | `/api/reservas/operaciones/:operacionId/documentos/:documentoId/reemplazar` | `RESERVAS_GESTIONAR` | Reemplaza archivo de documento. | `reservasDocumentStorage.test.js` |
+| `POST` | `/api/reservas/operaciones/:operacionId/cancelar` | `RESERVAS_GESTIONAR` | Cancela operacion. | `reservasUseCases.test.js` |
+| `POST` | `/api/reservas/operaciones/:operacionId/cerrar` | `RESERVAS_GESTIONAR` | Cierra operacion. | `reservasUseCases.test.js` |
+| `POST` | `/api/reservas/operaciones/:operacionId/trasladar` | `RESERVAS_GESTIONAR` | Traslada reserva a otra unidad/proyecto. | `reservasUseCases.test.js` |
+
+### POST /api/reservas/operaciones
+
+Request:
+
+```json
+{
+  "sociedad_id": 1,
+  "proyecto_codigo": "PRY",
+  "unidad_codigo": "U-001",
+  "cliente_nombre": "Cliente Demo",
+  "cliente_identificacion": "1-0000-0000",
+  "metadata": {},
+  "usuario": "usuario@novogar.local"
+}
+```
+
+### POST /api/reservas/operaciones/:operacionId/cancelar
+
+Request:
+
+```json
+{
+  "motivo": "Cliente desiste",
+  "usuario": "usuario@novogar.local"
+}
+```
+
+### POST /api/reservas/operaciones/:operacionId/cerrar
+
+Request:
+
+```json
+{
+  "motivo": "Operacion completada",
+  "usuario": "usuario@novogar.local"
+}
+```
+
+### POST /api/reservas/operaciones/:operacionId/trasladar
+
+Request:
+
+```json
+{
+  "destino_sociedad_id": 1,
+  "destino_proyecto_codigo": "PRY",
+  "destino_unidad_codigo": "U-002",
+  "cliente_nombre": "Cliente Demo",
+  "cliente_identificacion": "1-0000-0000",
+  "motivo": "Cambio de unidad",
+  "usuario": "usuario@novogar.local",
+  "metadata": {}
+}
+```
+
+### POST /api/reservas/operaciones/:operacionId/documentos
+
+Request:
+
+```json
+{
+  "codigo_documento": "contrato",
+  "nombre_archivo": "contrato.pdf",
+  "ruta_archivo": "documentos/reservas/contrato.pdf",
+  "mime_type": "application/pdf",
+  "tamanio_bytes": 12345,
+  "hash_sha256": "hash",
+  "metadata": {},
+  "usuario": "usuario@novogar.local"
+}
+```
+
+### POST /api/reservas/operaciones/sync-documento
+
+Request:
+
+```json
+{
+  "sociedad_id": 1,
+  "proyecto_codigo": "PRY",
+  "unidad_codigo": "U-001",
+  "cliente_nombre": "Cliente Demo",
+  "cliente_identificacion": "1-0000-0000",
+  "codigo_documento": "contrato",
+  "nombre_archivo": "contrato.pdf",
+  "ruta_archivo": "documentos/reservas/contrato.pdf",
+  "mime_type": "application/pdf",
+  "tamanio_bytes": 12345,
+  "hash_sha256": "hash",
+  "metadata": {},
+  "usuario": "usuario@novogar.local"
+}
+```
+
+### POST /api/reservas/operaciones/:operacionId/documentos/:documentoId/reemplazar
+
+Request:
+
+```json
+{
+  "filename": "contrato-nuevo.pdf",
+  "file_base64": "base64",
+  "mime_type": "application/pdf",
+  "motivo": "Correccion de documento",
+  "metadata": {},
+  "usuario": "usuario@novogar.local"
+}
+```
+
+Notas:
+
+- Los documentos de reservas estan sujetos a `RESERVAS_DOC_MAX_FILE_MB`.
+- No tocar rutas fisicas de documentos sin revisar almacenamiento operativo.
+
+## Dashboard
+
+Fuente: `backend/routes/dashboard.js`.
+
+Todos estos endpoints requieren alguno de `DASHBOARD_ACCESS_PERMISSIONS`.
+
+| Metodo | Endpoint | Descripcion | Tests relacionados |
+| --- | --- | --- | --- |
+| `GET` | `/api/dashboard/stats` | Estadisticas y totales principales. | `dashboardRoutes.test.js`, `dashboardUseCases.test.js`, `dashboardRepository.test.js` |
+| `GET` | `/api/dashboard/work-queue` | Cola de trabajo operativa. | `dashboardRoutes.test.js`, `dashboardUseCases.test.js` |
+| `GET` | `/api/dashboard/recent-activity` | Actividad reciente. | `dashboardRoutes.test.js`, `dashboardUseCases.test.js` |
+| `GET` | `/api/dashboard/recent-documents` | Documentos recientes. | `dashboardRoutes.test.js`, `dashboardUseCases.test.js` |
+
+Notas:
+
+- Los totales monetarios del dashboard deben mantenerse agrupados por `moneda`.
+- Antes de cambiar agregados, revisar `docs/principios_transversales.md`.
+
+## Comentarios, Versiones, Auditoria Y Estados Documentales
+
+Fuente: `backend/routes/comentarios.js`, `backend/routes/versiones.js`, `backend/routes/auditoria.js`, `backend/validation/schemas.js`.
+
+| Metodo | Endpoint | Permiso | Descripcion | Tests relacionados |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/documentos/:facturaId/comentarios` | `DOCUMENTOS_VER` | Lista comentarios del documento. | Sin test dedicado identificado |
+| `POST` | `/api/documentos/:facturaId/comentarios` | `DOCUMENTOS_COMENTAR` | Crea comentario. | Sin test dedicado identificado |
+| `GET` | `/api/documentos/:facturaId/versiones` | `DOCUMENTOS_VER` | Lista versiones del documento. | Sin test dedicado identificado |
+| `POST` | `/api/documentos/:facturaId/versiones` | `DOCUMENTOS_SUBIR` | Crea version documental. | Sin test dedicado identificado |
+| `GET` | `/api/documentos/:facturaId/auditoria` | `AUDITORIA_VER` | Lista auditoria del documento. | `auditoriaUseCases.test.js`, `auditoriaRepository.test.js` |
+| `POST` | `/api/documentos/:facturaId/auditoria` | `AUDITORIA_VER` | Crea registro de auditoria. | `auditoriaUseCases.test.js` |
+| `GET` | `/api/documentos/:facturaId/estados` | `DOCUMENTOS_VER` | Lista historiales de estado. | `auditoriaUseCases.test.js` |
+| `POST` | `/api/documentos/:facturaId/estados` | Alguno de `WORKFLOW_PERMISSIONS` | Crea registro de estado. | `auditoriaUseCases.test.js` |
+| `PATCH` | `/api/documentos/:facturaId/estado` | Alguno de `WORKFLOW_PERMISSIONS` | Actualiza estado actual de factura. | `auditoriaUseCases.test.js` |
+
+### POST /api/documentos/:facturaId/comentarios
+
+Request:
+
+```json
+{
+  "usuario": "usuario@novogar.local",
+  "texto": "Comentario operativo"
+}
+```
+
+Notas:
+
+- El backend prioriza `req.user.nombre` o `req.user.email` como actor sobre `usuario` recibido.
+
+### POST /api/documentos/:facturaId/versiones
+
+Request:
+
+```json
+{
+  "usuario": "usuario@novogar.local",
+  "cambios": "Se reemplazo el PDF",
+  "ruta_archivo": "documentos/facturas/factura.pdf"
+}
+```
+
+### POST /api/documentos/:facturaId/auditoria
+
+Request:
+
+```json
+{
+  "accion": "actualizar_estado",
+  "usuario": "usuario@novogar.local",
+  "detalles": {},
+  "ip_address": "127.0.0.1"
+}
+```
+
+### POST /api/documentos/:facturaId/estados
+
+Request:
+
+```json
+{
+  "dominio": "workflow_pago",
+  "estado_anterior": "pendiente",
+  "estado_nuevo": "aprobado",
+  "usuario": "usuario@novogar.local",
+  "motivo": "Aprobado por flujo"
+}
+```
+
+Valores validos para `dominio`:
+
+- `contabilizacion`
+- `workflow_pago`
+- `mixto`
+
+### PATCH /api/documentos/:facturaId/estado
+
+Request:
+
+```json
+{
+  "estado": "contabilizada"
+}
+```
+
+Notas:
+
+- Estos endpoints mantienen trazabilidad. No usarlos como atajo para saltarse use cases de negocio.
+- El estado documental y el workflow de pago deben seguir separados.
+
 ## Checklist Antes De Cambiar Un Endpoint
 
 1. Confirmar si el cambio altera ruta, metodo, permiso, payload, response o codigo HTTP.
