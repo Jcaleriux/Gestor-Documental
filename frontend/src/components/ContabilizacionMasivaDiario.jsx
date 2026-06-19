@@ -37,6 +37,7 @@ const buildSummaryCards = (summary = {}) => [
   { key: 'ambiguous', label: 'Ambiguas', value: summary.ambiguous || 0 },
   { key: 'skipped', label: 'Saltadas', value: summary.skipped || 0 },
   { key: 'multi_centro', label: 'Con multiples centros', value: summary.multi_centro || 0 },
+  { key: 'centros_no_resueltos', label: 'Centros no resueltos', value: summary.centros_no_resueltos || 0 },
 ];
 
 function CandidateSearch({
@@ -176,7 +177,11 @@ function ReportRow({
         <div className="fw-semibold">{item.centro_costo_resumen || '-'}</div>
         {centros.length > 0 && (
           <div className="small text-muted mt-1">
-            {centros.map((centro) => `${centro.codigo} - ${centro.nombre}`).join(', ')}
+            {centros.map((centro) => (
+              centro.encontrado_en_catalogo === false
+                ? `${centro.codigo} (no existe en catalogo)`
+                : `${centro.codigo} - ${centro.nombre}`
+            )).join(', ')}
           </div>
         )}
       </td>

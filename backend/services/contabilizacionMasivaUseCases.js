@@ -36,10 +36,10 @@ const mapFacturaSummary = (factura) => {
   };
 };
 
-const createCentroCostoSnapshot = (centro, { asiento, index } = {}) => ({
+const createCentroCostoSnapshot = (centro, { asiento, index, codigo } = {}) => ({
   local_id: `linea-cc-import-${asiento || 'asiento'}-${index + 1}`,
   centro_costo_id: centro?.id != null ? String(centro.id) : '',
-  codigo: normalizeCode(centro?.codigo),
+  codigo: normalizeCode(centro?.codigo || codigo),
   nombre: String(centro?.nombre || '').trim(),
   usuario_aprobador_id: centro?.usuario_aprobador_id ?? null,
   usuario_aprobador_nombre: String(centro?.usuario_aprobador_nombre || '').trim(),
@@ -49,6 +49,7 @@ const createCentroCostoSnapshot = (centro, { asiento, index } = {}) => ({
   rol_aprobador_nombre: String(centro?.rol_aprobador_nombre || '').trim(),
   activo: centro?.activo !== false,
   seleccionable_en_contabilizacion: centro?.seleccionable_en_contabilizacion !== false,
+  encontrado_en_catalogo: Boolean(centro?.id),
   monto: ''
 });
 
@@ -107,6 +108,9 @@ const summarizeItems = (items) => items.reduce((summary, item) => {
   if (item.centros_costo_count > 1) {
     summary.multi_centro += 1;
   }
+  if (item.centros_costo_invalidos_count > 0) {
+    summary.centros_no_resueltos += 1;
+  }
   return summary;
 }, {
   total: 0,
@@ -118,7 +122,8 @@ const summarizeItems = (items) => items.reduce((summary, item) => {
   ambiguous: 0,
   invalid_reference: 0,
   invalid_resolution: 0,
-  multi_centro: 0
+  multi_centro: 0,
+  centros_no_resueltos: 0
 });
 
 const createContabilizacionMasivaUseCases = ({ repo }) => {
@@ -160,8 +165,13 @@ const createContabilizacionMasivaUseCases = ({ repo }) => {
       const lineas = item.centros_costo_codigos
         .map((codigo, index) => createCentroCostoSnapshot(centrosByCode.get(codigo), {
           asiento: item.asiento,
-          index
+          index,
+          codigo
         }));
+      const centrosInvalidos = lineas
+        .filter((linea) => !linea.centro_costo_id)
+        .map((linea) => linea.codigo)
+        .filter(Boolean);
       const centroCostoResumen = buildCentroCostoResumen(lineas);
       const base = {
         asiento: item.asiento,
@@ -171,6 +181,8 @@ const createContabilizacionMasivaUseCases = ({ repo }) => {
         filas: item.filas,
         centros_costo_codigos: item.centros_costo_codigos,
         centros_costo_count: item.centros_costo_codigos.length,
+        centros_costo_invalidos: centrosInvalidos,
+        centros_costo_invalidos_count: centrosInvalidos.length,
         centros_costo_lineas: lineas,
         centro_costo_resumen: centroCostoResumen,
         metadata_preview: buildMetadataPreview({ item, sociedad, lineas }),
