@@ -15,6 +15,8 @@ const createApi = ({ listData = [] } = {}) => ({
   updateSociedad: createMockFn(async () => ({ data: { success: true } })),
 });
 
+const useSociedadesAdminHarness = (props) => useSociedadesAdmin(props);
+
 test('useSociedadesAdmin carga sociedades administrativas y filtra busqueda', async () => {
   const api = createApi({
     listData: [
@@ -24,7 +26,7 @@ test('useSociedadesAdmin carga sociedades administrativas y filtra busqueda', as
   });
 
   const hook = createHookHarness({
-    hook: (props) => useSociedadesAdmin(props),
+    hook: useSociedadesAdminHarness,
     initialProps: { api },
   });
 
@@ -44,7 +46,7 @@ test('useSociedadesAdmin crea sociedad y refresca selector global', async () => 
   const onSociedadesChange = createMockFn(async () => {});
 
   const hook = createHookHarness({
-    hook: (props) => useSociedadesAdmin(props),
+    hook: useSociedadesAdminHarness,
     initialProps: { api, onSociedadesChange },
   });
 
@@ -80,7 +82,7 @@ test('useSociedadesAdmin edita e inactiva sociedades', async () => {
   const onSociedadesChange = createMockFn(async () => {});
 
   const hook = createHookHarness({
-    hook: (props) => useSociedadesAdmin(props),
+    hook: useSociedadesAdminHarness,
     initialProps: { api, onSociedadesChange },
   });
 

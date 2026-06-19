@@ -127,9 +127,7 @@ const normalizeDateInput = (value, fieldName) => {
 };
 
 const normalizeSortField = (value) => {
-  let normalized = normalizeOptionalText(value) || 'fecha_emision';
-  // Permitir que "documento" y "consecutivo" sean equivalentes
-  if (normalized === 'documento') normalized = 'consecutivo';
+  const normalized = normalizeOptionalText(value) || 'fecha_emision';
   if (!FACTURAS_SORT_FIELDS.has(normalized)) {
     throw createError(400, 'sortBy invalido');
   }

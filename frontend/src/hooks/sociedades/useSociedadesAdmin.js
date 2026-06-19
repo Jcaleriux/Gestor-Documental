@@ -56,8 +56,32 @@ export const useSociedadesAdmin = ({
   }, [api]);
 
   useEffect(() => {
-    loadSociedades();
-  }, [loadSociedades]);
+    let active = true;
+
+    const loadInitialSociedades = async () => {
+      try {
+        const res = await api.listSociedadesAdmin();
+        if (active && res.data?.success) {
+          setSociedades(res.data.data || []);
+        }
+      } catch (err) {
+        if (active) {
+          const apiError = err.response?.data?.error || 'No se pudo cargar la lista de sociedades.';
+          setError(apiError);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadInitialSociedades();
+
+    return () => {
+      active = false;
+    };
+  }, [api]);
 
   const filteredSociedades = useMemo(() => {
     const term = search.trim().toLowerCase();
