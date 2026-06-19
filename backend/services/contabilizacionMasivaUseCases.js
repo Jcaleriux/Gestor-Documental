@@ -5,6 +5,14 @@ const {
 
 const normalizeCode = (value) => String(value || '').trim().toUpperCase();
 
+const normalizeComparableText = (value) => String(value || '')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .replace(/[^A-Z0-9]+/gi, ' ')
+  .replace(/\s+/g, ' ')
+  .trim()
+  .toUpperCase();
+
 const getEmisorNombre = (factura) => (
   factura?.emisor?.Nombre
   || factura?.emisor?.nombre
@@ -16,6 +24,25 @@ const getTotalComprobante = (factura) => (
   || factura?.resumen?.totalComprobante
   || null
 );
+
+const isProveedorMatch = (factura, proveedorNombre) => {
+  const facturaNombre = normalizeComparableText(getEmisorNombre(factura));
+  const proveedor = normalizeComparableText(proveedorNombre);
+
+  if (!facturaNombre || !proveedor) {
+    return false;
+  }
+
+  return facturaNombre.includes(proveedor) || proveedor.includes(facturaNombre);
+};
+
+const findUniqueProveedorMatch = (matches, proveedorNombres = []) => {
+  const providerMatches = matches.filter((factura) => (
+    proveedorNombres.some((proveedorNombre) => isProveedorMatch(factura, proveedorNombre))
+  ));
+
+  return providerMatches.length === 1 ? providerMatches[0] : null;
+};
 
 const mapFacturaSummary = (factura) => {
   if (!factura) return null;
@@ -83,14 +110,16 @@ const buildCentroCostoResumen = (lineas) => {
 const buildMetadataPreview = ({ item, sociedad, lineas }) => ({
   asiento: item.asiento,
   origen_contabilizacion: 'diario_documentos_csv',
-  diario_documentos: {
+    diario_documentos: {
     sociedad_id: sociedad.id,
     sociedad_codigo: sociedad.codigo,
     sociedad_cedula_juridica: sociedad.cedula_juridica,
-    referencia2: item.referencia2,
-    factura11: item.factura11,
-    fecha_contabilizacion: item.fecha_contabilizacion,
-    filas: item.filas,
+      referencia2: item.referencia2,
+      factura11: item.factura11,
+      proveedor_codigos: item.proveedor_codigos,
+      proveedor_nombres: item.proveedor_nombres,
+      fecha_contabilizacion: item.fecha_contabilizacion,
+      filas: item.filas,
     import_status: 'preview'
   },
   centros_costo_lineas: lineas
@@ -178,6 +207,8 @@ const createContabilizacionMasivaUseCases = ({ repo }) => {
         fecha_contabilizacion: item.fecha_contabilizacion,
         referencia2: item.referencia2,
         factura11: item.factura11,
+        proveedor_codigos: item.proveedor_codigos || [],
+        proveedor_nombres: item.proveedor_nombres || [],
         filas: item.filas,
         centros_costo_codigos: item.centros_costo_codigos,
         centros_costo_count: item.centros_costo_codigos.length,
@@ -244,6 +275,18 @@ const createContabilizacionMasivaUseCases = ({ repo }) => {
       }
 
       if (matches.length > 1) {
+        const proveedorMatch = findUniqueProveedorMatch(matches, item.proveedor_nombres);
+        if (proveedorMatch) {
+          return {
+            ...base,
+            status: proveedorMatch.contabilizacion_id ? 'ready_update' : 'ready_new',
+            status_label: proveedorMatch.contabilizacion_id ? 'Actualizacion lista' : 'Nueva lista',
+            factura: mapFacturaSummary(proveedorMatch),
+            matches: matches.map(mapFacturaSummary),
+            match_strategy: 'proveedor'
+          };
+        }
+
         return {
           ...base,
           status: 'ambiguous',

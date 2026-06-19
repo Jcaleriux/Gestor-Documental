@@ -120,6 +120,7 @@ function ReportRow({
 }) {
   const needsReview = REVIEW_STATUSES.has(item.status);
   const centros = Array.isArray(item.centros_costo_lineas) ? item.centros_costo_lineas : [];
+  const proveedores = Array.isArray(item.proveedor_nombres) ? item.proveedor_nombres : [];
 
   return (
     <tr>
@@ -130,6 +131,9 @@ function ReportRow({
       <td>
         <div>{item.referencia2 || '-'}</div>
         <div className="small text-muted">Factura: {item.factura11 || '-'}</div>
+        {proveedores.length > 0 && (
+          <div className="small text-muted">Proveedor CSV: {proveedores.join(', ')}</div>
+        )}
       </td>
       <td>
         <span className={`badge ${needsReview ? 'text-bg-warning' : item.status === 'skipped' ? 'text-bg-secondary' : 'text-bg-success'}`}>
@@ -144,11 +148,14 @@ function ReportRow({
               ID {item.factura.id} · Estado {item.factura.estado || '-'}
               {item.factura.tiene_contabilizacion ? ' · Actualizacion parcial' : ''}
             </div>
+            {item.match_strategy === 'proveedor' && (
+              <div className="small text-success">Resuelta por proveedor del CSV</div>
+            )}
           </>
         ) : (
           <span className="text-muted">Sin factura asignada</span>
         )}
-        {Array.isArray(item.matches) && item.matches.length > 0 && (
+        {needsReview && Array.isArray(item.matches) && item.matches.length > 0 && (
           <div className="list-group mt-2">
             {item.matches.map((match) => (
               <button

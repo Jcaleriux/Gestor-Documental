@@ -69,6 +69,17 @@ const getTailFields = (cells) => {
   };
 };
 
+const getProveedorFields = (cells) => {
+  const codigo = normalizeCode(cells[8]);
+  const nombre = normalizeText(cells[9]);
+
+  if (!/^P\d+/i.test(codigo) || !nombre) {
+    return null;
+  }
+
+  return { codigo, nombre };
+};
+
 const parseDiarioDocumentosText = (text) => {
   const lines = String(text || '')
     .split(/\r?\n/)
@@ -108,6 +119,8 @@ const parseDiarioDocumentosText = (text) => {
         fecha_contabilizacion: fechaContabilizacion,
         referencia2: tailFields.referencia2,
         referencias2: [],
+        proveedor_codigos: [],
+        proveedor_nombres: [],
         centros_costo_codigos: [],
         filas: 0
       };
@@ -125,6 +138,12 @@ const parseDiarioDocumentosText = (text) => {
 
     if (tailFields.centroCosto) {
       current.centros_costo_codigos.push(tailFields.centroCosto);
+    }
+
+    const proveedor = getProveedorFields(cells);
+    if (proveedor) {
+      current.proveedor_codigos.push(proveedor.codigo);
+      current.proveedor_nombres.push(proveedor.nombre);
     }
   });
 
@@ -144,6 +163,8 @@ const parseDiarioDocumentosText = (text) => {
         referencia2,
         factura11: extractLast11Digits(referencia2),
         referencias2,
+        proveedor_codigos: [...new Set(asiento.proveedor_codigos)].sort(),
+        proveedor_nombres: [...new Set(asiento.proveedor_nombres)].sort(),
         centros_costo_codigos: [...new Set(asiento.centros_costo_codigos)].sort()
       };
     })

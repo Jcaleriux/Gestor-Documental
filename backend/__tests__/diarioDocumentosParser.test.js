@@ -36,4 +36,20 @@ describe('diarioDocumentosParser', () => {
       centros_costo_codigos: ['11Y0714', '11Y0725']
     });
   });
+
+  test('extrae proveedor desde las columnas de codigo y nombre SN', () => {
+    const text = [
+      'sec,asiento,fecha,serie,documento,tipo,cuenta,nombre cuenta,codigo sn,nombre sn,cargo moneda,cargo,abono moneda,abono,debito moneda,debito,credito moneda,credito,comentarios,contrapartida,centro,ref1,ref2,',
+      '1,3377,18/03/2026,Primario,TT 761,,,,,,,,,,,,,,Servicio,,,761,10000000078,',
+      ',,18/03/2026,,,,21101001,Proveedores locales,P00813,QUIIVEN VENTAS INMOBILIARIAS COSTA RICA SRL,,,CRC,584930.94,,,USD,1243.00,Servicio,11502307,,761,10000000078,'
+    ].join('\n');
+
+    const parsed = parseDiarioDocumentosText(text);
+
+    expect(parsed.asientos[0]).toMatchObject({
+      asiento: '3377',
+      proveedor_codigos: ['P00813'],
+      proveedor_nombres: ['QUIIVEN VENTAS INMOBILIARIAS COSTA RICA SRL']
+    });
+  });
 });

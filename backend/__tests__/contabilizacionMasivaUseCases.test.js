@@ -168,4 +168,60 @@ describe('contabilizacionMasivaUseCases', () => {
       factura: { id: 3 }
     });
   });
+
+  test('resuelve consecutivos ambiguos cuando solo un candidato coincide por proveedor', async () => {
+    diarioParser.parseDiarioDocumentosFile.mockReturnValue({
+      filePath: 'docs/datos/Documentos/Diario de documentos (1).csv',
+      malformedRows: 0,
+      asientos: [
+        {
+          asiento: '2596',
+          fecha_contabilizacion: '27/01/2026',
+          referencia2: '10000011606',
+          factura11: '10000011606',
+          proveedor_codigos: ['P00004'],
+          proveedor_nombres: ['Proveedor D Sociedad Limitada'],
+          centros_costo_codigos: ['11Z0606'],
+          filas: 4
+        }
+      ]
+    });
+    const repo = createRepo();
+    repo.listFacturasBySociedad.mockResolvedValue([
+      {
+        id: 3,
+        sociedad_id: 23,
+        consecutivo: '00100001010000011606',
+        clave: 'clave-3',
+        estado: 'no_contabilizado',
+        emisor: { Nombre: 'Proveedor C' },
+        resumen: { TotalComprobante: '300' },
+        contabilizacion_id: null
+      },
+      {
+        id: 4,
+        sociedad_id: 23,
+        consecutivo: '00100001010000011606',
+        clave: 'clave-4',
+        estado: 'no_contabilizado',
+        emisor: { Nombre: 'Proveedor D' },
+        resumen: { TotalComprobante: '400' },
+        contabilizacion_id: null
+      }
+    ]);
+    const useCases = createContabilizacionMasivaUseCases({ repo });
+
+    const report = await useCases.analyzeDiarioDocumentos({ sociedadId: 23 });
+
+    expect(report.summary).toMatchObject({
+      ready_new: 1,
+      ambiguous: 0
+    });
+    expect(report.items[0]).toMatchObject({
+      status: 'ready_new',
+      match_strategy: 'proveedor',
+      factura: { id: 4 },
+      matches: [{ id: 3 }, { id: 4 }]
+    });
+  });
 });
