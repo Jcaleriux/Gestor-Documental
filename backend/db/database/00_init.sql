@@ -143,6 +143,7 @@ CREATE TABLE IF NOT EXISTS public.facturas_contabilizacion
     fecha_ultimo_pago_retencion date,
     descuento numeric(18, 4),
     anticipo_aplicado numeric(18, 4),
+    asiento character varying(50),
     centro_costo character varying(100),
     cuenta_contable character varying(100),
     proyecto character varying(150),
@@ -836,6 +837,8 @@ CREATE INDEX IF NOT EXISTS idx_facturas_conta_docs_respaldo_factura
     ON public.facturas_contabilizacion_documentos_respaldo(factura_id);
 CREATE INDEX IF NOT EXISTS idx_facturas_contabilizacion_estado_retencion
     ON public.facturas_contabilizacion(estado_retencion);
+CREATE INDEX IF NOT EXISTS idx_facturas_contabilizacion_asiento
+    ON public.facturas_contabilizacion(asiento);
 
 ALTER TABLE IF EXISTS public.facturas_retenciones_pagos
     ADD CONSTRAINT facturas_retenciones_pagos_factura_id_fkey FOREIGN KEY (factura_id)
