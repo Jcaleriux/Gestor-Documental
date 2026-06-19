@@ -17,6 +17,16 @@ const EMPTY_FORM = {
   telefono_numero: ''
 };
 
+const FIELD_LABELS = Object.freeze({
+  identificacion_tipo: 'Tipo identificacion',
+  identificacion_numero: 'Identificacion',
+  nombre: 'Nombre',
+  nombre_comercial: 'Nombre comercial',
+  correo_electronico: 'Correo electronico',
+  telefono_codigo_pais: 'Cod. pais',
+  telefono_numero: 'Telefono'
+});
+
 const toFormFromProveedor = (proveedor) => ({
   identificacion_tipo: proveedor.identificacion_tipo || '',
   identificacion_numero: proveedor.identificacion_numero || '',
@@ -34,6 +44,11 @@ const formatDate = (value) => {
   return date.toLocaleString();
 };
 
+const formatValue = (value) => {
+  if (value == null || value === '') return '-';
+  return String(value);
+};
+
 function Proveedores({ sociedadId }) {
   const [proveedores, setProveedores] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +56,9 @@ function Proveedores({ sociedadId }) {
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState('');
   const [form, setForm] = useState(EMPTY_FORM);
+  const [historialProveedor, setHistorialProveedor] = useState(null);
+  const [historial, setHistorial] = useState([]);
+  const [historialLoading, setHistorialLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -105,6 +123,31 @@ function Proveedores({ sociedadId }) {
     setMessage('');
   };
 
+  const loadHistorial = async (proveedor) => {
+    try {
+      setHistorialProveedor(proveedor);
+      setHistorial([]);
+      setHistorialLoading(true);
+      setError('');
+
+      const res = await proveedoresApi.listProveedorHistorial(proveedor.id);
+      if (res.data?.success) {
+        setHistorial(res.data.data || []);
+      }
+    } catch (err) {
+      const apiError = err.response?.data?.error || 'No se pudo cargar el historial del proveedor.';
+      setError(apiError);
+    } finally {
+      setHistorialLoading(false);
+    }
+  };
+
+  const closeHistorial = () => {
+    setHistorialProveedor(null);
+    setHistorial([]);
+    setHistorialLoading(false);
+  };
+
   const buildPayload = () => ({
     sociedad_id: Number(sociedadId),
     identificacion_tipo: form.identificacion_tipo.trim() || null,
@@ -138,6 +181,7 @@ function Proveedores({ sociedadId }) {
       }
 
       await loadProveedores({ showLoader: false });
+      closeHistorial();
       resetForm();
     } catch (err) {
       const apiError = err.response?.data?.error || 'No se pudo guardar el proveedor.';
@@ -310,14 +354,24 @@ function Proveedores({ sociedadId }) {
                         </td>
                         <td>{formatDate(proveedor.actualizado_en)}</td>
                         <td className="text-end">
-                          <button
-                            className="btn btn-outline-primary btn-sm"
-                            type="button"
-                            onClick={() => startEdit(proveedor)}
-                            disabled={saving}
-                          >
-                            Editar
-                          </button>
+                          <div className="d-flex justify-content-end gap-2">
+                            <button
+                              className="btn btn-outline-secondary btn-sm"
+                              type="button"
+                              onClick={() => loadHistorial(proveedor)}
+                              disabled={saving || historialLoading}
+                            >
+                              Historial
+                            </button>
+                            <button
+                              className="btn btn-outline-primary btn-sm"
+                              type="button"
+                              onClick={() => startEdit(proveedor)}
+                              disabled={saving}
+                            >
+                              Editar
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -326,6 +380,48 @@ function Proveedores({ sociedadId }) {
               </div>
             )}
           </SectionCard>
+
+          {historialProveedor && (
+            <SectionCard
+              title={`Historial de ${historialProveedor.nombre}`}
+              actions={(
+                <button className="btn btn-outline-secondary btn-sm" type="button" onClick={closeHistorial}>
+                  Cerrar
+                </button>
+              )}
+            >
+              {historialLoading ? (
+                <LoadingState label="Cargando historial de proveedor..." />
+              ) : historial.length === 0 ? (
+                <EmptyState className="py-2">Este proveedor no tiene cambios registrados.</EmptyState>
+              ) : (
+                <div className="table-responsive">
+                  <table className="table table-sm align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Campo</th>
+                        <th>Anterior</th>
+                        <th>Nuevo</th>
+                        <th>Origen</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {historial.map((item) => (
+                        <tr key={item.id}>
+                          <td>{formatDate(item.creado_en)}</td>
+                          <td>{FIELD_LABELS[item.campo] || item.campo}</td>
+                          <td>{formatValue(item.valor_anterior)}</td>
+                          <td>{formatValue(item.valor_nuevo)}</td>
+                          <td>{formatValue(item.origen)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </SectionCard>
+          )}
         </div>
       </div>
     </div>

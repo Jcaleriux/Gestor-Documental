@@ -326,6 +326,18 @@ CREATE TABLE IF NOT EXISTS public.proveedores
     CONSTRAINT proveedores_sociedad_id_identificacion_numero_normalizado_key UNIQUE (sociedad_id, identificacion_numero_normalizado)
 );
 
+CREATE TABLE IF NOT EXISTS public.proveedores_historial_cambios
+(
+    id serial NOT NULL,
+    proveedor_id integer NOT NULL,
+    campo character varying(80) NOT NULL,
+    valor_anterior text,
+    valor_nuevo text,
+    origen character varying(120),
+    creado_en timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT proveedores_historial_cambios_pkey PRIMARY KEY (id)
+);
+
 CREATE TABLE IF NOT EXISTS public.centros_costo
 (
     id serial NOT NULL,
@@ -942,6 +954,13 @@ CREATE INDEX IF NOT EXISTS idx_proveedores_nombre
     ON public.proveedores(nombre);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_proveedores_sociedad_identificacion
     ON public.proveedores(sociedad_id, identificacion_numero_normalizado);
+ALTER TABLE IF EXISTS public.proveedores_historial_cambios
+    ADD CONSTRAINT proveedores_historial_cambios_proveedor_id_fkey FOREIGN KEY (proveedor_id)
+    REFERENCES public.proveedores (id) MATCH SIMPLE
+    ON UPDATE NO ACTION
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_proveedores_historial_cambios_proveedor
+    ON public.proveedores_historial_cambios(proveedor_id, creado_en DESC);
 
 ALTER TABLE IF EXISTS public.centros_costo
     ADD CONSTRAINT centros_costo_sociedad_id_fkey FOREIGN KEY (sociedad_id)

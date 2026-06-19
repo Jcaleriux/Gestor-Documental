@@ -31,13 +31,18 @@ async function main() {
 
     let totalLeidos = 0;
     let totalUpsert = 0;
+    let totalSinCambios = 0;
     let totalOmitidos = 0;
 
     for (const item of emisores) {
       totalLeidos += 1;
-      const respuesta = await upsertProveedorDesdeEmisor(item.emisor, item.sociedadId);
+      const respuesta = await upsertProveedorDesdeEmisor(item.emisor, item.sociedadId, {
+        origen: "backfill_proveedores"
+      });
       if (respuesta.status === "upserted") {
         totalUpsert += 1;
+      } else if (respuesta.status === "unchanged") {
+        totalSinCambios += 1;
       } else {
         totalOmitidos += 1;
       }
@@ -49,6 +54,7 @@ async function main() {
 
     console.log(`Emisores leidos: ${totalLeidos}`);
     console.log(`Registros upsertados: ${totalUpsert}`);
+    console.log(`Registros sin cambios: ${totalSinCambios}`);
     console.log(`Emisores omitidos: ${totalOmitidos}`);
     console.log(`Proveedores unicos en tabla (por sociedad): ${totalProveedores.rows[0].total}`);
   } catch (error) {

@@ -12,6 +12,14 @@ const listProveedores = handleRequest(async (req) => {
   });
 }, 'Error fetching proveedores:', 'Error fetching proveedores');
 
+const listProveedorHistorial = handleRequest(async (req) => {
+  const { id } = req.params;
+  return useCases.listProveedorHistorial({
+    user: req.user,
+    id
+  });
+}, 'Error fetching historial proveedor:', 'Error fetching historial proveedor');
+
 const createProveedor = handleRequest(async (req) => {
   return useCases.createProveedor({
     user: req.user,
@@ -30,6 +38,7 @@ const updateProveedor = handleRequest(async (req) => {
 
 module.exports = {
   listProveedores,
+  listProveedorHistorial,
   createProveedor,
   updateProveedor
 };

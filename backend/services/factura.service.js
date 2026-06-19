@@ -24,7 +24,9 @@ async function obtenerSociedadIdPorCedula(cedulaJuridica) {
 
 async function registrarProveedor(emisor, claveDocumento, sociedadId) {
   try {
-    await upsertProveedorDesdeEmisor(emisor, sociedadId);
+    await upsertProveedorDesdeEmisor(emisor, sociedadId, {
+      origen: `documento:${claveDocumento}`
+    });
   } catch (error) {
     console.error(`No se pudo registrar proveedor para ${claveDocumento}: ${error.message}`);
   }
