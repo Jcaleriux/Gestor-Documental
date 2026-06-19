@@ -85,7 +85,7 @@ test('useAppSession bootstrappea sesion, sociedades y permisos derivados', async
     id: 7,
     nombre: 'Ana Ramirez',
     rol_nombre: 'Tesoreria',
-    permissions: ['documentos_tramitar_pago', 'reservas_gestionar'],
+    permissions: ['documentos_tramitar_pago', 'reservas_gestionar', 'sociedades_administrar'],
   };
   const apiGet = createMockFn(async (url) => {
     if (url === '/api/auth/me') {
@@ -140,12 +140,18 @@ test('useAppSession bootstrappea sesion, sociedades y permisos derivados', async
   assert.equal(hook.result.canTramitarPago, true);
   assert.equal(hook.result.canUseReservas, true);
   assert.equal(hook.result.canManageReservasDocumentos, true);
+  assert.equal(hook.result.canManageSociedades, true);
   assert.equal(hook.result.canManageUsers, false);
   assert.equal(hook.result.sociedades.length, 2);
   assert.equal(hook.result.selectedSociedad?.id, 10);
   assert.deepEqual(apiGet.calls.map(([url]) => url), ['/api/auth/me', '/api/sociedades']);
   assert.equal(saveAuthSession.calls.length, 1);
   assert.deepEqual(setAuthHeader.calls.map(([token]) => token), ['token-123', 'token-123']);
+
+  await hook.result.refreshSociedades();
+  await hook.flush({ cycles: 4 });
+
+  assert.deepEqual(apiGet.calls.map(([url]) => url), ['/api/auth/me', '/api/sociedades', '/api/sociedades']);
 });
 
 test('useAppSession persiste cambios de sociedad seleccionada', async () => {

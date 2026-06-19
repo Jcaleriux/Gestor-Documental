@@ -1,4 +1,5 @@
 export const buildNavigationSections = ({
+  canManageSociedades,
   canManageUsers,
   canUseOrdenesCompra,
   canUseReservas,
@@ -97,6 +98,7 @@ export const buildNavigationSections = ({
       label: 'Administracion',
       icon: 'administracion',
       items: [
+        { id: 'sociedades', label: 'Sociedades', to: '/sociedades', icon: 'sociedades', visible: canManageSociedades },
         { id: 'usuarios', label: 'Usuarios', to: '/usuarios', icon: 'usuarios', visible: canManageUsers },
         {
           id: 'proveedores',

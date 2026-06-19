@@ -179,6 +179,17 @@ const setUsuarioSociedadesSchema = Joi.object({
   sociedad_ids: Joi.array().items(Joi.number().integer().positive()).required()
 });
 
+const sociedadBaseSchema = {
+  codigo: Joi.string().trim().max(20).allow('', null),
+  nombre_proyecto: Joi.string().trim().max(150).allow('', null),
+  razon_social: Joi.string().trim().min(2).max(255).required(),
+  cedula_juridica: Joi.string().trim().min(3).max(20).required(),
+  activo: Joi.boolean().optional()
+};
+
+const createSociedadSchema = Joi.object(sociedadBaseSchema);
+const updateSociedadSchema = Joi.object(sociedadBaseSchema);
+
 const createProveedorSchema = Joi.object({
   sociedad_id: Joi.number().integer().positive().required(),
   identificacion_tipo: Joi.string().trim().max(20).allow('', null),
@@ -380,6 +391,8 @@ module.exports = {
   createUsuarioSchema,
   updateUsuarioSchema,
   setUsuarioSociedadesSchema,
+  createSociedadSchema,
+  updateSociedadSchema,
   createProveedorSchema,
   updateProveedorSchema,
   createCentroCostoSchema,

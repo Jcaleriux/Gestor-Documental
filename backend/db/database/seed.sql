@@ -1,15 +1,10 @@
--- Optional seed data
-INSERT INTO sociedades (codigo, nombre_proyecto, razon_social, cedula_juridica)
-VALUES
-  ('PULPERIA-LA-ESQUINA', 'PULPERIA LA ESQUINA', 'DENIA MARIA CALERO JIMENEZ', '602320335')
-ON CONFLICT (cedula_juridica) DO NOTHING;
-
 -- Seed permisos segun REQUERIMIENTOS.md
 INSERT INTO permisos (nombre, descripcion)
 VALUES
   ('acceso_total', 'Acceso total a la aplicacion.'),
   ('sociedades_todas', 'Puede operar sobre todas las sociedades.'),
   ('sociedades_asignadas', 'Puede operar solo sobre sociedades asignadas.'),
+  ('sociedades_administrar', 'Puede crear, editar y desactivar sociedades.'),
   ('usuarios_administrar', 'Puede crear, editar y desactivar usuarios y grupos.'),
   ('documentos_ver', 'Puede visualizar documentos.'),
   ('documentos_descargar', 'Puede descargar documentos.'),
@@ -131,6 +126,14 @@ WHERE r.codigo IN (
   'gerencia_presupuesto', 'gerencia_mercadeo', 'gerencia_ventas', 'gerencia_infraestructura',
   'gerencia_proyectos', 'contabilidad_jefe', 'tesoreria_encargado'
 )
+ON CONFLICT (rol_id, permiso_id) DO NOTHING;
+
+-- Administracion de sociedades
+INSERT INTO roles_permisos (rol_id, permiso_id)
+SELECT r.id, p.id
+FROM roles r
+JOIN permisos p ON p.nombre = 'sociedades_administrar'
+WHERE r.codigo = 'admin'
 ON CONFLICT (rol_id, permiso_id) DO NOTHING;
 
 -- Flujo operativo

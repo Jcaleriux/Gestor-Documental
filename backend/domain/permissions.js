@@ -2,6 +2,7 @@ const PERMISSIONS = Object.freeze({
   ACCESO_TOTAL: 'acceso_total',
   SOCIEDADES_TODAS: 'sociedades_todas',
   SOCIEDADES_ASIGNADAS: 'sociedades_asignadas',
+  SOCIEDADES_ADMINISTRAR: 'sociedades_administrar',
   USUARIOS_ADMINISTRAR: 'usuarios_administrar',
   DOCUMENTOS_VER: 'documentos_ver',
   DOCUMENTOS_DESCARGAR: 'documentos_descargar',

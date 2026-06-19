@@ -4,6 +4,7 @@ import { buildNavigationSections } from '../../src/app/buildNavigationSections.j
 
 test('buildNavigationSections deja visibles solo las secciones base cuando no hay permisos especiales', () => {
   const sections = buildNavigationSections({
+    canManageSociedades: false,
     canManageUsers: false,
     canUseOrdenesCompra: false,
     canUseReservas: false,
@@ -23,6 +24,7 @@ test('buildNavigationSections deja visibles solo las secciones base cuando no ha
 
 test('buildNavigationSections agrega secciones habilitadas por permisos sin mezclar items ocultos', () => {
   const sections = buildNavigationSections({
+    canManageSociedades: true,
     canManageUsers: true,
     canUseOrdenesCompra: true,
     canUseReservas: true,
@@ -48,6 +50,22 @@ test('buildNavigationSections agrega secciones habilitadas por permisos sin mezc
   );
   assert.deepEqual(
     sections.find((section) => section.id === 'administracion')?.items.map((item) => item.id),
-    ['usuarios', 'proveedores', 'centros-costo'],
+    ['sociedades', 'usuarios', 'proveedores', 'centros-costo'],
+  );
+});
+
+test('buildNavigationSections muestra sociedades sin requerir administracion de usuarios', () => {
+  const sections = buildNavigationSections({
+    canManageSociedades: true,
+    canManageUsers: false,
+    canUseOrdenesCompra: false,
+    canUseReservas: false,
+    canUseTablasPago: false,
+    canViewTramites: false,
+  });
+
+  assert.deepEqual(
+    sections.find((section) => section.id === 'administracion')?.items.map((item) => item.id),
+    ['sociedades'],
   );
 });

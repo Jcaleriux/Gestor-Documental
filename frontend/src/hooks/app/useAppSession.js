@@ -149,6 +149,8 @@ const deriveUserAccess = (authUser) => {
   const userPermissions = Array.isArray(authUser?.permissions) ? authUser.permissions : [];
   const canManageUsers = userPermissions.includes('acceso_total')
     || userPermissions.includes('usuarios_administrar');
+  const canManageSociedades = userPermissions.includes('acceso_total')
+    || userPermissions.includes('sociedades_administrar');
   const canUseTablasPago = userPermissions.includes('acceso_total')
     || userPermissions.includes('usuarios_administrar')
     || userPermissions.includes('documentos_subir')
@@ -174,6 +176,7 @@ const deriveUserAccess = (authUser) => {
   return {
     userPermissions,
     canManageUsers,
+    canManageSociedades,
     canUseTablasPago,
     canUseOrdenesCompra: canUseTablasPago,
     canViewTramites,
@@ -304,6 +307,7 @@ export const useAppSession = ({
     setSociedadId,
     sociedadId,
     sociedades,
+    refreshSociedades: fetchSociedades,
     userInitials,
     userName,
     userRole,

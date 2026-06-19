@@ -2,7 +2,7 @@
 
 ## Repo Overview
 
-- Root repo: `C:\Jose\Proyecto Novogar`
+- Root repo: `C:\Jose\Gestor-Documental`
 - Backend: `backend/`
 - Frontend: `frontend/`
 - Business reference docs: `docs/`

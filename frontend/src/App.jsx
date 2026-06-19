@@ -19,6 +19,7 @@ import LoadingState from './components/common/LoadingState.jsx';
 import './styles/app.css';
 
 const Dashboard = lazy(() => import('./components/Dashboard.jsx'));
+const Sociedades = lazy(() => import('./components/Sociedades.jsx'));
 const Usuarios = lazy(() => import('./components/Usuarios.jsx'));
 const Facturas = lazy(() => import('./components/Facturas.jsx'));
 const FacturaDetalle = lazy(() => import('./components/FacturaDetalle.jsx'));
@@ -214,6 +215,12 @@ const ICONS = Object.freeze({
       <path d="M9.5 12l1.5 1.5 3.5-3.5" strokeLinecap="round" strokeLinejoin="round" />
     </>
   ),
+  sociedades: (
+    <>
+      <path d="M5 19V8l7-4 7 4v11" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 19v-5h6v5M8 10h1M12 10h1M16 10h1" strokeLinecap="round" strokeLinejoin="round" />
+    </>
+  ),
   usuarios: (
     <>
       <path d="M16 19a4 4 0 0 0-8 0" strokeLinecap="round" />
@@ -274,6 +281,7 @@ function AuthenticatedAppShell({
   userInitials,
   userName,
   userRole,
+  canManageSociedades,
   canManageUsers,
   canUseTablasPago,
   canUseOrdenesCompra,
@@ -284,12 +292,14 @@ function AuthenticatedAppShell({
   canEditContabilizacion,
   authUser,
   userPermissions,
+  refreshSociedades,
 }) {
   const location = useLocation();
   const isMobileView = useMediaQueryValue(MOBILE_MEDIA_QUERY);
 
   const navigationSections = useMemo(() => {
     return buildNavigationSections({
+      canManageSociedades,
       canManageUsers,
       canUseOrdenesCompra,
       canUseReservas,
@@ -297,6 +307,7 @@ function AuthenticatedAppShell({
       canViewTramites,
     });
   }, [
+    canManageSociedades,
     canManageUsers,
     canUseOrdenesCompra,
     canUseReservas,
@@ -552,6 +563,12 @@ function AuthenticatedAppShell({
                   />
                 )}
               />
+              <Route
+                path="/sociedades"
+                element={canManageSociedades ? (
+                  <Sociedades onSociedadesChange={refreshSociedades} />
+                ) : <Navigate to="/" replace />}
+              />
               <Route path="/usuarios" element={canManageUsers ? <Usuarios /> : <Navigate to="/" replace />} />
               <Route
                 path="/facturas"
@@ -625,6 +642,7 @@ function App() {
     authUser,
     canEditContabilizacion,
     canManageReservasDocumentos,
+    canManageSociedades,
     canManageUsers,
     canTramitarPago,
     canUseOrdenesCompra,
@@ -634,6 +652,7 @@ function App() {
     handleLoginSuccess,
     handleLogout,
     isAuthenticated,
+    refreshSociedades,
     selectedSociedad,
     setSociedadId,
     userInitials,
@@ -674,6 +693,7 @@ function App() {
         userInitials={userInitials}
         userName={userName}
         userRole={userRole}
+        canManageSociedades={canManageSociedades}
         canManageUsers={canManageUsers}
         canUseTablasPago={canUseTablasPago}
         canUseOrdenesCompra={canUseOrdenesCompra}
@@ -684,6 +704,7 @@ function App() {
         canEditContabilizacion={canEditContabilizacion}
         authUser={authUser}
         userPermissions={userPermissions}
+        refreshSociedades={refreshSociedades}
       />
     </Router>
   );

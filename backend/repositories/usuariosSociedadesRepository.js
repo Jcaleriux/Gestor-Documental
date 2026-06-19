@@ -15,6 +15,7 @@ const listSociedadesByUsuarioId = async (usuarioId, client) => {
      FROM usuarios_sociedades us
      INNER JOIN sociedades s ON s.id = us.sociedad_id
      WHERE us.usuario_id = $1
+       AND s.activo = true
      ORDER BY s.nombre_proyecto NULLS LAST, s.razon_social`,
     [usuarioId]
   );
