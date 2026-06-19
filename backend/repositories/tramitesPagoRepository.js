@@ -972,6 +972,7 @@ const listDocumentosByTramite = async (tramiteId, client, options = {}) => {
       COALESCE(fc.retencion_pagada, 0) AS conta_retencion_pagada,
       ${retencionPendienteExpression} AS conta_retencion_pendiente,
       fc.estado_retencion AS conta_estado_retencion,
+      fc.asiento AS conta_asiento,
       fc.centro_costo AS conta_centro_costo,
       fc.metadata AS conta_metadata,
       fc.creado_por AS conta_creado_por,

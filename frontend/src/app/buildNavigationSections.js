@@ -5,6 +5,7 @@ export const buildNavigationSections = ({
   canUseReservas,
   canUseTablasPago,
   canViewTramites,
+  canEditContabilizacion,
 }) => {
   const sections = [
     {
@@ -41,6 +42,13 @@ export const buildNavigationSections = ({
           to: '/tiquetes-electronicos',
           icon: 'tiquetes',
           visible: true,
+        },
+        {
+          id: 'contabilizacion-masiva',
+          label: 'Contabilizacion masiva',
+          to: '/contabilizacion-masiva',
+          icon: 'facturas',
+          visible: canEditContabilizacion,
         },
       ],
     },

@@ -106,6 +106,7 @@ const versionesRoutes = require('./routes/versiones');
 const auditoriaRoutes = require('./routes/auditoria');
 const tramitesPagoRoutes = require('./routes/tramitesPago');
 const contabilizacionRoutes = require('./routes/contabilizacion');
+const contabilizacionMasivaRoutes = require('./routes/contabilizacionMasiva');
 const dashboardRoutes = require('./routes/dashboard');
 const facturasRoutes = require('./routes/facturas');
 const filesRoutes = require('./routes/files');
@@ -123,6 +124,7 @@ const reservasRoutes = require('./routes/reservas');
   auditoriaRoutes,
   tramitesPagoRoutes,
   contabilizacionRoutes,
+  contabilizacionMasivaRoutes,
   dashboardRoutes,
   facturasRoutes,
   filesRoutes,

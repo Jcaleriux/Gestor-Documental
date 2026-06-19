@@ -10,6 +10,7 @@ test('buildNavigationSections deja visibles solo las secciones base cuando no ha
     canUseReservas: false,
     canUseTablasPago: false,
     canViewTramites: false,
+    canEditContabilizacion: false,
   });
 
   assert.deepEqual(
@@ -30,6 +31,7 @@ test('buildNavigationSections agrega secciones habilitadas por permisos sin mezc
     canUseReservas: true,
     canUseTablasPago: true,
     canViewTramites: true,
+    canEditContabilizacion: false,
   });
 
   assert.deepEqual(
@@ -62,10 +64,28 @@ test('buildNavigationSections muestra sociedades sin requerir administracion de 
     canUseReservas: false,
     canUseTablasPago: false,
     canViewTramites: false,
+    canEditContabilizacion: false,
   });
 
   assert.deepEqual(
     sections.find((section) => section.id === 'administracion')?.items.map((item) => item.id),
     ['sociedades'],
+  );
+});
+
+test('buildNavigationSections muestra contabilizacion masiva solo con permiso de contabilizar', () => {
+  const sections = buildNavigationSections({
+    canManageSociedades: false,
+    canManageUsers: false,
+    canUseOrdenesCompra: false,
+    canUseReservas: false,
+    canUseTablasPago: false,
+    canViewTramites: false,
+    canEditContabilizacion: true,
+  });
+
+  assert.deepEqual(
+    sections.find((section) => section.id === 'compras')?.items.map((item) => item.id),
+    ['facturas', 'retenciones-pendientes', 'notas-credito', 'tiquetes-electronicos', 'contabilizacion-masiva'],
   );
 });

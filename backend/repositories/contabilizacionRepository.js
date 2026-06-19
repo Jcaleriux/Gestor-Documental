@@ -239,6 +239,7 @@ const upsertContabilizacion = async ({
   descuento,
   anticipo_aplicado,
   monto_nota_credito,
+  asiento,
   centro_costo,
   cuenta_contable,
   proyecto,
@@ -270,6 +271,7 @@ const upsertContabilizacion = async ({
       descuento,
       anticipo_aplicado,
       monto_nota_credito,
+      asiento,
       centro_costo,
       cuenta_contable,
       proyecto,
@@ -283,7 +285,7 @@ const upsertContabilizacion = async ({
       metadata,
       creado_por
     )
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
     ON CONFLICT (factura_id)
     DO UPDATE SET
       fecha_documento = EXCLUDED.fecha_documento,
@@ -294,6 +296,7 @@ const upsertContabilizacion = async ({
       descuento = EXCLUDED.descuento,
       anticipo_aplicado = EXCLUDED.anticipo_aplicado,
       monto_nota_credito = EXCLUDED.monto_nota_credito,
+      asiento = EXCLUDED.asiento,
       centro_costo = EXCLUDED.centro_costo,
       cuenta_contable = EXCLUDED.cuenta_contable,
       proyecto = EXCLUDED.proyecto,
@@ -319,6 +322,7 @@ const upsertContabilizacion = async ({
       toNullable(descuento),
       toNullable(anticipo_aplicado),
       toNullable(monto_nota_credito),
+      toNullable(asiento),
       toNullable(centro_costo),
       toNullable(cuenta_contable),
       toNullable(proyecto),

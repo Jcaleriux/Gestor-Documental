@@ -135,7 +135,7 @@ const buildFacturaSidebarData = (documento = {}, { society = null } = {}) => {
         case 'asiento':
           return {
             ...field,
-            value: toSidebarText(documento?.conta_cuenta_contable || metadata?.asiento)
+            value: toSidebarText(documento?.conta_asiento || documento?.conta_cuenta_contable || metadata?.asiento)
           };
         case 'aprobada_por':
           return { ...field, value: buildApprovedByLabel(documento) };
