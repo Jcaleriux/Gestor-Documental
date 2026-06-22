@@ -4,6 +4,7 @@ import { useReservasOperations } from '../hooks/reservas/useReservasOperations.j
 import { useProtectedObjectUrl } from '../hooks/useProtectedObjectUrl.js';
 import { openProtectedInNewTab } from '../utils/protectedResources.js';
 import { withPdfFitToWidth } from '../utils/pdfViewer.js';
+import { formatDateTime } from '../utils/formatters.js';
 import PageHeader from './common/PageHeader';
 import SectionCard from './common/SectionCard';
 import LoadingState from './common/LoadingState';
@@ -24,12 +25,6 @@ const TRANSFER_FORM_INITIAL = {
   cliente_nombre: '',
   cliente_identificacion: '',
   motivo: '',
-};
-
-const formatDateTime = (value) => {
-  if (!value) return '-';
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString();
 };
 
 const inferPreviewType = (doc) => {

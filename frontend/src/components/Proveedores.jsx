@@ -10,6 +10,7 @@ import FiltersBar from './common/FiltersBar';
 import SearchInput from './common/SearchInput';
 import FacturasPagination from './facturas/FacturasPagination';
 import { LOADING_LABELS } from '../utils/uiLabels';
+import { formatDateTime } from '../utils/formatters';
 
 const EMPTY_FORM = {
   identificacion_tipo: '',
@@ -68,13 +69,6 @@ const toFormFromProveedor = (proveedor) => ({
   telefono_codigo_pais: proveedor.telefono_codigo_pais || '',
   telefono_numero: proveedor.telefono_numero || ''
 });
-
-const formatDate = (value) => {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '-';
-  return date.toLocaleString();
-};
 
 const formatValue = (value) => {
   if (value == null || value === '') return '-';
@@ -240,7 +234,7 @@ function ProveedoresTable({
               </div>
             </div>
           </td>
-          <td>{formatDate(proveedor.actualizado_en)}</td>
+          <td>{formatDateTime(proveedor.actualizado_en)}</td>
           <td className="text-end">
             <div className="proveedor-actions">
               <button
@@ -308,7 +302,7 @@ function ProveedoresMobileCards({
             </div>
             <div>
               <span className="proveedor-meta-label">Actualizado</span>
-              <span>{formatDate(proveedor.actualizado_en)}</span>
+              <span>{formatDateTime(proveedor.actualizado_en)}</span>
             </div>
           </div>
           <div className="d-flex gap-2 mt-3">
@@ -787,7 +781,7 @@ function Proveedores({ sociedadId }) {
                 <tbody>
                   {historial.map((item) => (
                     <tr key={item.id}>
-                      <td>{formatDate(item.creado_en)}</td>
+                      <td>{formatDateTime(item.creado_en)}</td>
                       <td>{FIELD_LABELS[item.campo] || item.campo}</td>
                       <td>{formatValue(item.valor_anterior)}</td>
                       <td>{formatValue(item.valor_nuevo)}</td>

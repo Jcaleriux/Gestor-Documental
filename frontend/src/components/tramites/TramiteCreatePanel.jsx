@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { formatAmount, getMoneda, getMontoDocumento } from '../../utils/formatters';
+import { formatAmount, formatDate, getMoneda, getMontoDocumento } from '../../utils/formatters';
 import { extractMensajeHaciendaXmlPath, facturasApi } from '../../services/facturasApi.js';
 import { openProtectedInNewTab } from '../../utils/protectedResources.js';
 import SectionCard from '../common/SectionCard';
@@ -346,7 +346,7 @@ function TramiteCreatePanel({
                 <td>{factura.emisor?.Nombre || factura.emisor?.nombre || '-'}</td>
                 <td>{getMoneda(factura)}</td>
                 <td>{formatAmount(getMontoDocumento(factura, { preferAjustado: true }))}</td>
-                <td>{factura.fecha_emision ? new Date(factura.fecha_emision).toLocaleDateString() : '-'}</td>
+                <td>{formatDate(factura.fecha_emision)}</td>
                 <td className="text-end">
                   <FacturaTramiteRowActions
                     factura={factura}
@@ -401,7 +401,7 @@ function TramiteCreatePanel({
                 <td className="fw-semibold">#{retencion.consecutivo || retencion.clave || retencion.factura_id}</td>
                 <td>{retencion.moneda || 'CRC'}</td>
                 <td>{formatAmount(getMontoRetencion(retencion))}</td>
-                <td>{retencion.fecha_emision ? new Date(retencion.fecha_emision).toLocaleDateString() : '-'}</td>
+                <td>{formatDate(retencion.fecha_emision)}</td>
               </tr>
             ))}
             {retencionesFiltradas.length === 0 && (

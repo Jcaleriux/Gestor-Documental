@@ -4,13 +4,7 @@ import SectionCard from './common/SectionCard';
 import LoadingState from './common/LoadingState';
 import EmptyState from './common/EmptyState';
 import ActionAlerts from './common/ActionAlerts';
-
-const formatDate = (value) => {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '-';
-  return date.toLocaleString();
-};
+import { formatDateTime } from '../utils/formatters';
 
 function Sociedades({ onSociedadesChange }) {
   const {
@@ -163,7 +157,7 @@ function Sociedades({ onSociedadesChange }) {
                             {sociedad.activo === false ? 'Inactiva' : 'Activa'}
                           </span>
                         </td>
-                        <td>{formatDate(sociedad.creado_en)}</td>
+                        <td>{formatDateTime(sociedad.creado_en)}</td>
                         <td className="text-end">
                           <div className="d-inline-flex gap-2">
                             <button

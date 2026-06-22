@@ -1,12 +1,6 @@
 import SectionCard from '../common/SectionCard';
 import EmptyState from '../common/EmptyState';
-
-const formatDate = (value) => {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '-';
-  return date.toLocaleString();
-};
+import { formatDateTime } from '../../utils/formatters';
 
 function UsuariosListCard({
   filteredUsers,
@@ -62,7 +56,7 @@ function UsuariosListCard({
                       {user.activo ? 'Activo' : 'Inactivo'}
                     </span>
                   </td>
-                  <td>{formatDate(user.creado_en)}</td>
+                  <td>{formatDateTime(user.creado_en)}</td>
                   <td className="text-end">
                     <div className="d-inline-flex gap-2">
                       <button

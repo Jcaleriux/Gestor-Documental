@@ -4,6 +4,7 @@ import {
   getTramiteSemaforoLabel,
   getTramiteSemaforoClass
 } from '../../utils/tramitesSemaforo';
+import { formatDate } from '../../utils/formatters';
 import { TRAMITES_LABELS } from '../../utils/uiLabels';
 import StatusBadge from '../common/StatusBadge';
 import EmptyState from '../common/EmptyState';
@@ -75,7 +76,7 @@ function TramitesTableSection({
                 />
               </td>
               <td>{tramite.creado_por || '-'}</td>
-              <td>{tramite.creado_en ? new Date(tramite.creado_en).toLocaleDateString() : '-'}</td>
+              <td>{formatDate(tramite.creado_en)}</td>
               <td className="text-end">
                 <Link className="btn btn-sm btn-outline-primary" to={`/tramites/${tramite.id}`}>
                   Ver

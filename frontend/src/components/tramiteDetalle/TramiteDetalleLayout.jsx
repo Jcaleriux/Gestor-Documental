@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { formatAmount } from '../../utils/formatters';
+import { formatAmount, formatDate } from '../../utils/formatters';
 import { estadoLabelTramite, estadoClassTramite } from '../../utils/estadosTramite';
 import PageHeader from '../common/PageHeader';
 import ActionAlerts from '../common/ActionAlerts';
@@ -102,7 +102,7 @@ function TramiteDetalleLayout({ layoutProps }) {
           estado={estadoLabelTramite(tramite.estado)}
           estadoClass={estadoClassTramite(tramite.estado)}
           creadoPor={tramite.creado_por}
-          creadoEn={tramite.creado_en ? new Date(tramite.creado_en).toLocaleDateString() : '-'}
+          creadoEn={formatDate(tramite.creado_en)}
           totalDocs={resumenTotales.totalDocs}
           totalMonto={formatAmount(resumenTotales.suma)}
           resumenMoneda={resumenMoneda}
