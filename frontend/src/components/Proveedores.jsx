@@ -59,6 +59,7 @@ function Proveedores({ sociedadId }) {
   const [historialProveedor, setHistorialProveedor] = useState(null);
   const [historial, setHistorial] = useState([]);
   const [historialLoading, setHistorialLoading] = useState(false);
+  const [historialError, setHistorialError] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -124,19 +125,22 @@ function Proveedores({ sociedadId }) {
   };
 
   const loadHistorial = async (proveedor) => {
-    try {
-      setHistorialProveedor(proveedor);
-      setHistorial([]);
-      setHistorialLoading(true);
-      setError('');
+    setHistorialProveedor(proveedor);
+    setHistorial([]);
+    setHistorialError('');
+    setHistorialLoading(true);
+    setError('');
 
+    try {
       const res = await proveedoresApi.listProveedorHistorial(proveedor.id);
       if (res.data?.success) {
         setHistorial(res.data.data || []);
+      } else {
+        setHistorialError('No se pudo cargar el historial del proveedor.');
       }
     } catch (err) {
       const apiError = err.response?.data?.error || 'No se pudo cargar el historial del proveedor.';
-      setError(apiError);
+      setHistorialError(apiError);
     } finally {
       setHistorialLoading(false);
     }
@@ -145,6 +149,7 @@ function Proveedores({ sociedadId }) {
   const closeHistorial = () => {
     setHistorialProveedor(null);
     setHistorial([]);
+    setHistorialError('');
     setHistorialLoading(false);
   };
 
@@ -319,6 +324,55 @@ function Proveedores({ sociedadId }) {
               />
             )}
           >
+            {historialProveedor && (
+              <div className="border rounded p-3 mb-3 bg-light">
+                <div className="d-flex justify-content-between align-items-start gap-2 mb-2">
+                  <div>
+                    <div className="fw-semibold">Historial de {historialProveedor.nombre}</div>
+                    <div className="text-muted small">
+                      {historialProveedor.identificacion_numero || 'Sin identificacion'}
+                    </div>
+                  </div>
+                  <button className="btn btn-outline-secondary btn-sm" type="button" onClick={closeHistorial}>
+                    Cerrar
+                  </button>
+                </div>
+
+                {historialLoading ? (
+                  <LoadingState label="Cargando historial de proveedor..." />
+                ) : historialError ? (
+                  <div className="alert alert-warning mb-0">{historialError}</div>
+                ) : historial.length === 0 ? (
+                  <EmptyState className="py-2">Este proveedor no tiene cambios registrados.</EmptyState>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="table table-sm align-middle mb-0">
+                      <thead>
+                        <tr>
+                          <th>Fecha</th>
+                          <th>Campo</th>
+                          <th>Anterior</th>
+                          <th>Nuevo</th>
+                          <th>Origen</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {historial.map((item) => (
+                          <tr key={item.id}>
+                            <td>{formatDate(item.creado_en)}</td>
+                            <td>{FIELD_LABELS[item.campo] || item.campo}</td>
+                            <td>{formatValue(item.valor_anterior)}</td>
+                            <td>{formatValue(item.valor_nuevo)}</td>
+                            <td>{formatValue(item.origen)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
             {filteredProveedores.length === 0 ? (
               <EmptyState className="py-2">No hay proveedores para mostrar.</EmptyState>
             ) : (
@@ -356,7 +410,7 @@ function Proveedores({ sociedadId }) {
                         <td className="text-end">
                           <div className="d-flex justify-content-end gap-2">
                             <button
-                              className="btn btn-outline-secondary btn-sm"
+                              className={`btn btn-sm ${historialProveedor?.id === proveedor.id ? 'btn-secondary' : 'btn-outline-secondary'}`}
                               type="button"
                               onClick={() => loadHistorial(proveedor)}
                               disabled={saving || historialLoading}
@@ -380,48 +434,6 @@ function Proveedores({ sociedadId }) {
               </div>
             )}
           </SectionCard>
-
-          {historialProveedor && (
-            <SectionCard
-              title={`Historial de ${historialProveedor.nombre}`}
-              actions={(
-                <button className="btn btn-outline-secondary btn-sm" type="button" onClick={closeHistorial}>
-                  Cerrar
-                </button>
-              )}
-            >
-              {historialLoading ? (
-                <LoadingState label="Cargando historial de proveedor..." />
-              ) : historial.length === 0 ? (
-                <EmptyState className="py-2">Este proveedor no tiene cambios registrados.</EmptyState>
-              ) : (
-                <div className="table-responsive">
-                  <table className="table table-sm align-middle mb-0">
-                    <thead>
-                      <tr>
-                        <th>Fecha</th>
-                        <th>Campo</th>
-                        <th>Anterior</th>
-                        <th>Nuevo</th>
-                        <th>Origen</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {historial.map((item) => (
-                        <tr key={item.id}>
-                          <td>{formatDate(item.creado_en)}</td>
-                          <td>{FIELD_LABELS[item.campo] || item.campo}</td>
-                          <td>{formatValue(item.valor_anterior)}</td>
-                          <td>{formatValue(item.valor_nuevo)}</td>
-                          <td>{formatValue(item.origen)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </SectionCard>
-          )}
         </div>
       </div>
     </div>
