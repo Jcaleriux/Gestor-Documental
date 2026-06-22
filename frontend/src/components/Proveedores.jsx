@@ -49,11 +49,38 @@ const formatValue = (value) => {
   return String(value);
 };
 
+function SimpleModal({ title, children, footer, onClose, size = '' }) {
+  return (
+    <>
+      <div className="modal show d-block" tabIndex="-1" role="dialog" aria-modal="true">
+        <div className={`modal-dialog modal-dialog-centered modal-dialog-scrollable ${size}`.trim()}>
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title">{title}</h5>
+              <button className="btn-close" type="button" aria-label="Cerrar" onClick={onClose} />
+            </div>
+            <div className="modal-body">
+              {children}
+            </div>
+            {footer && (
+              <div className="modal-footer">
+                {footer}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="modal-backdrop fade show" />
+    </>
+  );
+}
+
 function Proveedores({ sociedadId }) {
   const [proveedores, setProveedores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [formModalOpen, setFormModalOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [form, setForm] = useState(EMPTY_FORM);
   const [historialProveedor, setHistorialProveedor] = useState(null);
@@ -109,22 +136,28 @@ function Proveedores({ sociedadId }) {
   const resetForm = () => {
     setEditingId(null);
     setForm(EMPTY_FORM);
+    setFormModalOpen(false);
   };
 
   const startCreate = () => {
     resetForm();
+    closeHistorial();
+    setFormModalOpen(true);
     setError('');
     setMessage('');
   };
 
   const startEdit = (proveedor) => {
+    closeHistorial();
     setEditingId(proveedor.id);
     setForm(toFormFromProveedor(proveedor));
+    setFormModalOpen(true);
     setError('');
     setMessage('');
   };
 
   const loadHistorial = async (proveedor) => {
+    setFormModalOpen(false);
     setHistorialProveedor(proveedor);
     setHistorial([]);
     setHistorialError('');
@@ -221,97 +254,7 @@ function Proveedores({ sociedadId }) {
       <ActionAlerts error={error} message={message} />
 
       <div className="row g-3">
-        <div className="col-12 col-xl-4">
-          <SectionCard title={isEditing ? `Editar proveedor #${editingId}` : 'Nuevo proveedor'}>
-            <form className="d-grid gap-2" onSubmit={handleSubmit}>
-              <label className="form-label mb-0">
-                Tipo identificacion
-                <input
-                  className="form-control"
-                  value={form.identificacion_tipo}
-                  onChange={updateForm('identificacion_tipo')}
-                  placeholder="01, 02, 03..."
-                />
-              </label>
-
-              <label className="form-label mb-0">
-                Identificacion
-                <input
-                  className="form-control"
-                  value={form.identificacion_numero}
-                  onChange={updateForm('identificacion_numero')}
-                  required
-                />
-              </label>
-
-              <label className="form-label mb-0">
-                Nombre
-                <input
-                  className="form-control"
-                  value={form.nombre}
-                  onChange={updateForm('nombre')}
-                  required
-                />
-              </label>
-
-              <label className="form-label mb-0">
-                Nombre comercial
-                <input
-                  className="form-control"
-                  value={form.nombre_comercial}
-                  onChange={updateForm('nombre_comercial')}
-                />
-              </label>
-
-              <label className="form-label mb-0">
-                Correo electronico
-                <input
-                  className="form-control"
-                  type="email"
-                  value={form.correo_electronico}
-                  onChange={updateForm('correo_electronico')}
-                />
-              </label>
-
-              <div className="row g-2">
-                <div className="col-4">
-                  <label className="form-label mb-0">
-                    Cod. pais
-                    <input
-                      className="form-control"
-                      value={form.telefono_codigo_pais}
-                      onChange={updateForm('telefono_codigo_pais')}
-                      placeholder="506"
-                    />
-                  </label>
-                </div>
-                <div className="col-8">
-                  <label className="form-label mb-0">
-                    Telefono
-                    <input
-                      className="form-control"
-                      value={form.telefono_numero}
-                      onChange={updateForm('telefono_numero')}
-                    />
-                  </label>
-                </div>
-              </div>
-
-              <div className="d-flex gap-2 mt-2">
-                <button className="btn btn-primary flex-grow-1" type="submit" disabled={saving}>
-                  {saving ? 'Guardando...' : (isEditing ? 'Actualizar proveedor' : 'Crear proveedor')}
-                </button>
-                {isEditing && (
-                  <button className="btn btn-outline-secondary" type="button" onClick={resetForm} disabled={saving}>
-                    Cancelar
-                  </button>
-                )}
-              </div>
-            </form>
-          </SectionCard>
-        </div>
-
-        <div className="col-12 col-xl-8">
+        <div className="col-12">
           <SectionCard
             title="Proveedores registrados"
             actions={(
@@ -324,55 +267,6 @@ function Proveedores({ sociedadId }) {
               />
             )}
           >
-            {historialProveedor && (
-              <div className="border rounded p-3 mb-3 bg-light">
-                <div className="d-flex justify-content-between align-items-start gap-2 mb-2">
-                  <div>
-                    <div className="fw-semibold">Historial de {historialProveedor.nombre}</div>
-                    <div className="text-muted small">
-                      {historialProveedor.identificacion_numero || 'Sin identificacion'}
-                    </div>
-                  </div>
-                  <button className="btn btn-outline-secondary btn-sm" type="button" onClick={closeHistorial}>
-                    Cerrar
-                  </button>
-                </div>
-
-                {historialLoading ? (
-                  <LoadingState label="Cargando historial de proveedor..." />
-                ) : historialError ? (
-                  <div className="alert alert-warning mb-0">{historialError}</div>
-                ) : historial.length === 0 ? (
-                  <EmptyState className="py-2">Este proveedor no tiene cambios registrados.</EmptyState>
-                ) : (
-                  <div className="table-responsive">
-                    <table className="table table-sm align-middle mb-0">
-                      <thead>
-                        <tr>
-                          <th>Fecha</th>
-                          <th>Campo</th>
-                          <th>Anterior</th>
-                          <th>Nuevo</th>
-                          <th>Origen</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {historial.map((item) => (
-                          <tr key={item.id}>
-                            <td>{formatDate(item.creado_en)}</td>
-                            <td>{FIELD_LABELS[item.campo] || item.campo}</td>
-                            <td>{formatValue(item.valor_anterior)}</td>
-                            <td>{formatValue(item.valor_nuevo)}</td>
-                            <td>{formatValue(item.origen)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            )}
-
             {filteredProveedores.length === 0 ? (
               <EmptyState className="py-2">No hay proveedores para mostrar.</EmptyState>
             ) : (
@@ -380,7 +274,6 @@ function Proveedores({ sociedadId }) {
                 <table className="table table-sm align-middle mb-0">
                   <thead>
                     <tr>
-                      <th>ID</th>
                       <th>Identificacion</th>
                       <th>Nombre</th>
                       <th>Contacto</th>
@@ -391,7 +284,6 @@ function Proveedores({ sociedadId }) {
                   <tbody>
                     {filteredProveedores.map((proveedor) => (
                       <tr key={proveedor.id}>
-                        <td>{proveedor.id}</td>
                         <td>
                           <div>{proveedor.identificacion_numero}</div>
                           <div className="text-muted small">{proveedor.identificacion_tipo || '-'}</div>
@@ -436,6 +328,157 @@ function Proveedores({ sociedadId }) {
           </SectionCard>
         </div>
       </div>
+
+      {formModalOpen && (
+        <SimpleModal
+          title={isEditing ? `Editar proveedor #${editingId}` : 'Nuevo proveedor'}
+          onClose={resetForm}
+          size="modal-lg"
+          footer={(
+            <>
+              <button className="btn btn-outline-secondary" type="button" onClick={resetForm} disabled={saving}>
+                Cancelar
+              </button>
+              <button className="btn btn-primary" type="submit" form="proveedor-form" disabled={saving}>
+                {saving ? 'Guardando...' : (isEditing ? 'Actualizar proveedor' : 'Crear proveedor')}
+              </button>
+            </>
+          )}
+        >
+          <form id="proveedor-form" className="row g-3" onSubmit={handleSubmit}>
+            <div className="col-12 col-md-4">
+              <label className="form-label mb-0">
+                Tipo identificacion
+                <input
+                  className="form-control"
+                  value={form.identificacion_tipo}
+                  onChange={updateForm('identificacion_tipo')}
+                  placeholder="01, 02, 03..."
+                />
+              </label>
+            </div>
+
+            <div className="col-12 col-md-8">
+              <label className="form-label mb-0">
+                Identificacion
+                <input
+                  className="form-control"
+                  value={form.identificacion_numero}
+                  onChange={updateForm('identificacion_numero')}
+                  required
+                />
+              </label>
+            </div>
+
+            <div className="col-12">
+              <label className="form-label mb-0">
+                Nombre
+                <input
+                  className="form-control"
+                  value={form.nombre}
+                  onChange={updateForm('nombre')}
+                  required
+                />
+              </label>
+            </div>
+
+            <div className="col-12">
+              <label className="form-label mb-0">
+                Nombre comercial
+                <input
+                  className="form-control"
+                  value={form.nombre_comercial}
+                  onChange={updateForm('nombre_comercial')}
+                />
+              </label>
+            </div>
+
+            <div className="col-12">
+              <label className="form-label mb-0">
+                Correo electronico
+                <input
+                  className="form-control"
+                  type="email"
+                  value={form.correo_electronico}
+                  onChange={updateForm('correo_electronico')}
+                />
+              </label>
+            </div>
+
+            <div className="col-12 col-md-4">
+              <label className="form-label mb-0">
+                Cod. pais
+                <input
+                  className="form-control"
+                  value={form.telefono_codigo_pais}
+                  onChange={updateForm('telefono_codigo_pais')}
+                  placeholder="506"
+                />
+              </label>
+            </div>
+            <div className="col-12 col-md-8">
+              <label className="form-label mb-0">
+                Telefono
+                <input
+                  className="form-control"
+                  value={form.telefono_numero}
+                  onChange={updateForm('telefono_numero')}
+                />
+              </label>
+            </div>
+          </form>
+        </SimpleModal>
+      )}
+
+      {historialProveedor && (
+        <SimpleModal
+          title={`Historial de cambios - ${historialProveedor.nombre}`}
+          onClose={closeHistorial}
+          size="modal-xl"
+          footer={(
+            <button className="btn btn-outline-secondary" type="button" onClick={closeHistorial}>
+              Cerrar
+            </button>
+          )}
+        >
+          <div className="text-muted small mb-3">
+            {historialProveedor.identificacion_numero || 'Sin identificacion'}
+          </div>
+
+          {historialLoading ? (
+            <LoadingState label="Cargando historial de proveedor..." />
+          ) : historialError ? (
+            <div className="alert alert-warning mb-0">{historialError}</div>
+          ) : historial.length === 0 ? (
+            <EmptyState className="py-2">Este proveedor no tiene cambios registrados.</EmptyState>
+          ) : (
+            <div className="table-responsive">
+              <table className="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Campo</th>
+                    <th>Anterior</th>
+                    <th>Nuevo</th>
+                    <th>Origen</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {historial.map((item) => (
+                    <tr key={item.id}>
+                      <td>{formatDate(item.creado_en)}</td>
+                      <td>{FIELD_LABELS[item.campo] || item.campo}</td>
+                      <td>{formatValue(item.valor_anterior)}</td>
+                      <td>{formatValue(item.valor_nuevo)}</td>
+                      <td>{formatValue(item.origen)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </SimpleModal>
+      )}
     </div>
   );
 }
