@@ -94,6 +94,17 @@ const buildVisiblePages = (currentPage, totalPages) => {
   }, []);
 };
 
+const collectCollapsibleNodeIds = (nodes = []) => nodes.flatMap((node) => {
+  if (!node.children?.length) {
+    return [];
+  }
+
+  return [
+    String(node.id),
+    ...collectCollapsibleNodeIds(node.children),
+  ];
+});
+
 function ImportSummary({ summary }) {
   if (!summary) {
     return null;
@@ -188,12 +199,37 @@ function SimpleModal({ title, children, footer, onClose, size = '' }) {
   );
 }
 
-function CentroTreeNode({ node, onEdit, onToggleActive, saving }) {
+function CentroTreeNode({
+  node,
+  onEdit,
+  onToggleActive,
+  saving,
+  collapsedNodeIds,
+  onToggleCollapse,
+}) {
+  const hasChildren = node.children?.length > 0;
+  const collapsed = hasChildren && collapsedNodeIds.has(String(node.id));
+
   return (
     <li className="centros-costo-tree-item">
       <div className="centros-costo-tree-row">
         <div className="centros-costo-tree-copy">
-          <div className="centros-costo-tree-title">{formatCentroCostoLabel(node)}</div>
+          <div className="centros-costo-tree-title-row">
+            {hasChildren ? (
+              <button
+                className="centros-costo-tree-toggle"
+                type="button"
+                onClick={() => onToggleCollapse(node.id)}
+                aria-expanded={!collapsed}
+                aria-label={collapsed ? 'Expandir centro' : 'Contraer centro'}
+              >
+                {collapsed ? '+' : '-'}
+              </button>
+            ) : (
+              <span className="centros-costo-tree-toggle-spacer" aria-hidden="true" />
+            )}
+            <div className="centros-costo-tree-title">{formatCentroCostoLabel(node)}</div>
+          </div>
           <div className="centros-costo-tree-meta">
             {getCentroCostoAprobadorNombre(node) || 'Sin aprobador asignado'}
           </div>
@@ -220,7 +256,7 @@ function CentroTreeNode({ node, onEdit, onToggleActive, saving }) {
         </div>
       </div>
 
-      {node.children?.length > 0 ? (
+      {hasChildren && !collapsed ? (
         <ul className="centros-costo-tree-list">
           {node.children.map((child) => (
             <CentroTreeNode
@@ -229,6 +265,8 @@ function CentroTreeNode({ node, onEdit, onToggleActive, saving }) {
               onEdit={onEdit}
               onToggleActive={onToggleActive}
               saving={saving}
+              collapsedNodeIds={collapsedNodeIds}
+              onToggleCollapse={onToggleCollapse}
             />
           ))}
         </ul>
@@ -552,6 +590,7 @@ function CentrosCosto({ sociedadId }) {
   const fileInputRef = useRef(null);
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [treeModalOpen, setTreeModalOpen] = useState(false);
+  const [collapsedTreeNodeIds, setCollapsedTreeNodeIds] = useState(() => new Set());
   const [sortBy, setSortBy] = useState('codigo');
   const [sortDir, setSortDir] = useState('asc');
   const [page, setPage] = useState(1);
@@ -617,6 +656,8 @@ function CentrosCosto({ sociedadId }) {
     hasPrev: currentPage > 1,
     hasNext: currentPage < totalPages,
   }), [currentPage, sortedCentros.length, totalPages]);
+  const collapsibleTreeNodeIds = useMemo(() => collectCollapsibleNodeIds(treeNodes), [treeNodes]);
+  const hasCollapsibleTreeNodes = collapsibleTreeNodeIds.length > 0;
 
   const closeFormModal = useCallback(() => {
     resetForm();
@@ -633,6 +674,27 @@ function CentrosCosto({ sociedadId }) {
     startEdit(centro);
     setFormModalOpen(true);
   }, [startEdit]);
+
+  const toggleTreeNodeCollapse = useCallback((nodeId) => {
+    setCollapsedTreeNodeIds((previous) => {
+      const next = new Set(previous);
+      const key = String(nodeId);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }, []);
+
+  const expandAllTreeNodes = useCallback(() => {
+    setCollapsedTreeNodeIds(new Set());
+  }, []);
+
+  const collapseAllTreeNodes = useCallback(() => {
+    setCollapsedTreeNodeIds(new Set(collapsibleTreeNodeIds));
+  }, [collapsibleTreeNodeIds]);
 
   const handleSearchChange = useCallback((event) => {
     setSearch(event.target.value);
@@ -851,10 +913,30 @@ function CentrosCosto({ sociedadId }) {
           )}
         >
           <div className="centros-costo-tree-modal-summary">
-            <span>{treeNodes.length} raíces visibles</span>
-            <span>{filteredCentros.length} centros filtrados</span>
-            {onlySelectable ? <span>Solo seleccionables</span> : null}
-            {showInactive ? <span>Incluye inactivos</span> : null}
+            <div className="centros-costo-tree-modal-chips">
+              <span>{treeNodes.length} raíces visibles</span>
+              <span>{filteredCentros.length} centros filtrados</span>
+              {onlySelectable ? <span>Solo seleccionables</span> : null}
+              {showInactive ? <span>Incluye inactivos</span> : null}
+            </div>
+            <div className="centros-costo-tree-modal-actions">
+              <button
+                className="btn btn-outline-secondary btn-sm"
+                type="button"
+                onClick={expandAllTreeNodes}
+                disabled={!hasCollapsibleTreeNodes || collapsedTreeNodeIds.size === 0}
+              >
+                Expandir todos
+              </button>
+              <button
+                className="btn btn-outline-secondary btn-sm"
+                type="button"
+                onClick={collapseAllTreeNodes}
+                disabled={!hasCollapsibleTreeNodes}
+              >
+                Contraer todos
+              </button>
+            </div>
           </div>
 
           {treeNodes.length === 0 ? (
@@ -869,6 +951,8 @@ function CentrosCosto({ sociedadId }) {
                     onEdit={openEditModal}
                     onToggleActive={toggleActivo}
                     saving={saving}
+                    collapsedNodeIds={collapsedTreeNodeIds}
+                    onToggleCollapse={toggleTreeNodeCollapse}
                   />
                 ))}
               </ul>

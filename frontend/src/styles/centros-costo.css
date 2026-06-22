@@ -51,6 +51,38 @@
   min-width: 0;
 }
 
+.centros-costo-tree-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.centros-costo-tree-toggle,
+.centros-costo-tree-toggle-spacer {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+}
+
+.centros-costo-tree-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--app-border);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1d4ed8;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.centros-costo-tree-toggle:hover {
+  background: #eef4ff;
+  border-color: #b2ccff;
+}
+
 .centros-costo-tree-title {
   font-weight: 700;
   color: var(--app-text);
@@ -464,11 +496,20 @@
 .centros-costo-tree-modal-summary {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
   margin-bottom: 12px;
 }
 
-.centros-costo-tree-modal-summary span {
+.centros-costo-tree-modal-chips,
+.centros-costo-tree-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.centros-costo-tree-modal-chips span {
   display: inline-flex;
   align-items: center;
   padding: 4px 10px;
