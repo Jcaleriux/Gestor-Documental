@@ -5,6 +5,10 @@ import SectionCard from './common/SectionCard';
 import LoadingState from './common/LoadingState';
 import EmptyState from './common/EmptyState';
 import ActionAlerts from './common/ActionAlerts';
+import DataTable from './common/DataTable';
+import FiltersBar from './common/FiltersBar';
+import SearchInput from './common/SearchInput';
+import FacturasPagination from './facturas/FacturasPagination';
 import { LOADING_LABELS } from '../utils/uiLabels';
 
 const EMPTY_FORM = {
@@ -17,7 +21,13 @@ const EMPTY_FORM = {
   telefono_numero: ''
 };
 
-const PAGE_SIZE_OPTIONS = Object.freeze([25, 50, 100]);
+const PROVEEDORES_TABLE_HEADERS = Object.freeze([
+  { key: 'identificacion', label: 'Identificación' },
+  { key: 'nombre', label: 'Nombre' },
+  { key: 'contacto', label: 'Contacto' },
+  { key: 'actualizado', label: 'Actualizado' },
+  { key: 'acciones', label: 'ACCIONES', align: 'end' }
+]);
 
 const FIELD_LABELS = Object.freeze({
   identificacion_tipo: 'Tipo identificación',
@@ -81,13 +91,191 @@ const formatTelefono = ({ codigoPais, numero }) => {
   return codigoPais ? `+${codigoPais} ${formattedNumber}` : formattedNumber;
 };
 
-const getPaginationSummary = ({ page, pageSize, total }) => {
-  if (total === 0) {
-    return 'Mostrando 0 de 0 proveedores';
-  }
-  const start = ((page - 1) * pageSize) + 1;
-  const end = Math.min(page * pageSize, total);
-  return `Mostrando ${start}-${end} de ${total} proveedores`;
+const buildVisiblePages = (currentPage, totalPages) => {
+  if (totalPages <= 0) return [];
+
+  const pages = new Set([1, totalPages, currentPage]);
+  if (currentPage > 1) pages.add(currentPage - 1);
+  if (currentPage < totalPages) pages.add(currentPage + 1);
+
+  const sortedPages = Array.from(pages)
+    .filter((pageNumber) => pageNumber >= 1 && pageNumber <= totalPages)
+    .sort((a, b) => a - b);
+
+  return sortedPages.reduce((visiblePages, pageNumber, index) => {
+    if (index > 0 && pageNumber - sortedPages[index - 1] > 1) {
+      visiblePages.push(`ellipsis-${pageNumber}`);
+    }
+    visiblePages.push(pageNumber);
+    return visiblePages;
+  }, []);
+};
+
+const getUniqueCount = (items, field) => (
+  new Set(items.map((item) => item[field]).filter(Boolean)).size
+);
+
+function ProveedoresSummaryCards({ total, page, totalPages, proveedores }) {
+  const conCorreo = proveedores.filter((proveedor) => proveedor.correo_electronico).length;
+  const tiposIdentificacion = getUniqueCount(proveedores, 'identificacion_tipo');
+
+  return (
+    <div className="facturas-summary-grid proveedores-summary-grid">
+      <div className="facturas-summary-card">
+        <span className="facturas-summary-label">Resultados</span>
+        <strong className="facturas-summary-value">{total} resultados</strong>
+        <span className="facturas-summary-meta">
+          {totalPages > 0 ? `Página ${page} de ${totalPages}` : 'Sin resultados'}
+        </span>
+      </div>
+      <div className="facturas-summary-card">
+        <span className="facturas-summary-label">Contacto</span>
+        <strong className="facturas-summary-value">{conCorreo} con correo</strong>
+        <span className="facturas-summary-meta">Correos registrados</span>
+      </div>
+      <div className="facturas-summary-card">
+        <span className="facturas-summary-label">Tipos</span>
+        <div className="facturas-summary-chip-list">
+          <span className="facturas-summary-chip">{tiposIdentificacion} tipos de identificación</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProveedoresTable({
+  proveedores,
+  saving,
+  historialLoading,
+  historialProveedor,
+  onLoadHistorial,
+  onEdit
+}) {
+  return (
+    <DataTable
+      headers={PROVEEDORES_TABLE_HEADERS}
+      stickyHeader
+      className="d-none d-lg-block"
+      tableClassName="table table-hover align-middle mb-0 facturas-data-table proveedores-data-table"
+    >
+      {proveedores.map((proveedor) => (
+        <tr key={proveedor.id}>
+          <td>
+            <div className="proveedor-identificacion-cell">
+              <div className="proveedor-primary-text">{formatIdentificacion(proveedor.identificacion_numero)}</div>
+              <div className="proveedor-meta-text">Tipo: {proveedor.identificacion_tipo || '-'}</div>
+            </div>
+          </td>
+          <td>
+            <div className="proveedor-nombre-cell" title={proveedor.nombre}>
+              <div className="proveedor-primary-text">{proveedor.nombre}</div>
+              <div className="proveedor-meta-text">{proveedor.nombre_comercial || '-'}</div>
+            </div>
+          </td>
+          <td>
+            <div className="proveedor-contacto-cell">
+              <div className="proveedor-primary-text">{proveedor.correo_electronico || '-'}</div>
+              <div className="proveedor-meta-text">
+                {formatTelefono({
+                  codigoPais: proveedor.telefono_codigo_pais,
+                  numero: proveedor.telefono_numero
+                })}
+              </div>
+            </div>
+          </td>
+          <td>{formatDate(proveedor.actualizado_en)}</td>
+          <td className="text-end">
+            <div className="proveedor-actions">
+              <button
+                className={`btn btn-sm ${historialProveedor?.id === proveedor.id ? 'btn-secondary' : 'btn-outline-secondary'}`}
+                type="button"
+                onClick={() => onLoadHistorial(proveedor)}
+                disabled={saving || historialLoading}
+              >
+                Historial
+              </button>
+              <button
+                className="btn btn-outline-primary btn-sm"
+                type="button"
+                onClick={() => onEdit(proveedor)}
+                disabled={saving}
+              >
+                Editar
+              </button>
+            </div>
+          </td>
+        </tr>
+      ))}
+    </DataTable>
+  );
+}
+
+function ProveedoresMobileCards({
+  proveedores,
+  saving,
+  historialLoading,
+  historialProveedor,
+  onLoadHistorial,
+  onEdit
+}) {
+  return (
+    <div className="proveedores-mobile-list d-grid gap-2 d-lg-none">
+      {proveedores.map((proveedor) => (
+        <div className="proveedor-mobile-card" key={proveedor.id}>
+          <div className="d-flex justify-content-between gap-2">
+            <div className="proveedor-mobile-title">
+              <div className="proveedor-primary-text">{proveedor.nombre}</div>
+              <div className="proveedor-meta-text">{proveedor.nombre_comercial || '-'}</div>
+            </div>
+            <span className="facturas-summary-chip align-self-start">
+              Tipo: {proveedor.identificacion_tipo || '-'}
+            </span>
+          </div>
+          <div className="proveedor-mobile-details">
+            <div>
+              <span className="proveedor-meta-label">Identificación</span>
+              <span>{formatIdentificacion(proveedor.identificacion_numero)}</span>
+            </div>
+            <div>
+              <span className="proveedor-meta-label">Correo</span>
+              <span>{proveedor.correo_electronico || '-'}</span>
+            </div>
+            <div>
+              <span className="proveedor-meta-label">Teléfono</span>
+              <span>
+                {formatTelefono({
+                  codigoPais: proveedor.telefono_codigo_pais,
+                  numero: proveedor.telefono_numero
+                })}
+              </span>
+            </div>
+            <div>
+              <span className="proveedor-meta-label">Actualizado</span>
+              <span>{formatDate(proveedor.actualizado_en)}</span>
+            </div>
+          </div>
+          <div className="d-flex gap-2 mt-3">
+            <button
+              className={`btn btn-sm flex-fill ${historialProveedor?.id === proveedor.id ? 'btn-secondary' : 'btn-outline-secondary'}`}
+              type="button"
+              onClick={() => onLoadHistorial(proveedor)}
+              disabled={saving || historialLoading}
+            >
+              Historial
+            </button>
+            <button
+              className="btn btn-outline-primary btn-sm flex-fill"
+              type="button"
+              onClick={() => onEdit(proveedor)}
+              disabled={saving}
+            >
+              Editar
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 };
 
 function SimpleModal({ title, children, footer, onClose, size = '' }) {
@@ -174,27 +362,31 @@ function Proveedores({ sociedadId }) {
     ));
   }, [proveedores, search]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredProveedores.length / pageSize));
-  const currentPage = Math.min(page, totalPages);
+  const totalPages = Math.ceil(filteredProveedores.length / pageSize);
+  const currentPage = totalPages === 0 ? 1 : Math.min(page, totalPages);
   const pagedProveedores = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
     return filteredProveedores.slice(start, start + pageSize);
   }, [currentPage, filteredProveedores, pageSize]);
-  const paginationSummary = getPaginationSummary({
-    page: currentPage,
-    pageSize,
-    total: filteredProveedores.length
-  });
-
-  useEffect(() => {
+  const paginationMeta = useMemo(() => ({
+    totalItems: filteredProveedores.length,
+    page: totalPages === 0 ? 0 : currentPage,
+    totalPages,
+    hasPrev: currentPage > 1,
+    hasNext: currentPage < totalPages
+  }), [currentPage, filteredProveedores.length, totalPages]);
+  const visiblePages = useMemo(
+    () => buildVisiblePages(currentPage, totalPages),
+    [currentPage, totalPages]
+  );
+  const handleSearchChange = useCallback((e) => {
+    setSearch(e.target.value);
     setPage(1);
-  }, [search, pageSize]);
-
-  useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
-    }
-  }, [page, totalPages]);
+  }, []);
+  const handleSetPageSize = useCallback((value) => {
+    setPageSize(Number(value));
+    setPage(1);
+  }, []);
 
   const updateForm = (field) => (e) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -298,7 +490,7 @@ function Proveedores({ sociedadId }) {
 
   if (!sociedadId) {
     return (
-      <div className="container-fluid">
+      <div className="documents-page">
         <EmptyState className="py-2">Seleccione una sociedad para administrar proveedores.</EmptyState>
       </div>
     );
@@ -307,7 +499,7 @@ function Proveedores({ sociedadId }) {
   if (loading) return <LoadingState label={LOADING_LABELS.proveedores} />;
 
   return (
-    <div className="container-fluid">
+    <div className="documents-page facturas-page proveedores-page">
       <PageHeader
         title="Administración de proveedores"
         subtitle="Crea y edita proveedores para la sociedad seleccionada."
@@ -320,206 +512,72 @@ function Proveedores({ sociedadId }) {
 
       <ActionAlerts error={error} message={message} />
 
-      <div className="row g-3">
-        <div className="col-12">
-          <SectionCard
-            title="Proveedores registrados"
-            actions={(
-              <div className="d-flex flex-wrap align-items-center justify-content-end gap-2">
-                <input
-                  className="form-control"
-                  style={{ minWidth: '280px' }}
-                  placeholder="Buscar por identificación, nombre, correo o teléfono..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                <select
-                  className="form-select"
-                  style={{ width: 'auto' }}
-                  value={pageSize}
-                  onChange={(e) => setPageSize(Number(e.target.value))}
-                  aria-label="Proveedores por página"
-                >
-                  {PAGE_SIZE_OPTIONS.map((option) => (
-                    <option key={option} value={option}>{option} por página</option>
-                  ))}
-                </select>
-              </div>
-            )}
-          >
-            <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-              <div className="text-muted small">{paginationSummary}</div>
-              {search.trim() && (
-                <button className="btn btn-link btn-sm p-0" type="button" onClick={() => setSearch('')}>
-                  Limpiar búsqueda
-                </button>
-              )}
-            </div>
+      <FiltersBar className="facturas-toolbar">
+        <SearchInput
+          placeholder="Buscar por identificación, nombre, correo o teléfono..."
+          value={search}
+          onChange={handleSearchChange}
+        />
+        {search.trim() ? (
+          <div className="facturas-toolbar-actions">
+            <button
+              className="btn btn-outline-secondary"
+              type="button"
+              onClick={() => {
+                setSearch('');
+                setPage(1);
+              }}
+            >
+              Limpiar búsqueda
+            </button>
+          </div>
+        ) : null}
+      </FiltersBar>
 
-            {filteredProveedores.length === 0 ? (
-              <EmptyState className="py-2">No hay proveedores para mostrar.</EmptyState>
-            ) : (
-              <>
-                <div className="table-responsive d-none d-lg-block">
-                  <table className="table table-sm align-middle mb-0">
-                    <thead>
-                      <tr>
-                        <th>Identificación</th>
-                        <th>Nombre</th>
-                        <th>Contacto</th>
-                        <th>Actualizado</th>
-                        <th className="text-end">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {pagedProveedores.map((proveedor) => (
-                        <tr key={proveedor.id}>
-                          <td>
-                            <div>{formatIdentificacion(proveedor.identificacion_numero)}</div>
-                            <span className="badge text-bg-light border">{proveedor.identificacion_tipo || '-'}</span>
-                          </td>
-                          <td>
-                            <div>{proveedor.nombre}</div>
-                            <div className="text-muted small">{proveedor.nombre_comercial || '-'}</div>
-                          </td>
-                          <td>
-                            <div>{proveedor.correo_electronico || '-'}</div>
-                            <div className="text-muted small">
-                              {formatTelefono({
-                                codigoPais: proveedor.telefono_codigo_pais,
-                                numero: proveedor.telefono_numero
-                              })}
-                            </div>
-                          </td>
-                          <td>{formatDate(proveedor.actualizado_en)}</td>
-                          <td className="text-end">
-                            <div className="d-flex justify-content-end gap-2">
-                              <button
-                                className={`btn btn-sm ${historialProveedor?.id === proveedor.id ? 'btn-secondary' : 'btn-outline-secondary'}`}
-                                type="button"
-                                onClick={() => loadHistorial(proveedor)}
-                                disabled={saving || historialLoading}
-                              >
-                                Historial
-                              </button>
-                              <button
-                                className="btn btn-outline-primary btn-sm"
-                                type="button"
-                                onClick={() => startEdit(proveedor)}
-                                disabled={saving}
-                              >
-                                Editar
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+      <ProveedoresSummaryCards
+        total={filteredProveedores.length}
+        page={paginationMeta.page}
+        totalPages={totalPages}
+        proveedores={filteredProveedores}
+      />
 
-                <div className="d-grid gap-2 d-lg-none">
-                  {pagedProveedores.map((proveedor) => (
-                    <div className="border rounded p-3" key={proveedor.id}>
-                      <div className="d-flex justify-content-between gap-2">
-                        <div>
-                          <div className="fw-semibold">{proveedor.nombre}</div>
-                          <div className="text-muted small">{proveedor.nombre_comercial || '-'}</div>
-                        </div>
-                        <span className="badge text-bg-light border align-self-start">
-                          {proveedor.identificacion_tipo || '-'}
-                        </span>
-                      </div>
-                      <div className="row g-2 mt-2 small">
-                        <div className="col-12">
-                          <span className="text-muted">Identificación: </span>
-                          {formatIdentificacion(proveedor.identificacion_numero)}
-                        </div>
-                        <div className="col-12">
-                          <span className="text-muted">Correo: </span>
-                          {proveedor.correo_electronico || '-'}
-                        </div>
-                        <div className="col-12">
-                          <span className="text-muted">Teléfono: </span>
-                          {formatTelefono({
-                            codigoPais: proveedor.telefono_codigo_pais,
-                            numero: proveedor.telefono_numero
-                          })}
-                        </div>
-                        <div className="col-12">
-                          <span className="text-muted">Actualizado: </span>
-                          {formatDate(proveedor.actualizado_en)}
-                        </div>
-                      </div>
-                      <div className="d-flex gap-2 mt-3">
-                        <button
-                          className={`btn btn-sm flex-fill ${historialProveedor?.id === proveedor.id ? 'btn-secondary' : 'btn-outline-secondary'}`}
-                          type="button"
-                          onClick={() => loadHistorial(proveedor)}
-                          disabled={saving || historialLoading}
-                        >
-                          Historial
-                        </button>
-                        <button
-                          className="btn btn-outline-primary btn-sm flex-fill"
-                          type="button"
-                          onClick={() => startEdit(proveedor)}
-                          disabled={saving}
-                        >
-                          Editar
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+      <SectionCard className="table-card facturas-table-card" bodyClassName="p-0">
+        {filteredProveedores.length === 0 ? (
+          <div className="py-4">
+            <EmptyState className="text-center py-2">No hay proveedores para mostrar.</EmptyState>
+          </div>
+        ) : (
+          <>
+            <ProveedoresTable
+              proveedores={pagedProveedores}
+              saving={saving}
+              historialLoading={historialLoading}
+              historialProveedor={historialProveedor}
+              onLoadHistorial={loadHistorial}
+              onEdit={startEdit}
+            />
 
-                {totalPages > 1 && (
-                  <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
-                    <div className="text-muted small">{paginationSummary}</div>
-                    <div className="btn-group btn-group-sm" role="group" aria-label="Paginación de proveedores">
-                      <button
-                        className="btn btn-outline-secondary"
-                        type="button"
-                        onClick={() => setPage(1)}
-                        disabled={currentPage === 1}
-                      >
-                        Primero
-                      </button>
-                      <button
-                        className="btn btn-outline-secondary"
-                        type="button"
-                        onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                        disabled={currentPage === 1}
-                      >
-                        Anterior
-                      </button>
-                      <button className="btn btn-outline-secondary" type="button" disabled>
-                        {currentPage} / {totalPages}
-                      </button>
-                      <button
-                        className="btn btn-outline-secondary"
-                        type="button"
-                        onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-                        disabled={currentPage === totalPages}
-                      >
-                        Siguiente
-                      </button>
-                      <button
-                        className="btn btn-outline-secondary"
-                        type="button"
-                        onClick={() => setPage(totalPages)}
-                        disabled={currentPage === totalPages}
-                      >
-                        Último
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </SectionCard>
-        </div>
-      </div>
+            <ProveedoresMobileCards
+              proveedores={pagedProveedores}
+              saving={saving}
+              historialLoading={historialLoading}
+              historialProveedor={historialProveedor}
+              onLoadHistorial={loadHistorial}
+              onEdit={startEdit}
+            />
+          </>
+        )}
+      </SectionCard>
+
+      {totalPages > 1 ? (
+        <FacturasPagination
+          meta={paginationMeta}
+          pageSize={pageSize}
+          pages={visiblePages}
+          setPage={setPage}
+          setPageSize={handleSetPageSize}
+        />
+      ) : null}
 
       {formModalOpen && (
         <SimpleModal
