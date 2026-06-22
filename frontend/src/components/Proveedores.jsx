@@ -22,10 +22,30 @@ const EMPTY_FORM = {
 };
 
 const PROVEEDORES_TABLE_HEADERS = Object.freeze([
-  { key: 'identificacion', label: 'Identificación' },
-  { key: 'nombre', label: 'Nombre' },
-  { key: 'contacto', label: 'Contacto' },
-  { key: 'actualizado', label: 'Actualizado' },
+  {
+    key: 'identificacion',
+    label: 'Identificación',
+    sortable: true,
+    sortKey: 'identificacion'
+  },
+  {
+    key: 'nombre',
+    label: 'Nombre',
+    sortable: true,
+    sortKey: 'nombre'
+  },
+  {
+    key: 'contacto',
+    label: 'Contacto',
+    sortable: true,
+    sortKey: 'contacto'
+  },
+  {
+    key: 'actualizado',
+    label: 'Actualizado',
+    sortable: true,
+    sortKey: 'actualizado'
+  },
   { key: 'acciones', label: 'ACCIONES', align: 'end' }
 ]);
 
@@ -70,6 +90,11 @@ const normalizeSearchText = (value) => (
 
 const onlyDigits = (value) => String(value || '').replace(/\D/g, '');
 
+const proveedorCollator = new Intl.Collator('es', {
+  sensitivity: 'base',
+  numeric: true
+});
+
 const formatIdentificacion = (value) => {
   const raw = String(value || '').trim();
   const digits = onlyDigits(raw);
@@ -111,13 +136,43 @@ const buildVisiblePages = (currentPage, totalPages) => {
   }, []);
 };
 
-const getUniqueCount = (items, field) => (
-  new Set(items.map((item) => item[field]).filter(Boolean)).size
-);
+const getProveedorSortValue = (proveedor, sortBy) => {
+  switch (sortBy) {
+    case 'identificacion':
+      return onlyDigits(proveedor.identificacion_numero) || proveedor.identificacion_numero || '';
+    case 'nombre':
+      return `${proveedor.nombre || ''} ${proveedor.nombre_comercial || ''}`;
+    case 'contacto':
+      return `${proveedor.correo_electronico || ''} ${proveedor.telefono_numero || ''}`;
+    case 'actualizado': {
+      const date = new Date(proveedor.actualizado_en || 0);
+      return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+    }
+    default:
+      return proveedor.nombre || '';
+  }
+};
+
+const sortProveedores = (items, sortBy, sortDir) => {
+  const direction = sortDir === 'desc' ? -1 : 1;
+  return [...items].sort((left, right) => {
+    const leftValue = getProveedorSortValue(left, sortBy);
+    const rightValue = getProveedorSortValue(right, sortBy);
+    const result = typeof leftValue === 'number' && typeof rightValue === 'number'
+      ? leftValue - rightValue
+      : proveedorCollator.compare(String(leftValue), String(rightValue));
+
+    if (result !== 0) {
+      return result * direction;
+    }
+
+    return Number(left.id || 0) - Number(right.id || 0);
+  });
+};
 
 function ProveedoresSummaryCards({ total, page, totalPages, proveedores }) {
-  const conCorreo = proveedores.filter((proveedor) => proveedor.correo_electronico).length;
-  const tiposIdentificacion = getUniqueCount(proveedores, 'identificacion_tipo');
+  const activos = proveedores.filter((proveedor) => proveedor.activo !== false).length;
+  const inactivos = proveedores.length - activos;
 
   return (
     <div className="facturas-summary-grid proveedores-summary-grid">
@@ -129,14 +184,10 @@ function ProveedoresSummaryCards({ total, page, totalPages, proveedores }) {
         </span>
       </div>
       <div className="facturas-summary-card">
-        <span className="facturas-summary-label">Contacto</span>
-        <strong className="facturas-summary-value">{conCorreo} con correo</strong>
-        <span className="facturas-summary-meta">Correos registrados</span>
-      </div>
-      <div className="facturas-summary-card">
-        <span className="facturas-summary-label">Tipos</span>
+        <span className="facturas-summary-label">Estado</span>
         <div className="facturas-summary-chip-list">
-          <span className="facturas-summary-chip">{tiposIdentificacion} tipos de identificación</span>
+          <span className="facturas-summary-chip">Activos: {activos}</span>
+          <span className="facturas-summary-chip">Inactivos: {inactivos}</span>
         </div>
       </div>
     </div>
@@ -149,12 +200,18 @@ function ProveedoresTable({
   historialLoading,
   historialProveedor,
   onLoadHistorial,
-  onEdit
+  onEdit,
+  sortBy,
+  sortDir,
+  onSort
 }) {
   return (
     <DataTable
       headers={PROVEEDORES_TABLE_HEADERS}
       stickyHeader
+      sortBy={sortBy}
+      sortDir={sortDir}
+      onSort={onSort}
       className="d-none d-lg-block"
       tableClassName="table table-hover align-middle mb-0 facturas-data-table proveedores-data-table"
     >
@@ -311,6 +368,8 @@ function Proveedores({ sociedadId }) {
   const [editingId, setEditingId] = useState(null);
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState('nombre');
+  const [sortDir, setSortDir] = useState('asc');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -362,19 +421,23 @@ function Proveedores({ sociedadId }) {
     ));
   }, [proveedores, search]);
 
-  const totalPages = Math.ceil(filteredProveedores.length / pageSize);
+  const sortedProveedores = useMemo(
+    () => sortProveedores(filteredProveedores, sortBy, sortDir),
+    [filteredProveedores, sortBy, sortDir]
+  );
+  const totalPages = Math.ceil(sortedProveedores.length / pageSize);
   const currentPage = totalPages === 0 ? 1 : Math.min(page, totalPages);
   const pagedProveedores = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
-    return filteredProveedores.slice(start, start + pageSize);
-  }, [currentPage, filteredProveedores, pageSize]);
+    return sortedProveedores.slice(start, start + pageSize);
+  }, [currentPage, pageSize, sortedProveedores]);
   const paginationMeta = useMemo(() => ({
-    totalItems: filteredProveedores.length,
+    totalItems: sortedProveedores.length,
     page: totalPages === 0 ? 0 : currentPage,
     totalPages,
     hasPrev: currentPage > 1,
     hasNext: currentPage < totalPages
-  }), [currentPage, filteredProveedores.length, totalPages]);
+  }), [currentPage, sortedProveedores.length, totalPages]);
   const visiblePages = useMemo(
     () => buildVisiblePages(currentPage, totalPages),
     [currentPage, totalPages]
@@ -385,6 +448,11 @@ function Proveedores({ sociedadId }) {
   }, []);
   const handleSetPageSize = useCallback((value) => {
     setPageSize(Number(value));
+    setPage(1);
+  }, []);
+  const handleSort = useCallback((nextSortBy, nextSortDir) => {
+    setSortBy(nextSortBy);
+    setSortDir(nextSortDir);
     setPage(1);
   }, []);
 
@@ -555,6 +623,9 @@ function Proveedores({ sociedadId }) {
               historialProveedor={historialProveedor}
               onLoadHistorial={loadHistorial}
               onEdit={startEdit}
+              sortBy={sortBy}
+              sortDir={sortDir}
+              onSort={handleSort}
             />
 
             <ProveedoresMobileCards
