@@ -129,7 +129,7 @@ function CentroBadges({ centro }) {
   );
 }
 
-function CentrosCostoSummaryCards({ stats, filteredCount, currentPage, totalPages, treeCount }) {
+function CentrosCostoSummaryCards({ stats, filteredCount, currentPage, totalPages, treeCount, onOpenTree }) {
   return (
     <div className="facturas-summary-grid centros-costo-summary-grid">
       <div className="facturas-summary-card">
@@ -154,7 +154,9 @@ function CentrosCostoSummaryCards({ stats, filteredCount, currentPage, totalPage
       <div className="facturas-summary-card">
         <span className="facturas-summary-label">Jerarquía</span>
         <strong className="facturas-summary-value">{treeCount} raíces visibles</strong>
-        <span className="facturas-summary-meta">Centros de primer nivel filtrados</span>
+        <button className="btn btn-outline-primary btn-sm centros-costo-card-action" type="button" onClick={onOpenTree}>
+          Ver jerarquía
+        </button>
       </div>
     </div>
   );
@@ -251,7 +253,7 @@ function CentrosCostoTable({
       sortBy={sortBy}
       sortDir={sortDir}
       onSort={onSort}
-      className="d-none d-xl-block"
+      className="d-none d-lg-block"
       tableClassName="table table-hover align-middle mb-0 facturas-data-table centros-costo-data-table"
     >
       {centros.map((centro) => (
@@ -316,7 +318,7 @@ function CentrosCostoTable({
 
 function CentrosCostoMobileCards({ centros, saving, onEdit, onToggleActive }) {
   return (
-    <div className="centros-costo-mobile-list d-grid gap-2 d-xl-none">
+    <div className="centros-costo-mobile-list d-grid gap-2 d-lg-none">
       {centros.map((centro) => (
         <div className="centro-costo-mobile-card" key={centro.id}>
           <div className="d-flex justify-content-between gap-2">
@@ -549,6 +551,7 @@ function CentrosCostoForm({
 function CentrosCosto({ sociedadId }) {
   const fileInputRef = useRef(null);
   const [formModalOpen, setFormModalOpen] = useState(false);
+  const [treeModalOpen, setTreeModalOpen] = useState(false);
   const [sortBy, setSortBy] = useState('codigo');
   const [sortDir, setSortDir] = useState('asc');
   const [page, setPage] = useState(1);
@@ -626,6 +629,7 @@ function CentrosCosto({ sociedadId }) {
   }, [startCreate]);
 
   const openEditModal = useCallback((centro) => {
+    setTreeModalOpen(false);
     startEdit(centro);
     setFormModalOpen(true);
   }, [startEdit]);
@@ -765,53 +769,34 @@ function CentrosCosto({ sociedadId }) {
         currentPage={paginationMeta.page}
         totalPages={totalPages}
         treeCount={treeNodes.length}
+        onOpenTree={() => setTreeModalOpen(true)}
       />
 
-      <div className="centros-costo-main-grid">
-        <SectionCard title="Jerarquía visible" className="centros-costo-tree-card">
-          {treeNodes.length === 0 ? (
-            <EmptyState className="py-2">No hay centros de costo para los filtros seleccionados.</EmptyState>
-          ) : (
-            <ul className="centros-costo-tree-list root">
-              {treeNodes.map((node) => (
-                <CentroTreeNode
-                  key={node.id}
-                  node={node}
-                  onEdit={openEditModal}
-                  onToggleActive={toggleActivo}
-                  saving={saving}
-                />
-              ))}
-            </ul>
-          )}
-        </SectionCard>
-
-        <SectionCard title="Tabla completa" className="table-card facturas-table-card centros-costo-table-card" bodyClassName="p-0">
-          {filteredCentros.length === 0 ? (
-            <div className="py-4">
-              <EmptyState className="text-center py-2">No hay centros de costo que mostrar.</EmptyState>
-            </div>
-          ) : (
-            <>
-              <CentrosCostoTable
-                centros={pagedCentros}
-                saving={saving}
-                onEdit={openEditModal}
-                onToggleActive={toggleActivo}
-                sortBy={sortBy}
-                sortDir={sortDir}
-                onSort={handleSort}
-              />
-              <CentrosCostoMobileCards
-                centros={pagedCentros}
-                saving={saving}
-                onEdit={openEditModal}
-                onToggleActive={toggleActivo}
-              />
-            </>
-          )}
-        </SectionCard>
-      </div>
+      <SectionCard title="Tabla completa" className="table-card facturas-table-card centros-costo-table-card" bodyClassName="p-0">
+        {filteredCentros.length === 0 ? (
+          <div className="py-4">
+            <EmptyState className="text-center py-2">No hay centros de costo que mostrar.</EmptyState>
+          </div>
+        ) : (
+          <>
+            <CentrosCostoTable
+              centros={pagedCentros}
+              saving={saving}
+              onEdit={openEditModal}
+              onToggleActive={toggleActivo}
+              sortBy={sortBy}
+              sortDir={sortDir}
+              onSort={handleSort}
+            />
+            <CentrosCostoMobileCards
+              centros={pagedCentros}
+              saving={saving}
+              onEdit={openEditModal}
+              onToggleActive={toggleActivo}
+            />
+          </>
+        )}
+      </SectionCard>
 
       {totalPages > 1 ? (
         <FacturasPagination
@@ -851,6 +836,44 @@ function CentrosCosto({ sociedadId }) {
             onFieldChange={setFormField}
             onSubmit={handleFormSubmit}
           />
+        </SimpleModal>
+      )}
+
+      {treeModalOpen && (
+        <SimpleModal
+          title="Jerarquía de centros de costo"
+          onClose={() => setTreeModalOpen(false)}
+          size="modal-xl centros-costo-tree-modal"
+          footer={(
+            <button className="btn btn-outline-secondary" type="button" onClick={() => setTreeModalOpen(false)}>
+              Cerrar
+            </button>
+          )}
+        >
+          <div className="centros-costo-tree-modal-summary">
+            <span>{treeNodes.length} raíces visibles</span>
+            <span>{filteredCentros.length} centros filtrados</span>
+            {onlySelectable ? <span>Solo seleccionables</span> : null}
+            {showInactive ? <span>Incluye inactivos</span> : null}
+          </div>
+
+          {treeNodes.length === 0 ? (
+            <EmptyState className="py-2">No hay centros de costo para los filtros seleccionados.</EmptyState>
+          ) : (
+            <div className="centros-costo-tree-modal-body">
+              <ul className="centros-costo-tree-list root">
+                {treeNodes.map((node) => (
+                  <CentroTreeNode
+                    key={node.id}
+                    node={node}
+                    onEdit={openEditModal}
+                    onToggleActive={toggleActivo}
+                    saving={saving}
+                  />
+                ))}
+              </ul>
+            </div>
+          )}
         </SimpleModal>
       )}
     </div>
