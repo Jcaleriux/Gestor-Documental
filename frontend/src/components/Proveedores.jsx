@@ -17,14 +17,16 @@ const EMPTY_FORM = {
   telefono_numero: ''
 };
 
+const PAGE_SIZE_OPTIONS = Object.freeze([25, 50, 100]);
+
 const FIELD_LABELS = Object.freeze({
-  identificacion_tipo: 'Tipo identificacion',
-  identificacion_numero: 'Identificacion',
+  identificacion_tipo: 'Tipo identificación',
+  identificacion_numero: 'Identificación',
   nombre: 'Nombre',
   nombre_comercial: 'Nombre comercial',
-  correo_electronico: 'Correo electronico',
+  correo_electronico: 'Correo electrónico',
   telefono_codigo_pais: 'Cod. pais',
-  telefono_numero: 'Telefono'
+  telefono_numero: 'Teléfono'
 });
 
 const toFormFromProveedor = (proveedor) => ({
@@ -47,6 +49,45 @@ const formatDate = (value) => {
 const formatValue = (value) => {
   if (value == null || value === '') return '-';
   return String(value);
+};
+
+const normalizeSearchText = (value) => (
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+);
+
+const onlyDigits = (value) => String(value || '').replace(/\D/g, '');
+
+const formatIdentificacion = (value) => {
+  const raw = String(value || '').trim();
+  const digits = onlyDigits(raw);
+  if (/^\d{10}$/.test(digits)) {
+    return `${digits.slice(0, 1)}-${digits.slice(1, 4)}-${digits.slice(4)}`;
+  }
+  if (/^\d{9}$/.test(digits)) {
+    return `${digits.slice(0, 1)}-${digits.slice(1, 4)}-${digits.slice(4)}`;
+  }
+  return raw || '-';
+};
+
+const formatTelefono = ({ codigoPais, numero }) => {
+  const digits = onlyDigits(numero);
+  if (!digits) return '-';
+  const formattedNumber = digits.length === 8
+    ? `${digits.slice(0, 4)}-${digits.slice(4)}`
+    : String(numero).trim();
+  return codigoPais ? `+${codigoPais} ${formattedNumber}` : formattedNumber;
+};
+
+const getPaginationSummary = ({ page, pageSize, total }) => {
+  if (total === 0) {
+    return 'Mostrando 0 de 0 proveedores';
+  }
+  const start = ((page - 1) * pageSize) + 1;
+  const end = Math.min(page * pageSize, total);
+  return `Mostrando ${start}-${end} de ${total} proveedores`;
 };
 
 function SimpleModal({ title, children, footer, onClose, size = '' }) {
@@ -82,6 +123,8 @@ function Proveedores({ sociedadId }) {
   const [editingId, setEditingId] = useState(null);
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [form, setForm] = useState(EMPTY_FORM);
   const [historialProveedor, setHistorialProveedor] = useState(null);
   const [historial, setHistorial] = useState([]);
@@ -116,18 +159,42 @@ function Proveedores({ sociedadId }) {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reset del filtro al cambiar de sociedad
     setSearch('');
+    setPage(1);
     loadProveedores();
   }, [sociedadId, loadProveedores]);
 
   const filteredProveedores = useMemo(() => {
-    const term = search.trim().toLowerCase();
+    const term = normalizeSearchText(search.trim());
+    const normalizedTerm = onlyDigits(search);
     if (!term) return proveedores;
     return proveedores.filter((proveedor) => (
-      `${proveedor.id} ${proveedor.identificacion_tipo} ${proveedor.identificacion_numero} ${proveedor.nombre} ${proveedor.nombre_comercial || ''} ${proveedor.correo_electronico || ''} ${proveedor.telefono_numero || ''}`
-        .toLowerCase()
+      normalizeSearchText(`${proveedor.identificacion_tipo} ${proveedor.identificacion_numero} ${proveedor.nombre} ${proveedor.nombre_comercial || ''} ${proveedor.correo_electronico || ''} ${proveedor.telefono_numero || ''}`)
         .includes(term)
+        || (normalizedTerm && onlyDigits(proveedor.identificacion_numero).includes(normalizedTerm))
     ));
   }, [proveedores, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredProveedores.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pagedProveedores = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredProveedores.slice(start, start + pageSize);
+  }, [currentPage, filteredProveedores, pageSize]);
+  const paginationSummary = getPaginationSummary({
+    page: currentPage,
+    pageSize,
+    total: filteredProveedores.length
+  });
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, pageSize]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   const updateForm = (field) => (e) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -242,7 +309,7 @@ function Proveedores({ sociedadId }) {
   return (
     <div className="container-fluid">
       <PageHeader
-        title="Administracion de proveedores"
+        title="Administración de proveedores"
         subtitle="Crea y edita proveedores para la sociedad seleccionada."
         actions={(
           <button className="btn btn-outline-primary" type="button" onClick={startCreate}>
@@ -258,72 +325,197 @@ function Proveedores({ sociedadId }) {
           <SectionCard
             title="Proveedores registrados"
             actions={(
-              <input
-                className="form-control"
-                style={{ minWidth: '260px' }}
-                placeholder="Buscar por identificacion, nombre o correo..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+              <div className="d-flex flex-wrap align-items-center justify-content-end gap-2">
+                <input
+                  className="form-control"
+                  style={{ minWidth: '280px' }}
+                  placeholder="Buscar por identificación, nombre, correo o teléfono..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                <select
+                  className="form-select"
+                  style={{ width: 'auto' }}
+                  value={pageSize}
+                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  aria-label="Proveedores por página"
+                >
+                  {PAGE_SIZE_OPTIONS.map((option) => (
+                    <option key={option} value={option}>{option} por página</option>
+                  ))}
+                </select>
+              </div>
             )}
           >
+            <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+              <div className="text-muted small">{paginationSummary}</div>
+              {search.trim() && (
+                <button className="btn btn-link btn-sm p-0" type="button" onClick={() => setSearch('')}>
+                  Limpiar búsqueda
+                </button>
+              )}
+            </div>
+
             {filteredProveedores.length === 0 ? (
               <EmptyState className="py-2">No hay proveedores para mostrar.</EmptyState>
             ) : (
-              <div className="table-responsive">
-                <table className="table table-sm align-middle mb-0">
-                  <thead>
-                    <tr>
-                      <th>Identificacion</th>
-                      <th>Nombre</th>
-                      <th>Contacto</th>
-                      <th>Actualizado</th>
-                      <th className="text-end">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredProveedores.map((proveedor) => (
-                      <tr key={proveedor.id}>
-                        <td>
-                          <div>{proveedor.identificacion_numero}</div>
-                          <div className="text-muted small">{proveedor.identificacion_tipo || '-'}</div>
-                        </td>
-                        <td>
-                          <div>{proveedor.nombre}</div>
-                          <div className="text-muted small">{proveedor.nombre_comercial || '-'}</div>
-                        </td>
-                        <td>
-                          <div>{proveedor.correo_electronico || '-'}</div>
-                          <div className="text-muted small">
-                            {[proveedor.telefono_codigo_pais, proveedor.telefono_numero].filter(Boolean).join(' ') || '-'}
-                          </div>
-                        </td>
-                        <td>{formatDate(proveedor.actualizado_en)}</td>
-                        <td className="text-end">
-                          <div className="d-flex justify-content-end gap-2">
-                            <button
-                              className={`btn btn-sm ${historialProveedor?.id === proveedor.id ? 'btn-secondary' : 'btn-outline-secondary'}`}
-                              type="button"
-                              onClick={() => loadHistorial(proveedor)}
-                              disabled={saving || historialLoading}
-                            >
-                              Historial
-                            </button>
-                            <button
-                              className="btn btn-outline-primary btn-sm"
-                              type="button"
-                              onClick={() => startEdit(proveedor)}
-                              disabled={saving}
-                            >
-                              Editar
-                            </button>
-                          </div>
-                        </td>
+              <>
+                <div className="table-responsive d-none d-lg-block">
+                  <table className="table table-sm align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th>Identificación</th>
+                        <th>Nombre</th>
+                        <th>Contacto</th>
+                        <th>Actualizado</th>
+                        <th className="text-end">Acciones</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {pagedProveedores.map((proveedor) => (
+                        <tr key={proveedor.id}>
+                          <td>
+                            <div>{formatIdentificacion(proveedor.identificacion_numero)}</div>
+                            <span className="badge text-bg-light border">{proveedor.identificacion_tipo || '-'}</span>
+                          </td>
+                          <td>
+                            <div>{proveedor.nombre}</div>
+                            <div className="text-muted small">{proveedor.nombre_comercial || '-'}</div>
+                          </td>
+                          <td>
+                            <div>{proveedor.correo_electronico || '-'}</div>
+                            <div className="text-muted small">
+                              {formatTelefono({
+                                codigoPais: proveedor.telefono_codigo_pais,
+                                numero: proveedor.telefono_numero
+                              })}
+                            </div>
+                          </td>
+                          <td>{formatDate(proveedor.actualizado_en)}</td>
+                          <td className="text-end">
+                            <div className="d-flex justify-content-end gap-2">
+                              <button
+                                className={`btn btn-sm ${historialProveedor?.id === proveedor.id ? 'btn-secondary' : 'btn-outline-secondary'}`}
+                                type="button"
+                                onClick={() => loadHistorial(proveedor)}
+                                disabled={saving || historialLoading}
+                              >
+                                Historial
+                              </button>
+                              <button
+                                className="btn btn-outline-primary btn-sm"
+                                type="button"
+                                onClick={() => startEdit(proveedor)}
+                                disabled={saving}
+                              >
+                                Editar
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="d-grid gap-2 d-lg-none">
+                  {pagedProveedores.map((proveedor) => (
+                    <div className="border rounded p-3" key={proveedor.id}>
+                      <div className="d-flex justify-content-between gap-2">
+                        <div>
+                          <div className="fw-semibold">{proveedor.nombre}</div>
+                          <div className="text-muted small">{proveedor.nombre_comercial || '-'}</div>
+                        </div>
+                        <span className="badge text-bg-light border align-self-start">
+                          {proveedor.identificacion_tipo || '-'}
+                        </span>
+                      </div>
+                      <div className="row g-2 mt-2 small">
+                        <div className="col-12">
+                          <span className="text-muted">Identificación: </span>
+                          {formatIdentificacion(proveedor.identificacion_numero)}
+                        </div>
+                        <div className="col-12">
+                          <span className="text-muted">Correo: </span>
+                          {proveedor.correo_electronico || '-'}
+                        </div>
+                        <div className="col-12">
+                          <span className="text-muted">Teléfono: </span>
+                          {formatTelefono({
+                            codigoPais: proveedor.telefono_codigo_pais,
+                            numero: proveedor.telefono_numero
+                          })}
+                        </div>
+                        <div className="col-12">
+                          <span className="text-muted">Actualizado: </span>
+                          {formatDate(proveedor.actualizado_en)}
+                        </div>
+                      </div>
+                      <div className="d-flex gap-2 mt-3">
+                        <button
+                          className={`btn btn-sm flex-fill ${historialProveedor?.id === proveedor.id ? 'btn-secondary' : 'btn-outline-secondary'}`}
+                          type="button"
+                          onClick={() => loadHistorial(proveedor)}
+                          disabled={saving || historialLoading}
+                        >
+                          Historial
+                        </button>
+                        <button
+                          className="btn btn-outline-primary btn-sm flex-fill"
+                          type="button"
+                          onClick={() => startEdit(proveedor)}
+                          disabled={saving}
+                        >
+                          Editar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+                    <div className="text-muted small">{paginationSummary}</div>
+                    <div className="btn-group btn-group-sm" role="group" aria-label="Paginación de proveedores">
+                      <button
+                        className="btn btn-outline-secondary"
+                        type="button"
+                        onClick={() => setPage(1)}
+                        disabled={currentPage === 1}
+                      >
+                        Primero
+                      </button>
+                      <button
+                        className="btn btn-outline-secondary"
+                        type="button"
+                        onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        Anterior
+                      </button>
+                      <button className="btn btn-outline-secondary" type="button" disabled>
+                        {currentPage} / {totalPages}
+                      </button>
+                      <button
+                        className="btn btn-outline-secondary"
+                        type="button"
+                        onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage === totalPages}
+                      >
+                        Siguiente
+                      </button>
+                      <button
+                        className="btn btn-outline-secondary"
+                        type="button"
+                        onClick={() => setPage(totalPages)}
+                        disabled={currentPage === totalPages}
+                      >
+                        Último
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </SectionCard>
         </div>
@@ -348,7 +540,7 @@ function Proveedores({ sociedadId }) {
           <form id="proveedor-form" className="row g-3" onSubmit={handleSubmit}>
             <div className="col-12 col-md-4">
               <label className="form-label mb-0">
-                Tipo identificacion
+                Tipo identificación
                 <input
                   className="form-control"
                   value={form.identificacion_tipo}
@@ -360,7 +552,7 @@ function Proveedores({ sociedadId }) {
 
             <div className="col-12 col-md-8">
               <label className="form-label mb-0">
-                Identificacion
+                Identificación
                 <input
                   className="form-control"
                   value={form.identificacion_numero}
@@ -395,7 +587,7 @@ function Proveedores({ sociedadId }) {
 
             <div className="col-12">
               <label className="form-label mb-0">
-                Correo electronico
+                Correo electrónico
                 <input
                   className="form-control"
                   type="email"
@@ -418,7 +610,7 @@ function Proveedores({ sociedadId }) {
             </div>
             <div className="col-12 col-md-8">
               <label className="form-label mb-0">
-                Telefono
+                Teléfono
                 <input
                   className="form-control"
                   value={form.telefono_numero}
@@ -442,7 +634,7 @@ function Proveedores({ sociedadId }) {
           )}
         >
           <div className="text-muted small mb-3">
-            {historialProveedor.identificacion_numero || 'Sin identificacion'}
+            {formatIdentificacion(historialProveedor.identificacion_numero) || 'Sin identificación'}
           </div>
 
           {historialLoading ? (
