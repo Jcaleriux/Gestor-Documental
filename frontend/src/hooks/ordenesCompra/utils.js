@@ -1,3 +1,5 @@
+import { formatDate, formatDateTime as formatCostaRicaDateTime } from '../../utils/formatters.js';
+
 export const MAX_ORDEN_COMPRA_MB = 10;
 export const MAX_ORDEN_COMPRA_BYTES = MAX_ORDEN_COMPRA_MB * 1024 * 1024;
 export const MONEDAS_OPCIONES = ['CRC', 'USD'];
@@ -13,18 +15,10 @@ export const toBase64 = (file) => new Promise((resolve, reject) => {
   reader.readAsDataURL(file);
 });
 
-export const formatDateTime = (value) => {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '-';
-  return date.toLocaleString();
-};
+export const formatDateTime = formatCostaRicaDateTime;
 
 export const formatDateOnly = (value) => {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '-';
-  return date.toISOString().slice(0, 10);
+  return formatDate(value);
 };
 
 export const formatAmount = (value) => {

@@ -1,3 +1,5 @@
+import { formatDateTime } from '../../utils/formatters.js';
+
 export const MAX_TABLA_PAGO_MB = 10;
 export const MAX_TABLA_PAGO_BYTES = MAX_TABLA_PAGO_MB * 1024 * 1024;
 
@@ -12,12 +14,7 @@ export const toBase64 = (file) => new Promise((resolve, reject) => {
   reader.readAsDataURL(file);
 });
 
-export const formatDate = (value) => {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '-';
-  return date.toLocaleString();
-};
+export const formatDate = formatDateTime;
 
 export const proveedorLabel = (proveedor) => (
   `${proveedor.nombre} - ${proveedor.identificacion_numero}`

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useRetencionesPendientes } from '../hooks/useRetencionesPendientes';
-import { formatAmount } from '../utils/formatters';
+import { formatAmount, formatDate } from '../utils/formatters';
 import EmptyState from './common/EmptyState';
 import FiltersBar from './common/FiltersBar';
 import FiltersPanel from './common/FiltersPanel';
@@ -213,7 +213,7 @@ function RetencionesPendientes({ sociedadId }) {
                     className={item.retencion_en_tramite_activo ? 'badge-soft-info' : 'badge-soft-secondary'}
                   />
                 </td>
-                <td>{item.fecha_emision ? new Date(item.fecha_emision).toLocaleDateString() : '-'}</td>
+                <td>{formatDate(item.fecha_emision)}</td>
                 <td className="text-end">
                   <Link className="btn btn-sm btn-outline-primary" to={`/facturas/${item.id}`}>
                     Ver

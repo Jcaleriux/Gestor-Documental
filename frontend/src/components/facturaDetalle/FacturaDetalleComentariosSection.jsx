@@ -1,6 +1,7 @@
 import EmptyState from '../common/EmptyState';
 import SectionCard from '../common/SectionCard';
 import { FACTURA_DETALLE_LABELS } from '../../utils/uiLabels';
+import { formatDateTime } from '../../utils/formatters';
 
 function FacturaDetalleComentariosSection({ viewModel }) {
   const {
@@ -31,7 +32,7 @@ function FacturaDetalleComentariosSection({ viewModel }) {
           <li key={comentario.id} className="list-group-item">
             <div className="fw-semibold">{comentario.usuario}</div>
             <div className="text-muted">
-              {new Date(comentario.creado_en).toLocaleString()}
+              {formatDateTime(comentario.creado_en)}
             </div>
             <div className="mt-1">{comentario.texto}</div>
           </li>

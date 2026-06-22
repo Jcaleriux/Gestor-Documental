@@ -1,6 +1,6 @@
 import ActionAlerts from '../../common/ActionAlerts';
 import { FACTURA_DETALLE_LABELS } from '../../../utils/uiLabels';
-import { formatAmount } from '../../../utils/formatters';
+import { formatAmount, formatDate } from '../../../utils/formatters';
 
 function RetencionPagoPanel({ viewModel }) {
   const {
@@ -95,7 +95,7 @@ function RetencionPagoPanel({ viewModel }) {
                 <tbody>
                   {retencionPagos.map((pago) => (
                     <tr key={pago.id}>
-                      <td>{pago.fecha_pago ? new Date(pago.fecha_pago).toLocaleDateString() : '-'}</td>
+                      <td>{formatDate(pago.fecha_pago)}</td>
                       <td>{formatAmount(pago.monto)}</td>
                       <td>{pago.usuario || '-'}</td>
                       <td>{pago.notas || '-'}</td>

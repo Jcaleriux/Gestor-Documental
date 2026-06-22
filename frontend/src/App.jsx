@@ -23,6 +23,7 @@ const Sociedades = lazy(() => import('./components/Sociedades.jsx'));
 const Usuarios = lazy(() => import('./components/Usuarios.jsx'));
 const Facturas = lazy(() => import('./components/Facturas.jsx'));
 const FacturaDetalle = lazy(() => import('./components/FacturaDetalle.jsx'));
+const ContabilizacionMasivaDiario = lazy(() => import('./components/ContabilizacionMasivaDiario.jsx'));
 const RetencionesPendientes = lazy(() => import('./components/RetencionesPendientes.jsx'));
 const NotasCredito = lazy(() => import('./components/NotasCredito.jsx'));
 const TiquetesElectronicos = lazy(() => import('./components/TiquetesElectronicos.jsx'));
@@ -305,6 +306,7 @@ function AuthenticatedAppShell({
       canUseReservas,
       canUseTablasPago,
       canViewTramites,
+      canEditContabilizacion,
     });
   }, [
     canManageSociedades,
@@ -313,6 +315,7 @@ function AuthenticatedAppShell({
     canUseReservas,
     canUseTablasPago,
     canViewTramites,
+    canEditContabilizacion,
   ]);
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(readCollapsedPreference);
@@ -588,6 +591,12 @@ function AuthenticatedAppShell({
               />
               <Route path="/notas-credito" element={<NotasCredito sociedadId={sociedadId} />} />
               <Route path="/tiquetes-electronicos" element={<TiquetesElectronicos sociedadId={sociedadId} />} />
+              <Route
+                path="/contabilizacion-masiva"
+                element={canEditContabilizacion
+                  ? <ContabilizacionMasivaDiario sociedadId={sociedadId} />
+                  : <Navigate to="/" replace />}
+              />
               <Route
                 path="/tramites"
                 element={(

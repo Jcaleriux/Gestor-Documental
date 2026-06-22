@@ -261,7 +261,7 @@ export const useCentrosCostoCatalog = ({ sociedadId, dependencies = {} }) => {
 
     if (!codigo || !nombre || !form.centro_padre_id || (!aprobadorUsuario && !aprobadorRol)) {
       setError('Completa codigo, nombre, centro padre y un aprobador por usuario o rol.');
-      return;
+      return false;
     }
 
     const duplicate = centros.find((centro) => (
@@ -271,7 +271,7 @@ export const useCentrosCostoCatalog = ({ sociedadId, dependencies = {} }) => {
 
     if (duplicate) {
       setError(`Ya existe un centro con el codigo ${codigo} en esta sociedad.`);
-      return;
+      return false;
     }
 
     const centroPadre = form.centro_padre_id === ROOT_PARENT_CODE
@@ -280,7 +280,7 @@ export const useCentrosCostoCatalog = ({ sociedadId, dependencies = {} }) => {
 
     if (form.centro_padre_id !== ROOT_PARENT_CODE && !centroPadre) {
       setError('Selecciona un centro padre valido.');
-      return;
+      return false;
     }
 
     try {
@@ -317,9 +317,11 @@ export const useCentrosCostoCatalog = ({ sociedadId, dependencies = {} }) => {
       setCentros(nextCentros);
       setMessage(editingId ? 'Centro de costo actualizado.' : 'Centro de costo creado.');
       resetForm();
+      return true;
     } catch (err) {
       const apiError = err.response?.data?.error || 'No se pudo guardar el centro de costo.';
       setError(apiError);
+      return false;
     } finally {
       setSaving(false);
     }

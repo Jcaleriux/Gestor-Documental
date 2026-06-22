@@ -1,7 +1,7 @@
 import EmptyState from '../common/EmptyState';
 import SectionCard from '../common/SectionCard';
 import { FACTURA_DETALLE_LABELS } from '../../utils/uiLabels';
-import { formatAmount } from '../../utils/formatters';
+import { formatAmount, formatDateTime } from '../../utils/formatters';
 
 const CATEGORY_LABELS = Object.freeze({
   estado: 'Estado',
@@ -12,17 +12,13 @@ const CATEGORY_LABELS = Object.freeze({
   retencion: 'Retención'
 });
 
-const formatDateTime = (value) => {
+const formatHistorialDateTime = (value) => {
   if (!value) {
     return 'Sin fecha';
   }
 
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return 'Sin fecha';
-  }
-
-  return date.toLocaleString();
+  const formatted = formatDateTime(value);
+  return formatted === '-' ? 'Sin fecha' : formatted;
 };
 
 const formatMonto = (moneda, monto) => {
@@ -46,7 +42,7 @@ function FacturaDetalleHistorialSection({ viewModel }) {
               <div className="factura-timeline-copy">
                 <div className="factura-timeline-title">{item.titulo || item.estado_nuevo || '-'}</div>
                 <div className="factura-timeline-meta">
-                  <span className="factura-timeline-meta-item">{formatDateTime(item.creado_en)}</span>
+                  <span className="factura-timeline-meta-item">{formatHistorialDateTime(item.creado_en)}</span>
                   {item.usuario && <span className="factura-timeline-meta-item">{item.usuario}</span>}
                   {item.referencia && <span className="factura-timeline-meta-item">{item.referencia}</span>}
                 </div>

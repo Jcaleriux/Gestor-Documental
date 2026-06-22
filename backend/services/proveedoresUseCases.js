@@ -25,6 +25,17 @@ const createProveedoresUseCases = ({ proveedoresRepo }) => {
     return proveedoresRepo.listProveedoresBySociedad(normalizedSociedadId);
   };
 
+  const listProveedorHistorial = async ({ user, id }) => {
+    const proveedorId = toPositiveInt(id, 'id');
+    const proveedor = await proveedoresRepo.getProveedorById(proveedorId);
+    if (!proveedor) {
+      throw createError(404, 'Proveedor no encontrado');
+    }
+
+    await ensureSociedadAccess({ user, sociedadId: proveedor.sociedad_id });
+    return proveedoresRepo.listProveedorHistorialCambios({ proveedorId });
+  };
+
   const normalizeProveedorInput = (payload) => {
     const identificacionTipo = normalizeText(payload.identificacion_tipo);
     const identificacionNumero = normalizeText(payload.identificacion_numero);
@@ -107,6 +118,7 @@ const createProveedoresUseCases = ({ proveedoresRepo }) => {
 
   return {
     listProveedores,
+    listProveedorHistorial,
     createProveedor,
     updateProveedor
   };

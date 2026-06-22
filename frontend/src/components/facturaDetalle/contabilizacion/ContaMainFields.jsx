@@ -101,6 +101,16 @@ function ContaMainFields({
 
       <SectionTitle>{FACTURA_DETALLE_LABELS.contabilizacion.clasificacionContable}</SectionTitle>
 
+      <div className="col-6">
+        <label className="form-label">{FACTURA_DETALLE_LABELS.contabilizacion.asiento}</label>
+        <input
+          className="form-control"
+          value={conta.asiento}
+          onChange={handleContaChange('asiento')}
+          disabled={disabled}
+        />
+      </div>
+
       <CentrosCostoDistributionField
         conta={conta}
         centrosCostoCatalogo={centrosCostoCatalogo}

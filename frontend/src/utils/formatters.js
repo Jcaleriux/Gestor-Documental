@@ -1,3 +1,23 @@
+const COSTA_RICA_LOCALE = 'es-CR';
+const DATE_ONLY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+const toDisplayDate = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  const text = String(value).trim();
+  const dateOnlyMatch = text.match(DATE_ONLY_PATTERN);
+  if (dateOnlyMatch) {
+    const [, year, month, day] = dateOnlyMatch;
+    return new Date(Number(year), Number(month) - 1, Number(day));
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
 export const formatAmount = (value) => {
   const amount = Number(value);
   const safe = Number.isFinite(amount) ? amount : 0;
@@ -8,10 +28,15 @@ export const formatAmount = (value) => {
 };
 
 export const formatDate = (value) => {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '-';
-  return date.toLocaleDateString();
+  const date = toDisplayDate(value);
+  if (!date) return '-';
+  return date.toLocaleDateString(COSTA_RICA_LOCALE);
+};
+
+export const formatDateTime = (value) => {
+  const date = toDisplayDate(value);
+  if (!date) return '-';
+  return date.toLocaleString(COSTA_RICA_LOCALE);
 };
 
 export const formatRelativeTime = (value) => {

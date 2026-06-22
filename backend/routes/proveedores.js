@@ -8,6 +8,7 @@ const {
 } = require('../validation/schemas');
 const {
   listProveedores,
+  listProveedorHistorial,
   createProveedor,
   updateProveedor
 } = require('../services/proveedoresService');
@@ -22,6 +23,11 @@ router.get(
     PERMISSIONS.DOCUMENTOS_SUBIR
   ]),
   listProveedores
+);
+router.get(
+  '/proveedores/:id/historial',
+  requirePermission(PERMISSIONS.USUARIOS_ADMINISTRAR),
+  listProveedorHistorial
 );
 router.post(
   '/proveedores',

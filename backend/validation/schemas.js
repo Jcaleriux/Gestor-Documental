@@ -130,6 +130,7 @@ const upsertContabilizacionSchema = Joi.object({
   descuento: Joi.number().allow(null),
   anticipo_aplicado: Joi.number().allow(null),
   monto_nota_credito: Joi.number().min(0).allow(null),
+  asiento: Joi.string().trim().max(50).allow('', null),
   centro_costo: Joi.string().allow('', null),
   cuenta_contable: Joi.string().allow('', null),
   proyecto: Joi.string().allow('', null),
@@ -367,6 +368,22 @@ const replaceReservaOperacionDocumentoSchema = Joi.object({
   usuario: Joi.string().trim().max(100).allow('', null),
 });
 
+const contabilizacionMasivaResolucionSchema = Joi.object({
+  asiento: Joi.string().trim().max(50).required(),
+  action: Joi.string().trim().valid('skip', 'assign').required(),
+  factura_id: Joi.when('action', {
+    is: 'assign',
+    then: Joi.number().integer().positive().required(),
+    otherwise: Joi.number().integer().positive().allow(null).optional()
+  })
+});
+
+const analizarDiarioDocumentosSchema = Joi.object({
+  sociedad_id: Joi.number().integer().positive().required(),
+  file_path: Joi.string().trim().max(1000).allow('', null),
+  resolutions: Joi.array().items(contabilizacionMasivaResolucionSchema).default([])
+});
+
 module.exports = {
   createComentarioSchema,
   createAuditoriaSchema,
@@ -409,6 +426,7 @@ module.exports = {
   upsertReservaOperacionDocumentoSchema,
   syncReservaDocumentoSchema,
   replaceReservaOperacionDocumentoSchema,
+  analizarDiarioDocumentosSchema,
 };
 
 

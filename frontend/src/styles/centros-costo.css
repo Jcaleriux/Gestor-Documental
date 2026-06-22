@@ -288,3 +288,199 @@
   padding: 9px 16px 12px;
   font-size: 0.76rem;
 }
+
+.centros-costo-page .facturas-toolbar {
+  align-items: center;
+}
+
+.centros-costo-toolbar {
+  gap: 10px;
+}
+
+.centros-costo-filter-actions {
+  align-items: center;
+}
+
+.centros-costo-filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  margin: 0;
+  padding: 0 10px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-md);
+  background: #ffffff;
+  color: #344054;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.centros-costo-summary-grid {
+  margin-bottom: 8px;
+}
+
+.centros-costo-main-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.88fr) minmax(640px, 1.35fr);
+  gap: 12px;
+  align-items: start;
+  min-width: 0;
+}
+
+.centros-costo-tree-card,
+.centros-costo-table-card {
+  min-width: 0;
+}
+
+.centros-costo-tree-card .card-body {
+  max-height: calc(100vh - 360px);
+  min-height: 280px;
+  overflow: auto;
+}
+
+.centros-costo-data-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.centros-costo-data-table th:nth-child(1),
+.centros-costo-data-table td:nth-child(1) {
+  width: 116px;
+}
+
+.centros-costo-data-table th:nth-child(2),
+.centros-costo-data-table td:nth-child(2) {
+  width: 20%;
+}
+
+.centros-costo-data-table th:nth-child(3),
+.centros-costo-data-table td:nth-child(3) {
+  width: 116px;
+}
+
+.centros-costo-data-table th:nth-child(4),
+.centros-costo-data-table td:nth-child(4) {
+  width: 22%;
+}
+
+.centros-costo-data-table th:nth-child(5),
+.centros-costo-data-table td:nth-child(5),
+.centros-costo-data-table th:nth-child(6),
+.centros-costo-data-table td:nth-child(6) {
+  width: 112px;
+}
+
+.centros-costo-data-table th:nth-child(7),
+.centros-costo-data-table td:nth-child(7) {
+  width: 108px;
+}
+
+.centros-costo-data-table th:nth-child(8),
+.centros-costo-data-table td:nth-child(8) {
+  width: 142px;
+}
+
+.centro-costo-code-cell,
+.centro-costo-name-cell,
+.centro-costo-approver-cell,
+.centro-costo-mobile-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.centro-costo-primary-text {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #101828;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.centro-costo-meta-text {
+  font-size: 0.74rem;
+  color: #667085;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.centros-costo-row-actions {
+  display: inline-flex;
+  justify-content: flex-end;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.centro-costo-mobile-card {
+  border-bottom: 1px solid var(--app-border);
+  padding: 14px 16px;
+}
+
+.centro-costo-mobile-card:last-child {
+  border-bottom: none;
+}
+
+.centro-costo-mobile-card .centros-costo-badges {
+  justify-content: flex-end;
+  margin-top: 0;
+}
+
+.centro-costo-mobile-details {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 0.84rem;
+}
+
+.centro-costo-mobile-details > div {
+  display: grid;
+  gap: 2px;
+}
+
+.centro-costo-meta-label {
+  color: #667085;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.centros-costo-form-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  min-height: 34px;
+  padding-top: 22px;
+}
+
+@media (max-width: 1400px) {
+  .centros-costo-main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .centros-costo-tree-card .card-body {
+    max-height: none;
+  }
+}
+
+@media (max-width: 992px) {
+  .centros-costo-filter-actions {
+    align-items: stretch;
+  }
+
+  .centros-costo-filter-toggle {
+    width: 100%;
+  }
+
+  .centros-costo-form-checks {
+    padding-top: 0;
+  }
+}

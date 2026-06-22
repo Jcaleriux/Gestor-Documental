@@ -1,5 +1,6 @@
 import EmptyState from './common/EmptyState';
 import SectionCard from './common/SectionCard';
+import { formatDateTime } from '../utils/formatters';
 
 function TramiteHistorial({ historial, historialError, labels }) {
   const headerLabels = labels || {
@@ -18,7 +19,7 @@ function TramiteHistorial({ historial, historialError, labels }) {
             <li key={item.id} className="list-group-item">
               <div className="fw-semibold">{item.accion}</div>
               <div className="text-muted">
-                {item.usuario || '-'} - {new Date(item.creado_en).toLocaleString()}
+                {item.usuario || '-'} - {formatDateTime(item.creado_en)}
               </div>
               {(item.estado_anterior || item.estado_nuevo) && (
                 <div className="mt-1">
