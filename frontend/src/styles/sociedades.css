@@ -1,0 +1,110 @@
+.sociedades-page .facturas-toolbar {
+  align-items: center;
+}
+
+.sociedades-summary-grid {
+  margin-bottom: 8px;
+}
+
+.sociedades-data-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.sociedades-data-table th:nth-child(1),
+.sociedades-data-table td:nth-child(1) {
+  width: 34%;
+}
+
+.sociedades-data-table th:nth-child(2),
+.sociedades-data-table td:nth-child(2) {
+  width: 18%;
+}
+
+.sociedades-data-table th:nth-child(3),
+.sociedades-data-table td:nth-child(3) {
+  width: 120px;
+}
+
+.sociedades-data-table th:nth-child(4),
+.sociedades-data-table td:nth-child(4) {
+  width: 170px;
+}
+
+.sociedades-data-table th:nth-child(5),
+.sociedades-data-table td:nth-child(5) {
+  width: 180px;
+}
+
+.sociedad-name-cell,
+.sociedad-mobile-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sociedad-primary-text {
+  max-width: 100%;
+  overflow: hidden;
+  color: #101828;
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sociedad-meta-text {
+  max-width: 100%;
+  overflow: hidden;
+  color: #667085;
+  font-size: 0.74rem;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sociedades-row-actions {
+  display: inline-flex;
+  justify-content: flex-end;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.sociedad-mobile-card {
+  border-bottom: 1px solid var(--app-border);
+  padding: 14px 16px;
+}
+
+.sociedad-mobile-card:last-child {
+  border-bottom: none;
+}
+
+.sociedad-mobile-details {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  margin-bottom: 12px;
+  font-size: 0.84rem;
+}
+
+.sociedad-mobile-details > div {
+  display: grid;
+  gap: 2px;
+}
+
+.sociedad-meta-label {
+  color: #667085;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 992px) {
+  .sociedades-row-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+}

@@ -144,9 +144,11 @@ export const useSociedadesAdmin = ({
 
       await refreshAfterSave();
       resetForm();
+      return true;
     } catch (err) {
       const apiError = err.response?.data?.error || 'No se pudo guardar la sociedad.';
       setError(apiError);
+      return false;
     } finally {
       setSaving(false);
     }
