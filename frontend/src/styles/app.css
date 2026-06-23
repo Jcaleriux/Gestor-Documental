@@ -6,6 +6,7 @@
 @import './components.css';
 @import './facturas.css';
 @import './proveedores.css';
+@import './usuarios.css';
 @import './factura-detalle.css';
 @import './centros-costo.css';
 @import './dashboard.css';

@@ -17,22 +17,16 @@ function UsuarioSociedadesCard({
   savingSociedades,
   onClose,
   onToggleSociedad,
-  onSaveSociedades
+  onSaveSociedades,
+  asCard = true,
+  hideActions = false
 }) {
   if (!sociedadesUser) {
     return null;
   }
 
-  return (
-    <SectionCard
-      title={`Sociedades asignadas a ${sociedadesUser.nombre}`}
-      className="mt-3"
-      actions={(
-        <button className="btn btn-outline-secondary btn-sm" type="button" onClick={onClose}>
-          Cerrar
-        </button>
-      )}
-    >
+  const content = (
+    <>
       {roleRequiresAssignments(sociedadesUser.rol_codigo) ? (
         <>
           <div className="text-muted small mb-2">
@@ -66,7 +60,8 @@ function UsuarioSociedadesCard({
               ))}
             </div>
           )}
-          <div className="d-flex gap-2">
+          {!hideActions && (
+            <div className="d-flex gap-2">
             <button
               className="btn btn-primary"
               type="button"
@@ -75,13 +70,32 @@ function UsuarioSociedadesCard({
             >
               {savingSociedades ? 'Guardando...' : 'Guardar sociedades'}
             </button>
-          </div>
+            </div>
+          )}
         </>
       ) : (
         <EmptyState className="py-2">
           Este rol tiene acceso a todas las sociedades; no requiere asignacion manual.
         </EmptyState>
       )}
+    </>
+  );
+
+  if (!asCard) {
+    return content;
+  }
+
+  return (
+    <SectionCard
+      title={`Sociedades asignadas a ${sociedadesUser.nombre}`}
+      className="mt-3"
+      actions={(
+        <button className="btn btn-outline-secondary btn-sm" type="button" onClick={onClose}>
+          Cerrar
+        </button>
+      )}
+    >
+      {content}
     </SectionCard>
   );
 }

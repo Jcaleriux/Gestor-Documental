@@ -8,11 +8,14 @@ function UsuarioFormCard({
   saving,
   onSubmit,
   onFieldChange,
-  onCancel
+  onCancel,
+  asCard = true,
+  formId = 'usuario-form',
+  hideActions = false
 }) {
-  return (
-    <SectionCard title={isEditing ? `Editar usuario #${editingId}` : 'Nuevo usuario'}>
-      <form className="d-grid gap-2" onSubmit={onSubmit}>
+  const formContent = (
+    <form id={formId} className="row g-3" onSubmit={onSubmit}>
+      <div className="col-12 col-md-6">
         <label className="form-label mb-0">
           Nombre
           <input
@@ -20,9 +23,12 @@ function UsuarioFormCard({
             value={form.nombre}
             onChange={(event) => onFieldChange('nombre', event.target.value)}
             required
+            disabled={saving}
           />
         </label>
+      </div>
 
+      <div className="col-12 col-md-6">
         <label className="form-label mb-0">
           Email
           <input
@@ -31,9 +37,12 @@ function UsuarioFormCard({
             value={form.email}
             onChange={(event) => onFieldChange('email', event.target.value)}
             required
+            disabled={saving}
           />
         </label>
+      </div>
 
+      <div className="col-12 col-md-6">
         <label className="form-label mb-0">
           Rol
           <select
@@ -41,6 +50,7 @@ function UsuarioFormCard({
             value={form.rol_id}
             onChange={(event) => onFieldChange('rol_id', event.target.value)}
             required
+            disabled={saving}
           >
             <option value="">Seleccionar rol</option>
             {roles.map((role) => (
@@ -50,7 +60,9 @@ function UsuarioFormCard({
             ))}
           </select>
         </label>
+      </div>
 
+      <div className="col-12 col-md-6">
         <label className="form-label mb-0">
           {isEditing ? 'Nueva password (opcional)' : 'Password'}
           <input
@@ -61,19 +73,26 @@ function UsuarioFormCard({
             placeholder={isEditing ? 'Dejar vacio para no cambiar' : 'Minimo 8 caracteres'}
             minLength={8}
             required={!isEditing}
+            disabled={saving}
           />
         </label>
+      </div>
 
+      <div className="col-12">
         <label className="form-check mt-1">
           <input
             className="form-check-input"
             type="checkbox"
             checked={form.activo}
             onChange={(event) => onFieldChange('activo', event.target.checked)}
+            disabled={saving}
           />
           <span className="form-check-label">Usuario activo</span>
         </label>
+      </div>
 
+      {!hideActions && (
+        <div className="col-12">
         <div className="d-flex gap-2 mt-2">
           <button className="btn btn-primary flex-grow-1" type="submit" disabled={saving}>
             {saving ? 'Guardando...' : (isEditing ? 'Actualizar usuario' : 'Crear usuario')}
@@ -84,7 +103,18 @@ function UsuarioFormCard({
             </button>
           )}
         </div>
-      </form>
+        </div>
+      )}
+    </form>
+  );
+
+  if (!asCard) {
+    return formContent;
+  }
+
+  return (
+    <SectionCard title={isEditing ? `Editar usuario #${editingId}` : 'Nuevo usuario'}>
+      {formContent}
     </SectionCard>
   );
 }

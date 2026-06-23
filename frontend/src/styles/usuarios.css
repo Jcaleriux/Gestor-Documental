@@ -1,0 +1,116 @@
+.usuarios-page .facturas-toolbar {
+  align-items: center;
+}
+
+.usuarios-summary-grid {
+  margin-bottom: 8px;
+}
+
+.usuarios-data-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.usuarios-data-table th:nth-child(1),
+.usuarios-data-table td:nth-child(1) {
+  width: 20%;
+}
+
+.usuarios-data-table th:nth-child(2),
+.usuarios-data-table td:nth-child(2) {
+  width: 25%;
+}
+
+.usuarios-data-table th:nth-child(3),
+.usuarios-data-table td:nth-child(3) {
+  width: 18%;
+}
+
+.usuarios-data-table th:nth-child(4),
+.usuarios-data-table td:nth-child(4) {
+  width: 104px;
+}
+
+.usuarios-data-table th:nth-child(5),
+.usuarios-data-table td:nth-child(5) {
+  width: 150px;
+}
+
+.usuarios-data-table th:nth-child(6),
+.usuarios-data-table td:nth-child(6) {
+  width: 232px;
+}
+
+.usuario-name-cell,
+.usuario-role-cell,
+.usuario-mobile-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.usuario-primary-text {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #101828;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.usuario-meta-text {
+  font-size: 0.74rem;
+  color: #667085;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.usuarios-row-actions {
+  display: inline-flex;
+  justify-content: flex-end;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.usuario-mobile-card {
+  border-bottom: 1px solid var(--app-border);
+  padding: 14px 16px;
+}
+
+.usuario-mobile-card:last-child {
+  border-bottom: none;
+}
+
+.usuario-mobile-details {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  margin-bottom: 12px;
+  font-size: 0.84rem;
+}
+
+.usuario-mobile-details > div {
+  display: grid;
+  gap: 2px;
+}
+
+.usuario-meta-label {
+  color: #667085;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 992px) {
+  .usuarios-row-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

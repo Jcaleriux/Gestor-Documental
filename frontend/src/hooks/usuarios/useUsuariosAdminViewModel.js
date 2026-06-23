@@ -121,7 +121,7 @@ export const useUsuariosAdminViewModel = () => {
       const password = form.password.trim();
       if (!isEditing && !password) {
         setError('Password es requerido para crear el usuario.');
-        return;
+        return false;
       }
 
       if (password) {
@@ -138,9 +138,11 @@ export const useUsuariosAdminViewModel = () => {
 
       await loadData({ showLoader: false });
       resetForm();
+      return true;
     } catch (err) {
       const apiError = err.response?.data?.error || 'No se pudo guardar el usuario.';
       setError(apiError);
+      return false;
     } finally {
       setSaving(false);
     }
@@ -206,7 +208,7 @@ export const useUsuariosAdminViewModel = () => {
   };
 
   const saveSociedades = async () => {
-    if (!sociedadesUser) return;
+    if (!sociedadesUser) return false;
 
     try {
       setSavingSociedades(true);
@@ -218,9 +220,11 @@ export const useUsuariosAdminViewModel = () => {
       });
 
       setMessage('Sociedades asignadas correctamente.');
+      return true;
     } catch (err) {
       const apiError = err.response?.data?.error || 'No se pudieron guardar las sociedades.';
       setError(apiError);
+      return false;
     } finally {
       setSavingSociedades(false);
     }
