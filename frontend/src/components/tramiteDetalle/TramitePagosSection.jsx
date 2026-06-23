@@ -1,5 +1,9 @@
 import SectionCard from '../common/SectionCard';
-import { formatAmount } from '../../utils/formatters';
+import {
+  formatAmount,
+  getDocumentoConsecutivo,
+  getDocumentoConsecutivoCompleto,
+} from '../../utils/formatters';
 
 function TramitePagosSection({
   visible,
@@ -32,10 +36,12 @@ function TramitePagosSection({
               const facturaId = Number(doc.factura_id);
               const pendiente = Number(doc.total_a_pagar || 0);
               const disabled = !Number.isFinite(pendiente) || pendiente <= 0;
+              const documentoVisible = getDocumentoConsecutivo(doc, String(facturaId));
+              const documentoCompleto = getDocumentoConsecutivoCompleto(doc, String(facturaId));
 
               return (
                 <tr key={`pago-${facturaId}`}>
-                  <td className="fw-semibold">#{doc.consecutivo || doc.clave || facturaId}</td>
+                  <td className="fw-semibold" title={documentoCompleto}>#{documentoVisible}</td>
                   <td>{doc.emisor?.Nombre || doc.emisor?.nombre || '-'}</td>
                   <td>{doc.resumen?.CodigoTipoMoneda?.CodigoMoneda || doc.resumen?.CodigoMoneda || 'CRC'}</td>
                   <td>{formatAmount(pendiente)}</td>

@@ -1,4 +1,8 @@
-import { formatAmount } from '../../utils/formatters.js';
+import {
+  formatAmount,
+  getDocumentoConsecutivo,
+  getDocumentoConsecutivoCompleto,
+} from '../../utils/formatters.js';
 import { estadoLabelNotaCredito } from '../../utils/estadosNotaCredito.js';
 import { NOTAS_CREDITO_LABELS } from '../../utils/uiLabels.js';
 
@@ -96,10 +100,11 @@ export const buildFilterChips = ({
 };
 
 export const getDocumentoPrincipal = (nota) => (
-  nota.numero_consecutivo
-  || nota.consecutivo
-  || nota.id
-  || '-'
+  getDocumentoConsecutivo(nota)
+);
+
+export const getDocumentoPrincipalCompleto = (nota) => (
+  getDocumentoConsecutivoCompleto(nota)
 );
 
 export const getEmisorNombre = (nota) => (

@@ -1,4 +1,8 @@
-import { formatAmount } from '../../utils/formatters.js';
+import {
+  formatAmount,
+  getDocumentoConsecutivo,
+  getDocumentoConsecutivoCompleto,
+} from '../../utils/formatters.js';
 import { estadoLabelFactura } from '../../utils/estadosFactura.js';
 import { FACTURAS_LABELS } from '../../utils/uiLabels.js';
 
@@ -135,10 +139,11 @@ const decodeHtmlEntities = (value) => {
 };
 
 export const getDocumentoPrincipal = (factura) => (
-  factura.consecutivo
-  || factura.numero_consecutivo
-  || factura.clave
-  || `ID ${factura.id}`
+  getDocumentoConsecutivo(factura, `ID ${factura.id}`)
+);
+
+export const getDocumentoPrincipalCompleto = (factura) => (
+  getDocumentoConsecutivoCompleto(factura, `ID ${factura.id}`)
 );
 
 export const getEmisorNombre = (factura) => {

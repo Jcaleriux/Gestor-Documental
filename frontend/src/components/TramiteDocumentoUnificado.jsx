@@ -1,5 +1,13 @@
 import { useMemo, useState } from 'react';
-import { formatAmount, formatDate, getMoneda, getMontoDocumento } from '../utils/formatters';
+import {
+  formatAmount,
+  formatConsecutivo,
+  formatDate,
+  getDocumentoConsecutivo,
+  getDocumentoConsecutivoCompleto,
+  getMoneda,
+  getMontoDocumento,
+} from '../utils/formatters';
 import {
   estadoClassTramite,
   decisionLabel,
@@ -125,7 +133,7 @@ const buildSupportingPdfResources = (doc) => {
     resources.push({
       key: `nota-${doc.factura_id}`,
       label: 'Nota de credito',
-      caption: doc.conta_nota_credito_clave || `Nota #${doc.conta_nota_credito_id || doc.factura_id}`,
+      caption: formatConsecutivo(doc.conta_nota_credito_clave, `Nota #${doc.conta_nota_credito_id || doc.factura_id}`),
       resourceUrl: buildProtectedPdfUrl(doc.conta_nota_credito_ruta_pdf),
       title: `Nota de credito ${doc.factura_id}`,
       unavailableMessage: 'Nota de credito no disponible.'
@@ -221,13 +229,15 @@ function TramiteDocumentoUnificado({
     : [];
   const supportingPdfResources = useMemo(() => buildSupportingPdfResources(doc), [doc]);
   const centroCostoLabels = useMemo(() => buildCentroCostoLabels(doc), [doc]);
+  const documentoVisible = getDocumentoConsecutivo(doc);
+  const documentoCompleto = getDocumentoConsecutivoCompleto(doc);
 
   return (
     <SectionCard className="tramite-unificada-card">
       <div className="tramite-unificada-summary">
         <div className="tramite-unificada-summary-main">
           <div className="d-flex align-items-center gap-2 flex-wrap">
-            <div className="fw-semibold">Factura #{doc.consecutivo || doc.clave}</div>
+            <div className="fw-semibold" title={documentoCompleto}>Factura #{documentoVisible}</div>
             <span className="badge text-bg-light border">Documento {sequenceNumber}</span>
           </div>
           <div className="text-muted small">

@@ -3,6 +3,7 @@ import { toBase64 } from '../tablasPago/utils.js';
 import { promptMotivo } from '../../utils/promptUtils.js';
 import { PROMPT_LABELS, TRAMITE_ALERT_LABELS } from '../../utils/uiLabels.js';
 import TRAMITE_LABELS from '../../utils/tramiteLabels.js';
+import { getDocumentoConsecutivo } from '../../utils/formatters.js';
 
 const PAGO_MONTO_EPSILON = 0.0001;
 const PAGO_DISPLAY_DECIMALS = 2;
@@ -33,9 +34,10 @@ const buildPagosDocumentosPayload = ({ documentosActivos, pagosFacturas }) => {
         : pendiente
     );
     const monto = Number(rawMonto);
+    const documentoVisible = getDocumentoConsecutivo(doc, String(facturaId));
     if (!Number.isFinite(monto) || monto <= 0) {
       return {
-        error: `Monto invalido para factura #${doc.consecutivo || doc.clave || facturaId}`,
+        error: `Monto invalido para factura #${documentoVisible}`,
         pagos: []
       };
     }
@@ -44,7 +46,7 @@ const buildPagosDocumentosPayload = ({ documentosActivos, pagosFacturas }) => {
       : monto;
     if (montoNormalizado - pendiente > PAGO_MONTO_EPSILON) {
       return {
-        error: `El monto para factura #${doc.consecutivo || doc.clave || facturaId} excede su saldo pendiente`,
+        error: `El monto para factura #${documentoVisible} excede su saldo pendiente`,
         pagos: []
       };
     }

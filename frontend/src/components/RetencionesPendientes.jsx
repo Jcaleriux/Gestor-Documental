@@ -1,7 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useRetencionesPendientes } from '../hooks/useRetencionesPendientes';
-import { formatAmount, formatDate } from '../utils/formatters';
+import {
+  formatAmount,
+  formatDate,
+  getDocumentoConsecutivo,
+  getDocumentoConsecutivoCompleto,
+} from '../utils/formatters';
 import EmptyState from './common/EmptyState';
 import FiltersBar from './common/FiltersBar';
 import FiltersPanel from './common/FiltersPanel';
@@ -190,10 +195,12 @@ function RetencionesPendientes({ sociedadId }) {
               || 'CRC'
             );
             const estadoRetencionItem = getEstadoRetencion(item);
+            const documentoVisible = getDocumentoConsecutivo(item);
+            const documentoCompleto = getDocumentoConsecutivoCompleto(item);
 
             return (
               <tr key={item.id}>
-                <td className="fw-semibold">#{item.consecutivo || item.clave || item.id}</td>
+                <td className="fw-semibold" title={documentoCompleto}>#{documentoVisible}</td>
                 <td>
                   <div>{item.proveedor_nombre || '-'}</div>
                   <div className="text-muted small">{item.proveedor_identificacion || '-'}</div>

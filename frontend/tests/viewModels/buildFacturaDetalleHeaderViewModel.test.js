@@ -8,7 +8,7 @@ test('buildFacturaDetalleHeaderViewModel arma title/subtitle/back con consecutiv
   });
 
   assert.equal(header.title, 'Contabilización de factura');
-  assert.equal(header.subtitle, 'Factura #00100001010000001606');
+  assert.equal(header.subtitle, 'Factura #10000001606');
   assert.equal(header.backTo, '/facturas');
   assert.equal(header.backLabel, 'Volver a facturas');
 });

@@ -1,4 +1,10 @@
-import { formatAmount, getMoneda, getMontoDocumento } from '../utils/formatters';
+import {
+  formatAmount,
+  getDocumentoConsecutivo,
+  getDocumentoConsecutivoCompleto,
+  getMoneda,
+  getMontoDocumento,
+} from '../utils/formatters';
 import {
   estadoClassTramite,
   decisionLabel,
@@ -95,10 +101,12 @@ function TramiteDocumentosTable({
           const puedeFinancieraDocumento =
             puedeFinanciera && doc.estado_financiero === 'pendiente';
           const gerenciaSummary = buildGerenciaSummary(doc);
+          const documentoVisible = getDocumentoConsecutivo(doc);
+          const documentoCompleto = getDocumentoConsecutivoCompleto(doc);
 
           return (
             <tr key={doc.factura_id}>
-              <td className="fw-semibold">#{doc.consecutivo || doc.clave}</td>
+              <td className="fw-semibold" title={documentoCompleto}>#{documentoVisible}</td>
               <td>{doc.emisor?.Nombre || doc.emisor?.nombre || '-'}</td>
               <td>{getMoneda(doc)}</td>
               <td>{formatAmount(getMontoDocumento(doc, { preferAjustado: true }))}</td>

@@ -1,6 +1,10 @@
 import EmptyState from './common/EmptyState';
 import SectionCard from './common/SectionCard';
-import { formatDateTime } from '../utils/formatters';
+import {
+  formatDateTime,
+  getDocumentoConsecutivo,
+  getDocumentoConsecutivoCompleto,
+} from '../utils/formatters';
 
 function TramiteHistorial({ historial, historialError, labels }) {
   const headerLabels = labels || {
@@ -15,27 +19,32 @@ function TramiteHistorial({ historial, historialError, labels }) {
       )}
       {historial.length > 0 && (
         <ul className="list-group">
-          {historial.map((item) => (
-            <li key={item.id} className="list-group-item">
-              <div className="fw-semibold">{item.accion}</div>
-              <div className="text-muted">
-                {item.usuario || '-'} - {formatDateTime(item.creado_en)}
-              </div>
-              {(item.estado_anterior || item.estado_nuevo) && (
-                <div className="mt-1">
-                  {item.estado_anterior || '-'}
-                  {' -> '}
-                  {item.estado_nuevo || '-'}
+          {historial.map((item) => {
+            const documentoVisible = getDocumentoConsecutivo(item, String(item.factura_id || '-'));
+            const documentoCompleto = getDocumentoConsecutivoCompleto(item, String(item.factura_id || ''));
+
+            return (
+              <li key={item.id} className="list-group-item">
+                <div className="fw-semibold">{item.accion}</div>
+                <div className="text-muted">
+                  {item.usuario || '-'} - {formatDateTime(item.creado_en)}
                 </div>
-              )}
-              {item.factura_id && (
-                <div className="mt-1">
-                  Documento: {item.consecutivo || item.clave || `#${item.factura_id}`}
-                </div>
-              )}
-              {item.motivo && <div className="mt-1">{item.motivo}</div>}
-            </li>
-          ))}
+                {(item.estado_anterior || item.estado_nuevo) && (
+                  <div className="mt-1">
+                    {item.estado_anterior || '-'}
+                    {' -> '}
+                    {item.estado_nuevo || '-'}
+                  </div>
+                )}
+                {item.factura_id && (
+                  <div className="mt-1" title={documentoCompleto}>
+                    Documento: #{documentoVisible}
+                  </div>
+                )}
+                {item.motivo && <div className="mt-1">{item.motivo}</div>}
+              </li>
+            );
+          })}
         </ul>
       )}
     </SectionCard>

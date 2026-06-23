@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { formatAmount, formatDate, getMoneda, getMontoDocumento } from '../../utils/formatters';
+import {
+  formatAmount,
+  formatDate,
+  getDocumentoConsecutivo,
+  getDocumentoConsecutivoCompleto,
+  getMoneda,
+  getMontoDocumento,
+} from '../../utils/formatters';
 import { extractMensajeHaciendaXmlPath, facturasApi } from '../../services/facturasApi.js';
 import { openProtectedInNewTab } from '../../utils/protectedResources.js';
 import SectionCard from '../common/SectionCard';
@@ -333,33 +340,38 @@ function TramiteCreatePanel({
               'Acciones'
             ]}
           >
-            {facturasFiltradas.map((factura) => (
-              <tr key={factura.id}>
-                <td>
-                  <input
-                    type="checkbox"
-                    checked={selectedFacturas.has(factura.id)}
-                    onChange={() => onToggleFactura(factura.id)}
-                  />
-                </td>
-                <td className="fw-semibold">#{factura.consecutivo || factura.numero_consecutivo}</td>
-                <td>{factura.emisor?.Nombre || factura.emisor?.nombre || '-'}</td>
-                <td>{getMoneda(factura)}</td>
-                <td>{formatAmount(getMontoDocumento(factura, { preferAjustado: true }))}</td>
-                <td>{formatDate(factura.fecha_emision)}</td>
-                <td className="text-end">
-                  <FacturaTramiteRowActions
-                    factura={factura}
-                    sociedadId={sociedadId}
-                    openMenuId={openMenuId}
-                    mhLoadingId={mhLoadingId}
-                    onToggleMenu={(facturaId) => setOpenMenuId((current) => (current === facturaId ? null : facturaId))}
-                    onCloseMenu={() => setOpenMenuId(null)}
-                    onViewMh={handleViewMh}
-                  />
-                </td>
-              </tr>
-            ))}
+            {facturasFiltradas.map((factura) => {
+              const documentoVisible = getDocumentoConsecutivo(factura);
+              const documentoCompleto = getDocumentoConsecutivoCompleto(factura);
+
+              return (
+                <tr key={factura.id}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selectedFacturas.has(factura.id)}
+                      onChange={() => onToggleFactura(factura.id)}
+                    />
+                  </td>
+                  <td className="fw-semibold" title={documentoCompleto}>#{documentoVisible}</td>
+                  <td>{factura.emisor?.Nombre || factura.emisor?.nombre || '-'}</td>
+                  <td>{getMoneda(factura)}</td>
+                  <td>{formatAmount(getMontoDocumento(factura, { preferAjustado: true }))}</td>
+                  <td>{formatDate(factura.fecha_emision)}</td>
+                  <td className="text-end">
+                    <FacturaTramiteRowActions
+                      factura={factura}
+                      sociedadId={sociedadId}
+                      openMenuId={openMenuId}
+                      mhLoadingId={mhLoadingId}
+                      onToggleMenu={(facturaId) => setOpenMenuId((current) => (current === facturaId ? null : facturaId))}
+                      onCloseMenu={() => setOpenMenuId(null)}
+                      onViewMh={handleViewMh}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
             {facturasFiltradas.length === 0 && (
               <tr>
                 <td colSpan="7" className="py-4">
@@ -385,25 +397,30 @@ function TramiteCreatePanel({
               'Fecha factura'
             ]}
           >
-            {retencionesFiltradas.map((retencion) => (
-              <tr key={`ret-${retencion.factura_id}`}>
-                <td>
-                  <input
-                    type="checkbox"
-                    checked={selectedRetenciones.has(retencion.factura_id)}
-                    onChange={() => onToggleRetencion(retencion.factura_id)}
-                  />
-                </td>
-                <td>
-                  <div>{retencion.proveedor_nombre || 'Sin proveedor'}</div>
-                  <div className="text-muted small">{retencion.proveedor_identificacion || '-'}</div>
-                </td>
-                <td className="fw-semibold">#{retencion.consecutivo || retencion.clave || retencion.factura_id}</td>
-                <td>{retencion.moneda || 'CRC'}</td>
-                <td>{formatAmount(getMontoRetencion(retencion))}</td>
-                <td>{formatDate(retencion.fecha_emision)}</td>
-              </tr>
-            ))}
+            {retencionesFiltradas.map((retencion) => {
+              const documentoVisible = getDocumentoConsecutivo(retencion);
+              const documentoCompleto = getDocumentoConsecutivoCompleto(retencion);
+
+              return (
+                <tr key={`ret-${retencion.factura_id}`}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selectedRetenciones.has(retencion.factura_id)}
+                      onChange={() => onToggleRetencion(retencion.factura_id)}
+                    />
+                  </td>
+                  <td>
+                    <div>{retencion.proveedor_nombre || 'Sin proveedor'}</div>
+                    <div className="text-muted small">{retencion.proveedor_identificacion || '-'}</div>
+                  </td>
+                  <td className="fw-semibold" title={documentoCompleto}>#{documentoVisible}</td>
+                  <td>{retencion.moneda || 'CRC'}</td>
+                  <td>{formatAmount(getMontoRetencion(retencion))}</td>
+                  <td>{formatDate(retencion.fecha_emision)}</td>
+                </tr>
+              );
+            })}
             {retencionesFiltradas.length === 0 && (
               <tr>
                 <td colSpan="6" className="py-4">

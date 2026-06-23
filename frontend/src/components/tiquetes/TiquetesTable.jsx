@@ -5,6 +5,7 @@ import EmptyState from '../common/EmptyState.jsx';
 import TiqueteRowActions from './TiqueteRowActions.jsx';
 import {
   getDocumentoPrincipal,
+  getDocumentoPrincipalCompleto,
   getEmisorNombre,
 } from './tiquetesPageHelpers.js';
 
@@ -31,13 +32,15 @@ function TiquetesTable({
       {items.map((tiquete) => {
         const monedaTiquete = tiquete.moneda || getMoneda(tiquete);
         const emisorNombreValue = getEmisorNombre(tiquete);
+        const documentoPrincipal = getDocumentoPrincipal(tiquete);
+        const documentoCompleto = getDocumentoPrincipalCompleto(tiquete);
 
         return (
           <tr key={tiquete.id}>
             <td>
               <div className="factura-document-cell">
-                <div className="factura-document-title">
-                  Tiquete #{getDocumentoPrincipal(tiquete)}
+                <div className="factura-document-title" title={documentoCompleto}>
+                  Tiquete #{documentoPrincipal}
                 </div>
               </div>
             </td>

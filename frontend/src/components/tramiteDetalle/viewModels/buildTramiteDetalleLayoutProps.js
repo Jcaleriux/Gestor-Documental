@@ -5,6 +5,7 @@ import {
   DESTINOS_TESORERIA
 } from '../../../utils/tramiteConfig.js';
 import getPermisosTramite, { hasPermission } from '../../../utils/tramitePermissions.js';
+import { getDocumentoConsecutivo } from '../../../utils/formatters.js';
 import {
   sortDocumentosByProveedor,
   sortProviderGroupsByProveedor
@@ -119,7 +120,7 @@ const buildCaratulasReadiness = ({ tramite, documentosActivos, userPermissions }
     gerenciaPendientes: gerenciaPendientesDocs.length,
     gerenciaRechazados: gerenciaRechazadosDocs.length,
     pendingDocuments: gerenciaPendientesDocs.slice(0, 3).map((doc) => (
-      doc.consecutivo || doc.clave || `Factura ${doc.factura_id}`
+      getDocumentoConsecutivo(doc, `Factura ${doc.factura_id}`)
     )),
   };
 };

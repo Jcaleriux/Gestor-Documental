@@ -7,6 +7,7 @@ import StatusBadge from '../common/StatusBadge.jsx';
 import FacturaRowActions from './FacturaRowActions.jsx';
 import {
   getDocumentoPrincipal,
+  getDocumentoPrincipalCompleto,
   getEmisorIdentificacion,
   getEmisorNombre,
 } from './facturasPageHelpers.js';
@@ -39,13 +40,15 @@ function FacturasTable({
         const montoFactura = getMontoDocumento(factura, { preferAjustado: false });
         const emisorNombreValue = getEmisorNombre(factura);
         const emisorIdentificacion = getEmisorIdentificacion(factura);
+        const documentoPrincipal = getDocumentoPrincipal(factura);
+        const documentoCompleto = getDocumentoPrincipalCompleto(factura);
 
         return (
           <tr key={factura.id}>
             <td>
               <div className="factura-document-cell">
-                <div className="factura-document-title">
-                  Factura #{getDocumentoPrincipal(factura)}
+                <div className="factura-document-title" title={documentoCompleto}>
+                  Factura #{documentoPrincipal}
                 </div>
               </div>
             </td>

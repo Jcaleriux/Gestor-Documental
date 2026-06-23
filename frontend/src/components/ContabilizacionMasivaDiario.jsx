@@ -4,6 +4,7 @@ import LoadingState from './common/LoadingState.jsx';
 import PageHeader from './common/PageHeader.jsx';
 import SectionCard from './common/SectionCard.jsx';
 import { contabilizacionMasivaApi } from '../services/contabilizacionMasivaApi.js';
+import { getDocumentoConsecutivo } from '../utils/formatters.js';
 
 const STATUS_LABELS = {
   all: 'Todos',
@@ -21,7 +22,7 @@ const REVIEW_STATUSES = new Set(['missing', 'ambiguous', 'invalid_reference', 'i
 
 const formatFacturaLabel = (factura) => {
   if (!factura) return 'Sin factura';
-  return `#${factura.consecutivo || factura.clave || factura.id} · ${factura.emisor_nombre || 'Emisor sin nombre'}`;
+  return `#${getDocumentoConsecutivo(factura)} · ${factura.emisor_nombre || 'Emisor sin nombre'}`;
 };
 
 const getResolutionKey = (resolution) => `${resolution.asiento}:${resolution.action}:${resolution.factura_id || ''}`;

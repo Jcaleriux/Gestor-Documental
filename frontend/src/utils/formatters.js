@@ -1,5 +1,6 @@
 const COSTA_RICA_LOCALE = 'es-CR';
 const DATE_ONLY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+const CONSECUTIVO_VISIBLE_LENGTH = 11;
 
 const toDisplayDate = (value) => {
   if (!value) return null;
@@ -53,6 +54,40 @@ export const formatRelativeTime = (value) => {
   const diffDays = Math.floor(diffHours / 24);
   return `Hace ${diffDays} dia${diffDays === 1 ? '' : 's'}`;
 };
+
+export const formatConsecutivo = (value, fallback = '-') => {
+  const normalized = String(value ?? '').trim();
+  if (!normalized) return fallback;
+
+  const digits = normalized.replace(/\D/g, '');
+  if (digits.length > CONSECUTIVO_VISIBLE_LENGTH) {
+    return digits.slice(-CONSECUTIVO_VISIBLE_LENGTH);
+  }
+
+  return normalized;
+};
+
+export const getDocumentoConsecutivo = (documento, fallback = '-') => (
+  formatConsecutivo(
+    documento?.consecutivo
+    || documento?.numero_consecutivo
+    || documento?.clave
+    || documento?.factura_id
+    || documento?.id,
+    fallback
+  )
+);
+
+export const getDocumentoConsecutivoCompleto = (documento, fallback = '') => (
+  String(
+    documento?.consecutivo
+    || documento?.numero_consecutivo
+    || documento?.clave
+    || documento?.factura_id
+    || documento?.id
+    || fallback
+  ).trim()
+);
 
 export const getMoneda = (doc) => (
   doc?.resumen?.CodigoTipoMoneda?.CodigoMoneda ||

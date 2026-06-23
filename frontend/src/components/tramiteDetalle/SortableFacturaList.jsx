@@ -1,4 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import {
+  getDocumentoConsecutivo,
+  getDocumentoConsecutivoCompleto,
+} from '../../utils/formatters.js';
 
 const createInitialOrder = (documents) => (
   Array.isArray(documents) ? documents.map((doc) => Number(doc.factura_id)) : []
@@ -51,24 +55,29 @@ function SortableFacturaList({
 
   return (
     <div className="d-flex flex-column gap-2">
-      {order.map((doc, index) => (
-        <div
-          key={doc.factura_id}
-          className="border rounded p-2 bg-white"
-          draggable={!disabled}
-          onDragStart={() => setDraggingId(Number(doc.factura_id))}
-          onDragOver={(event) => event.preventDefault()}
-          onDrop={() => {
-            moveItem(Number(doc.factura_id));
-            setDraggingId(null);
-          }}
-          onDragEnd={() => setDraggingId(null)}
-          style={{ cursor: disabled ? 'default' : 'grab' }}
-        >
-          <div className="fw-semibold small">{index + 1}. #{doc.consecutivo || doc.clave || doc.factura_id}</div>
-          <div className="small text-muted">{doc.proveedor_nombre || doc.emisor?.Nombre || doc.emisor?.nombre || '-'}</div>
-        </div>
-      ))}
+      {order.map((doc, index) => {
+        const documentoVisible = getDocumentoConsecutivo(doc);
+        const documentoCompleto = getDocumentoConsecutivoCompleto(doc);
+
+        return (
+          <div
+            key={doc.factura_id}
+            className="border rounded p-2 bg-white"
+            draggable={!disabled}
+            onDragStart={() => setDraggingId(Number(doc.factura_id))}
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={() => {
+              moveItem(Number(doc.factura_id));
+              setDraggingId(null);
+            }}
+            onDragEnd={() => setDraggingId(null)}
+            style={{ cursor: disabled ? 'default' : 'grab' }}
+          >
+            <div className="fw-semibold small" title={documentoCompleto}>{index + 1}. #{documentoVisible}</div>
+            <div className="small text-muted">{doc.proveedor_nombre || doc.emisor?.Nombre || doc.emisor?.nombre || '-'}</div>
+          </div>
+        );
+      })}
     </div>
   );
 }

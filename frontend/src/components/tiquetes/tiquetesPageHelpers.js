@@ -1,4 +1,8 @@
-import { formatAmount } from '../../utils/formatters.js';
+import {
+  formatAmount,
+  getDocumentoConsecutivo,
+  getDocumentoConsecutivoCompleto,
+} from '../../utils/formatters.js';
 import { TIQUETES_ELECTRONICOS_LABELS } from '../../utils/uiLabels.js';
 
 export const PAGE_SIZE_OPTIONS = [25, 50, 100];
@@ -87,10 +91,11 @@ export const buildFilterChips = ({
 };
 
 export const getDocumentoPrincipal = (tiquete) => (
-  tiquete.consecutivo
-  || tiquete.numero_consecutivo
-  || tiquete.id
-  || '-'
+  getDocumentoConsecutivo(tiquete)
+);
+
+export const getDocumentoPrincipalCompleto = (tiquete) => (
+  getDocumentoConsecutivoCompleto(tiquete)
 );
 
 export const getEmisorNombre = (tiquete) => (

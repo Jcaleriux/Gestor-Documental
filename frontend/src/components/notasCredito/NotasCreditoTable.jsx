@@ -8,6 +8,7 @@ import NotaCreditoRowActions from './NotaCreditoRowActions.jsx';
 import {
   formatLabel,
   getDocumentoPrincipal,
+  getDocumentoPrincipalCompleto,
   getEmisorNombre,
 } from './notasCreditoPageHelpers.js';
 
@@ -34,13 +35,15 @@ function NotasCreditoTable({
       {items.map((nota) => {
         const monedaNota = nota.moneda || getMoneda(nota);
         const emisorNombreValue = getEmisorNombre(nota);
+        const documentoPrincipal = getDocumentoPrincipal(nota);
+        const documentoCompleto = getDocumentoPrincipalCompleto(nota);
 
         return (
           <tr key={nota.id}>
             <td>
               <div className="factura-document-cell">
-                <div className="factura-document-title">
-                  Nota de credito #{getDocumentoPrincipal(nota)}
+                <div className="factura-document-title" title={documentoCompleto}>
+                  Nota de credito #{documentoPrincipal}
                 </div>
               </div>
             </td>

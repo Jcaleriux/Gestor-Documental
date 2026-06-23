@@ -1,7 +1,7 @@
 import SectionCard from '../common/SectionCard';
 import StatusBadge from '../common/StatusBadge';
 import { FACTURA_DETALLE_LABELS } from '../../utils/uiLabels';
-import { formatAmount, formatDate } from '../../utils/formatters';
+import { formatAmount, formatDate, getDocumentoConsecutivo } from '../../utils/formatters';
 import { estadoClassFactura, estadoLabelFactura } from '../../utils/estadosFactura';
 
 function SummaryItem({ label, value }) {
@@ -20,7 +20,7 @@ function FacturaDetalleSummaryCard({ viewModel }) {
     canEditContabilizacion
   } = viewModel;
 
-  const documentoPrincipal = factura.consecutivo || factura.numero_consecutivo || `Factura #${factura.id}`;
+  const documentoPrincipal = getDocumentoConsecutivo(factura, String(factura.id || '-'));
   const emisor = factura.emisor?.Nombre || factura.emisor?.nombre || '-';
   const total = formatAmount(factura.resumen?.TotalComprobante || 0);
 
