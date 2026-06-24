@@ -1,6 +1,9 @@
 const pool = require('../db');
+const { FACTURA_ESTADO_DOMINIOS } = require('../domain/facturas');
+const { createFacturaEstadoHistorial } = require('./facturaEstadoHistorialStore');
 
 const getDb = (client) => client || pool;
+const getClient = () => pool.connect();
 
 const getSociedadById = async (sociedadId, client) => {
   const { rows } = await getDb(client).query(
@@ -95,9 +98,102 @@ const searchFacturasBySociedad = async ({ sociedadId, query, limit = 10 }, clien
   return rows;
 };
 
+const insertContabilizacionFromImport = async ({
+  facturaId,
+  fechaContabilizacion,
+  asiento,
+  centroCosto,
+  metadata,
+  usuario
+}, client) => {
+  const { rows } = await getDb(client).query(
+    `INSERT INTO facturas_contabilizacion (
+       factura_id,
+       fecha_contabilizacion,
+       asiento,
+       centro_costo,
+       metadata,
+       creado_por
+     )
+     VALUES ($1, COALESCE($2::date, CURRENT_DATE), $3, $4, $5, $6)
+     ON CONFLICT (factura_id)
+     DO UPDATE SET
+       asiento = EXCLUDED.asiento,
+       centro_costo = EXCLUDED.centro_costo,
+       metadata = COALESCE(facturas_contabilizacion.metadata, '{}'::jsonb) || EXCLUDED.metadata,
+       actualizado_en = CURRENT_TIMESTAMP
+     RETURNING *`,
+    [
+      facturaId,
+      fechaContabilizacion || null,
+      asiento || null,
+      centroCosto || null,
+      metadata || null,
+      usuario || null
+    ]
+  );
+
+  return rows[0] || null;
+};
+
+const updateContabilizacionImportFields = async ({
+  facturaId,
+  asiento,
+  centroCosto,
+  metadata
+}, client) => {
+  const { rows } = await getDb(client).query(
+    `UPDATE facturas_contabilizacion
+     SET
+       asiento = $2,
+       centro_costo = $3,
+       metadata = COALESCE(metadata, '{}'::jsonb) || $4::jsonb,
+       actualizado_en = CURRENT_TIMESTAMP
+     WHERE factura_id = $1
+     RETURNING *`,
+    [
+      facturaId,
+      asiento || null,
+      centroCosto || null,
+      metadata || {}
+    ]
+  );
+
+  return rows[0] || null;
+};
+
+const updateFacturaEstado = async ({ facturaId, estado }, client) => {
+  await getDb(client).query(
+    'UPDATE facturas SET estado = $1 WHERE id = $2',
+    [estado, facturaId]
+  );
+};
+
+const insertEstadoDocumento = async ({
+  facturaId,
+  estadoAnterior,
+  estadoNuevo,
+  usuario,
+  motivo
+}, client) => {
+  await createFacturaEstadoHistorial({
+    facturaId,
+    dominio: FACTURA_ESTADO_DOMINIOS.CONTABILIZACION,
+    estadoAnterior,
+    estadoNuevo,
+    usuario,
+    motivo
+  }, client);
+};
+
 module.exports = {
+  getClient,
   getSociedadById,
   listFacturasBySociedad,
   listCentrosCostoBySociedad,
-  searchFacturasBySociedad
+  searchFacturasBySociedad,
+  insertContabilizacionFromImport,
+  updateContabilizacionImportFields,
+  updateFacturaEstado,
+  insertEstadoDocumento
 };

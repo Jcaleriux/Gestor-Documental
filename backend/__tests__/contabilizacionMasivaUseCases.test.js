@@ -81,7 +81,11 @@ const createRepo = () => ({
       seleccionable_en_contabilizacion: true
     }
   ]),
-  searchFacturasBySociedad: jest.fn().mockResolvedValue([])
+  searchFacturasBySociedad: jest.fn().mockResolvedValue([]),
+  insertContabilizacionFromImport: jest.fn().mockResolvedValue({ id: 20 }),
+  updateContabilizacionImportFields: jest.fn().mockResolvedValue({ id: 10 }),
+  updateFacturaEstado: jest.fn().mockResolvedValue(null),
+  insertEstadoDocumento: jest.fn().mockResolvedValue(null)
 });
 
 describe('contabilizacionMasivaUseCases', () => {
@@ -222,6 +226,44 @@ describe('contabilizacionMasivaUseCases', () => {
       match_strategy: 'proveedor',
       factura: { id: 4 },
       matches: [{ id: 3 }, { id: 4 }]
+    });
+  });
+
+  test('aplica solo filas listas y actualiza parcialmente las ya contabilizadas', async () => {
+    const repo = createRepo();
+    const runInTransaction = jest.fn(async (handler) => handler({ tx: true }));
+    const useCases = createContabilizacionMasivaUseCases({ repo, runInTransaction });
+
+    const result = await useCases.applyDiarioDocumentos({
+      sociedadId: 23,
+      usuario: 'contador@novogar.local'
+    });
+
+    expect(runInTransaction).toHaveBeenCalledTimes(1);
+    expect(repo.insertContabilizacionFromImport).toHaveBeenCalledTimes(1);
+    expect(repo.insertContabilizacionFromImport).toHaveBeenCalledWith(expect.objectContaining({
+      facturaId: 1,
+      asiento: '2594',
+      centroCosto: '11Z0606 - Centro Z',
+      usuario: 'contador@novogar.local'
+    }), { tx: true });
+    expect(repo.updateContabilizacionImportFields).toHaveBeenCalledTimes(1);
+    expect(repo.updateContabilizacionImportFields).toHaveBeenCalledWith(expect.objectContaining({
+      facturaId: 2,
+      asiento: '2595',
+      centroCosto: '11Z0606 - Centro Z + 1 mas'
+    }), { tx: true });
+    expect(repo.updateFacturaEstado).toHaveBeenCalledTimes(1);
+    expect(repo.updateFacturaEstado).toHaveBeenCalledWith({
+      facturaId: 1,
+      estado: 'contabilizado'
+    }, { tx: true });
+    expect(repo.insertEstadoDocumento).toHaveBeenCalledTimes(1);
+    expect(result.summary).toMatchObject({
+      applied: 2,
+      created: 1,
+      updated: 1,
+      skipped: 2
     });
   });
 });

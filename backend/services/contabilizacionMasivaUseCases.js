@@ -2,8 +2,10 @@ const {
   extractLast11Digits,
   parseDiarioDocumentosFile
 } = require('./diarioDocumentosParser');
+const { FACTURA_ESTADOS } = require('../domain/facturas');
 
 const normalizeCode = (value) => String(value || '').trim().toUpperCase();
+const READY_TO_APPLY_STATUSES = new Set(['ready_new', 'ready_update', 'ready_assigned']);
 
 const normalizeComparableText = (value) => String(value || '')
   .normalize('NFD')
@@ -125,6 +127,29 @@ const buildMetadataPreview = ({ item, sociedad, lineas }) => ({
   centros_costo_lineas: lineas
 });
 
+const parseCsvDate = (value) => {
+  const match = String(value || '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!match) {
+    return null;
+  }
+
+  const [, day, month, year] = match;
+  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+};
+
+const buildApplyMetadata = ({ item, usuario }) => ({
+  ...item.metadata_preview,
+  asiento: item.asiento,
+  origen_contabilizacion: 'diario_documentos_csv',
+  diario_documentos: {
+    ...(item.metadata_preview?.diario_documentos || {}),
+    import_status: 'applied',
+    aplicado_por: usuario || null,
+    aplicado_en: new Date().toISOString()
+  },
+  centros_costo_lineas: item.centros_costo_lineas
+});
+
 const createResolutionMap = (resolutions = []) => new Map(
   (Array.isArray(resolutions) ? resolutions : [])
     .filter((resolution) => resolution?.asiento)
@@ -155,7 +180,7 @@ const summarizeItems = (items) => items.reduce((summary, item) => {
   centros_no_resueltos: 0
 });
 
-const createContabilizacionMasivaUseCases = ({ repo }) => {
+const createContabilizacionMasivaUseCases = ({ repo, runInTransaction }) => {
   const analyzeDiarioDocumentos = async ({
     sociedadId,
     filePath,
@@ -340,8 +365,97 @@ const createContabilizacionMasivaUseCases = ({ repo }) => {
     return facturas.map(mapFacturaSummary);
   };
 
+  const applyDiarioDocumentos = async ({
+    sociedadId,
+    filePath,
+    resolutions = [],
+    usuario
+  }) => {
+    if (typeof runInTransaction !== 'function') {
+      throw new Error('runInTransaction requerido');
+    }
+
+    const report = await analyzeDiarioDocumentos({
+      sociedadId,
+      filePath,
+      resolutions
+    });
+
+    const applyItems = report.items.filter((item) => (
+      READY_TO_APPLY_STATUSES.has(item.status)
+      && item.factura?.id
+      && item.centros_costo_count > 0
+      && item.centros_costo_invalidos_count === 0
+    ));
+
+    const skippedItems = report.items.filter((item) => !applyItems.includes(item));
+    const applied = await runInTransaction(async (client) => {
+      const results = [];
+
+      for (const item of applyItems) {
+        const facturaId = Number(item.factura.id);
+        const metadata = buildApplyMetadata({ item, usuario });
+        const payload = {
+          facturaId,
+          fechaContabilizacion: parseCsvDate(item.fecha_contabilizacion),
+          asiento: item.asiento,
+          centroCosto: item.centro_costo_resumen,
+          metadata,
+          usuario
+        };
+
+        if (item.status === 'ready_update') {
+          await repo.updateContabilizacionImportFields(payload, client);
+          results.push({
+            asiento: item.asiento,
+            factura_id: facturaId,
+            action: 'updated'
+          });
+          continue;
+        }
+
+        await repo.insertContabilizacionFromImport(payload, client);
+        if (item.factura.estado !== FACTURA_ESTADOS.CONTABILIZADO) {
+          await repo.updateFacturaEstado({
+            facturaId,
+            estado: FACTURA_ESTADOS.CONTABILIZADO
+          }, client);
+          await repo.insertEstadoDocumento({
+            facturaId,
+            estadoAnterior: item.factura.estado || null,
+            estadoNuevo: FACTURA_ESTADOS.CONTABILIZADO,
+            usuario,
+            motivo: 'Contabilizacion masiva desde diario de documentos'
+          }, client);
+        }
+        results.push({
+          asiento: item.asiento,
+          factura_id: facturaId,
+          action: item.status === 'ready_assigned' ? 'created_assigned' : 'created'
+        });
+      }
+
+      return results;
+    });
+
+    return {
+      source: report.source,
+      summary: {
+        total: report.summary.total,
+        applied: applied.length,
+        created: applied.filter((item) => item.action === 'created').length,
+        created_assigned: applied.filter((item) => item.action === 'created_assigned').length,
+        updated: applied.filter((item) => item.action === 'updated').length,
+        skipped: skippedItems.length,
+        skipped_by_status: summarizeItems(skippedItems)
+      },
+      applied
+    };
+  };
+
   return {
     analyzeDiarioDocumentos,
+    applyDiarioDocumentos,
     searchFacturaCandidates
   };
 };
