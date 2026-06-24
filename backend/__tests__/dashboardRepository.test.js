@@ -52,4 +52,23 @@ describe('dashboardRepository', () => {
     expect(sql).toContain('rechazados_activos');
     expect(params).toEqual([18]);
   });
+
+  test('getCuentasPagarResumenPorMoneda incluye no contabilizadas y en revision solo para vencidas', async () => {
+    pool.query.mockResolvedValueOnce({ rows: [] });
+
+    await dashboardRepository.getCuentasPagarResumenPorMoneda({ sociedadId: 18 });
+
+    expect(pool.query).toHaveBeenCalledTimes(1);
+
+    const [sql, params] = pool.query.mock.calls[0];
+    expect(sql).toContain("'no_contabilizado'");
+    expect(sql).toContain("'en_revision'");
+    expect(sql).toContain('fc.fecha_vencimiento < CURRENT_DATE');
+    expect(sql.match(/AS docs_por_pagar/g)).toHaveLength(1);
+    expect(sql).toContain('COUNT(*) FILTER (');
+    expect(sql).toContain("'contabilizado'");
+    expect(sql).toContain("'en_tramite_pago'");
+    expect(sql).toContain("'pagado_parcialmente'");
+    expect(params).toEqual([18]);
+  });
 });
