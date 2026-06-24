@@ -78,14 +78,6 @@ const receptorNombreExpression = `
   )
 `;
 
-const hasMensajeHaciendaExpression = `
-  EXISTS (
-    SELECT 1
-    FROM mensajes_hacienda m
-    WHERE m.factura_id = f.id OR m.clave = f.clave
-  )
-`;
-
 const notaCreditoMontoExpression = `
   COALESCE(
     NULLIF(n.xml_completo #>> '{ResumenFactura,TotalComprobante}', '')::numeric,
@@ -188,7 +180,9 @@ const facturaBaseSelectColumns = `
       f.ruta_xml,
       f.estado AS estado_documental,
       fwp.estado AS estado_workflow_pago,
-      ${facturaEstadoOperativoExpression} AS estado
+      ${facturaEstadoOperativoExpression} AS estado,
+      mh.estado AS estado_hacienda,
+      mh.mensaje AS mensaje_hacienda
 `;
 
 const buildFacturasListBaseCte = () => `
@@ -208,10 +202,17 @@ const buildFacturasListBaseCte = () => `
       fc.fecha_vencimiento AS fecha_vencimiento,
       COALESCE(f.consecutivo::text, '') AS numero_documento,
       COALESCE(f.clave::text, '') AS clave_text,
-      ${hasMensajeHaciendaExpression} AS has_mensaje_hacienda
+      (mh.id IS NOT NULL) AS has_mensaje_hacienda
     FROM facturas f
     ${facturaWorkflowPagoJoin}
     LEFT JOIN facturas_contabilizacion fc ON fc.factura_id = f.id
+    LEFT JOIN LATERAL (
+      SELECT m.id, m.estado, m.mensaje
+      FROM mensajes_hacienda m
+      WHERE m.factura_id = f.id OR m.clave = f.clave
+      ORDER BY m.creado_en DESC NULLS LAST, m.id DESC
+      LIMIT 1
+    ) mh ON true
   )
 `;
 
@@ -528,8 +529,88 @@ const listRetencionesPendientes = async ({ sociedadId } = {}) => {
     ${facturaWorkflowPagoJoin}
     JOIN facturas_contabilizacion fc ON fc.factura_id = f.id
     LEFT JOIN proveedores p ON p.id = fc.proveedor_id
+    LEFT JOIN LATERAL (
+      SELECT m.id, m.estado, m.mensaje
+      FROM mensajes_hacienda m
+      WHERE m.factura_id = f.id OR m.clave = f.clave
+      ORDER BY m.creado_en DESC NULLS LAST, m.id DESC
+      LIMIT 1
+    ) mh ON true
     ${whereClause}
     ORDER BY f.fecha_emision DESC NULLS LAST, f.id DESC
+    `,
+    params
+  );
+
+  return rows;
+};
+
+const getSociedadById = async (sociedadId) => {
+  const { rows } = await pool.query(
+    `
+    SELECT id, codigo, nombre_proyecto, razon_social, cedula_juridica, activo
+    FROM sociedades
+    WHERE id = $1
+    `,
+    [sociedadId]
+  );
+
+  return rows[0] || null;
+};
+
+const listFacturasForPdfDownload = async ({ ids, sociedadId } = {}) => {
+  const normalizedIds = Array.isArray(ids)
+    ? ids.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0)
+    : [];
+
+  if (normalizedIds.length === 0) {
+    return [];
+  }
+
+  const params = [normalizedIds];
+  const whereClauses = ['f.id = ANY($1::int[])'];
+
+  if (sociedadId) {
+    params.push(sociedadId);
+    whereClauses.push(`f.sociedad_id = $${params.length}`);
+  }
+
+  const { rows } = await pool.query(
+    `
+    SELECT
+      f.id AS factura_id,
+      f.id,
+      f.clave,
+      f.consecutivo,
+      f.fecha_emision,
+      f.emisor,
+      f.resumen,
+      ${facturaEstadoOperativoExpression} AS estado,
+      f.estado AS estado_documental,
+      fwp.estado AS estado_workflow_pago,
+      f.ruta_pdf,
+      f.sociedad_id,
+      fc.fecha_contabilizacion AS conta_fecha_contabilizacion,
+      fc.asiento AS conta_asiento,
+      fc.centro_costo AS conta_centro_costo,
+      fc.metadata AS conta_metadata,
+      COALESCE(u_conta.nombre, fc.creado_por) AS conta_creado_por,
+      fc.cuenta_contable AS conta_cuenta_contable,
+      fc.proyecto AS conta_proyecto,
+      fc.orden_compra AS conta_orden_compra,
+      oc.nombre AS conta_orden_compra_nombre,
+      ${totalFacturaExpression} AS total_factura,
+      ${totalPagoPrincipalExpression} AS total_a_pagar
+    FROM facturas f
+    ${facturaWorkflowPagoJoin}
+    LEFT JOIN facturas_contabilizacion fc ON fc.factura_id = f.id
+    LEFT JOIN ordenes_compra oc ON oc.id = fc.orden_compra_id
+    LEFT JOIN usuarios u_conta ON (
+      LOWER(u_conta.email) = LOWER(fc.creado_por)
+      OR LOWER(split_part(u_conta.email, '@', 1)) = LOWER(fc.creado_por)
+    )
+    WHERE ${whereClauses.join(' AND ')}
+    ORDER BY array_position($1::int[], f.id)
     `,
     params
   );
@@ -548,15 +629,17 @@ const getFacturaById = async (id) => {
       ${retencionPagadaExpression} AS retencion_pagada,
       ${retencionPendienteExpression} AS retencion_pendiente,
       ${totalPagoPrincipalExpression} AS total_a_pagar,
-      ${totalPendienteGlobalExpression} AS total_pendiente_global,
-      EXISTS (
-        SELECT 1
-        FROM mensajes_hacienda m
-        WHERE m.factura_id = f.id OR m.clave = f.clave
-      ) AS has_mensaje_hacienda
+      ${totalPendienteGlobalExpression} AS total_pendiente_global
     FROM facturas f
     ${facturaWorkflowPagoJoin}
     LEFT JOIN facturas_contabilizacion fc ON fc.factura_id = f.id
+    LEFT JOIN LATERAL (
+      SELECT m.id, m.estado, m.mensaje
+      FROM mensajes_hacienda m
+      WHERE m.factura_id = f.id OR m.clave = f.clave
+      ORDER BY m.creado_en DESC NULLS LAST, m.id DESC
+      LIMIT 1
+    ) mh ON true
     WHERE f.id = $1
     `,
     [id]
@@ -1097,6 +1180,8 @@ const listMensajesHacienda = async ({ sociedadId } = {}) => {
 module.exports = {
   listFacturas,
   listRetencionesPendientes,
+  getSociedadById,
+  listFacturasForPdfDownload,
   getFacturaById,
   getClaveByFacturaId,
   getLatestMensajeHaciendaByFacturaId,

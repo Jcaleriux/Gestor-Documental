@@ -25,6 +25,8 @@ const createRepoMock = (overrides = {}) => ({
         total_a_pagar: 1000,
         total_pendiente_global: 1000,
         has_mensaje_hacienda: true,
+        estado_hacienda: 'Aceptado',
+        mensaje_hacienda: 1,
       },
     ],
     meta: {
@@ -49,6 +51,12 @@ const createRepoMock = (overrides = {}) => ({
     },
   }),
   listRetencionesPendientes: jest.fn().mockResolvedValue([]),
+  getSociedadById: jest.fn().mockResolvedValue({
+    id: 10,
+    nombre_proyecto: 'BSP',
+    razon_social: 'Bio San Pablo',
+  }),
+  listFacturasForPdfDownload: jest.fn().mockResolvedValue([]),
   getFacturaById: jest.fn().mockResolvedValue(null),
   getClaveByFacturaId: jest.fn().mockResolvedValue(null),
   getLatestMensajeHaciendaByFacturaId: jest.fn().mockResolvedValue(null),
@@ -142,6 +150,8 @@ describe('facturasUseCases', () => {
           estado_documental: 'contabilizado',
           estado_workflow_pago: null,
           has_mensaje_hacienda: true,
+          estado_hacienda: 'Aceptado',
+          mensaje_hacienda: 1,
         },
       ],
       meta: {
@@ -245,6 +255,78 @@ describe('facturasUseCases', () => {
       sortDir: 'desc',
       page: 1,
       pageSize: 50,
+    });
+  });
+
+  test('getFacturasPdfSeleccionadas compone descarga con sello para facturas validas', async () => {
+    const repo = createRepoMock({
+      listFacturasForPdfDownload: jest.fn().mockResolvedValue([
+        {
+          id: 11,
+          factura_id: 11,
+          clave: '506111',
+          consecutivo: '00100001010000000011',
+          ruta_pdf: 'facturas/11.pdf',
+          sociedad_id: 10,
+          conta_fecha_contabilizacion: '2026-06-24',
+          conta_asiento: '123',
+          conta_centro_costo: '1101 - INSTALACION MECANICA',
+          conta_creado_por: 'Auxiliar Contable',
+        },
+      ]),
+    });
+    const mergeUnifiedPdfResourcesImpl = jest.fn().mockResolvedValue({
+      buffer: Buffer.from('pdf-unificado'),
+      omittedItems: ['Factura omitida'],
+    });
+    const useCases = createFacturasUseCases({
+      facturasRepo: repo,
+      dependencies: {
+        createFilesUseCasesImpl: () => ({
+          getPdfFile: ({ rawPath }) => ({ fullPath: `C:/docs/${rawPath}` }),
+        }),
+        readFileImpl: jest.fn().mockResolvedValue(Buffer.from('pdf-source')),
+        mergeUnifiedPdfResourcesImpl,
+        buildOmittedItemsHeaderImpl: jest.fn(() => 'Factura omitida'),
+      },
+    });
+
+    const result = await useCases.getFacturasPdfSeleccionadas({
+      sociedadId: '10',
+      facturaIds: ['11'],
+    });
+
+    expect(repo.getSociedadById).toHaveBeenCalledWith(10);
+    expect(repo.listFacturasForPdfDownload).toHaveBeenCalledWith({
+      ids: [11],
+      sociedadId: 10,
+    });
+    expect(mergeUnifiedPdfResourcesImpl).toHaveBeenCalledWith({
+      resources: [
+        expect.objectContaining({
+          key: 'factura-11-0',
+          path: 'facturas/11.pdf',
+          resourceType: 'factura_pdf',
+          omissionLabel: 'Factura 00100001010000000011 - PDF factura',
+          sidebarData: expect.objectContaining({
+            consecutivo: '00100001010000000011',
+            fields: expect.arrayContaining([
+              expect.objectContaining({
+                key: 'contabilizada_por',
+                value: 'Auxiliar Contable',
+              }),
+            ]),
+          }),
+        }),
+      ],
+      loadResourceBuffer: expect.any(Function),
+    });
+    expect(result).toMatchObject({
+      buffer: Buffer.from('pdf-unificado'),
+      filename: 'facturas_10_seleccionadas.pdf',
+      partialDownload: true,
+      omittedCount: 1,
+      omittedItemsHeader: 'Factura omitida',
     });
   });
 

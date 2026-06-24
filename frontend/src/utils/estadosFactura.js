@@ -40,3 +40,32 @@ export const estadoClassFactura = (estado) => {
       return 'badge-soft-secondary';
   }
 };
+
+export const estadoHaciendaLabel = ({ estado, mensaje } = {}) => {
+  const normalizedEstado = String(estado || '').trim();
+  if (normalizedEstado) {
+    return normalizedEstado;
+  }
+
+  switch (Number(mensaje)) {
+    case 1:
+      return 'Aceptado';
+    case 2:
+      return 'Aceptado parcial';
+    case 3:
+      return 'Rechazado';
+    default:
+      return 'Sin MH';
+  }
+};
+
+export const estadoHaciendaClass = ({ estado, mensaje } = {}) => {
+  const normalized = String(estado || estadoHaciendaLabel({ mensaje }))
+    .trim()
+    .toLowerCase();
+
+  if (normalized.includes('rechaz')) return 'badge-soft-danger';
+  if (normalized.includes('aceptado parcial')) return 'badge-soft-warning';
+  if (normalized.includes('acept')) return 'badge-soft-success';
+  return 'badge-soft-secondary';
+};

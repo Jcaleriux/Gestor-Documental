@@ -18,6 +18,22 @@ const getFactura = handleRequest((req) => {
   return useCases.getFactura({ id });
 }, 'Error fetching factura:', 'Error fetching factura');
 
+const getFacturasPdfSeleccionadas = handleRequest(async (req, res) => {
+  const pdfDownload = await useCases.getFacturasPdfSeleccionadas({
+    sociedadId: req.body?.sociedadId || req.query?.sociedadId,
+    facturaIds: req.body?.facturaIds || req.query?.facturaIds,
+  });
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${pdfDownload.filename}"`);
+  res.setHeader('X-Novogar-Partial-Download', pdfDownload.partialDownload ? '1' : '0');
+  res.setHeader('X-Novogar-Omitted-Count', String(pdfDownload.omittedCount || 0));
+  if (pdfDownload.omittedItemsHeader) {
+    res.setHeader('X-Novogar-Omitted-Items', pdfDownload.omittedItemsHeader);
+  }
+  res.send(pdfDownload.buffer);
+}, 'Error downloading selected facturas PDF:', 'Error downloading selected facturas PDF');
+
 const getMensajeHacienda = handleRequest((req) => {
   const { id } = req.params;
   return useCases.getMensajeHacienda({ id });
@@ -64,6 +80,7 @@ module.exports = {
   listFacturas,
   listRetencionesPendientes,
   getFactura,
+  getFacturasPdfSeleccionadas,
   getMensajeHacienda,
   getManifest,
   getNotaCreditoManifest,

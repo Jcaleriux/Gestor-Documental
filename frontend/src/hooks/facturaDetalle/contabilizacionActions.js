@@ -92,7 +92,6 @@ const buildContabilizacionPayload = ({ conta, workflowAction }) => {
       ? null
       : Number(nextConta.monto_nota_credito),
     workflow_action: workflowAction,
-    usuario: 'admin',
   };
 };
 
@@ -104,7 +103,6 @@ const buildRetencionPayload = ({
   monto,
   fecha_pago: retencionPagoFecha || null,
   notas: retencionPagoNotas || null,
-  usuario: 'admin'
 });
 
 const isPdfLikeFile = (file) => (
@@ -458,8 +456,7 @@ export const createContabilizacionActions = ({
         const fileBase64 = await toBase64(file);
         await facturaApi.uploadDocumentoRespaldo(id, {
           filename: file.name,
-          file_base64: fileBase64,
-          usuario: 'admin'
+          file_base64: fileBase64
         });
       }
 

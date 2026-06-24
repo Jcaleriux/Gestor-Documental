@@ -49,7 +49,11 @@ const mapFacturaRow = (row) => ({
   ),
   has_mensaje_hacienda: typeof row.has_mensaje_hacienda === 'boolean'
     ? row.has_mensaje_hacienda
-    : null
+    : null,
+  estado_hacienda: row.estado_hacienda || null,
+  mensaje_hacienda: row.mensaje_hacienda === undefined || row.mensaje_hacienda === null
+    ? null
+    : Number(row.mensaje_hacienda)
 });
 
 const mapRetencionPendienteRow = (row) => ({

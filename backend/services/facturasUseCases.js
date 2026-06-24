@@ -1,4 +1,4 @@
-const path = require('path');
+const fs = require('fs');
 const { assertFound, createError } = require('../utils/errors');
 const {
   mapFacturaRow,
@@ -9,6 +9,12 @@ const {
 } = require('../mappers/facturasMapper');
 const { runtimeConfig } = require('../config/runtime');
 const { createFacturasManifestResolver } = require('./facturasManifestResolver');
+const { createFilesUseCases } = require('./filesUseCases');
+const {
+  buildFacturaSidebarData,
+  buildOmittedItemsHeader,
+  mergeUnifiedPdfResources,
+} = require('./tramitesPagoUnifiedPdfSupport');
 
 const FACTURAS_SORT_FIELDS = new Set([
   'fecha_emision',
@@ -34,6 +40,7 @@ const FACTURAS_SORT_DIRS = new Set(['asc', 'desc']);
 const DEFAULT_FACTURAS_PAGE = 1;
 const DEFAULT_FACTURAS_PAGE_SIZE = 50;
 const MAX_FACTURAS_PAGE_SIZE = 200;
+const MAX_FACTURAS_PDF_DOWNLOAD_ITEMS = 100;
 const DATE_INPUT_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 const FACTURAS_DASHBOARD_PRESETS = new Set([
   'no_contabilizadas',
@@ -158,6 +165,39 @@ const normalizeDashboardPreset = (value) => {
 const toNumber = (value, fallback = 0) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const normalizeFacturaIds = (value) => {
+  const rawIds = Array.isArray(value)
+    ? value
+    : String(value || '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+  const ids = rawIds.map((item) => {
+    const parsed = Number(item);
+    if (!Number.isInteger(parsed) || parsed <= 0) {
+      throw createError(400, 'facturaIds invalidos');
+    }
+    return parsed;
+  });
+
+  const uniqueIds = Array.from(new Set(ids));
+  if (uniqueIds.length === 0) {
+    throw createError(400, 'Seleccione al menos una factura');
+  }
+
+  if (uniqueIds.length > MAX_FACTURAS_PDF_DOWNLOAD_ITEMS) {
+    throw createError(400, `No se pueden descargar mas de ${MAX_FACTURAS_PDF_DOWNLOAD_ITEMS} facturas a la vez`);
+  }
+
+  return uniqueIds;
+};
+
+const buildFacturasPdfDownloadFilename = ({ sociedadId }) => {
+  const safeSociedadId = String(sociedadId || 'sin_sociedad').replace(/[^a-zA-Z0-9_-]/g, '_');
+  return `facturas_${safeSociedadId}_seleccionadas.pdf`;
 };
 
 const mapFacturasListSummary = (summary = {}) => ({
@@ -399,12 +439,22 @@ const normalizeTiquetesListParams = ({
   };
 };
 
-const createFacturasUseCases = ({ facturasRepo }) => {
+const createFacturasUseCases = ({ facturasRepo, dependencies = {} }) => {
   if (!facturasRepo) {
     throw new Error('facturasRepo requerido');
   }
 
+  const {
+    createFilesUseCasesImpl = createFilesUseCases,
+    readFileImpl = fs.promises.readFile.bind(fs.promises),
+    mergeUnifiedPdfResourcesImpl = mergeUnifiedPdfResources,
+    buildOmittedItemsHeaderImpl = buildOmittedItemsHeader,
+  } = dependencies;
+
   const manifestResolver = createFacturasManifestResolver({
+    baseDir: runtimeConfig.storageBaseDir
+  });
+  const filesUseCases = createFilesUseCasesImpl({
     baseDir: runtimeConfig.storageBaseDir
   });
 
@@ -450,6 +500,72 @@ const createFacturasUseCases = ({ facturasRepo }) => {
     const row = await facturasRepo.getFacturaById(id);
     assertFound(row, 'Factura not found');
     return mapFacturaRow(row);
+  };
+
+  const getFacturasPdfSeleccionadas = async ({ sociedadId, facturaIds }) => {
+    const normalizedSociedadId = toOptionalPositiveInt(sociedadId, 'sociedadId');
+    if (!normalizedSociedadId) {
+      throw createError(400, 'sociedadId requerido');
+    }
+
+    const normalizedFacturaIds = normalizeFacturaIds(facturaIds);
+    const [sociedad, rows] = await Promise.all([
+      typeof facturasRepo.getSociedadById === 'function'
+        ? facturasRepo.getSociedadById(normalizedSociedadId)
+        : null,
+      facturasRepo.listFacturasForPdfDownload({
+        ids: normalizedFacturaIds,
+        sociedadId: normalizedSociedadId,
+      }),
+    ]);
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      throw createError(404, 'No se encontraron facturas para descargar.');
+    }
+
+    const foundIds = new Set(rows.map((row) => Number(row.id || row.factura_id)));
+    const missingIds = normalizedFacturaIds.filter((id) => !foundIds.has(id));
+    if (missingIds.length > 0) {
+      throw createError(404, 'Una o mas facturas no existen para la sociedad seleccionada.');
+    }
+
+    const resources = rows
+      .filter((row) => row?.ruta_pdf)
+      .map((row, index) => {
+        const facturaId = Number(row.id || row.factura_id);
+        const consecutivo = row.consecutivo || row.clave || facturaId;
+        return {
+          key: `factura-${facturaId}-${index}`,
+          path: row.ruta_pdf,
+          resourceType: 'factura_pdf',
+          sidebarData: buildFacturaSidebarData(row, { society: sociedad }),
+          omissionLabel: `Factura ${consecutivo} - PDF factura`,
+        };
+      });
+
+    if (resources.length === 0) {
+      throw createError(404, 'Las facturas seleccionadas no tienen PDF disponible.');
+    }
+
+    const { buffer, omittedItems } = await mergeUnifiedPdfResourcesImpl({
+      resources,
+      loadResourceBuffer: async (resource) => {
+        const { fullPath } = filesUseCases.getPdfFile({ rawPath: resource.path });
+        return readFileImpl(fullPath);
+      },
+    });
+
+    if (!buffer) {
+      throw createError(404, 'No se encontraron PDFs validos para descargar.');
+    }
+
+    return {
+      buffer,
+      filename: buildFacturasPdfDownloadFilename({ sociedadId: normalizedSociedadId }),
+      partialDownload: omittedItems.length > 0,
+      omittedCount: omittedItems.length,
+      omittedItemsHeader: buildOmittedItemsHeaderImpl(omittedItems),
+    };
   };
 
   const getMensajeHacienda = async ({ id }) => {
@@ -562,6 +678,7 @@ const createFacturasUseCases = ({ facturasRepo }) => {
     listFacturas,
     listRetencionesPendientes,
     getFactura,
+    getFacturasPdfSeleccionadas,
     getMensajeHacienda,
     getManifest,
     getNotaCreditoManifest,

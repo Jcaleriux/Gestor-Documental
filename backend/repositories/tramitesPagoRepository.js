@@ -975,7 +975,7 @@ const listDocumentosByTramite = async (tramiteId, client, options = {}) => {
       fc.asiento AS conta_asiento,
       fc.centro_costo AS conta_centro_costo,
       fc.metadata AS conta_metadata,
-      fc.creado_por AS conta_creado_por,
+      COALESCE(u_conta.nombre, fc.creado_por) AS conta_creado_por,
       fc.cuenta_contable AS conta_cuenta_contable,
       fc.proyecto AS conta_proyecto,
       fc.orden_compra AS conta_orden_compra,
@@ -1001,6 +1001,10 @@ const listDocumentosByTramite = async (tramiteId, client, options = {}) => {
     LEFT JOIN tablas_pago tp ON tp.id = fc.tabla_pago_id
     LEFT JOIN ordenes_compra oc ON oc.id = fc.orden_compra_id
     LEFT JOIN notas_credito nc ON nc.id = fc.nota_credito_id
+    LEFT JOIN usuarios u_conta ON (
+      LOWER(u_conta.email) = LOWER(fc.creado_por)
+      OR LOWER(split_part(u_conta.email, '@', 1)) = LOWER(fc.creado_por)
+    )
     LEFT JOIN LATERAL (
       SELECT COALESCE(
         jsonb_agg(

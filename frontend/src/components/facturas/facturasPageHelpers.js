@@ -47,6 +47,10 @@ export const FACTURAS_TABLE_HEADERS = Object.freeze([
     align: 'end',
   },
   {
+    key: 'hacienda',
+    label: FACTURAS_LABELS.columns.hacienda,
+  },
+  {
     key: 'estado',
     label: FACTURAS_LABELS.columns.estado,
     sortable: true,

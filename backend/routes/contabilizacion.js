@@ -56,7 +56,7 @@ router.post(
     metadata,
     usuario
   } = req.body || {};
-  const actorUsuario = usuario || req.user?.email || 'system';
+  const actorUsuario = req.user?.email || usuario || 'system';
 
   return useCases.upsertContabilizacion({
     facturaId,
@@ -93,7 +93,7 @@ router.post(
   handleRequest(async (req) => {
     const { facturaId } = req.params;
     const { filename, file_base64, metadata, usuario } = req.body || {};
-    const actorUsuario = usuario || req.user?.email || 'system';
+    const actorUsuario = req.user?.email || usuario || 'system';
 
     return useCases.uploadDocumentoRespaldo({
       facturaId,
@@ -125,7 +125,7 @@ router.post(
   handleRequest(async (req) => {
     const { facturaId } = req.params;
     const { monto, fecha_pago, notas, usuario } = req.body || {};
-    const actorUsuario = usuario || req.user?.email || 'system';
+    const actorUsuario = req.user?.email || usuario || 'system';
 
     return useCases.registrarPagoRetencion({
       facturaId,

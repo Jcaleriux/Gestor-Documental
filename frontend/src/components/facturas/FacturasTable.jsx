@@ -1,5 +1,10 @@
 import { formatAmount, formatDate, getMontoDocumento, getMoneda } from '../../utils/formatters.js';
-import { estadoClassFactura, estadoLabelFactura } from '../../utils/estadosFactura.js';
+import {
+  estadoClassFactura,
+  estadoHaciendaClass,
+  estadoHaciendaLabel,
+  estadoLabelFactura,
+} from '../../utils/estadosFactura.js';
 import { FACTURAS_LABELS } from '../../utils/uiLabels.js';
 import DataTable from '../common/DataTable.jsx';
 import EmptyState from '../common/EmptyState.jsx';
@@ -25,10 +30,32 @@ function FacturasTable({
   onCloseMenu,
   onViewMh,
   canEditContabilizacion,
+  selectedFacturas = new Set(),
+  allVisibleSelected = false,
+  onToggleFacturaSelection,
+  onToggleVisibleSelection,
 }) {
+  const hasItems = items.length > 0;
+  const tableHeaders = [
+    {
+      key: 'seleccion',
+      label: (
+        <input
+          type="checkbox"
+          aria-label="Marcar facturas visibles"
+          checked={hasItems && allVisibleSelected}
+          disabled={!hasItems}
+          onChange={onToggleVisibleSelection}
+        />
+      ),
+      headerClassName: 'facturas-selection-column',
+    },
+    ...headers,
+  ];
+
   return (
     <DataTable
-      headers={headers}
+      headers={tableHeaders}
       sortBy={sortBy}
       sortDir={sortDir}
       onSort={onSort}
@@ -44,6 +71,14 @@ function FacturasTable({
 
         return (
           <tr key={factura.id}>
+            <td className="facturas-selection-column">
+              <input
+                type="checkbox"
+                aria-label={`Marcar factura ${documentoPrincipal}`}
+                checked={selectedFacturas.has(factura.id)}
+                onChange={() => onToggleFacturaSelection?.(factura.id)}
+              />
+            </td>
             <td>
               <div className="factura-document-cell">
                 <div className="factura-document-title" title={documentoCompleto}>
@@ -70,6 +105,18 @@ function FacturasTable({
             </td>
             <td>
               <StatusBadge
+                label={estadoHaciendaLabel({
+                  estado: factura.estado_hacienda,
+                  mensaje: factura.mensaje_hacienda,
+                })}
+                className={estadoHaciendaClass({
+                  estado: factura.estado_hacienda,
+                  mensaje: factura.mensaje_hacienda,
+                })}
+              />
+            </td>
+            <td>
+              <StatusBadge
                 label={estadoLabelFactura(factura.estado)}
                 className={estadoClassFactura(factura.estado)}
               />
@@ -91,7 +138,7 @@ function FacturasTable({
 
       {!loading && items.length === 0 ? (
         <tr>
-          <td colSpan="6" className="py-4">
+          <td colSpan="8" className="py-4">
             <EmptyState className="text-center py-2">
               {FACTURAS_LABELS.emptyFilters}
             </EmptyState>

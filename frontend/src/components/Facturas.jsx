@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useFacturas } from '../hooks/useFacturas.js';
+import { facturasApi } from '../services/facturasApi.js';
 import { useFacturasFilters } from '../hooks/facturas/useFacturasFilters.js';
 import { useFacturasReport } from '../hooks/facturas/useFacturasReport.js';
 import { useFacturaRowActions } from '../hooks/facturas/useFacturaRowActions.js';
+import { downloadProtectedResource } from '../utils/protectedResources.js';
 import EmptyState from './common/EmptyState.jsx';
 import PageHeader from './common/PageHeader.jsx';
 import LoadingState from './common/LoadingState.jsx';
@@ -99,6 +101,19 @@ function Facturas({ sociedadId, canEditContabilizacion = false }) {
     scope: viewScope,
     visible: false,
   }));
+  const selectionScope = useMemo(
+    () => `${sociedadId || ''}:${dashboardPreset || ''}`,
+    [dashboardPreset, sociedadId],
+  );
+  const [selectionState, setSelectionState] = useState(() => ({
+    scope: selectionScope,
+    ids: new Set(),
+  }));
+  const [selectedPdfLoading, setSelectedPdfLoading] = useState(false);
+  const selectedFacturas = useMemo(
+    () => (selectionState.scope === selectionScope ? selectionState.ids : new Set()),
+    [selectionScope, selectionState],
+  );
   const showFilters = useMemo(() => buildScopedPanelVisible({
     scope: viewScope,
     state: filtersPanelState,
@@ -181,6 +196,86 @@ function Facturas({ sociedadId, canEditContabilizacion = false }) {
     }
   }, [setActionError, sociedadId]);
 
+  const visibleFacturaIds = useMemo(
+    () => items.map((factura) => factura.id).filter(Boolean),
+    [items],
+  );
+
+  const selectedCount = selectedFacturas.size;
+  const allVisibleSelected = visibleFacturaIds.length > 0
+    && visibleFacturaIds.every((facturaId) => selectedFacturas.has(facturaId));
+
+  const updateSelectedFacturas = useCallback((updater) => {
+    setSelectionState((current) => {
+      const currentIds = current.scope === selectionScope ? current.ids : new Set();
+      const nextIds = typeof updater === 'function' ? updater(currentIds) : updater;
+      return {
+        scope: selectionScope,
+        ids: nextIds instanceof Set ? nextIds : new Set(),
+      };
+    });
+  }, [selectionScope]);
+
+  const toggleFacturaSelection = useCallback((facturaId) => {
+    updateSelectedFacturas((current) => {
+      const next = new Set(current);
+      if (next.has(facturaId)) {
+        next.delete(facturaId);
+      } else {
+        next.add(facturaId);
+      }
+      return next;
+    });
+  }, [updateSelectedFacturas]);
+
+  const marcarFacturasVisibles = useCallback(() => {
+    updateSelectedFacturas((current) => {
+      const next = new Set(current);
+      visibleFacturaIds.forEach((facturaId) => next.add(facturaId));
+      return next;
+    });
+  }, [updateSelectedFacturas, visibleFacturaIds]);
+
+  const toggleFacturasVisibles = useCallback(() => {
+    updateSelectedFacturas((current) => {
+      const next = new Set(current);
+      if (visibleFacturaIds.length > 0 && visibleFacturaIds.every((facturaId) => next.has(facturaId))) {
+        visibleFacturaIds.forEach((facturaId) => next.delete(facturaId));
+      } else {
+        visibleFacturaIds.forEach((facturaId) => next.add(facturaId));
+      }
+      return next;
+    });
+  }, [updateSelectedFacturas, visibleFacturaIds]);
+
+  const desmarcarFacturas = useCallback(() => {
+    updateSelectedFacturas(new Set());
+  }, [updateSelectedFacturas]);
+
+  const descargarFacturasSeleccionadas = useCallback(async () => {
+    if (!sociedadId || selectedFacturas.size === 0) {
+      return;
+    }
+
+    try {
+      setSelectedPdfLoading(true);
+      setActionError('');
+      const request = facturasApi.buildFacturasPdfSeleccionadasRequest({
+        sociedadId,
+        facturaIds: Array.from(selectedFacturas),
+      });
+
+      await downloadProtectedResource(request.url, {
+        ...request.options,
+        fallbackFilename: 'facturas_seleccionadas.pdf',
+      });
+    } catch (err) {
+      setActionError(err?.message || 'No se pudo descargar el PDF de facturas seleccionadas.');
+    } finally {
+      setSelectedPdfLoading(false);
+    }
+  }, [selectedFacturas, setActionError, sociedadId]);
+
   const activeFilterChips = useMemo(() => buildFilterChips({
     dashboardPreset: activeDashboardPreset,
     search,
@@ -252,6 +347,32 @@ function Facturas({ sociedadId, canEditContabilizacion = false }) {
             />
             <div className="facturas-toolbar-actions">
               <button
+                className="btn btn-outline-primary"
+                type="button"
+                onClick={descargarFacturasSeleccionadas}
+                disabled={!sociedadId || selectedCount === 0 || selectedPdfLoading}
+              >
+                {selectedPdfLoading
+                  ? FACTURAS_LABELS.downloadingSelectedPdfButton
+                  : FACTURAS_LABELS.downloadSelectedPdfButton}
+              </button>
+              <button
+                className="btn btn-outline-secondary"
+                type="button"
+                onClick={marcarFacturasVisibles}
+                disabled={visibleFacturaIds.length === 0}
+              >
+                {FACTURAS_LABELS.markVisibleButton}
+              </button>
+              <button
+                className="btn btn-outline-secondary"
+                type="button"
+                onClick={desmarcarFacturas}
+                disabled={selectedCount === 0}
+              >
+                {FACTURAS_LABELS.clearSelectionButton}
+              </button>
+              <button
                 className="btn btn-outline-secondary"
                 type="button"
                 onClick={() => setFiltersPanelState({
@@ -318,6 +439,12 @@ function Facturas({ sociedadId, canEditContabilizacion = false }) {
             </div>
           ) : null}
 
+          {selectedCount > 0 ? (
+            <div className="facturas-selection-summary">
+              {FACTURAS_LABELS.selectedSummary.replace('{count}', String(selectedCount))}
+            </div>
+          ) : null}
+
           <FacturasFiltersPanel
             visible={showFilters}
             estado={estado}
@@ -376,6 +503,10 @@ function Facturas({ sociedadId, canEditContabilizacion = false }) {
                   onCloseMenu={closeMenu}
                   onViewMh={viewMensajeHacienda}
                   canEditContabilizacion={canEditContabilizacion}
+                  selectedFacturas={selectedFacturas}
+                  allVisibleSelected={allVisibleSelected}
+                  onToggleFacturaSelection={toggleFacturaSelection}
+                  onToggleVisibleSelection={toggleFacturasVisibles}
                 />
               </SectionCard>
 

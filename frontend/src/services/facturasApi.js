@@ -136,6 +136,16 @@ const listMensajesHacienda = (params) => axios.get('/api/mensajes-hacienda', { p
 const getMensajeHacienda = (id) => axios.get(`/api/facturas/${id}/mensaje-hacienda`);
 const getFacturaManifest = (id) => axios.get(`/api/facturas/${id}/manifest`);
 const getNotaCreditoManifest = (id) => axios.get(`/api/notas-credito/${id}/manifest`);
+const buildFacturasPdfSeleccionadasRequest = ({ sociedadId, facturaIds }) => ({
+  url: '/api/facturas/pdf-seleccionadas',
+  options: {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ sociedadId, facturaIds }),
+  },
+});
 
 const listAllFacturas = async (params = {}, options = {}) => {
   const {
@@ -208,5 +218,6 @@ export const facturasApi = {
   listMensajesHacienda,
   getMensajeHacienda,
   getFacturaManifest,
-  getNotaCreditoManifest
+  getNotaCreditoManifest,
+  buildFacturasPdfSeleccionadasRequest
 };

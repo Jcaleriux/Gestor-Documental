@@ -4,6 +4,7 @@ const {
   listFacturas,
   listRetencionesPendientes,
   getFactura,
+  getFacturasPdfSeleccionadas,
   getMensajeHacienda,
   getManifest,
   getNotaCreditoManifest,
@@ -16,6 +17,7 @@ const { PERMISSIONS } = require('../domain/permissions');
 const router = express.Router({ mergeParams: true });
 
 router.get('/facturas', requirePermission(PERMISSIONS.DOCUMENTOS_VER), listFacturas);
+router.post('/facturas/pdf-seleccionadas', requirePermission(PERMISSIONS.DOCUMENTOS_VER), getFacturasPdfSeleccionadas);
 router.get('/retenciones-pendientes', requirePermission(PERMISSIONS.DOCUMENTOS_VER), listRetencionesPendientes);
 router.get('/facturas/:id', requirePermission(PERMISSIONS.DOCUMENTOS_VER), getFactura);
 router.get('/facturas/:id/mensaje-hacienda', requirePermission(PERMISSIONS.DOCUMENTOS_VER), getMensajeHacienda);
