@@ -33,6 +33,15 @@ const estadosFlujoPagoFacturasExpression = `
     '${FACTURA_ESTADOS.PAGADO_PARCIALMENTE}'
   )
 `;
+const estadosVencimientoFacturasExpression = `
+  (
+    '${FACTURA_ESTADOS.NO_CONTABILIZADO}',
+    '${FACTURA_ESTADOS.EN_REVISION}',
+    '${FACTURA_ESTADOS.CONTABILIZADO}',
+    '${FACTURA_ESTADOS.EN_TRAMITE_PAGO}',
+    '${FACTURA_ESTADOS.PAGADO_PARCIALMENTE}'
+  )
+`;
 const estadoRetencionExpression = `
   CASE
     WHEN ${retencionPendienteExpression} <= 0 THEN 'pagada'
@@ -311,7 +320,7 @@ const buildFacturasListWhere = ({
 
   if (dashboardPreset === 'vencidas') {
     clauses.push(`
-      COALESCE(fe.estado, '${FACTURA_ESTADOS.NO_CONTABILIZADO}') IN ${estadosFlujoPagoFacturasExpression}
+      COALESCE(fe.estado, '${FACTURA_ESTADOS.NO_CONTABILIZADO}') IN ${estadosVencimientoFacturasExpression}
     `);
     clauses.push('fe.fecha_vencimiento IS NOT NULL');
     clauses.push('fe.fecha_vencimiento < CURRENT_DATE');

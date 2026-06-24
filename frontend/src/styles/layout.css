@@ -18,12 +18,17 @@
   width: 272px;
   background: #ffffff;
   border-right: 1px solid var(--app-border);
+  box-sizing: border-box;
   padding: 18px 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 18px;
   transition: width 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-  position: relative;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   z-index: 40;
 }
 
@@ -111,6 +116,7 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .sidebar-section {
@@ -218,6 +224,11 @@
   padding: 4px 0;
 }
 
+.sidebar.collapsed:not(.mobile-open) .sidebar-scroll,
+.sidebar.collapsed:not(.mobile-open) .sidebar-section {
+  align-items: center;
+}
+
 .sidebar.collapsed:not(.mobile-open) .brand-copy,
 .sidebar.collapsed:not(.mobile-open) .section-label,
 .sidebar.collapsed:not(.mobile-open) .section-chevron,
@@ -227,6 +238,7 @@
 }
 
 .sidebar.collapsed:not(.mobile-open) .section-toggle {
+  width: 44px;
   justify-content: center;
   padding: 10px 0;
 }
@@ -250,6 +262,34 @@
   justify-content: center;
   padding-left: 0;
   padding-right: 0;
+}
+
+.sidebar-tooltip {
+  position: fixed;
+  z-index: 80;
+  transform: translateY(-50%);
+  pointer-events: none;
+  max-width: 220px;
+  padding: 7px 10px;
+  border-radius: var(--app-radius-md);
+  background: #172033;
+  color: #ffffff;
+  box-shadow: var(--app-shadow-md);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.sidebar-tooltip::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -5px;
+  width: 10px;
+  height: 10px;
+  background: #172033;
+  transform: translateY(-50%) rotate(45deg);
 }
 
 .sidebar-footer {
@@ -427,6 +467,7 @@
   background: var(--app-bg);
   color: var(--app-text);
   font-size: var(--app-font-size);
+  --app-topbar-height: 52px;
 }
 
 .sidebar {
@@ -539,6 +580,10 @@
   height: 52px;
   padding: 0 18px;
   gap: 14px;
+  position: sticky;
+  top: 0;
+  z-index: 35;
+  flex-shrink: 0;
 }
 
 .topbar-actions {

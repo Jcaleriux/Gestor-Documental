@@ -3,11 +3,15 @@ export const estadoLabelFactura = (estado) => {
 
   switch (estado) {
     case 'no_contabilizado':
-      return 'No contabilizado';
+      return 'No contabilizada';
+    case 'contabilizado':
+      return 'Contabilizada';
     case 'en_revision':
-      return 'En revision contable';
+      return 'En revisión contable';
     case 'en_tramite_pago':
-      return 'En tramite de pago';
+      return 'En trámite de pago';
+    case 'pagado':
+      return 'Pagada';
     case 'pagado_parcialmente':
       return 'Pagado parcialmente';
     default:

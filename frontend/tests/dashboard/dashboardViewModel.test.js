@@ -100,13 +100,13 @@ test('buildDashboardViewModel arma una vista general unica para todos los usuari
     viewModel.cards.map((card) => card.title),
     [
       'Facturas no contabilizadas',
-      'Facturas disponibles para tramitar',
-      'En tramite de pagos',
-      'Pagadas',
-      'En revision contabilidad',
-      'Por vencer 7 dias',
+      'Listas para trámite',
       'Vencidas',
-      'Recibidas ultimo mes',
+      'En trámite de pago',
+      'En revisión contable',
+      'Vencen en 7 días',
+      'Pagadas',
+      'Recibidas últimos 30 días',
     ],
   );
   assert.equal(
@@ -122,6 +122,30 @@ test('buildDashboardViewModel arma una vista general unica para todos los usuari
     '/facturas?dashboardPreset=recibidas_ultimo_mes&returnTo=%2F&returnLabel=Dashboard',
   );
   assert.deepEqual(viewModel.monedas, ['CRC', 'USD']);
+  assert.deepEqual(
+    viewModel.currencySummary.map((entry) => entry.moneda),
+    ['CRC', 'USD'],
+  );
+  assert.deepEqual(
+    viewModel.currencySummary[0].items.map((item) => `${item.label}:${item.count}:${item.total}`),
+    [
+      'No contabilizadas:4:1000',
+      'Contabilizadas:4:5000',
+      'En trámite:2:900',
+      'Pagadas:6:7000',
+    ],
+  );
+  assert.deepEqual(
+    viewModel.statusDistribution.map((item) => `${item.key}:${item.value}`),
+    [
+      'no_contabilizadas:5',
+      'en_revision:2',
+      'contabilizadas:6',
+      'en_tramite:3',
+      'pagadas:7',
+      'vencidas:2',
+    ],
+  );
   assert.equal(viewModel.visibleRecentDocs.length, 4);
   assert.deepEqual(
     viewModel.topProveedoresPorMoneda,

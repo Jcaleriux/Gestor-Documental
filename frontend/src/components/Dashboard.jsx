@@ -5,6 +5,7 @@ import DashboardMetricCard from './dashboard/DashboardMetricCard.jsx';
 import DashboardRecentDocumentsSection from './dashboard/DashboardRecentDocumentsSection.jsx';
 import DashboardProvidersSection from './dashboard/DashboardProvidersSection.jsx';
 import DashboardCurrencyTotalsSection from './dashboard/DashboardCurrencyTotalsSection.jsx';
+import DashboardStatusChartSection from './dashboard/DashboardStatusChartSection.jsx';
 import { LOADING_LABELS } from '../utils/uiLabels.js';
 
 function Dashboard({
@@ -16,9 +17,9 @@ function Dashboard({
   const { stats, workQueue, recentDocs, loading, error, refetch } = useDashboard({ sociedadId });
   const {
     cards,
-    monedas,
+    currencySummary,
+    statusDistribution,
     topProveedoresPorMoneda,
-    totalesPorMoneda,
     visibleRecentDocs,
     visibleSociedadName,
   } = useDashboardViewModel({
@@ -74,13 +75,14 @@ function Dashboard({
       </div>
 
       <div className="row g-3">
-        <div className="col-12 col-xl-7">
+        <div className="col-12 col-xl-7 d-flex flex-column gap-3">
           <DashboardRecentDocumentsSection recentDocs={visibleRecentDocs} />
+          <DashboardProvidersSection groups={topProveedoresPorMoneda} />
         </div>
 
         <div className="col-12 col-xl-5 d-flex flex-column gap-3">
-          <DashboardCurrencyTotalsSection monedas={monedas} totalesPorMoneda={totalesPorMoneda} />
-          <DashboardProvidersSection groups={topProveedoresPorMoneda} />
+          <DashboardCurrencyTotalsSection currencySummary={currencySummary} />
+          <DashboardStatusChartSection items={statusDistribution} />
         </div>
       </div>
     </div>

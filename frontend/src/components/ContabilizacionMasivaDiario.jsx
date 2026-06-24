@@ -210,6 +210,8 @@ function ReportRow({
 function ContabilizacionMasivaDiario({ sociedadId }) {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const [applyResult, setApplyResult] = useState(null);
   const [error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [resolutionMap, setResolutionMap] = useState(() => new Map());
@@ -242,7 +244,17 @@ function ContabilizacionMasivaDiario({ sociedadId }) {
   }, [resolutions, sociedadId]);
 
   useEffect(() => {
-    loadReport();
+    let isActive = true;
+
+    void Promise.resolve().then(() => {
+      if (isActive) {
+        void loadReport();
+      }
+    });
+
+    return () => {
+      isActive = false;
+    };
   }, [loadReport, resolutionSignature]);
 
   const setResolution = (asiento, resolution) => {
@@ -255,6 +267,29 @@ function ContabilizacionMasivaDiario({ sociedadId }) {
 
   const clearResolutions = () => {
     setResolutionMap(new Map());
+    setApplyResult(null);
+  };
+
+  const applyReadyItems = async () => {
+    if (!sociedadId || readyToApply <= 0) {
+      return;
+    }
+
+    try {
+      setApplying(true);
+      setError('');
+      setApplyResult(null);
+      const response = await contabilizacionMasivaApi.aplicarDiarioDocumentos({
+        sociedad_id: Number(sociedadId),
+        resolutions,
+      });
+      setApplyResult(response.data?.data || null);
+      await loadReport();
+    } catch (err) {
+      setError(err.response?.data?.error || 'No se pudo aplicar la contabilizacion masiva.');
+    } finally {
+      setApplying(false);
+    }
   };
 
   const items = Array.isArray(report?.items) ? report.items : [];
@@ -296,10 +331,10 @@ function ContabilizacionMasivaDiario({ sociedadId }) {
                 )}
               </div>
               <div className="d-flex gap-2">
-                <button type="button" className="btn btn-outline-secondary btn-sm" disabled={loading} onClick={clearResolutions}>
+                <button type="button" className="btn btn-outline-secondary btn-sm" disabled={loading || applying} onClick={clearResolutions}>
                   Limpiar resoluciones
                 </button>
-                <button type="button" className="btn btn-primary btn-sm" disabled={loading} onClick={loadReport}>
+                <button type="button" className="btn btn-primary btn-sm" disabled={loading || applying} onClick={loadReport}>
                   {loading ? 'Actualizando...' : 'Actualizar reporte'}
                 </button>
               </div>
@@ -307,6 +342,15 @@ function ContabilizacionMasivaDiario({ sociedadId }) {
           </SectionCard>
 
           {error && <div className="alert alert-danger">{error}</div>}
+          {applyResult && (
+            <div className="alert alert-success">
+              Aplicacion completada: {applyResult.summary?.applied || 0} aplicadas,
+              {' '}{applyResult.summary?.created || 0} nuevas,
+              {' '}{applyResult.summary?.created_assigned || 0} asignadas,
+              {' '}{applyResult.summary?.updated || 0} actualizadas,
+              {' '}{applyResult.summary?.skipped || 0} omitidas.
+            </div>
+          )}
           {loading && !report && <LoadingState label="Analizando diario..." />}
 
           {report && (
@@ -330,16 +374,27 @@ function ContabilizacionMasivaDiario({ sociedadId }) {
                       {readyToApply} asientos listos · {blockers} requieren resolucion · {report.summary.skipped || 0} saltados
                     </div>
                   </div>
-                  <select
-                    className="form-select form-select-sm"
-                    style={{ maxWidth: 260 }}
-                    value={statusFilter}
-                    onChange={(event) => setStatusFilter(event.target.value)}
-                  >
-                    {Object.entries(STATUS_LABELS).map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
-                    ))}
-                  </select>
+                  <div className="d-flex flex-wrap gap-2 align-items-center">
+                    <button
+                      type="button"
+                      className="btn btn-success btn-sm"
+                      disabled={loading || applying || readyToApply <= 0}
+                      onClick={applyReadyItems}
+                    >
+                      {applying ? 'Aplicando...' : `Aplicar filas listas (${readyToApply})`}
+                    </button>
+                    <select
+                      className="form-select form-select-sm"
+                      style={{ maxWidth: 260 }}
+                      value={statusFilter}
+                      disabled={applying}
+                      onChange={(event) => setStatusFilter(event.target.value)}
+                    >
+                      {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                        <option key={value} value={value}>{label}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 {filteredItems.length === 0 ? (
@@ -363,7 +418,7 @@ function ContabilizacionMasivaDiario({ sociedadId }) {
                             key={item.asiento}
                             item={item}
                             sociedadId={sociedadId}
-                            disabled={loading}
+                            disabled={loading || applying}
                             onSkip={(asiento) => setResolution(asiento, { action: 'skip' })}
                             onAssign={(asiento, facturaId) => setResolution(asiento, {
                               action: 'assign',

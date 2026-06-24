@@ -3,12 +3,16 @@ const { validateBody } = require('../middleware/validate');
 const { requirePermission } = require('../middleware/permissionsMiddleware');
 const { PERMISSIONS } = require('../domain/permissions');
 const { handleRequest } = require('../utils/http');
+const { withTransaction } = require('../db/withTransaction');
 const { analizarDiarioDocumentosSchema } = require('../validation/schemas');
 const repo = require('../repositories/contabilizacionMasivaRepository');
 const { createContabilizacionMasivaUseCases } = require('../services/contabilizacionMasivaUseCases');
 
 const router = express.Router({ mergeParams: true });
-const useCases = createContabilizacionMasivaUseCases({ repo });
+const useCases = createContabilizacionMasivaUseCases({
+  repo,
+  runInTransaction: (handler) => withTransaction(() => repo.getClient(), handler)
+});
 
 router.post(
   '/contabilizacion-masiva/diario-documentos/analizar',
@@ -23,6 +27,23 @@ router.post(
       resolutions
     });
   }, 'Error analyzing diario documentos:', 'Error analyzing diario documentos')
+);
+
+router.post(
+  '/contabilizacion-masiva/diario-documentos/aplicar',
+  requirePermission(PERMISSIONS.DOCUMENTOS_CONTABILIZAR),
+  validateBody(analizarDiarioDocumentosSchema, { message: 'Datos de aplicacion invalidos' }),
+  handleRequest(async (req) => {
+    const { sociedad_id, file_path, resolutions } = req.body || {};
+    const actorUsuario = req.user?.email || req.user?.nombre || 'system';
+
+    return useCases.applyDiarioDocumentos({
+      sociedadId: sociedad_id,
+      filePath: file_path || undefined,
+      resolutions,
+      usuario: actorUsuario
+    });
+  }, 'Error applying diario documentos:', 'Error applying diario documentos')
 );
 
 router.get(

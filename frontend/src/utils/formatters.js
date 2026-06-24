@@ -31,7 +31,11 @@ export const formatAmount = (value) => {
 export const formatDate = (value) => {
   const date = toDisplayDate(value);
   if (!date) return '-';
-  return date.toLocaleDateString(COSTA_RICA_LOCALE);
+  return date.toLocaleDateString(COSTA_RICA_LOCALE, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
 };
 
 export const formatDateTime = (value) => {

@@ -5,6 +5,11 @@ const analizarDiarioDocumentos = (payload) => axios.post(
   payload
 );
 
+const aplicarDiarioDocumentos = (payload) => axios.post(
+  '/api/contabilizacion-masiva/diario-documentos/aplicar',
+  payload
+);
+
 const buscarCandidatos = ({ sociedadId, query, limit = 10 }) => axios.get(
   '/api/contabilizacion-masiva/diario-documentos/candidatos',
   {
@@ -18,5 +23,6 @@ const buscarCandidatos = ({ sociedadId, query, limit = 10 }) => axios.get(
 
 export const contabilizacionMasivaApi = {
   analizarDiarioDocumentos,
+  aplicarDiarioDocumentos,
   buscarCandidatos,
 };

@@ -37,6 +37,15 @@ const monedaFacturaExpression = `
     'CRC'
   )
 `;
+const estadosConVencimientoVisible = `
+  (
+    '${FACTURA_ESTADOS.NO_CONTABILIZADO}',
+    '${FACTURA_ESTADOS.EN_REVISION}',
+    '${FACTURA_ESTADOS.CONTABILIZADO}',
+    '${FACTURA_ESTADOS.EN_TRAMITE_PAGO}',
+    '${FACTURA_ESTADOS.PAGADO_PARCIALMENTE}'
+  )
+`;
 
 const getFacturasStats = async ({ sociedadId } = {}) => {
   const params = sociedadId ? [sociedadId] : [];
@@ -276,7 +285,7 @@ const getCuentasPagarResumenPorMoneda = async ({ sociedadId } = {}) => {
       '${FACTURA_ESTADOS.PAGADO_PARCIALMENTE}'
     )
   `;
-  const whereClauses = [`${facturaEstadoOperativoExpression} IN ${estadosFlujoPago}`];
+  const whereClauses = [`${facturaEstadoOperativoExpression} IN ${estadosConVencimientoVisible}`];
 
   if (sociedadId) {
     whereClauses.push('f.sociedad_id = $1');
@@ -288,8 +297,15 @@ const getCuentasPagarResumenPorMoneda = async ({ sociedadId } = {}) => {
     `
     SELECT
       ${monedaFacturaExpression} AS moneda,
-      COUNT(*)::int AS docs_por_pagar,
-      COALESCE(SUM(${totalAPagarExpression}), 0) AS monto_por_pagar,
+      COUNT(*) FILTER (
+        WHERE ${facturaEstadoOperativoExpression} IN ${estadosFlujoPago}
+      )::int AS docs_por_pagar,
+      COALESCE(SUM(
+        CASE WHEN ${facturaEstadoOperativoExpression} IN ${estadosFlujoPago}
+          THEN ${totalAPagarExpression}
+          ELSE 0
+        END
+      ), 0) AS monto_por_pagar,
       COUNT(*) FILTER (
         WHERE fc.fecha_vencimiento IS NOT NULL
           AND fc.fecha_vencimiento < CURRENT_DATE

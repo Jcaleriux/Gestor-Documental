@@ -13,15 +13,15 @@ const sections = [
 
 test('buildExpandedSectionsState completa defaults y conserva preferencias conocidas', () => {
   assert.deepEqual(
-    buildExpandedSectionsState(sections, { general: false, desconocida: false }),
+    buildExpandedSectionsState(sections, { general: true, desconocida: true }),
     {
-      general: false,
-      compras: true,
+      general: true,
+      compras: false,
     },
   );
 });
 
-test('buildVisibleExpandedSections abre la seccion activa cuando cambia el pathname', () => {
+test('buildVisibleExpandedSections mantiene cerrada la seccion activa por defecto', () => {
   assert.deepEqual(
     buildVisibleExpandedSections({
       sections,
@@ -32,7 +32,7 @@ test('buildVisibleExpandedSections abre la seccion activa cuando cambia el pathn
     }),
     {
       general: false,
-      compras: true,
+      compras: false,
     },
   );
 });

@@ -227,23 +227,11 @@ function Facturas({ sociedadId, canEditContabilizacion = false }) {
       <PageHeader
         title={FACTURAS_LABELS.pageTitle}
         subtitle={FACTURAS_LABELS.pageSubtitle}
-        actions={(
-          <div className="d-flex gap-2">
-            {returnContext.returnTo ? (
-              <Link className="btn btn-outline-secondary" to={returnContext.returnTo}>
-                {getReturnActionLabel(returnContext.returnLabel)}
-              </Link>
-            ) : null}
-            <button
-              className="btn btn-outline-secondary"
-              type="button"
-              onClick={exportReport}
-              disabled={!sociedadId || reportLoading}
-            >
-              {reportLoading ? FACTURAS_LABELS.exportingReportButton : FACTURAS_LABELS.exportReportButton}
-            </button>
-          </div>
-        )}
+        actions={returnContext.returnTo ? (
+          <Link className="btn btn-outline-secondary" to={returnContext.returnTo}>
+            {getReturnActionLabel(returnContext.returnLabel)}
+          </Link>
+        ) : null}
       />
 
       <ActionAlerts error={actionError || reportError} message={reportMessage} className="mb-0" />
@@ -256,7 +244,7 @@ function Facturas({ sociedadId, canEditContabilizacion = false }) {
 
       {sociedadId ? (
         <>
-          <FiltersBar className="facturas-toolbar">
+          <FiltersBar className="facturas-toolbar facturas-sticky-toolbar">
             <SearchInput
               placeholder={FACTURAS_LABELS.searchPlaceholder}
               value={search}
@@ -280,6 +268,14 @@ function Facturas({ sociedadId, canEditContabilizacion = false }) {
                 disabled={!hasActiveFilters}
               >
                 {FACTURAS_LABELS.resetFiltersButton}
+              </button>
+              <button
+                className="btn btn-outline-secondary"
+                type="button"
+                onClick={exportReport}
+                disabled={!sociedadId || reportLoading}
+              >
+                {reportLoading ? FACTURAS_LABELS.exportingReportButton : FACTURAS_LABELS.exportReportButton}
               </button>
               {error && items.length > 0 ? (
                 <button

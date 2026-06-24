@@ -1,5 +1,83 @@
+import { useState } from 'react';
 import { FACTURA_DETALLE_LABELS } from '../../../utils/uiLabels';
 import CentrosCostoDistributionField from './CentrosCostoDistributionField.jsx';
+
+const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+const DISPLAY_DATE_PATTERN = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+
+const toDisplayDate = (value) => {
+  const match = String(value || '').match(ISO_DATE_PATTERN);
+  if (!match) return '';
+
+  const [, year, month, day] = match;
+  return `${day}/${month}/${year}`;
+};
+
+const toIsoDate = (value) => {
+  const match = String(value || '').trim().match(DISPLAY_DATE_PATTERN);
+  if (!match) return '';
+
+  const [, day, month, year] = match;
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
+  const isValid = date.getFullYear() === Number(year)
+    && date.getMonth() === Number(month) - 1
+    && date.getDate() === Number(day);
+
+  return isValid ? `${year}-${month}-${day}` : '';
+};
+
+const normalizeDisplayDateInput = (value) => {
+  const digits = String(value || '').replace(/\D/g, '').slice(0, 8);
+  const parts = [
+    digits.slice(0, 2),
+    digits.slice(2, 4),
+    digits.slice(4, 8),
+  ].filter(Boolean);
+
+  return parts.join('/');
+};
+
+function AccountingDateInput({
+  value,
+  onChange,
+  disabled = false
+}) {
+  const [draftValue, setDraftValue] = useState(null);
+  const displayValue = draftValue ?? toDisplayDate(value);
+
+  const handleChange = (event) => {
+    const nextDisplayValue = normalizeDisplayDateInput(event.target.value);
+
+    setDraftValue(nextDisplayValue);
+
+    if (nextDisplayValue === '') {
+      onChange({ target: { value: '' } });
+      return;
+    }
+
+    const nextIsoDate = toIsoDate(nextDisplayValue);
+    if (nextIsoDate) {
+      onChange({ target: { value: nextIsoDate } });
+    }
+  };
+
+  const handleBlur = () => {
+    setDraftValue(null);
+  };
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      placeholder="dd/mm/aaaa"
+      className="form-control"
+      value={displayValue}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      disabled={disabled}
+    />
+  );
+}
 
 function SectionTitle({ children }) {
   return (
@@ -25,9 +103,7 @@ function ContaMainFields({
 
       <div className="col-6">
         <label className="form-label">{FACTURA_DETALLE_LABELS.contabilizacion.fechaVencimiento}</label>
-        <input
-          type="date"
-          className="form-control"
+        <AccountingDateInput
           value={conta.fecha_vencimiento}
           onChange={handleContaChange('fecha_vencimiento')}
           disabled={disabled}
@@ -35,9 +111,7 @@ function ContaMainFields({
       </div>
       <div className="col-6">
         <label className="form-label">{FACTURA_DETALLE_LABELS.contabilizacion.fechaContabilizacion}</label>
-        <input
-          type="date"
-          className="form-control"
+        <AccountingDateInput
           value={conta.fecha_contabilizacion}
           onChange={handleContaChange('fecha_contabilizacion')}
           disabled={disabled}
