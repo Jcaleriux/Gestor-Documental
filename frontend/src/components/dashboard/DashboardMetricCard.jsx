@@ -35,19 +35,17 @@ function DashboardMetricCard({ card }) {
   const cardContent = (
     <div className={`card stat-card shadow-sm border-0 h-100${card.linkTo ? ' stat-card-clickable' : ''}`}>
       <div className="card-body">
-        <div className="d-flex justify-content-between align-items-start gap-3">
-          <div className="w-100">
-            <div className="stat-title">{card.title}</div>
-            <div className="stat-value">{card.value}</div>
-            <DashboardMetricBreakdown
-              label={card.breakdownLabel}
-              items={card.breakdownItems}
-              type={card.breakdownType}
-              emptyLabel={card.emptyLabel}
-              summaryText={card.summaryText}
-            />
-          </div>
-          <div className={`stat-icon bg-soft-${card.tone}`}>{card.icon}</div>
+        <div className="stat-card-accent" data-tone={card.tone} />
+        <div className="w-100">
+          <div className="stat-title">{card.title}</div>
+          <div className="stat-value">{card.value}</div>
+          <DashboardMetricBreakdown
+            label={card.breakdownLabel}
+            items={card.breakdownItems}
+            type={card.breakdownType}
+            emptyLabel={card.emptyLabel}
+            summaryText={card.summaryText}
+          />
         </div>
         {card.linkTo ? (
           <div className="stat-card-hover-hint" aria-hidden="true">

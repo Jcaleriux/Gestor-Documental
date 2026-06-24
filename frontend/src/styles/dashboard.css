@@ -127,6 +127,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .stat-card-link {
@@ -185,6 +186,34 @@
   font-size: 2rem;
   font-weight: 700;
   color: #1d2939;
+}
+
+.stat-card-accent {
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  margin-bottom: 10px;
+  background: #d0d5dd;
+}
+
+.stat-card-accent[data-tone="primary"] {
+  background: #2b5ce6;
+}
+
+.stat-card-accent[data-tone="info"] {
+  background: #0ea5a4;
+}
+
+.stat-card-accent[data-tone="warning"] {
+  background: #f59e0b;
+}
+
+.stat-card-accent[data-tone="danger"] {
+  background: #ef4444;
+}
+
+.stat-card-accent[data-tone="success"] {
+  background: #16a34a;
 }
 
 .stat-trend {
@@ -303,6 +332,127 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.dashboard-currency-card-list {
+  display: grid;
+  gap: 12px;
+}
+
+.dashboard-currency-card {
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-lg);
+  background: #f8fafc;
+  padding: 12px;
+}
+
+.dashboard-currency-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e4e7ec;
+  font-size: 0.78rem;
+  color: #667085;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dashboard-currency-card-header span:first-child {
+  color: #1d2939;
+  font-size: 0.95rem;
+}
+
+.dashboard-currency-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.dashboard-currency-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.dashboard-currency-line-label {
+  font-weight: 700;
+  color: #1d2939;
+  font-size: 0.88rem;
+}
+
+.dashboard-currency-line-docs {
+  color: #667085;
+  font-size: 0.78rem;
+}
+
+.dashboard-currency-line-amount {
+  color: #1f3a75;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.dashboard-status-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dashboard-status-chart-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.dashboard-status-chart-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #475467;
+  font-size: 0.82rem;
+}
+
+.dashboard-status-chart-label strong {
+  color: #1d2939;
+}
+
+.dashboard-status-chart-track {
+  height: 8px;
+  border-radius: 999px;
+  background: #eef1f6;
+  overflow: hidden;
+}
+
+.dashboard-status-chart-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: #64748b;
+}
+
+.dashboard-status-chart-bar.tone-primary {
+  background: #2b5ce6;
+}
+
+.dashboard-status-chart-bar.tone-info {
+  background: #0ea5a4;
+}
+
+.dashboard-status-chart-bar.tone-warning {
+  background: #f59e0b;
+}
+
+.dashboard-status-chart-bar.tone-danger {
+  background: #ef4444;
+}
+
+.dashboard-status-chart-bar.tone-success {
+  background: #16a34a;
 }
 
 .dashboard-subsection-title {
@@ -425,6 +575,25 @@
 .activity-text {
   font-weight: 600;
   color: #1d2939;
+}
+
+.activity-state-change {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 6px;
+}
+
+.activity-state-arrow {
+  color: #98a2b3;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.activity-action-text {
+  color: #475467;
+  font-weight: 500;
 }
 
 .activity-meta {

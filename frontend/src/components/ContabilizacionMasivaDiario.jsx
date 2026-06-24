@@ -244,7 +244,17 @@ function ContabilizacionMasivaDiario({ sociedadId }) {
   }, [resolutions, sociedadId]);
 
   useEffect(() => {
-    loadReport();
+    let isActive = true;
+
+    void Promise.resolve().then(() => {
+      if (isActive) {
+        void loadReport();
+      }
+    });
+
+    return () => {
+      isActive = false;
+    };
   }, [loadReport, resolutionSignature]);
 
   const setResolution = (asiento, resolution) => {

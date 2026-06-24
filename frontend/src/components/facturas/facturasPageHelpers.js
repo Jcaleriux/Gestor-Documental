@@ -11,13 +11,13 @@ export const PAGE_SIZE_OPTIONS = [25, 50, 100];
 export const DASHBOARD_PRESET_LABELS = Object.freeze({
   no_contabilizadas: 'No contabilizadas',
   contabilizadas: 'Contabilizadas',
-  en_revision: 'En revision',
-  en_tramite: 'En tramite',
+  en_revision: 'En revisión',
+  en_tramite: 'En trámite',
   por_pagar: 'Total por pagar',
   vencidas: 'Vencidas',
-  por_vencer_7: 'Por vencer (7 dias)',
+  por_vencer_7: 'Vencen en 7 días',
   pagadas: 'Pagadas',
-  recibidas_ultimo_mes: 'Recibidas ultimo mes',
+  recibidas_ultimo_mes: 'Recibidas últimos 30 días',
 });
 
 export const FACTURAS_TABLE_HEADERS = Object.freeze([

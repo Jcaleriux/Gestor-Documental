@@ -358,12 +358,6 @@ function AuthenticatedAppShell({
   }), [isMobileView, location.pathname, mobileSidebarState]);
 
   useEffect(() => {
-    if (!sidebarCollapsed || isMobileView) {
-      setSidebarTooltip(null);
-    }
-  }, [isMobileView, sidebarCollapsed]);
-
-  useEffect(() => {
     if (typeof window === 'undefined') {
       return;
     }
@@ -435,7 +429,7 @@ function AuthenticatedAppShell({
         />
       )}
 
-      {sidebarTooltip && (
+      {sidebarCollapsed && !isMobileView && sidebarTooltip && (
         <div
           className="sidebar-tooltip"
           style={{
