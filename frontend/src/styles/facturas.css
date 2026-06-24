@@ -168,6 +168,11 @@
   padding-bottom: 16px;
   vertical-align: middle;
 }
+
+.facturas-data-table thead th {
+  text-transform: none;
+}
+
 .factura-document-cell,
 .factura-emisor-cell,
 .factura-total-cell,

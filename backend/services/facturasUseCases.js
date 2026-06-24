@@ -20,6 +20,7 @@ const FACTURAS_SORT_FIELDS = new Set([
   'fecha_emision',
   'emisor',
   'estado',
+  'hacienda',
   'total_factura',
   'documento',
   'consecutivo',

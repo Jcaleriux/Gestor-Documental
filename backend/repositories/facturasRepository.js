@@ -360,6 +360,18 @@ const buildFacturasOrderBy = (sortBy, sortDir) => {
       return `LOWER(fe.emisor_nombre) ${sortDir} NULLS LAST, fe.fecha_emision DESC NULLS LAST, fe.id DESC`;
     case 'estado':
       return `COALESCE(fe.estado, '') ${sortDir}, fe.fecha_emision DESC NULLS LAST, fe.id DESC`;
+    case 'hacienda':
+      return `
+        CASE
+          WHEN COALESCE(fe.estado_hacienda, '') ILIKE '%rechaz%' THEN 3
+          WHEN COALESCE(fe.estado_hacienda, '') ILIKE '%parcial%' OR fe.mensaje_hacienda = 2 THEN 2
+          WHEN COALESCE(fe.estado_hacienda, '') ILIKE '%acept%' OR fe.mensaje_hacienda = 1 THEN 1
+          ELSE 0
+        END ${sortDir},
+        LOWER(COALESCE(fe.estado_hacienda, '')) ${sortDir} NULLS LAST,
+        fe.fecha_emision DESC NULLS LAST,
+        fe.id DESC
+      `;
     case 'total_factura':
       return `fe.total_factura ${sortDir} NULLS LAST, fe.fecha_emision DESC NULLS LAST, fe.id DESC`;
     case 'documento':
