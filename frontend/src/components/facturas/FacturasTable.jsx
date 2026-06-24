@@ -29,7 +29,6 @@ function FacturasTable({
   return (
     <DataTable
       headers={headers}
-      stickyHeader
       sortBy={sortBy}
       sortDir={sortDir}
       onSort={onSort}

@@ -1,5 +1,5 @@
 export const buildExpandedSectionsState = (sections, storedValue = {}) => {
-  const defaults = Object.fromEntries(sections.map((section) => [section.id, true]));
+  const defaults = Object.fromEntries(sections.map((section) => [section.id, false]));
 
   if (!storedValue || typeof storedValue !== 'object') {
     return defaults;
@@ -16,20 +16,8 @@ export const buildExpandedSectionsState = (sections, storedValue = {}) => {
 export const buildVisibleExpandedSections = ({
   sections,
   storedValue = {},
-  activeSectionId = null,
-  pathname = '',
-  syncedPathname = '',
 }) => {
-  const baseState = buildExpandedSectionsState(sections, storedValue);
-
-  if (!activeSectionId || syncedPathname === pathname || baseState[activeSectionId] === true) {
-    return baseState;
-  }
-
-  return {
-    ...baseState,
-    [activeSectionId]: true,
-  };
+  return buildExpandedSectionsState(sections, storedValue);
 };
 
 export const buildMobileSidebarOpen = ({

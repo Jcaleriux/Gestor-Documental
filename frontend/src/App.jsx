@@ -37,7 +37,7 @@ const OrdenesCompraIngenieria = lazy(() => import('./components/OrdenesCompraIng
 const ReservasOperaciones = lazy(() => import('./components/ReservasOperaciones.jsx'));
 
 const SIDEBAR_COLLAPSED_KEY = 'novogar.sidebar.collapsed';
-const SIDEBAR_SECTIONS_KEY = 'novogar.sidebar.sections';
+const SIDEBAR_SECTIONS_KEY = 'novogar.sidebar.sections.v2';
 const MOBILE_MEDIA_QUERY = '(max-width: 991.98px)';
 
 const pathMatches = (pathname, target) => {
@@ -327,6 +327,7 @@ function AuthenticatedAppShell({
     pathname: '',
     open: false,
   }));
+  const [sidebarTooltip, setSidebarTooltip] = useState(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -346,14 +347,8 @@ function AuthenticatedAppShell({
   const expandedSections = useMemo(() => buildVisibleExpandedSections({
     sections: navigationSections,
     storedValue: expandedSectionsState.values,
-    activeSectionId,
-    pathname: location.pathname,
-    syncedPathname: expandedSectionsState.pathname,
   }), [
-    activeSectionId,
-    expandedSectionsState.pathname,
     expandedSectionsState.values,
-    location.pathname,
     navigationSections,
   ]);
   const mobileSidebarOpen = useMemo(() => buildMobileSidebarOpen({
@@ -361,6 +356,12 @@ function AuthenticatedAppShell({
     pathname: location.pathname,
     state: mobileSidebarState,
   }), [isMobileView, location.pathname, mobileSidebarState]);
+
+  useEffect(() => {
+    if (!sidebarCollapsed || isMobileView) {
+      setSidebarTooltip(null);
+    }
+  }, [isMobileView, sidebarCollapsed]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -396,12 +397,29 @@ function AuthenticatedAppShell({
     });
   }, [location.pathname]);
 
+  const showSidebarTooltip = useCallback((event, label) => {
+    if (!sidebarCollapsed || isMobileView || !label) {
+      return;
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    setSidebarTooltip({
+      label,
+      left: rect.right + 10,
+      top: rect.top + rect.height / 2,
+    });
+  }, [isMobileView, sidebarCollapsed]);
+
+  const hideSidebarTooltip = useCallback(() => {
+    setSidebarTooltip(null);
+  }, []);
+
   const toggleSection = useCallback((sectionId) => {
     setExpandedSectionsState({
       pathname: location.pathname,
       values: {
         ...buildExpandedSectionsState(navigationSections, expandedSections),
-        [sectionId]: !(expandedSections[sectionId] ?? true),
+        [sectionId]: !(expandedSections[sectionId] ?? false),
       },
     });
   }, [expandedSections, location.pathname, navigationSections]);
@@ -415,6 +433,19 @@ function AuthenticatedAppShell({
           aria-label="Cerrar menú lateral"
           onClick={closeMobileSidebar}
         />
+      )}
+
+      {sidebarTooltip && (
+        <div
+          className="sidebar-tooltip"
+          style={{
+            left: `${sidebarTooltip.left}px`,
+            top: `${sidebarTooltip.top}px`,
+          }}
+          role="tooltip"
+        >
+          {sidebarTooltip.label}
+        </div>
       )}
 
       <aside className={`sidebar${sidebarCollapsed ? ' collapsed' : ''}${mobileSidebarOpen ? ' mobile-open' : ''}`}>
@@ -431,8 +462,11 @@ function AuthenticatedAppShell({
             type="button"
             className="sidebar-toggle"
             aria-label={isMobileView ? 'Cerrar menú lateral' : sidebarCollapsed ? 'Expandir menú lateral' : 'Contraer menú lateral'}
-            title={isMobileView ? 'Cerrar menú lateral' : sidebarCollapsed ? 'Expandir menú lateral' : 'Contraer menú lateral'}
             onClick={toggleSidebar}
+            onMouseEnter={(event) => showSidebarTooltip(event, sidebarCollapsed ? 'Expandir menú lateral' : 'Contraer menú lateral')}
+            onMouseLeave={hideSidebarTooltip}
+            onFocus={(event) => showSidebarTooltip(event, sidebarCollapsed ? 'Expandir menú lateral' : 'Contraer menú lateral')}
+            onBlur={hideSidebarTooltip}
           >
             <AppIcon name={isMobileView ? 'close' : sidebarCollapsed ? 'expand' : 'collapse'} />
           </button>
@@ -440,7 +474,7 @@ function AuthenticatedAppShell({
 
         <div className="sidebar-scroll">
           {navigationSections.map((section) => {
-            const isOpen = expandedSections[section.id] ?? true;
+            const isOpen = expandedSections[section.id] ?? false;
             const isActiveSection = activeSectionId === section.id;
 
             return (
@@ -452,7 +486,11 @@ function AuthenticatedAppShell({
                   type="button"
                   className="section-toggle"
                   aria-expanded={isOpen}
-                  title={sidebarCollapsed && !isMobileView ? section.label : undefined}
+                  aria-label={section.label}
+                  onMouseEnter={(event) => showSidebarTooltip(event, section.label)}
+                  onMouseLeave={hideSidebarTooltip}
+                  onFocus={(event) => showSidebarTooltip(event, section.label)}
+                  onBlur={hideSidebarTooltip}
                   onClick={() => toggleSection(section.id)}
                 >
                   <span className="section-toggle-main">
@@ -473,8 +511,15 @@ function AuthenticatedAppShell({
                         key={item.id}
                         to={item.to}
                         end={item.to === '/'}
-                        title={sidebarCollapsed && !isMobileView ? item.label : undefined}
-                        onClick={closeMobileSidebar}
+                        aria-label={item.label}
+                        onClick={() => {
+                          hideSidebarTooltip();
+                          closeMobileSidebar();
+                        }}
+                        onMouseEnter={(event) => showSidebarTooltip(event, item.label)}
+                        onMouseLeave={hideSidebarTooltip}
+                        onFocus={(event) => showSidebarTooltip(event, item.label)}
+                        onBlur={hideSidebarTooltip}
                         className={({ isActive }) => ['menu-link', isActive ? 'active' : ''].filter(Boolean).join(' ')}
                       >
                         <span className="menu-link-icon" aria-hidden="true">
@@ -492,7 +537,11 @@ function AuthenticatedAppShell({
 
         <div
           className="sidebar-footer"
-          title={sidebarCollapsed && !isMobileView ? `${userName} · ${userRole}` : undefined}
+          aria-label={`${userName} · ${userRole}`}
+          onMouseEnter={(event) => showSidebarTooltip(event, `${userName} · ${userRole}`)}
+          onMouseLeave={hideSidebarTooltip}
+          onFocus={(event) => showSidebarTooltip(event, `${userName} · ${userRole}`)}
+          onBlur={hideSidebarTooltip}
         >
           <div className="avatar">{userInitials}</div>
           <div className="sidebar-footer-copy">
@@ -542,13 +591,6 @@ function AuthenticatedAppShell({
             <button className="btn btn-sm btn-outline-secondary" type="button" onClick={handleLogout}>
               Cerrar sesión
             </button>
-            <div className="user-chip">
-              <div className="avatar small">{userInitials}</div>
-              <div>
-                <div className="user-name">{userName}</div>
-                <div className="user-role">{userRole}</div>
-              </div>
-            </div>
           </div>
         </header>
 

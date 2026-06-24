@@ -1,6 +1,19 @@
+.facturas-page {
+  --facturas-sticky-top: var(--app-topbar-height, 52px);
+}
+
 .facturas-toolbar {
   justify-content: space-between;
   flex-wrap: wrap;
+}
+
+.facturas-sticky-toolbar {
+  position: sticky;
+  top: var(--facturas-sticky-top);
+  z-index: 24;
+  padding: 8px 0;
+  background: var(--app-bg);
+  border-bottom: 1px solid var(--app-border);
 }
 
 .facturas-toolbar-actions {
@@ -354,4 +367,12 @@
 
 .facturas-pagination {
   gap: 8px;
+}
+
+@media (max-width: 992px) {
+  .facturas-sticky-toolbar {
+    position: static;
+    padding: 0;
+    border-bottom: none;
+  }
 }
