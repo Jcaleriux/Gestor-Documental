@@ -15,6 +15,7 @@
         "proveedores:backfill": "node scripts/backfill_proveedores.js",
         "reindex": "node scripts/reindex_rutas.js",
         "diagnostico": "node scripts/diagnostico_docs.js",
+        "auditar:facturas-rutas": "node scripts/auditar_rutas_facturas.js",
         "smoke:facturas": "node scripts/smoke_facturas_list.js",
         "reporte-duplicados": "node scripts/reporte_duplicados.js",
         "reset-docs": "node scripts/reset_documentos.js",
