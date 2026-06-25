@@ -109,6 +109,7 @@ const contabilizacionRoutes = require('./routes/contabilizacion');
 const contabilizacionMasivaRoutes = require('./routes/contabilizacionMasiva');
 const dashboardRoutes = require('./routes/dashboard');
 const facturasRoutes = require('./routes/facturas');
+const pdfsPendientesRoutes = require('./routes/pdfsPendientes');
 const filesRoutes = require('./routes/files');
 const usuariosRoutes = require('./routes/usuarios');
 const sociedadesRoutes = require('./routes/sociedades');
@@ -127,6 +128,7 @@ const reservasRoutes = require('./routes/reservas');
   contabilizacionMasivaRoutes,
   dashboardRoutes,
   facturasRoutes,
+  pdfsPendientesRoutes,
   filesRoutes,
   usuariosRoutes,
   sociedadesRoutes,

@@ -44,6 +44,13 @@ export const buildNavigationSections = ({
           visible: true,
         },
         {
+          id: 'pdfs-pendientes',
+          label: 'PDFs pendientes',
+          to: '/facturas/pdf-pendientes',
+          icon: 'facturas',
+          visible: canEditContabilizacion,
+        },
+        {
           id: 'contabilizacion-masiva',
           label: 'Contabilizacion masiva',
           to: '/contabilizacion-masiva',

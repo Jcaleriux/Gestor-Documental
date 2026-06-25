@@ -133,6 +133,9 @@ const listRetencionesPendientes = (params) => axios.get('/api/retenciones-pendie
 const listNotasCredito = (params) => axios.get('/api/notas-credito', { params });
 const listTiquetesElectronicos = (params) => axios.get('/api/tiquetes-electronicos', { params });
 const listMensajesHacienda = (params) => axios.get('/api/mensajes-hacienda', { params });
+const listPdfsPendientes = (params) => axios.get('/api/pdfs-pendientes', { params });
+const searchPdfsPendientesFacturas = (params) => axios.get('/api/pdfs-pendientes/facturas-candidatas', { params });
+const assignPdfPendiente = (payload) => axios.post('/api/pdfs-pendientes/asignar', payload);
 const getMensajeHacienda = (id) => axios.get(`/api/facturas/${id}/mensaje-hacienda`);
 const getFacturaManifest = (id) => axios.get(`/api/facturas/${id}/manifest`);
 const getNotaCreditoManifest = (id) => axios.get(`/api/notas-credito/${id}/manifest`);
@@ -216,6 +219,9 @@ export const facturasApi = {
   listNotasCredito,
   listTiquetesElectronicos,
   listMensajesHacienda,
+  listPdfsPendientes,
+  searchPdfsPendientesFacturas,
+  assignPdfPendiente,
   getMensajeHacienda,
   getFacturaManifest,
   getNotaCreditoManifest,

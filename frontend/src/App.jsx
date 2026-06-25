@@ -22,6 +22,7 @@ const Dashboard = lazy(() => import('./components/Dashboard.jsx'));
 const Sociedades = lazy(() => import('./components/Sociedades.jsx'));
 const Usuarios = lazy(() => import('./components/Usuarios.jsx'));
 const Facturas = lazy(() => import('./components/Facturas.jsx'));
+const PdfsPendientes = lazy(() => import('./components/PdfsPendientes.jsx'));
 const FacturaDetalle = lazy(() => import('./components/FacturaDetalle.jsx'));
 const ContabilizacionMasivaDiario = lazy(() => import('./components/ContabilizacionMasivaDiario.jsx'));
 const RetencionesPendientes = lazy(() => import('./components/RetencionesPendientes.jsx'));
@@ -612,6 +613,12 @@ function AuthenticatedAppShell({
               <Route
                 path="/facturas"
                 element={<Facturas sociedadId={sociedadId} canEditContabilizacion={canEditContabilizacion} />}
+              />
+              <Route
+                path="/facturas/pdf-pendientes"
+                element={canEditContabilizacion
+                  ? <PdfsPendientes sociedadId={sociedadId} />
+                  : <Navigate to="/" replace />}
               />
               <Route path="/retenciones-pendientes" element={<RetencionesPendientes sociedadId={sociedadId} />} />
               <Route path="/facturas/:id" element={<LegacyFacturaDetalleRedirect />} />
