@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const fse = require("fs-extra");
+const { PDFParse } = require("pdf-parse");
 const { runtimeConfig } = require("../config/runtime");
 const { parseXML } = require("../utils/xmlParser");
 const { resolveDocumentPaths } = require("../utils/documentPaths");
@@ -40,6 +41,16 @@ function safeReadJson(filePath) {
 
 function ensureDir(dir) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+}
+
+async function extractTextFromPdf(pdfPath) {
+  try {
+    const parser = new PDFParse({ data: fs.readFileSync(pdfPath) });
+    const parsed = await parser.getText();
+    return parsed && parsed.text ? String(parsed.text) : "";
+  } catch (error) {
+    return "";
+  }
 }
 
 function parseXmlFile(xmlPath) {
@@ -112,6 +123,9 @@ function buildDocumentNumberHints(numeroConsecutivo) {
   if (!digits) return [];
 
   const hints = new Set();
+  hints.add(digits);
+  hints.add(stripLeadingZeros(digits));
+
   const suffixLengths = [10, 8, 6, 4, 3];
 
   for (const length of suffixLengths) {
@@ -125,14 +139,15 @@ function buildDocumentNumberHints(numeroConsecutivo) {
   return [...hints];
 }
 
+function getPdfSearchText(pdf) {
+  return `${pdf.originalName || ""} ${pdf.savedAs || ""} ${pdf.pdfText || ""}`;
+}
+
 function pdfMatchesDocumentNumber(pdf, numeroConsecutivo) {
   const hints = buildDocumentNumberHints(numeroConsecutivo);
   if (hints.length === 0) return false;
 
-  const tokens = [
-    ...getComparableTokens(pdf.originalName),
-    ...getComparableTokens(pdf.savedAs)
-  ];
+  const tokens = getComparableTokens(getPdfSearchText(pdf));
 
   return hints.some((hint) => tokens.includes(hint));
 }
@@ -141,19 +156,15 @@ function pdfMatchesReceptor(pdf, receptorIdentificacion) {
   const receptor = normalizeComparableText(receptorIdentificacion);
   if (!receptor) return false;
 
-  const haystack = normalizeComparableText(`${pdf.originalName || ""} ${pdf.savedAs || ""}`);
+  const haystack = normalizeComparableText(getPdfSearchText(pdf));
   return haystack.includes(receptor);
 }
 
-function createPdfAssigner(pdfEntries) {
-  const pdfsByIndex = new Map();
+function createPdfAssigner(pdfEntries, { allowSinglePdfFallback = false } = {}) {
   const availablePdfPaths = new Set();
 
   for (const pdf of pdfEntries) {
     availablePdfPaths.add(pdf.filePath);
-    if (Number.isFinite(pdf.index) && !pdfsByIndex.has(pdf.index)) {
-      pdfsByIndex.set(pdf.index, pdf);
-    }
   }
 
   const takePdfIfAvailable = (pdf) => {
@@ -169,12 +180,8 @@ function createPdfAssigner(pdfEntries) {
 
     for (const pdf of pdfEntries) {
       if (!availablePdfPaths.has(pdf.filePath)) continue;
-      const originalName = normalizeComparableText(pdf.originalName);
-      const savedAs = normalizeComparableText(pdf.savedAs);
-      if (
-        (originalName && originalName.includes(claveNormalized)) ||
-        (savedAs && savedAs.includes(claveNormalized))
-      ) {
+      const haystack = normalizeComparableText(getPdfSearchText(pdf));
+      if (haystack.includes(claveNormalized)) {
         return takePdfIfAvailable(pdf);
       }
     }
@@ -197,12 +204,13 @@ function createPdfAssigner(pdfEntries) {
   };
 
   return {
-    assign({ docEntry, claveDoc, numeroConsecutivo, receptorIdentificacion }) {
+    assign({ claveDoc, numeroConsecutivo, receptorIdentificacion }) {
       return (
         assignByClave(claveDoc) ||
         assignByDocumentNumber({ numeroConsecutivo, receptorIdentificacion }) ||
-        (Number.isFinite(docEntry.index) ? takePdfIfAvailable(pdfsByIndex.get(docEntry.index)) : null) ||
-        takePdfIfAvailable(pdfEntries.find((pdf) => availablePdfPaths.has(pdf.filePath))) ||
+        (allowSinglePdfFallback
+          ? takePdfIfAvailable(pdfEntries.find((pdf) => availablePdfPaths.has(pdf.filePath)))
+          : null) ||
         null
       );
     },
@@ -213,6 +221,19 @@ function createPdfAssigner(pdfEntries) {
       return pdfEntries.filter((pdf) => availablePdfPaths.has(pdf.filePath));
     }
   };
+}
+
+async function attachPdfText(pdfEntries, extractPdfText = extractTextFromPdf) {
+  const withText = [];
+
+  for (const pdf of pdfEntries) {
+    withText.push({
+      ...pdf,
+      pdfText: await extractPdfText(pdf.filePath)
+    });
+  }
+
+  return withText;
 }
 
 function buildProcessingDirs(carpetaProcesados, receptorIdentificacion, ingestionId) {
@@ -255,6 +276,44 @@ function moveManifestToTargetDirs(manifestPath, targetDirs) {
   }
 }
 
+function buildPendingPdfDir(carpetaProcesados, ingestionId) {
+  return path.join(carpetaProcesados, "pdfs_pendientes", ingestionId);
+}
+
+function movePendingPdfEntries({ pdfEntries, carpetaProcesados, ingestionId, baseDir, targetDirs }) {
+  if (pdfEntries.length === 0) return null;
+
+  const pendingDir = buildPendingPdfDir(carpetaProcesados, ingestionId);
+  ensureDir(pendingDir);
+
+  const moved = pdfEntries.map((pdf) => {
+    const targetPath = path.join(pendingDir, path.basename(pdf.filePath));
+    if (fs.existsSync(pdf.filePath)) {
+      fse.moveSync(pdf.filePath, targetPath, { overwrite: true });
+    }
+
+    return {
+      savedAs: pdf.savedAs,
+      originalName: pdf.originalName,
+      ruta: normalizarRuta(path.relative(baseDir, targetPath)),
+      motivo: "PDF sin asociacion confiable con DOC/XML"
+    };
+  });
+
+  const reportPath = path.join(pendingDir, `${ingestionId}.pdfs_pendientes.json`);
+  fs.writeFileSync(
+    reportPath,
+    JSON.stringify({
+      ingestion_id: ingestionId,
+      motivo: "Hay PDFs sin asociacion confiable. Requieren revision manual.",
+      target_dirs: [...targetDirs].map((targetDir) => normalizarRuta(path.relative(baseDir, targetDir))),
+      pdfs: moved
+    }, null, 2)
+  );
+
+  return pendingDir;
+}
+
 async function procesarManifest(manifestPath, options = {}) {
   const baseDir = options.baseDir || runtimeConfig.storageBaseDir;
   const documentPaths = resolveDocumentPaths(baseDir);
@@ -270,10 +329,10 @@ async function procesarManifest(manifestPath, options = {}) {
 
   const attachments = Array.isArray(manifest.attachments_saved) ? manifest.attachments_saved : [];
 
-  const pdfEntries = buildAttachmentEntries(attachments, carpetaEntrada, {
+  const pdfEntries = await attachPdfText(buildAttachmentEntries(attachments, carpetaEntrada, {
     type: "PDF",
     validator: isPdfSavedAs
-  });
+  }), options.extractPdfText);
   const docEntries = buildAttachmentEntries(attachments, carpetaEntrada, {
     type: "DOC",
     validator: isDocXmlSavedAs
@@ -288,7 +347,9 @@ async function procesarManifest(manifestPath, options = {}) {
   }
 
   let receptorIdentificacion = null;
-  const pdfAssigner = createPdfAssigner(pdfEntries);
+  const pdfAssigner = createPdfAssigner(pdfEntries, {
+    allowSinglePdfFallback: docEntries.length === 1 && pdfEntries.length === 1
+  });
   const targetDirs = new Set();
 
   if (docEntries.length > pdfEntries.length) {
@@ -315,7 +376,6 @@ async function procesarManifest(manifestPath, options = {}) {
     const destinoXmlPath = path.join(dirs.loteDir, xmlFile);
     const claveDoc = data && data.Clave ? String(data.Clave) : null;
     const assignedPdf = pdfAssigner.assign({
-      docEntry,
       claveDoc,
       numeroConsecutivo: data && data.NumeroConsecutivo,
       receptorIdentificacion
@@ -387,16 +447,23 @@ async function procesarManifest(manifestPath, options = {}) {
 
   if (pdfAssigner.getRemainingCount() > 0) {
     console.warn(
-      `Manifest ${path.basename(manifestPath)}: quedaron ${pdfAssigner.getRemainingCount()} PDF sin asociar a un DOC.`
+      `Manifest ${path.basename(manifestPath)}: quedaron ${pdfAssigner.getRemainingCount()} PDF pendientes de asociacion manual.`
     );
   }
 
-  if (targetDirs.size > 0) {
-    const fallbackTargetDir = [...targetDirs][0];
-    for (const pdfEntry of pdfAssigner.getRemainingEntries()) {
-      moveFileToDirIfExists(pdfEntry.filePath, fallbackTargetDir);
-    }
+  const pendingDir = movePendingPdfEntries({
+    pdfEntries: pdfAssigner.getRemainingEntries(),
+    carpetaProcesados,
+    ingestionId,
+    baseDir,
+    targetDirs
+  });
 
+  if (pendingDir) {
+    targetDirs.add(pendingDir);
+  }
+
+  if (targetDirs.size > 0) {
     moveManifestToTargetDirs(manifestPath, targetDirs);
     return receptorIdentificacion;
   }

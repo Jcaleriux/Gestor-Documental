@@ -185,4 +185,173 @@ describe('importarFacturaManifest', () => {
 
     expect(fs.existsSync(manifestPath)).toBe(false);
   });
+
+  test('asocia PDF por clave extraida del texto y deja PDFs restantes pendientes', async () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const ingestionId = '20260624_101500_B300TESTPDFTEXT';
+    const receptor = '3101873996';
+    const clave = '50624062600310187399600100001010000000999123456789';
+    const carpetaEntrada = path.join(tempRoot, 'recibidas');
+    const carpetaProcesados = path.join(tempRoot, 'procesadas');
+    fs.mkdirSync(carpetaEntrada, { recursive: true });
+    fs.mkdirSync(carpetaProcesados, { recursive: true });
+
+    const manifestPath = path.join(carpetaEntrada, `${ingestionId}.manifest.json`);
+    fs.writeFileSync(manifestPath, JSON.stringify({
+      ingestion_id: ingestionId,
+      attachments_saved: [
+        {
+          type: 'DOC',
+          savedAs: `${ingestionId}.DOC.1.xml`,
+          originalName: 'factura.xml',
+        },
+        {
+          type: 'PDF',
+          savedAs: `${ingestionId}.PDF.1.pdf`,
+          originalName: 'anexo.pdf',
+        },
+        {
+          type: 'PDF',
+          savedAs: `${ingestionId}.PDF.2.pdf`,
+          originalName: 'comprobante.pdf',
+        },
+      ],
+    }));
+    fs.writeFileSync(path.join(carpetaEntrada, `${ingestionId}.DOC.1.xml`), 'DOC_CLAVE');
+    fs.writeFileSync(path.join(carpetaEntrada, `${ingestionId}.PDF.1.pdf`), 'PDF_SIN_CLAVE');
+    fs.writeFileSync(path.join(carpetaEntrada, `${ingestionId}.PDF.2.pdf`), 'PDF_CON_CLAVE');
+
+    const { procesarManifest, serviceMock } = loadImporterWithMocks({
+      DOC_CLAVE: {
+        tipo: 'FacturaElectronica',
+        data: buildFacturaData({
+          clave,
+          numeroConsecutivo: '00100001010000000999',
+          receptor,
+        }),
+      },
+    });
+    const extractPdfText = jest.fn(async (filePath) => (
+      filePath.endsWith(`${ingestionId}.PDF.2.pdf`)
+        ? `Clave ${clave}`
+        : 'sin datos de factura'
+    ));
+
+    try {
+      await procesarManifest(manifestPath, {
+        baseDir: tempRoot,
+        carpetaEntrada,
+        carpetaProcesados,
+        extractPdfText,
+      });
+
+      const dir = path.join(carpetaProcesados, receptor, ingestionId);
+      const pendingDir = path.join(carpetaProcesados, 'pdfs_pendientes', ingestionId);
+      const rel = (...parts) => toPortablePath(path.join('procesadas', ...parts));
+
+      expect(serviceMock.insertarFactura).toHaveBeenCalledWith(
+        expect.objectContaining({ Clave: clave }),
+        rel(receptor, ingestionId, `${ingestionId}.DOC.1.xml`),
+        rel(receptor, ingestionId, `${ingestionId}.PDF.2.pdf`)
+      );
+      expect(fs.existsSync(path.join(dir, `${ingestionId}.PDF.2.pdf`))).toBe(true);
+      expect(fs.existsSync(path.join(pendingDir, `${ingestionId}.PDF.1.pdf`))).toBe(true);
+      expect(fs.existsSync(path.join(pendingDir, `${ingestionId}.pdfs_pendientes.json`))).toBe(true);
+
+      const pendingReport = JSON.parse(
+        fs.readFileSync(path.join(pendingDir, `${ingestionId}.pdfs_pendientes.json`), 'utf8')
+      );
+      expect(pendingReport.pdfs).toEqual([
+        expect.objectContaining({
+          savedAs: `${ingestionId}.PDF.1.pdf`,
+          motivo: 'PDF sin asociacion confiable con DOC/XML',
+        }),
+      ]);
+      expect(fs.existsSync(path.join(dir, `${ingestionId}.manifest.json`))).toBe(true);
+      expect(fs.existsSync(path.join(pendingDir, `${ingestionId}.manifest.json`))).toBe(true);
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
+
+  test('no asigna PDFs por indice cuando hay multiples DOC y PDFs sin match confiable', async () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const ingestionId = '20260624_102000_B300AMBIGUO';
+    const receptorA = '3101873996';
+    const receptorB = '3101820946';
+    const carpetaEntrada = path.join(tempRoot, 'recibidas');
+    const carpetaProcesados = path.join(tempRoot, 'procesadas');
+    fs.mkdirSync(carpetaEntrada, { recursive: true });
+    fs.mkdirSync(carpetaProcesados, { recursive: true });
+
+    const manifestPath = path.join(carpetaEntrada, `${ingestionId}.manifest.json`);
+    fs.writeFileSync(manifestPath, JSON.stringify({
+      ingestion_id: ingestionId,
+      attachments_saved: [
+        { type: 'DOC', savedAs: `${ingestionId}.DOC.1.xml`, originalName: 'a.xml' },
+        { type: 'DOC', savedAs: `${ingestionId}.DOC.2.xml`, originalName: 'b.xml' },
+        { type: 'PDF', savedAs: `${ingestionId}.PDF.1.pdf`, originalName: 'adjunto-a.pdf' },
+        { type: 'PDF', savedAs: `${ingestionId}.PDF.2.pdf`, originalName: 'adjunto-b.pdf' },
+      ],
+    }));
+    fs.writeFileSync(path.join(carpetaEntrada, `${ingestionId}.DOC.1.xml`), 'DOC_A');
+    fs.writeFileSync(path.join(carpetaEntrada, `${ingestionId}.DOC.2.xml`), 'DOC_B');
+    fs.writeFileSync(path.join(carpetaEntrada, `${ingestionId}.PDF.1.pdf`), 'PDF_A');
+    fs.writeFileSync(path.join(carpetaEntrada, `${ingestionId}.PDF.2.pdf`), 'PDF_B');
+
+    const { procesarManifest, serviceMock } = loadImporterWithMocks({
+      DOC_A: {
+        tipo: 'FacturaElectronica',
+        data: buildFacturaData({
+          clave: 'clave-a',
+          numeroConsecutivo: '00100001010000000101',
+          receptor: receptorA,
+        }),
+      },
+      DOC_B: {
+        tipo: 'FacturaElectronica',
+        data: buildFacturaData({
+          clave: 'clave-b',
+          numeroConsecutivo: '00100001010000000102',
+          receptor: receptorB,
+        }),
+      },
+    });
+
+    try {
+      await procesarManifest(manifestPath, {
+        baseDir: tempRoot,
+        carpetaEntrada,
+        carpetaProcesados,
+        extractPdfText: jest.fn().mockResolvedValue('texto sin identificadores'),
+      });
+
+      expect(serviceMock.insertarFactura).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({ Clave: 'clave-a' }),
+        toPortablePath(path.join('procesadas', receptorA, ingestionId, `${ingestionId}.DOC.1.xml`)),
+        null
+      );
+      expect(serviceMock.insertarFactura).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({ Clave: 'clave-b' }),
+        toPortablePath(path.join('procesadas', receptorB, ingestionId, `${ingestionId}.DOC.2.xml`)),
+        null
+      );
+
+      const pendingDir = path.join(carpetaProcesados, 'pdfs_pendientes', ingestionId);
+      expect(fs.existsSync(path.join(pendingDir, `${ingestionId}.PDF.1.pdf`))).toBe(true);
+      expect(fs.existsSync(path.join(pendingDir, `${ingestionId}.PDF.2.pdf`))).toBe(true);
+
+      const pendingReport = JSON.parse(
+        fs.readFileSync(path.join(pendingDir, `${ingestionId}.pdfs_pendientes.json`), 'utf8')
+      );
+      expect(pendingReport.pdfs).toHaveLength(2);
+      expect(fs.existsSync(path.join(carpetaProcesados, receptorA, ingestionId, `${ingestionId}.manifest.json`))).toBe(true);
+      expect(fs.existsSync(path.join(carpetaProcesados, receptorB, ingestionId, `${ingestionId}.manifest.json`))).toBe(true);
+      expect(fs.existsSync(path.join(pendingDir, `${ingestionId}.manifest.json`))).toBe(true);
+    } finally {
+      warnSpy.mockRestore();
+    }
+  });
 });
