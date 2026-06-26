@@ -3,6 +3,19 @@ const pool = require('../db');
 const getDb = (client) => client || pool;
 const getClient = () => pool.connect();
 
+const getSociedadById = async (sociedadId, client) => {
+  const { rows } = await getDb(client).query(
+    `
+    SELECT id, codigo, nombre_proyecto, razon_social, cedula_juridica, activo
+    FROM sociedades
+    WHERE id = $1
+    `,
+    [sociedadId]
+  );
+
+  return rows[0] || null;
+};
+
 const emisorNombreExpression = `
   COALESCE(
     f.emisor ->> 'Nombre',
@@ -149,6 +162,7 @@ const updateFacturaRutaPdf = async ({ facturaId, rutaPdf }, client) => {
 
 module.exports = {
   getClient,
+  getSociedadById,
   searchFacturaCandidates,
   getFacturaForPdfAssignment,
   updateFacturaRutaPdf

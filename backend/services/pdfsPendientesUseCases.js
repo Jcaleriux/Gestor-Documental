@@ -17,6 +17,10 @@ const normalizeStoredPath = (rawPath) => toCurrentRelativePath(toPosix(rawPath).
 
 const relativeFromBase = (baseDir, absolutePath) => toPosix(path.relative(baseDir, absolutePath));
 
+const normalizeIdentification = (value) => String(value || '').replace(/\D/g, '');
+
+const unique = (values) => [...new Set(values.filter(Boolean))];
+
 const isPathInside = (parentPath, childPath) => {
   const relative = path.relative(path.resolve(parentPath), path.resolve(childPath));
   return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
@@ -164,6 +168,68 @@ const buildPendingItem = async ({ baseDir, reportPath, report, pdf }) => {
   };
 };
 
+const buildPendingPdfSearchTerms = (item, sociedad) => {
+  const sociedadCedula = normalizeIdentification(sociedad?.cedula_juridica);
+  const source = [
+    item?.originalName,
+    item?.savedAs,
+    item?.ruta,
+  ].filter(Boolean).join(' ');
+  const longNumbers = String(source).match(/\d{10,50}/g) || [];
+  const filenameStem = String(item?.originalName || item?.savedAs || '')
+    .replace(/\.[^.]+$/, '')
+    .replace(/[_.-]+/g, ' ')
+    .trim();
+
+  return unique([
+    ...longNumbers
+      .map((value) => normalizeIdentification(value))
+      .filter((value) => value && value !== sociedadCedula),
+    filenameStem.length >= 8 ? filenameStem : '',
+  ]).slice(0, 4);
+};
+
+const targetDirsMatchSociedad = (targetDirs, sociedad) => {
+  const sociedadCedula = normalizeIdentification(sociedad?.cedula_juridica);
+  if (!sociedadCedula) {
+    return false;
+  }
+
+  return (targetDirs || []).some((targetDir) => {
+    const normalizedDir = normalizeIdentification(targetDir);
+    return normalizedDir.includes(sociedadCedula);
+  });
+};
+
+const pendingItemMatchesSociedad = async ({ item, sociedad, repo }) => {
+  if (!sociedad) {
+    return true;
+  }
+
+  if (targetDirsMatchSociedad(item.target_dirs, sociedad)) {
+    return true;
+  }
+
+  if (typeof repo.searchFacturaCandidates !== 'function') {
+    return false;
+  }
+
+  const terms = buildPendingPdfSearchTerms(item, sociedad);
+  for (const term of terms) {
+    const candidates = await repo.searchFacturaCandidates({
+      sociedadId: sociedad.id,
+      query: term,
+      limit: 1
+    });
+
+    if (Array.isArray(candidates) && candidates.length > 0) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
 const resolveTargetDirForFactura = async ({ baseDir, documentsRootDir, factura }) => {
   const referencePath = factura?.ruta_xml || factura?.ruta_pdf;
   if (!referencePath) {
@@ -227,8 +293,18 @@ const createPdfsPendientesUseCases = ({
     resolvePendingPdfPath
   } = createReportResolver({ baseDir: resolvedBaseDir });
 
-  const listPendingPdfs = async () => {
+  const listPendingPdfs = async ({ sociedadId } = {}) => {
     if (!await pathExists(pendingRoot)) {
+      return {
+        items: [],
+        summary: { totalPdfs: 0, totalLotes: 0 }
+      };
+    }
+
+    const sociedad = sociedadId && typeof repo.getSociedadById === 'function'
+      ? await repo.getSociedadById(Number(sociedadId))
+      : null;
+    if (sociedadId && !sociedad) {
       return {
         items: [],
         summary: { totalPdfs: 0, totalLotes: 0 }
@@ -252,12 +328,16 @@ const createPdfsPendientesUseCases = ({
         const report = normalizeReport(await readJsonFile(reportPath), reportPath);
 
         for (const pdf of report.pdfs) {
-          items.push(await buildPendingItem({
+          const item = await buildPendingItem({
             baseDir: resolvedBaseDir,
             reportPath,
             report,
             pdf
-          }));
+          });
+
+          if (await pendingItemMatchesSociedad({ item, sociedad, repo })) {
+            items.push(item);
+          }
         }
       }
     }

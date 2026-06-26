@@ -17,7 +17,9 @@ const useCases = createPdfsPendientesUseCases({
 router.get(
   '/pdfs-pendientes',
   requirePermission(PERMISSIONS.DOCUMENTOS_CONTABILIZAR),
-  handleRequest(async () => useCases.listPendingPdfs(), 'Error listing pending PDFs:', 'Error listing pending PDFs')
+  handleRequest(async (req) => useCases.listPendingPdfs({
+    sociedadId: req.query.sociedad_id || req.query.sociedadId
+  }), 'Error listing pending PDFs:', 'Error listing pending PDFs')
 );
 
 router.get(

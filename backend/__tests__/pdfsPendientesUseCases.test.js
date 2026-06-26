@@ -10,7 +10,12 @@ const writeJson = (filePath, payload) => {
   fs.writeFileSync(filePath, JSON.stringify(payload, null, 2));
 };
 
-const createPendingFixture = ({ root, ingestionId = '20260625_100000_TEST' } = {}) => {
+const createPendingFixture = ({
+  root,
+  ingestionId = '20260625_100000_TEST',
+  targetDirs,
+  originalName = 'factura-adjunta.pdf'
+} = {}) => {
   const pendingDir = path.join(root, 'documentos', 'facturas procesadas', 'pdfs_pendientes', ingestionId);
   const pdfName = `${ingestionId}.PDF.1.pdf`;
   const pdfPath = path.join(pendingDir, pdfName);
@@ -22,11 +27,11 @@ const createPendingFixture = ({ root, ingestionId = '20260625_100000_TEST' } = {
   writeJson(reportPath, {
     ingestion_id: ingestionId,
     motivo: 'Hay PDFs sin asociacion confiable.',
-    target_dirs: [toPosix(path.join('documentos', 'facturas procesadas', '3101000000', ingestionId))],
+    target_dirs: targetDirs || [toPosix(path.join('documentos', 'facturas procesadas', '3101000000', ingestionId))],
     pdfs: [
       {
         savedAs: pdfName,
-        originalName: 'factura-adjunta.pdf',
+        originalName,
         ruta,
         motivo: 'PDF sin asociacion confiable con DOC/XML'
       }
@@ -74,6 +79,56 @@ describe('pdfsPendientesUseCases', () => {
         report_path: toPosix(path.relative(tempRoot, fixture.reportPath))
       })
     ]);
+  });
+
+  test('filtra PDFs pendientes por sociedad usando el directorio destino', async () => {
+    const fixture = createPendingFixture({ root: tempRoot });
+    const repo = {
+      getSociedadById: jest.fn(async (sociedadId) => ({
+        id: sociedadId,
+        cedula_juridica: sociedadId === 7 ? '3101000000' : '3101999999'
+      })),
+      searchFacturaCandidates: jest.fn().mockResolvedValue([])
+    };
+    const useCases = createPdfsPendientesUseCases({
+      baseDir: tempRoot,
+      repo
+    });
+
+    await expect(useCases.listPendingPdfs({ sociedadId: 7 }))
+      .resolves.toMatchObject({ summary: { totalPdfs: 1, totalLotes: 1 } });
+    await expect(useCases.listPendingPdfs({ sociedadId: 8 }))
+      .resolves.toMatchObject({ summary: { totalPdfs: 0, totalLotes: 0 } });
+
+    expect(fixture.ruta).toContain('pdfs_pendientes');
+  });
+
+  test('filtra PDFs pendientes sin directorio destino buscando documentos de la sociedad', async () => {
+    createPendingFixture({
+      root: tempRoot,
+      targetDirs: [],
+      originalName: 'Factura 00100001010000009999.pdf'
+    });
+    const repo = {
+      getSociedadById: jest.fn(async (sociedadId) => ({
+        id: sociedadId,
+        cedula_juridica: sociedadId === 7 ? '3101000000' : '3101999999'
+      })),
+      searchFacturaCandidates: jest.fn(async ({ sociedadId, query }) => (
+        sociedadId === 7 && String(query).includes('00100001010000009999')
+          ? [{ id: 99, sociedad_id: 7 }]
+          : []
+      ))
+    };
+    const useCases = createPdfsPendientesUseCases({
+      baseDir: tempRoot,
+      repo
+    });
+
+    await expect(useCases.listPendingPdfs({ sociedadId: 7 }))
+      .resolves.toMatchObject({ summary: { totalPdfs: 1, totalLotes: 1 } });
+    await expect(useCases.listPendingPdfs({ sociedadId: 8 }))
+      .resolves.toMatchObject({ summary: { totalPdfs: 0, totalLotes: 0 } });
   });
 
   test('asocia un PDF pendiente moviendolo al directorio de la factura y actualiza el reporte', async () => {
