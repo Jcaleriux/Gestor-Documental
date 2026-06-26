@@ -70,6 +70,7 @@ function PdfsPendientes({ sociedadId }) {
     candidateQuery,
     setCandidateQuery,
     candidates,
+    candidateSearchAttempted,
     candidatesLoading,
     searchCandidates,
     selectedFacturaId,
@@ -154,6 +155,17 @@ function PdfsPendientes({ sociedadId }) {
         </div>
       </div>
 
+      <div className="pdfs-rules-strip">
+        <div>
+          <strong>{labels.canDoTitle}</strong>
+          <span>{labels.canDoText}</span>
+        </div>
+        <div>
+          <strong>{labels.cannotDoTitle}</strong>
+          <span>{labels.cannotDoText}</span>
+        </div>
+      </div>
+
       <div className="pdfs-pendientes-layout">
         <SectionCard
           title="PDFs pendientes"
@@ -191,11 +203,11 @@ function PdfsPendientes({ sociedadId }) {
                     <td className="text-end">
                       <div className="pdfs-pending-actions">
                         <button
-                          className="btn btn-sm btn-outline-primary"
+                          className={`btn btn-sm ${isSelected ? 'btn-primary' : 'btn-outline-primary'}`}
                           type="button"
                           onClick={() => selectPdf(item)}
                         >
-                          Seleccionar
+                          {isSelected ? 'Seleccionado' : 'Seleccionar'}
                         </button>
                         <button
                           className="btn btn-sm btn-outline-secondary"
@@ -310,7 +322,7 @@ function PdfsPendientes({ sociedadId }) {
                 </DataTable>
               ) : (
                 <EmptyState className="pdfs-candidates-empty">
-                  {candidateQuery ? labels.noCandidates : labels.noSelection}
+                  {candidateSearchAttempted ? labels.noCandidates : labels.readyToSearch}
                 </EmptyState>
               )}
 

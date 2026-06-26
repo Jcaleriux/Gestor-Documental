@@ -214,7 +214,12 @@ const PDFS_PENDIENTES_LABELS = {
   loading: 'Cargando PDFs pendientes...',
   empty: 'No hay PDFs pendientes.',
   noSelection: 'Seleccione un PDF pendiente.',
+  readyToSearch: 'Busque la factura destino para este PDF.',
   noCandidates: 'No hay facturas para la busqueda indicada.',
+  canDoTitle: 'Puedes',
+  cannotDoTitle: 'No puedes',
+  canDoText: 'Abrir el PDF, seleccionar una factura de esta sociedad y asociarlo.',
+  cannotDoText: 'Asociar sin elegir factura destino o mezclar sociedades.',
   selectedCandidate: 'Factura destino seleccionada',
   success: 'PDF asociado correctamente.',
   columns: {

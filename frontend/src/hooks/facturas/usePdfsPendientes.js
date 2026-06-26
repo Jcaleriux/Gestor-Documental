@@ -37,6 +37,7 @@ export const usePdfsPendientes = ({
   const [selectedKey, setSelectedKey] = useState('');
   const [candidateQuery, setCandidateQuery] = useState('');
   const [candidates, setCandidates] = useState([]);
+  const [candidateSearchAttempted, setCandidateSearchAttempted] = useState(false);
   const [candidatesLoading, setCandidatesLoading] = useState(false);
   const [selectedFacturaId, setSelectedFacturaId] = useState('');
   const [overwrite, setOverwrite] = useState(false);
@@ -82,6 +83,7 @@ export const usePdfsPendientes = ({
         const nextSelectedItem = nextItems.find((item) => buildPdfPendienteKey(item) === nextSelectedKey);
         setCandidateQuery(nextSelectedItem ? deriveCandidateQuery(nextSelectedItem) : '');
         setCandidates([]);
+        setCandidateSearchAttempted(false);
         setSelectedFacturaId('');
         setOverwrite(false);
       }
@@ -101,6 +103,7 @@ export const usePdfsPendientes = ({
     setSelectedKey(key);
     setCandidateQuery(deriveCandidateQuery(item));
     setCandidates([]);
+    setCandidateSearchAttempted(false);
     setSelectedFacturaId('');
     setOverwrite(false);
     setActionError('');
@@ -115,6 +118,7 @@ export const usePdfsPendientes = ({
     }
     if (!query) {
       setCandidates([]);
+      setCandidateSearchAttempted(false);
       setSelectedFacturaId('');
       return;
     }
@@ -133,6 +137,7 @@ export const usePdfsPendientes = ({
       const nextCandidates = Array.isArray(payload) ? payload : [];
 
       setCandidates(nextCandidates);
+      setCandidateSearchAttempted(true);
       setSelectedFacturaId(nextCandidates[0]?.id ? String(nextCandidates[0].id) : '');
       setOverwrite(false);
     } catch (error) {
@@ -171,6 +176,7 @@ export const usePdfsPendientes = ({
 
       setMessage('PDF asociado correctamente.');
       setCandidates([]);
+      setCandidateSearchAttempted(false);
       setSelectedFacturaId('');
       setOverwrite(false);
       await fetchPdfs();
@@ -199,8 +205,15 @@ export const usePdfsPendientes = ({
     selectedPdf,
     selectPdf,
     candidateQuery,
-    setCandidateQuery,
+    setCandidateQuery: (value) => {
+      setCandidateQuery(value);
+      setCandidateSearchAttempted(false);
+      setCandidates([]);
+      setSelectedFacturaId('');
+      setOverwrite(false);
+    },
     candidates,
+    candidateSearchAttempted,
     candidatesLoading,
     searchCandidates,
     selectedFacturaId,
