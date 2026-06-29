@@ -35,7 +35,8 @@
         "release:readiness": "node scripts/release_readiness_report.js",
         "release:smoke": "node scripts/release_smoke_checks.js",
         "test": "jest",
-        "test:ci": "node node_modules/jest/bin/jest.js --runInBand"
+        "test:ci": "node node_modules/jest/bin/jest.js --runInBand",
+        "test:coverage": "node node_modules/jest/bin/jest.js --runInBand --coverage --coverageReporters=text --coverageReporters=text-summary --coverageReporters=json-summary"
     },
     "dependencies": {
         "bcrypt": "^6.0.0",

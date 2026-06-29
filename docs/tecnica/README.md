@@ -8,6 +8,7 @@ Esta guia es el punto de entrada tecnico para entender, cambiar y validar el sis
 
 - `endpoints.md`: catalogo de endpoints, permisos, requests, errores y tests relacionados.
 - `flujos_estado.md`: mapa de estados de facturas, tramites de pago, decisiones por documento y tesoreria.
+- `cobertura_tests.md`: comandos de cobertura, alcance medido y limitaciones conocidas.
 
 ## Estado General De Documentacion Tecnica
 
