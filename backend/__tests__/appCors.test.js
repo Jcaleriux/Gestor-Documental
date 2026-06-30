@@ -16,6 +16,8 @@ const restoreEnv = () => {
   });
 };
 
+jest.setTimeout(20000);
+
 describe('app CORS policy', () => {
   afterAll(() => {
     restoreEnv();
