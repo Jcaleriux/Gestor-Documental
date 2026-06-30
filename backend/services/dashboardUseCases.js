@@ -6,6 +6,7 @@ const {
   mapDashboardStats,
   mapDashboardWorkQueue
 } = require('../mappers/dashboardMapper');
+const { resolveSociedadAccessScope } = require('./sociedadAccessService');
 
 const toNumber = (value) => {
   const parsed = Number(value);
@@ -110,7 +111,14 @@ const createDashboardUseCases = ({ dashboardRepo }) => {
     throw new Error('dashboardRepo requerido');
   }
 
-  const getStats = async ({ sociedadId }) => {
+  const resolveScope = ({ user, sociedadId }) => resolveSociedadAccessScope({
+    user,
+    sociedadId,
+    fieldName: 'sociedadId'
+  });
+
+  const getStats = async ({ sociedadId, user }) => {
+    const sociedadScope = await resolveScope({ user, sociedadId });
     const [
       facturasStats,
       notasCount,
@@ -120,13 +128,13 @@ const createDashboardUseCases = ({ dashboardRepo }) => {
       cuentasPagarRows,
       topProveedoresRows
     ] = await Promise.all([
-      dashboardRepo.getFacturasStats({ sociedadId }),
-      dashboardRepo.countNotasCredito({ sociedadId }),
-      dashboardRepo.countMensajesHacienda({ sociedadId }),
-      dashboardRepo.countSociedades({ sociedadId }),
-      dashboardRepo.getMonedasResumen({ sociedadId }),
-      dashboardRepo.getCuentasPagarResumenPorMoneda({ sociedadId }),
-      dashboardRepo.getTopProveedoresPorPagar({ sociedadId, limit: 10 })
+      dashboardRepo.getFacturasStats(sociedadScope),
+      dashboardRepo.countNotasCredito(sociedadScope),
+      dashboardRepo.countMensajesHacienda(sociedadScope),
+      dashboardRepo.countSociedades(sociedadScope),
+      dashboardRepo.getMonedasResumen(sociedadScope),
+      dashboardRepo.getCuentasPagarResumenPorMoneda(sociedadScope),
+      dashboardRepo.getTopProveedoresPorPagar({ ...sociedadScope, limit: 10 })
     ]);
 
     const facturas = facturasStats || {};
@@ -228,11 +236,12 @@ const createDashboardUseCases = ({ dashboardRepo }) => {
     });
   };
 
-  const getRecentActivity = async ({ sociedadId }) => {
+  const getRecentActivity = async ({ sociedadId, user }) => {
+    const sociedadScope = await resolveScope({ user, sociedadId });
     const [facturas, notas, mensajes] = await Promise.all([
-      dashboardRepo.listRecentFacturas({ sociedadId }),
-      dashboardRepo.listRecentNotasCredito({ sociedadId }),
-      dashboardRepo.listRecentMensajesHacienda({ sociedadId })
+      dashboardRepo.listRecentFacturas(sociedadScope),
+      dashboardRepo.listRecentNotasCredito(sociedadScope),
+      dashboardRepo.listRecentMensajesHacienda(sociedadScope)
     ]);
 
     const activity = [...facturas, ...notas, ...mensajes]
@@ -243,12 +252,14 @@ const createDashboardUseCases = ({ dashboardRepo }) => {
     return activity;
   };
 
-  const getRecentDocuments = async ({ sociedadId }) => {
-    const rows = await dashboardRepo.listRecentDocuments({ sociedadId });
+  const getRecentDocuments = async ({ sociedadId, user }) => {
+    const sociedadScope = await resolveScope({ user, sociedadId });
+    const rows = await dashboardRepo.listRecentDocuments(sociedadScope);
     return rows.map(mapDocumentoRecienteRow);
   };
 
-  const getWorkQueue = async ({ sociedadId }) => {
+  const getWorkQueue = async ({ sociedadId, user }) => {
+    const sociedadScope = await resolveScope({ user, sociedadId });
     const [
       facturasStats,
       cuentasPagarRows,
@@ -256,11 +267,11 @@ const createDashboardUseCases = ({ dashboardRepo }) => {
       sociedadesCount,
       tramitesSummary
     ] = await Promise.all([
-      dashboardRepo.getFacturasStats({ sociedadId }),
-      dashboardRepo.getCuentasPagarResumenPorMoneda({ sociedadId }),
-      dashboardRepo.listRecentDocuments({ sociedadId }),
-      dashboardRepo.countSociedades({ sociedadId }),
-      dashboardRepo.getTramitesWorkQueueSummary({ sociedadId })
+      dashboardRepo.getFacturasStats(sociedadScope),
+      dashboardRepo.getCuentasPagarResumenPorMoneda(sociedadScope),
+      dashboardRepo.listRecentDocuments(sociedadScope),
+      dashboardRepo.countSociedades(sociedadScope),
+      dashboardRepo.getTramitesWorkQueueSummary(sociedadScope)
     ]);
 
     return mapDashboardWorkQueue({

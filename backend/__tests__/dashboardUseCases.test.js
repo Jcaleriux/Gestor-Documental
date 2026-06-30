@@ -1,4 +1,8 @@
 const { createDashboardUseCases } = require('../services/dashboardUseCases');
+const usuariosSociedadesRepo = require('../repositories/usuariosSociedadesRepository');
+
+const fullAccessUser = { id: 1, permissions: ['acceso_total'] };
+const assignedUser = { id: 2, permissions: ['sociedades_asignadas', 'documentos_ver'] };
 
 const createRepoMock = (overrides = {}) => ({
   getFacturasStats: jest.fn().mockResolvedValue({
@@ -94,11 +98,15 @@ const createRepoMock = (overrides = {}) => ({
 });
 
 describe('dashboardUseCases', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   test('getStats separa montos y rankings por moneda', async () => {
     const repo = createRepoMock();
     const useCases = createDashboardUseCases({ dashboardRepo: repo });
 
-    const result = await useCases.getStats({ sociedadId: 4 });
+    const result = await useCases.getStats({ sociedadId: 4, user: fullAccessUser });
 
     expect(repo.getCuentasPagarResumenPorMoneda).toHaveBeenCalledWith({ sociedadId: 4 });
     expect(result.cuentasPorPagar).toEqual({
@@ -176,7 +184,7 @@ describe('dashboardUseCases', () => {
     });
     const useCases = createDashboardUseCases({ dashboardRepo: repo });
 
-    const result = await useCases.getWorkQueue({ sociedadId: 18 });
+    const result = await useCases.getWorkQueue({ sociedadId: 18, user: fullAccessUser });
 
     expect(repo.getTramitesWorkQueueSummary).toHaveBeenCalledWith({ sociedadId: 18 });
     expect(result).toMatchObject({
@@ -218,5 +226,37 @@ describe('dashboardUseCases', () => {
       }
     });
     expect(typeof result.updatedAt).toBe('string');
+  });
+
+  test('getStats limita a sociedades asignadas cuando se omite sociedadId', async () => {
+    const repo = createRepoMock();
+    jest.spyOn(usuariosSociedadesRepo, 'listSociedadIdsByUsuarioId').mockResolvedValue([10, 20]);
+    const useCases = createDashboardUseCases({ dashboardRepo: repo });
+
+    await useCases.getStats({ user: assignedUser });
+
+    expect(usuariosSociedadesRepo.listSociedadIdsByUsuarioId).toHaveBeenCalledWith(2);
+    expect(repo.getFacturasStats).toHaveBeenCalledWith({ sociedadIds: [10, 20] });
+    expect(repo.countSociedades).toHaveBeenCalledWith({ sociedadIds: [10, 20] });
+    expect(repo.getTopProveedoresPorPagar).toHaveBeenCalledWith({
+      sociedadIds: [10, 20],
+      limit: 10,
+    });
+  });
+
+  test('getWorkQueue rechaza sociedad no asignada', async () => {
+    const repo = createRepoMock();
+    jest.spyOn(usuariosSociedadesRepo, 'listSociedadIdsByUsuarioId').mockResolvedValue([10]);
+    const useCases = createDashboardUseCases({ dashboardRepo: repo });
+
+    await expect(useCases.getWorkQueue({
+      sociedadId: '99',
+      user: assignedUser,
+    })).rejects.toMatchObject({
+      status: 403,
+      message: 'No tiene acceso a la sociedad solicitada',
+    });
+
+    expect(repo.getFacturasStats).not.toHaveBeenCalled();
   });
 });

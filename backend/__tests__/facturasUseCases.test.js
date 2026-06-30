@@ -1,4 +1,8 @@
 const { createFacturasUseCases } = require('../services/facturasUseCases');
+const usuariosSociedadesRepo = require('../repositories/usuariosSociedadesRepository');
+
+const fullAccessUser = { id: 1, permissions: ['acceso_total'] };
+const assignedUser = { id: 2, permissions: ['sociedades_asignadas', 'documentos_ver'] };
 
 const createRepoMock = (overrides = {}) => ({
   listFacturas: jest.fn().mockResolvedValue({
@@ -105,6 +109,10 @@ const createRepoMock = (overrides = {}) => ({
 });
 
 describe('facturasUseCases', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   test('listFacturas normaliza parametros y devuelve respuesta paginada', async () => {
     const repo = createRepoMock();
     const useCases = createFacturasUseCases({ facturasRepo: repo });
@@ -123,6 +131,7 @@ describe('facturasUseCases', () => {
       sortDir: 'asc',
       page: '2',
       pageSize: '100',
+      user: fullAccessUser,
     });
 
     expect(repo.listFacturas).toHaveBeenCalledWith({
@@ -222,7 +231,7 @@ describe('facturasUseCases', () => {
     });
     const useCases = createFacturasUseCases({ facturasRepo: repo });
 
-    const result = await useCases.listFacturas({ sociedadId: '10' });
+    const result = await useCases.listFacturas({ sociedadId: '10', user: fullAccessUser });
 
     expect(result.items).toEqual([
       expect.objectContaining({
@@ -238,7 +247,7 @@ describe('facturasUseCases', () => {
     const repo = createRepoMock();
     const useCases = createFacturasUseCases({ facturasRepo: repo });
 
-    await useCases.listFacturas({ sociedadId: '5' });
+    await useCases.listFacturas({ sociedadId: '5', user: fullAccessUser });
 
     expect(repo.listFacturas).toHaveBeenCalledWith({
       sociedadId: 5,
@@ -294,6 +303,7 @@ describe('facturasUseCases', () => {
     const result = await useCases.getFacturasPdfSeleccionadas({
       sociedadId: '10',
       facturaIds: ['11'],
+      user: fullAccessUser,
     });
 
     expect(repo.getSociedadById).toHaveBeenCalledWith(10);
@@ -337,6 +347,7 @@ describe('facturasUseCases', () => {
     await useCases.listFacturas({
       sociedadId: '7',
       dashboardPreset: 'pagadas',
+      user: fullAccessUser,
     });
 
     expect(repo.listFacturas).toHaveBeenCalledWith({
@@ -364,11 +375,13 @@ describe('facturasUseCases', () => {
     await useCases.listFacturas({
       sociedadId: '7',
       dashboardPreset: 'en_revision',
+      user: fullAccessUser,
     });
 
     await useCases.listFacturas({
       sociedadId: '7',
       dashboardPreset: 'en_tramite',
+      user: fullAccessUser,
     });
 
     expect(repo.listFacturas).toHaveBeenNthCalledWith(1, expect.objectContaining({
@@ -388,11 +401,13 @@ describe('facturasUseCases', () => {
     await useCases.listFacturas({
       sociedadId: '7',
       dashboardPreset: 'contabilizadas',
+      user: fullAccessUser,
     });
 
     await useCases.listFacturas({
       sociedadId: '7',
       dashboardPreset: 'recibidas_ultimo_mes',
+      user: fullAccessUser,
     });
 
     expect(repo.listFacturas).toHaveBeenNthCalledWith(1, expect.objectContaining({
@@ -412,6 +427,7 @@ describe('facturasUseCases', () => {
     await useCases.listFacturas({
       sortBy: 'documento',
       sortDir: 'asc',
+      user: fullAccessUser,
     });
 
     expect(repo.listFacturas).toHaveBeenCalledWith(expect.objectContaining({
@@ -538,6 +554,7 @@ describe('facturasUseCases', () => {
       sortDir: 'asc',
       page: '2',
       pageSize: '25',
+      user: fullAccessUser,
     });
 
     expect(repo.listNotasCredito).toHaveBeenCalledWith({
@@ -649,6 +666,7 @@ describe('facturasUseCases', () => {
       sortDir: 'asc',
       page: '2',
       pageSize: '25',
+      user: fullAccessUser,
     });
 
     expect(repo.listTiquetesElectronicos).toHaveBeenCalledWith({
@@ -700,5 +718,55 @@ describe('facturasUseCases', () => {
       .rejects.toThrow('sortBy invalido');
 
     expect(repo.listTiquetesElectronicos).not.toHaveBeenCalled();
+  });
+
+  test('listFacturas limita a sociedades asignadas cuando no se envia sociedadId', async () => {
+    const repo = createRepoMock();
+    jest.spyOn(usuariosSociedadesRepo, 'listSociedadIdsByUsuarioId').mockResolvedValue([10, 20]);
+    const useCases = createFacturasUseCases({ facturasRepo: repo });
+
+    await useCases.listFacturas({ user: assignedUser });
+
+    expect(usuariosSociedadesRepo.listSociedadIdsByUsuarioId).toHaveBeenCalledWith(2);
+    expect(repo.listFacturas).toHaveBeenCalledWith(expect.objectContaining({
+      sociedadId: null,
+      sociedadIds: [10, 20],
+    }));
+  });
+
+  test('listFacturas rechaza sociedad no asignada', async () => {
+    const repo = createRepoMock();
+    jest.spyOn(usuariosSociedadesRepo, 'listSociedadIdsByUsuarioId').mockResolvedValue([10]);
+    const useCases = createFacturasUseCases({ facturasRepo: repo });
+
+    await expect(useCases.listFacturas({
+      sociedadId: '99',
+      user: assignedUser,
+    })).rejects.toMatchObject({
+      status: 403,
+      message: 'No tiene acceso a la sociedad solicitada',
+    });
+
+    expect(repo.listFacturas).not.toHaveBeenCalled();
+  });
+
+  test('getFactura rechaza detalle de sociedad no asignada', async () => {
+    const repo = createRepoMock({
+      getFacturaById: jest.fn().mockResolvedValue({
+        id: 15,
+        clave: '506015',
+        sociedad_id: 99,
+      }),
+    });
+    jest.spyOn(usuariosSociedadesRepo, 'listSociedadIdsByUsuarioId').mockResolvedValue([10]);
+    const useCases = createFacturasUseCases({ facturasRepo: repo });
+
+    await expect(useCases.getFactura({
+      id: '15',
+      user: assignedUser,
+    })).rejects.toMatchObject({
+      status: 403,
+      message: 'No tiene acceso a la sociedad solicitada',
+    });
   });
 });

@@ -15,6 +15,10 @@ const {
   buildOmittedItemsHeader,
   mergeUnifiedPdfResources,
 } = require('./tramitesPagoUnifiedPdfSupport');
+const {
+  ensureSociedadAccess,
+  resolveSociedadAccessScope
+} = require('./sociedadAccessService');
 
 const FACTURAS_SORT_FIELDS = new Set([
   'fecha_emision',
@@ -269,6 +273,7 @@ const normalizeFacturasListParams = ({
   sortDir,
   page,
   pageSize,
+  user,
 } = {}) => {
   const normalizedFechaDesde = normalizeDateInput(fechaDesde, 'fechaDesde');
   const normalizedFechaHasta = normalizeDateInput(fechaHasta, 'fechaHasta');
@@ -343,6 +348,7 @@ const normalizeNotasCreditoListParams = ({
   sortDir,
   page,
   pageSize,
+  user,
 } = {}) => {
   const normalizedFechaDesde = normalizeDateInput(fechaDesde, 'fechaDesde');
   const normalizedFechaHasta = normalizeDateInput(fechaHasta, 'fechaHasta');
@@ -399,6 +405,7 @@ const normalizeTiquetesListParams = ({
   sortDir,
   page,
   pageSize,
+  user,
 } = {}) => {
   const normalizedFechaDesde = normalizeDateInput(fechaDesde, 'fechaDesde');
   const normalizedFechaHasta = normalizeDateInput(fechaHasta, 'fechaHasta');
@@ -459,9 +466,32 @@ const createFacturasUseCases = ({ facturasRepo, dependencies = {} }) => {
     baseDir: runtimeConfig.storageBaseDir
   });
 
+  const buildScopedListParams = async ({ user, normalizedParams }) => {
+    const sociedadScope = await resolveSociedadAccessScope({
+      user,
+      sociedadId: normalizedParams.sociedadId,
+      fieldName: 'sociedadId'
+    });
+    return {
+      ...normalizedParams,
+      ...sociedadScope
+    };
+  };
+
+  const assertDocumentSociedadAccess = async ({ user, document }) => {
+    await ensureSociedadAccess({
+      user,
+      sociedadId: document?.sociedad_id
+    });
+  };
+
   const listFacturas = async (params) => {
     const normalizedParams = normalizeFacturasListParams(params);
-    const result = await facturasRepo.listFacturas(normalizedParams);
+    const scopedParams = await buildScopedListParams({
+      user: params?.user,
+      normalizedParams
+    });
+    const result = await facturasRepo.listFacturas(scopedParams);
 
     const items = Array.isArray(result?.items)
       ? result.items.map(mapFacturaRow)
@@ -491,23 +521,30 @@ const createFacturasUseCases = ({ facturasRepo, dependencies = {} }) => {
     };
   };
 
-  const listRetencionesPendientes = async ({ sociedadId }) => {
+  const listRetencionesPendientes = async ({ sociedadId, user }) => {
     const normalizedSociedadId = toOptionalPositiveInt(sociedadId, 'sociedadId');
-    const rows = await facturasRepo.listRetencionesPendientes({ sociedadId: normalizedSociedadId });
+    const sociedadScope = await resolveSociedadAccessScope({
+      user,
+      sociedadId: normalizedSociedadId,
+      fieldName: 'sociedadId'
+    });
+    const rows = await facturasRepo.listRetencionesPendientes(sociedadScope);
     return rows.map(mapRetencionPendienteRow);
   };
 
-  const getFactura = async ({ id }) => {
+  const getFactura = async ({ id, user }) => {
     const row = await facturasRepo.getFacturaById(id);
     assertFound(row, 'Factura not found');
+    await assertDocumentSociedadAccess({ user, document: row });
     return mapFacturaRow(row);
   };
 
-  const getFacturasPdfSeleccionadas = async ({ sociedadId, facturaIds }) => {
+  const getFacturasPdfSeleccionadas = async ({ sociedadId, facturaIds, user }) => {
     const normalizedSociedadId = toOptionalPositiveInt(sociedadId, 'sociedadId');
     if (!normalizedSociedadId) {
       throw createError(400, 'sociedadId requerido');
     }
+    await ensureSociedadAccess({ user, sociedadId: normalizedSociedadId });
 
     const normalizedFacturaIds = normalizeFacturaIds(facturaIds);
     const [sociedad, rows] = await Promise.all([
@@ -569,9 +606,10 @@ const createFacturasUseCases = ({ facturasRepo, dependencies = {} }) => {
     };
   };
 
-  const getMensajeHacienda = async ({ id }) => {
-    const factura = await facturasRepo.getClaveByFacturaId(id);
+  const getMensajeHacienda = async ({ id, user }) => {
+    const factura = await facturasRepo.getFacturaById(id);
     assertFound(factura, 'Factura no encontrada');
+    await assertDocumentSociedadAccess({ user, document: factura });
 
     let mensaje = await facturasRepo.getLatestMensajeHaciendaByFacturaId(id);
     if (!mensaje) {
@@ -582,9 +620,10 @@ const createFacturasUseCases = ({ facturasRepo, dependencies = {} }) => {
     return mensaje;
   };
 
-  const getManifestFor = async ({ getDocument, notFoundMessage, manifestNotFoundMessage }) => {
+  const getManifestFor = async ({ getDocument, notFoundMessage, manifestNotFoundMessage, user }) => {
     const document = await getDocument();
     assertFound(document, notFoundMessage);
+    await assertDocumentSociedadAccess({ user, document });
 
     return manifestResolver.readManifestForDocument({
       rutaXml: document.ruta_xml,
@@ -593,21 +632,27 @@ const createFacturasUseCases = ({ facturasRepo, dependencies = {} }) => {
     });
   };
 
-  const getManifest = async ({ id }) => getManifestFor({
+  const getManifest = async ({ id, user }) => getManifestFor({
     getDocument: () => facturasRepo.getFacturaById(id),
     notFoundMessage: 'Factura no encontrada',
-    manifestNotFoundMessage: 'Manifiesto no encontrado para esta factura'
+    manifestNotFoundMessage: 'Manifiesto no encontrado para esta factura',
+    user
   });
 
-  const getNotaCreditoManifest = async ({ id }) => getManifestFor({
+  const getNotaCreditoManifest = async ({ id, user }) => getManifestFor({
     getDocument: () => facturasRepo.getNotaCreditoById(id),
     notFoundMessage: 'Nota de credito no encontrada',
-    manifestNotFoundMessage: 'Manifiesto no encontrado para esta nota de credito'
+    manifestNotFoundMessage: 'Manifiesto no encontrado para esta nota de credito',
+    user
   });
 
   const listNotasCredito = async (params) => {
     const normalizedParams = normalizeNotasCreditoListParams(params);
-    const result = await facturasRepo.listNotasCredito(normalizedParams);
+    const scopedParams = await buildScopedListParams({
+      user: params?.user,
+      normalizedParams
+    });
+    const result = await facturasRepo.listNotasCredito(scopedParams);
 
     const items = Array.isArray(result?.items)
       ? result.items.map(mapNotaCreditoRow)
@@ -639,7 +684,11 @@ const createFacturasUseCases = ({ facturasRepo, dependencies = {} }) => {
 
   const listTiquetesElectronicos = async (params) => {
     const normalizedParams = normalizeTiquetesListParams(params);
-    const result = await facturasRepo.listTiquetesElectronicos(normalizedParams);
+    const scopedParams = await buildScopedListParams({
+      user: params?.user,
+      normalizedParams
+    });
+    const result = await facturasRepo.listTiquetesElectronicos(scopedParams);
 
     const items = Array.isArray(result?.items)
       ? result.items.map(mapTiqueteElectronicoRow)
@@ -669,9 +718,14 @@ const createFacturasUseCases = ({ facturasRepo, dependencies = {} }) => {
     };
   };
 
-  const listMensajesHacienda = async ({ sociedadId }) => {
+  const listMensajesHacienda = async ({ sociedadId, user }) => {
     const normalizedSociedadId = toOptionalPositiveInt(sociedadId, 'sociedadId');
-    const rows = await facturasRepo.listMensajesHacienda({ sociedadId: normalizedSociedadId });
+    const sociedadScope = await resolveSociedadAccessScope({
+      user,
+      sociedadId: normalizedSociedadId,
+      fieldName: 'sociedadId'
+    });
+    const rows = await facturasRepo.listMensajesHacienda(sociedadScope);
     return rows.map(mapMensajeHaciendaRow);
   };
 
