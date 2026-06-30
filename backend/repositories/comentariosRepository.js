@@ -1,5 +1,14 @@
 const pool = require('../db');
 
+const getFacturaById = async (facturaId) => {
+  const { rows } = await pool.query(
+    'SELECT id, sociedad_id FROM facturas WHERE id = $1',
+    [facturaId]
+  );
+
+  return rows[0] || null;
+};
+
 const listByFacturaId = async (facturaId) => {
   const { rows } = await pool.query(
     'SELECT * FROM comentarios_documento WHERE factura_id = $1 ORDER BY creado_en DESC',
@@ -19,6 +28,7 @@ const createComentario = async ({ facturaId, usuario, texto }) => {
 };
 
 module.exports = {
+  getFacturaById,
   listByFacturaId,
   createComentario
 };

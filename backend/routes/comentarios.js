@@ -17,7 +17,7 @@ router.get(
   requirePermission(PERMISSIONS.DOCUMENTOS_VER),
   handleRequest(async (req) => {
     const { facturaId } = req.params;
-    return useCases.listComentarios({ facturaId });
+    return useCases.listComentarios({ facturaId, user: req.user });
   }, 'Error fetching comments:', 'Error fetching comments')
 );
 
@@ -30,7 +30,7 @@ router.post(
     const { facturaId } = req.params;
     const { usuario, texto } = req.body || {};
     const actorUsuario = req.user?.nombre || req.user?.email || usuario || 'system';
-    return useCases.crearComentario({ facturaId, usuario: actorUsuario, texto });
+    return useCases.crearComentario({ facturaId, usuario: actorUsuario, texto, user: req.user });
   }, 'Error creating comment:', 'Error creating comment')
 );
 
