@@ -12,6 +12,7 @@ const {
   createRetencionPendienteExpression,
   createTotalPendienteGlobalExpression
 } = require('./sqlMontosFactura');
+const { addSociedadScopeClause } = require('./sociedadScopeSql');
 
 const totalPagoBaseExpression = createTotalPagoBaseExpression({ facturaAlias: 'f', contaAlias: 'fc' });
 const totalAPagarExpression = createTotalPagoPrincipalExpression({ facturaAlias: 'f', contaAlias: 'fc' });
@@ -47,9 +48,21 @@ const estadosConVencimientoVisible = `
   )
 `;
 
-const getFacturasStats = async ({ sociedadId } = {}) => {
-  const params = sociedadId ? [sociedadId] : [];
-  const whereSociedad = sociedadId ? 'WHERE f.sociedad_id = $1' : '';
+const buildWhereClause = (clauses) => (
+  clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : ''
+);
+
+const getFacturasStats = async ({ sociedadId, sociedadIds } = {}) => {
+  const params = [];
+  const clauses = [];
+  addSociedadScopeClause({
+    params,
+    clauses,
+    column: 'f.sociedad_id',
+    sociedadId,
+    sociedadIds
+  });
+  const whereSociedad = buildWhereClause(clauses);
 
   const { rows } = await pool.query(
     `
@@ -80,9 +93,17 @@ const getFacturasStats = async ({ sociedadId } = {}) => {
   return rows[0] || null;
 };
 
-const countNotasCredito = async ({ sociedadId } = {}) => {
-  const params = sociedadId ? [sociedadId] : [];
-  const whereSociedad = sociedadId ? 'WHERE sociedad_id = $1' : '';
+const countNotasCredito = async ({ sociedadId, sociedadIds } = {}) => {
+  const params = [];
+  const clauses = [];
+  addSociedadScopeClause({
+    params,
+    clauses,
+    column: 'sociedad_id',
+    sociedadId,
+    sociedadIds
+  });
+  const whereSociedad = buildWhereClause(clauses);
   const { rows } = await pool.query(
     `SELECT COUNT(*)::int as count FROM notas_credito ${whereSociedad}`,
     params
@@ -91,9 +112,17 @@ const countNotasCredito = async ({ sociedadId } = {}) => {
   return rows[0] || null;
 };
 
-const countMensajesHacienda = async ({ sociedadId } = {}) => {
-  const params = sociedadId ? [sociedadId] : [];
-  const whereSociedad = sociedadId ? 'WHERE sociedad_id = $1' : '';
+const countMensajesHacienda = async ({ sociedadId, sociedadIds } = {}) => {
+  const params = [];
+  const clauses = [];
+  addSociedadScopeClause({
+    params,
+    clauses,
+    column: 'sociedad_id',
+    sociedadId,
+    sociedadIds
+  });
+  const whereSociedad = buildWhereClause(clauses);
   const { rows } = await pool.query(
     `SELECT COUNT(*)::int as count FROM mensajes_hacienda ${whereSociedad}`,
     params
@@ -102,7 +131,7 @@ const countMensajesHacienda = async ({ sociedadId } = {}) => {
   return rows[0] || null;
 };
 
-const countSociedades = async ({ sociedadId } = {}) => {
+const countSociedades = async ({ sociedadId, sociedadIds } = {}) => {
   if (sociedadId) {
     const { rows } = await pool.query(
       'SELECT COUNT(*)::int as count FROM sociedades WHERE id = $1',
@@ -111,13 +140,37 @@ const countSociedades = async ({ sociedadId } = {}) => {
     return rows[0] || null;
   }
 
+  if (Array.isArray(sociedadIds)) {
+    const params = [];
+    const clauses = [];
+    addSociedadScopeClause({
+      params,
+      clauses,
+      column: 'id',
+      sociedadIds
+    });
+    const { rows } = await pool.query(
+      `SELECT COUNT(*)::int as count FROM sociedades ${buildWhereClause(clauses)}`,
+      params
+    );
+    return rows[0] || null;
+  }
+
   const { rows } = await pool.query('SELECT COUNT(*)::int as count FROM sociedades');
   return rows[0] || null;
 };
 
-const getMonedasResumen = async ({ sociedadId } = {}) => {
-  const params = sociedadId ? [sociedadId] : [];
-  const whereSociedadFactura = sociedadId ? 'WHERE f.sociedad_id = $1' : '';
+const getMonedasResumen = async ({ sociedadId, sociedadIds } = {}) => {
+  const params = [];
+  const clauses = [];
+  addSociedadScopeClause({
+    params,
+    clauses,
+    column: 'f.sociedad_id',
+    sociedadId,
+    sociedadIds
+  });
+  const whereSociedadFactura = buildWhereClause(clauses);
 
   const { rows } = await pool.query(
     `
@@ -138,17 +191,24 @@ const getMonedasResumen = async ({ sociedadId } = {}) => {
   return rows;
 };
 
-const listRecentFacturas = async ({ sociedadId } = {}) => {
-  const params = sociedadId ? [sociedadId] : [];
-  const sociedadFilter = sociedadId ? 'AND sociedad_id = $1' : '';
+const listRecentFacturas = async ({ sociedadId, sociedadIds } = {}) => {
+  const params = [];
+  const clauses = ['fecha_emision IS NOT NULL'];
+  addSociedadScopeClause({
+    params,
+    clauses,
+    column: 'sociedad_id',
+    sociedadId,
+    sociedadIds
+  });
+  const whereClause = buildWhereClause(clauses);
 
   const { rows } = await pool.query(
     `
     SELECT id, 'Factura' as tipo, CONCAT('Factura procesada: ', consecutivo) as descripcion,
            fecha_emision as fecha
     FROM facturas
-    WHERE fecha_emision IS NOT NULL
-    ${sociedadFilter}
+    ${whereClause}
     ORDER BY fecha_emision DESC
     LIMIT 5
     `,
@@ -158,17 +218,24 @@ const listRecentFacturas = async ({ sociedadId } = {}) => {
   return rows;
 };
 
-const listRecentNotasCredito = async ({ sociedadId } = {}) => {
-  const params = sociedadId ? [sociedadId] : [];
-  const sociedadFilter = sociedadId ? 'AND sociedad_id = $1' : '';
+const listRecentNotasCredito = async ({ sociedadId, sociedadIds } = {}) => {
+  const params = [];
+  const clauses = ['fecha_emision IS NOT NULL'];
+  addSociedadScopeClause({
+    params,
+    clauses,
+    column: 'sociedad_id',
+    sociedadId,
+    sociedadIds
+  });
+  const whereClause = buildWhereClause(clauses);
 
   const { rows } = await pool.query(
     `
     SELECT id, 'Nota de Credito' as tipo, CONCAT('Nota de credito procesada: ', clave) as descripcion,
            fecha_emision as fecha
     FROM notas_credito
-    WHERE fecha_emision IS NOT NULL
-    ${sociedadFilter}
+    ${whereClause}
     ORDER BY fecha_emision DESC
     LIMIT 5
     `,
@@ -178,17 +245,24 @@ const listRecentNotasCredito = async ({ sociedadId } = {}) => {
   return rows;
 };
 
-const listRecentMensajesHacienda = async ({ sociedadId } = {}) => {
-  const params = sociedadId ? [sociedadId] : [];
-  const sociedadFilter = sociedadId ? 'AND sociedad_id = $1' : '';
+const listRecentMensajesHacienda = async ({ sociedadId, sociedadIds } = {}) => {
+  const params = [];
+  const clauses = ['creado_en IS NOT NULL'];
+  addSociedadScopeClause({
+    params,
+    clauses,
+    column: 'sociedad_id',
+    sociedadId,
+    sociedadIds
+  });
+  const whereClause = buildWhereClause(clauses);
 
   const { rows } = await pool.query(
     `
     SELECT id, 'Mensaje Hacienda' as tipo, CONCAT('Mensaje procesado: ', estado) as descripcion,
            creado_en as fecha
     FROM mensajes_hacienda
-    WHERE creado_en IS NOT NULL
-    ${sociedadFilter}
+    ${whereClause}
     ORDER BY creado_en DESC
     LIMIT 5
     `,
@@ -198,9 +272,17 @@ const listRecentMensajesHacienda = async ({ sociedadId } = {}) => {
   return rows;
 };
 
-const listRecentDocuments = async ({ sociedadId } = {}) => {
-  const params = sociedadId ? [sociedadId] : [];
-  const sociedadFilter = sociedadId ? 'WHERE f.sociedad_id = $1' : '';
+const listRecentDocuments = async ({ sociedadId, sociedadIds } = {}) => {
+  const params = [];
+  const clauses = [];
+  addSociedadScopeClause({
+    params,
+    clauses,
+    column: 'f.sociedad_id',
+    sociedadId,
+    sociedadIds
+  });
+  const sociedadFilter = buildWhereClause(clauses);
 
   const { rows } = await pool.query(
     `
@@ -276,8 +358,8 @@ const listRecentDocuments = async ({ sociedadId } = {}) => {
   return rows;
 };
 
-const getCuentasPagarResumenPorMoneda = async ({ sociedadId } = {}) => {
-  const params = sociedadId ? [sociedadId] : [];
+const getCuentasPagarResumenPorMoneda = async ({ sociedadId, sociedadIds } = {}) => {
+  const params = [];
   const estadosFlujoPago = `
     (
       '${FACTURA_ESTADOS.CONTABILIZADO}',
@@ -287,9 +369,13 @@ const getCuentasPagarResumenPorMoneda = async ({ sociedadId } = {}) => {
   `;
   const whereClauses = [`${facturaEstadoOperativoExpression} IN ${estadosConVencimientoVisible}`];
 
-  if (sociedadId) {
-    whereClauses.push('f.sociedad_id = $1');
-  }
+  addSociedadScopeClause({
+    params,
+    clauses: whereClauses,
+    column: 'f.sociedad_id',
+    sociedadId,
+    sociedadIds
+  });
 
   const whereClause = `WHERE ${whereClauses.join(' AND ')}`;
 
@@ -348,7 +434,7 @@ const getCuentasPagarResumenPorMoneda = async ({ sociedadId } = {}) => {
   return rows;
 };
 
-const getTopProveedoresPorPagar = async ({ sociedadId, limit = 10 } = {}) => {
+const getTopProveedoresPorPagar = async ({ sociedadId, sociedadIds, limit = 10 } = {}) => {
   const params = [];
   const whereClauses = [
     `${facturaEstadoOperativoExpression} IN (
@@ -358,10 +444,13 @@ const getTopProveedoresPorPagar = async ({ sociedadId, limit = 10 } = {}) => {
     )`
   ];
 
-  if (sociedadId) {
-    params.push(sociedadId);
-    whereClauses.push(`f.sociedad_id = $${params.length}`);
-  }
+  addSociedadScopeClause({
+    params,
+    clauses: whereClauses,
+    column: 'f.sociedad_id',
+    sociedadId,
+    sociedadIds
+  });
 
   params.push(limit);
   const limitPlaceholder = `$${params.length}`;
@@ -422,14 +511,17 @@ const getTopProveedoresPorPagar = async ({ sociedadId, limit = 10 } = {}) => {
   return rows;
 };
 
-const getTramitesWorkQueueSummary = async ({ sociedadId } = {}) => {
+const getTramitesWorkQueueSummary = async ({ sociedadId, sociedadIds } = {}) => {
   const params = [];
   const whereClauses = [];
 
-  if (sociedadId) {
-    params.push(sociedadId);
-    whereClauses.push(`t.sociedad_id = $${params.length}`);
-  }
+  addSociedadScopeClause({
+    params,
+    clauses: whereClauses,
+    column: 't.sociedad_id',
+    sociedadId,
+    sociedadIds
+  });
 
   const whereClause = whereClauses.length > 0
     ? `WHERE ${whereClauses.join(' AND ')}`

@@ -1,10 +1,17 @@
 const { createTramitesPagoReadUseCases } = require('../services/tramitesPagoUseCases.reads');
+const usuariosSociedadesRepo = require('../repositories/usuariosSociedadesRepository');
+
+const fullAccessUser = { id: 1, permissions: ['acceso_total'] };
+const assignedUser = { id: 2, permissions: ['sociedades_asignadas', 'documentos_ver'] };
 
 const createRepoMock = (overrides = {}) => ({
   getTramiteById: jest.fn().mockResolvedValue({ id: 7, estado: 'en_revision_tesoreria_1', sociedad_id: 10 }),
   getSociedadById: jest.fn().mockResolvedValue({ id: 10, nombre_proyecto: 'BSP (Bio San Pablo)' }),
+  listTramites: jest.fn().mockResolvedValue([]),
+  getRetencionesDisponibles: jest.fn().mockResolvedValue([]),
   listDocumentosByTramite: jest.fn().mockResolvedValue([]),
   listRetencionesByTramite: jest.fn().mockResolvedValue([]),
+  listHistorialByTramite: jest.fn().mockResolvedValue([]),
   getTramiteCaratulaByTramiteId: jest.fn().mockResolvedValue(null),
   listTramiteCaratulaProvidersByTramiteId: jest.fn().mockResolvedValue([]),
   listTramiteCaratulaProviderFacturasByTramiteId: jest.fn().mockResolvedValue([]),
@@ -13,6 +20,10 @@ const createRepoMock = (overrides = {}) => ({
 });
 
 describe('createTramitesPagoReadUseCases', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   test('getTramitePdfUnificado valida providerSortDirection y compone la respuesta de descarga', async () => {
     const repo = createRepoMock();
     const createFilesUseCasesImpl = jest.fn(() => ({
@@ -43,6 +54,7 @@ describe('createTramitesPagoReadUseCases', () => {
 
     const result = await useCases.getTramitePdfUnificado({
       id: '7',
+      user: fullAccessUser,
       actorUserId: 55,
       actorRoleId: 9,
       providerSortDirection: 'desc'
@@ -109,10 +121,75 @@ describe('createTramitesPagoReadUseCases', () => {
 
     await expect(useCases.getTramitePdfUnificado({
       id: 7,
+      user: fullAccessUser,
       providerSortDirection: 'asc'
     })).rejects.toMatchObject({
       status: 404,
       message: 'No se encontraron PDFs validos para descargar en la vista unificada del tramite.'
     });
+  });
+
+  test('listTramites limita a sociedades asignadas cuando no se envia sociedadId', async () => {
+    const repo = createRepoMock();
+    jest.spyOn(usuariosSociedadesRepo, 'listSociedadIdsByUsuarioId').mockResolvedValue([10, 20]);
+    const useCases = createTramitesPagoReadUseCases({
+      tramitesPagoRepo: repo,
+      baseDir: 'C:/storage'
+    });
+
+    await useCases.listTramites({
+      estado: 'EN_REVISION_TESORERIA_1',
+      user: assignedUser
+    });
+
+    expect(usuariosSociedadesRepo.listSociedadIdsByUsuarioId).toHaveBeenCalledWith(2);
+    expect(repo.listTramites).toHaveBeenCalledWith({
+      sociedadIds: [10, 20],
+      estado: 'en_revision_tesoreria_1',
+    });
+  });
+
+  test('listTramites rechaza sociedad no asignada', async () => {
+    const repo = createRepoMock();
+    jest.spyOn(usuariosSociedadesRepo, 'listSociedadIdsByUsuarioId').mockResolvedValue([10]);
+    const useCases = createTramitesPagoReadUseCases({
+      tramitesPagoRepo: repo,
+      baseDir: 'C:/storage'
+    });
+
+    await expect(useCases.listTramites({
+      sociedadId: '99',
+      user: assignedUser,
+    })).rejects.toMatchObject({
+      status: 403,
+      message: 'No tiene acceso a la sociedad solicitada',
+    });
+
+    expect(repo.listTramites).not.toHaveBeenCalled();
+  });
+
+  test('getHistorial rechaza tramite de sociedad no asignada', async () => {
+    const repo = createRepoMock({
+      getTramiteById: jest.fn().mockResolvedValue({
+        id: 7,
+        sociedad_id: 99,
+        estado: 'en_revision_tesoreria_1',
+      }),
+    });
+    jest.spyOn(usuariosSociedadesRepo, 'listSociedadIdsByUsuarioId').mockResolvedValue([10]);
+    const useCases = createTramitesPagoReadUseCases({
+      tramitesPagoRepo: repo,
+      baseDir: 'C:/storage'
+    });
+
+    await expect(useCases.getHistorial({
+      id: '7',
+      user: assignedUser,
+    })).rejects.toMatchObject({
+      status: 403,
+      message: 'No tiene acceso a la sociedad solicitada',
+    });
+
+    expect(repo.listHistorialByTramite).not.toHaveBeenCalled();
   });
 });

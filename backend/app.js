@@ -10,11 +10,11 @@ const {
 const { PERMISSIONS } = require('./domain/permissions');
 const { applyReleaseHeaders, resolveReleaseInfo } = require('./config/releaseInfo');
 const { runtimeConfig } = require('./config/runtime');
-const { resolveDocumentPaths } = require('./utils/documentPaths');
+const { createFilesHandlers } = require('./services/filesService');
 
 const app = express();
-const documentPaths = resolveDocumentPaths(runtimeConfig.storageBaseDir);
 const releaseInfo = resolveReleaseInfo();
+const legacyFilesHandlers = createFilesHandlers(runtimeConfig.storageBaseDir);
 const corsExposedHeaders = [
   'Content-Disposition',
   'X-Novogar-Partial-Download',
@@ -64,13 +64,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve static files from documentos directory.
-app.use(
-  '/files',
+// Legacy /files URLs are served through the same resource authorization as /api/files.
+app.get(
+  '/files/*',
   requireAuth,
   loadUserPermissions,
   filesAccessPermission,
-  express.static(documentPaths.documentsRootDir)
+  legacyFilesHandlers.getStatic
 );
 
 // Auth routes

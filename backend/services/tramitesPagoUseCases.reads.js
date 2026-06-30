@@ -21,15 +21,21 @@ const {
   buildOmittedItemsHeader,
   buildUnifiedPdfDownloadFilename,
 } = require('./tramitesPagoUnifiedPdfSupport');
+const {
+  ensureSociedadAccess,
+  resolveSociedadAccessScope
+} = require('./sociedadAccessService');
 
 const loadTramiteReadModel = async ({
   tramitesPagoRepo,
   tramiteId,
+  user,
   actorUserId,
   actorRoleId,
 }) => {
   const tramite = await tramitesPagoRepo.getTramiteById(tramiteId);
   assertFound(tramite, 'Tramite no encontrado');
+  await ensureSociedadAccess({ user, sociedadId: tramite.sociedad_id });
 
   const [documentos, retenciones, caratulaRow, providerRows, providerOrderRows, orphanRows, sociedad] = await Promise.all([
     tramitesPagoRepo.listDocumentosByTramite(tramiteId, null, {
@@ -101,33 +107,40 @@ const createTramitesPagoReadUseCases = ({
   } = dependencies;
   const filesUseCases = createFilesUseCasesImpl({ baseDir });
 
-  const listTramites = async ({ sociedadId, estado }) => {
+  const listTramites = async ({ sociedadId, estado, user }) => {
     const normalizedSociedadId = parseOptionalPositiveIntOrThrow(sociedadId, 'sociedadId');
     const normalizedEstado = estado ? toNormalizedLowerString(estado) : undefined;
-    const rows = await tramitesPagoRepo.listTramites({
+    const sociedadScope = await resolveSociedadAccessScope({
+      user,
       sociedadId: normalizedSociedadId,
+      fieldName: 'sociedadId'
+    });
+    const rows = await tramitesPagoRepo.listTramites({
+      ...sociedadScope,
       estado: normalizedEstado
     });
     return rows.map(mapTramiteRow);
   };
 
-  const getRetencionesDisponibles = async ({ sociedadId }) => {
+  const getRetencionesDisponibles = async ({ sociedadId, user }) => {
     const sociedad = parsePositiveIntOrThrow(sociedadId, 'sociedadId');
+    await ensureSociedadAccess({ user, sociedadId: sociedad });
     const rows = await tramitesPagoRepo.getRetencionesDisponibles({ sociedadId: sociedad });
     return rows.map(mapRetencionRow);
   };
 
-  const getTramite = async ({ id, actorUserId, actorRoleId }) => {
+  const getTramite = async ({ id, user, actorUserId, actorRoleId }) => {
     const tramiteId = parsePositiveIntOrThrow(id, 'id');
     return loadTramiteReadModel({
       tramitesPagoRepo,
       tramiteId,
+      user,
       actorUserId,
       actorRoleId,
     });
   };
 
-  const getTramitePdfUnificado = async ({ id, actorUserId, actorRoleId, providerSortDirection }) => {
+  const getTramitePdfUnificado = async ({ id, user, actorUserId, actorRoleId, providerSortDirection }) => {
     const tramiteId = parsePositiveIntOrThrow(id, 'id');
     const normalizedDirectionInput = String(providerSortDirection || '').trim().toLowerCase();
     if (normalizedDirectionInput && normalizedDirectionInput !== 'asc' && normalizedDirectionInput !== 'desc') {
@@ -137,6 +150,7 @@ const createTramitesPagoReadUseCases = ({
     const tramiteData = await loadTramiteReadModel({
       tramitesPagoRepo,
       tramiteId,
+      user,
       actorUserId,
       actorRoleId,
     });
@@ -169,8 +183,11 @@ const createTramitesPagoReadUseCases = ({
     };
   };
 
-  const getHistorial = async ({ id }) => {
+  const getHistorial = async ({ id, user }) => {
     const tramiteId = parsePositiveIntOrThrow(id, 'id');
+    const tramite = await tramitesPagoRepo.getTramiteById(tramiteId);
+    assertFound(tramite, 'Tramite no encontrado');
+    await ensureSociedadAccess({ user, sociedadId: tramite.sociedad_id });
     const rows = await tramitesPagoRepo.listHistorialByTramite(tramiteId);
     return rows.map(mapHistorialRow);
   };

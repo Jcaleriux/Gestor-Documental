@@ -13,6 +13,7 @@ const {
   createTotalPagoPrincipalExpression,
   createTotalPendienteGlobalExpression
 } = require('./sqlMontosFactura');
+const { addSociedadScopeClause } = require('./sociedadScopeSql');
 
 const totalFacturaExpression = createTotalFacturaExpression({ facturaAlias: 'f' });
 const totalRebajosExpression = createRebajosAplicadosExpression({ contaAlias: 'fc' });
@@ -218,6 +219,7 @@ const buildFacturasListBaseCte = () => `
 
 const buildFacturasListWhere = ({
   sociedadId,
+  sociedadIds,
   search,
   estado,
   emisor,
@@ -231,10 +233,13 @@ const buildFacturasListWhere = ({
   const params = [];
   const clauses = [];
 
-  if (sociedadId) {
-    params.push(sociedadId);
-    clauses.push(`fe.sociedad_id = $${params.length}`);
-  }
+  addSociedadScopeClause({
+    params,
+    clauses,
+    column: 'fe.sociedad_id',
+    sociedadId,
+    sociedadIds
+  });
 
   if (search) {
     params.push(`%${String(search).toLowerCase()}%`);
@@ -385,6 +390,7 @@ const buildFacturasOrderBy = (sortBy, sortDir) => {
 
 const listFacturas = async ({
   sociedadId,
+  sociedadIds,
   search,
   estado,
   emisor,
@@ -402,6 +408,7 @@ const listFacturas = async ({
   const baseCte = buildFacturasListBaseCte();
   const { params, whereClause } = buildFacturasListWhere({
     sociedadId,
+    sociedadIds,
     search,
     estado,
     emisor,
@@ -497,17 +504,20 @@ const listFacturas = async ({
   };
 };
 
-const listRetencionesPendientes = async ({ sociedadId } = {}) => {
+const listRetencionesPendientes = async ({ sociedadId, sociedadIds } = {}) => {
   const params = [];
   const whereClauses = [
     `${retencionPendienteExpression} > 0`,
     `${facturaEstadoOperativoExpression} = '${FACTURA_ESTADOS.PAGADO}'`
   ];
 
-  if (sociedadId) {
-    params.push(sociedadId);
-    whereClauses.push(`f.sociedad_id = $${params.length}`);
-  }
+  addSociedadScopeClause({
+    params,
+    clauses: whereClauses,
+    column: 'f.sociedad_id',
+    sociedadId,
+    sociedadIds
+  });
 
   const whereClause = whereClauses.length > 0
     ? `WHERE ${whereClauses.join(' AND ')}`
@@ -701,6 +711,7 @@ const getLatestMensajeHaciendaByFacturaId = async (facturaId) => {
 
 const listNotasCredito = async ({
   sociedadId,
+  sociedadIds,
   proveedorId,
   search,
   estado,
@@ -762,6 +773,7 @@ const listNotasCredito = async ({
 
   const buildNotasCreditoListWhere = ({
     sociedadId: currentSociedadId,
+    sociedadIds: currentSociedadIds,
     proveedorId: currentProveedorId,
     search,
     estado,
@@ -775,10 +787,13 @@ const listNotasCredito = async ({
     const params = [];
     const clauses = [];
 
-    if (currentSociedadId) {
-      params.push(currentSociedadId);
-      clauses.push(`ne.sociedad_id = $${params.length}`);
-    }
+    addSociedadScopeClause({
+      params,
+      clauses,
+      column: 'ne.sociedad_id',
+      sociedadId: currentSociedadId,
+      sociedadIds: currentSociedadIds
+    });
 
     if (currentProveedorId) {
       params.push(currentProveedorId);
@@ -872,6 +887,7 @@ const listNotasCredito = async ({
   const baseCte = buildNotasCreditoBaseCte();
   const { params, whereClause } = buildNotasCreditoListWhere({
     sociedadId,
+    sociedadIds,
     proveedorId,
     search,
     estado,
@@ -988,6 +1004,7 @@ const getNotaCreditoById = async (id) => {
 
 const listTiquetesElectronicos = async ({
   sociedadId,
+  sociedadIds,
   search,
   emisor,
   moneda,
@@ -1015,6 +1032,7 @@ const listTiquetesElectronicos = async ({
 
   const buildTiquetesWhere = ({
     sociedadId: currentSociedadId,
+    sociedadIds: currentSociedadIds,
     search: currentSearch,
     emisor: currentEmisor,
     moneda: currentMoneda,
@@ -1026,10 +1044,13 @@ const listTiquetesElectronicos = async ({
     const params = [];
     const clauses = [];
 
-    if (currentSociedadId) {
-      params.push(currentSociedadId);
-      clauses.push(`te.sociedad_id = $${params.length}`);
-    }
+    addSociedadScopeClause({
+      params,
+      clauses,
+      column: 'te.sociedad_id',
+      sociedadId: currentSociedadId,
+      sociedadIds: currentSociedadIds
+    });
 
     if (currentSearch) {
       params.push(`%${String(currentSearch).toLowerCase()}%`);
@@ -1093,6 +1114,7 @@ const listTiquetesElectronicos = async ({
   const baseCte = buildTiquetesBaseCte();
   const { params, whereClause } = buildTiquetesWhere({
     sociedadId,
+    sociedadIds,
     search,
     emisor,
     moneda,
@@ -1168,13 +1190,17 @@ const listTiquetesElectronicos = async ({
   };
 };
 
-const listMensajesHacienda = async ({ sociedadId } = {}) => {
+const listMensajesHacienda = async ({ sociedadId, sociedadIds } = {}) => {
   const params = [];
-  let whereClause = '';
-  if (sociedadId) {
-    params.push(sociedadId);
-    whereClause = 'WHERE m.sociedad_id = $1';
-  }
+  const clauses = [];
+  addSociedadScopeClause({
+    params,
+    clauses,
+    column: 'm.sociedad_id',
+    sociedadId,
+    sociedadIds
+  });
+  const whereClause = clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '';
 
   const { rows } = await pool.query(
     `

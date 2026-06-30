@@ -32,7 +32,46 @@ const ensureSociedadAccess = async ({ user, sociedadId }) => {
   throw createError(403, 'No tiene acceso a la sociedad solicitada');
 };
 
+const resolveSociedadAccessScope = async ({ user, sociedadId, fieldName = 'sociedadId' } = {}) => {
+  const normalizedSociedadId = (
+    sociedadId === undefined || sociedadId === null || sociedadId === ''
+      ? null
+      : toPositiveInt(sociedadId, fieldName)
+  );
+  const permissions = permissionsService.normalizePermissionList(user?.permissions);
+
+  if (
+    permissions.includes(PERMISSIONS.ACCESO_TOTAL)
+    || permissions.includes(PERMISSIONS.SOCIEDADES_TODAS)
+  ) {
+    return normalizedSociedadId
+      ? { sociedadId: normalizedSociedadId }
+      : {};
+  }
+
+  if (permissions.includes(PERMISSIONS.SOCIEDADES_ASIGNADAS)) {
+    const assigned = await usuariosSociedadesRepo.listSociedadIdsByUsuarioId(user?.id);
+    const assignedIds = [...new Set(
+      (assigned || [])
+        .map((id) => Number(id))
+        .filter((id) => Number.isInteger(id) && id > 0)
+    )];
+
+    if (normalizedSociedadId) {
+      if (assignedIds.includes(normalizedSociedadId)) {
+        return { sociedadId: normalizedSociedadId };
+      }
+      throw createError(403, 'No tiene acceso a la sociedad solicitada');
+    }
+
+    return { sociedadIds: assignedIds };
+  }
+
+  throw createError(403, 'No tiene acceso a sociedades');
+};
+
 module.exports = {
   ensureSociedadAccess,
+  resolveSociedadAccessScope,
   toPositiveInt
 };

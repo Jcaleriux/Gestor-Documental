@@ -5,23 +5,24 @@ const { handleRequest } = require('../utils/http');
 const useCases = createFacturasUseCases({ facturasRepo });
 
 const listFacturas = handleRequest((req) => {
-  return useCases.listFacturas(req.query || {});
+  return useCases.listFacturas({ ...(req.query || {}), user: req.user });
 }, 'Error fetching facturas:', 'Error fetching facturas');
 
 const listRetencionesPendientes = handleRequest((req) => {
   const { sociedadId } = req.query || {};
-  return useCases.listRetencionesPendientes({ sociedadId });
+  return useCases.listRetencionesPendientes({ sociedadId, user: req.user });
 }, 'Error fetching retenciones pendientes:', 'Error fetching retenciones pendientes');
 
 const getFactura = handleRequest((req) => {
   const { id } = req.params;
-  return useCases.getFactura({ id });
+  return useCases.getFactura({ id, user: req.user });
 }, 'Error fetching factura:', 'Error fetching factura');
 
 const getFacturasPdfSeleccionadas = handleRequest(async (req, res) => {
   const pdfDownload = await useCases.getFacturasPdfSeleccionadas({
     sociedadId: req.body?.sociedadId || req.query?.sociedadId,
     facturaIds: req.body?.facturaIds || req.query?.facturaIds,
+    user: req.user,
   });
 
   res.setHeader('Content-Type', 'application/pdf');
@@ -36,12 +37,12 @@ const getFacturasPdfSeleccionadas = handleRequest(async (req, res) => {
 
 const getMensajeHacienda = handleRequest((req) => {
   const { id } = req.params;
-  return useCases.getMensajeHacienda({ id });
+  return useCases.getMensajeHacienda({ id, user: req.user });
 }, 'Error fetching mensaje hacienda:', 'Error fetching mensaje hacienda');
 
 const getManifest = handleRequest(async (req, res) => {
   const { id } = req.params;
-  const { manifest, manifestPath } = await useCases.getManifest({ id });
+  const { manifest, manifestPath } = await useCases.getManifest({ id, user: req.user });
 
   res
     .status(200)
@@ -51,7 +52,7 @@ const getManifest = handleRequest(async (req, res) => {
 
 const getNotaCreditoManifest = handleRequest(async (req, res) => {
   const { id } = req.params;
-  const { manifest, manifestPath } = await useCases.getNotaCreditoManifest({ id });
+  const { manifest, manifestPath } = await useCases.getNotaCreditoManifest({ id, user: req.user });
 
   res
     .status(200)
@@ -64,16 +65,16 @@ const listNotasCredito = handleRequest((req) => {
   if (query.proveedor_id && !query.proveedorId) {
     query.proveedorId = query.proveedor_id;
   }
-  return useCases.listNotasCredito(query);
+  return useCases.listNotasCredito({ ...query, user: req.user });
 }, 'Error fetching notas de credito:', 'Error fetching notas de credito');
 
 const listTiquetesElectronicos = handleRequest((req) => {
-  return useCases.listTiquetesElectronicos(req.query || {});
+  return useCases.listTiquetesElectronicos({ ...(req.query || {}), user: req.user });
 }, 'Error fetching tiquetes electronicos:', 'Error fetching tiquetes electronicos');
 
 const listMensajesHacienda = handleRequest((req) => {
   const { sociedadId } = req.query || {};
-  return useCases.listMensajesHacienda({ sociedadId });
+  return useCases.listMensajesHacienda({ sociedadId, user: req.user });
 }, 'Error fetching mensajes hacienda:', 'Error fetching mensajes hacienda');
 
 module.exports = {
