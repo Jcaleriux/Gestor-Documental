@@ -2,6 +2,7 @@ const { validateFacturaNoPagada } = require('./tramitesPagoRules');
 const { DOCUMENTO_ACCIONES, TESORERIA_ESTADOS } = require('../domain/tramitesPago');
 const { FACTURA_ESTADOS } = require('../domain/facturas');
 const { createError, assertFound, throwIfValidationError } = require('../utils/errors');
+const { ensureSociedadAccess } = require('./sociedadAccessService');
 
 const normalizeUniquePositiveIds = (values) => {
   if (!Array.isArray(values)) return [];
@@ -165,6 +166,23 @@ const loadTramiteEstadoOrFail = async ({ tramitesPagoRepo, tramiteId, client }) 
   const tramite = await tramitesPagoRepo.getTramiteEstado(tramiteId, client);
   assertFound(tramite, 'Tramite no encontrado');
   return tramite;
+};
+
+const ensureTramiteSociedadAccess = async ({
+  tramitesPagoRepo,
+  tramiteId,
+  user,
+  client,
+  tramite
+}) => {
+  let scopedTramite = tramite;
+  if (!scopedTramite?.sociedad_id) {
+    scopedTramite = await tramitesPagoRepo.getTramiteById(tramiteId, client);
+    assertFound(scopedTramite, 'Tramite no encontrado');
+  }
+
+  await ensureSociedadAccess({ user, sociedadId: scopedTramite.sociedad_id });
+  return scopedTramite;
 };
 
 const ensureFacturaNoPagadaForTesoreria = async ({ tramitesPagoRepo, facturaId, client }) => {
@@ -351,6 +369,7 @@ module.exports = {
   assertRepoContract,
   callOptionalRepoMethod,
   loadTramiteEstadoOrFail,
+  ensureTramiteSociedadAccess,
   ensureFacturaNoPagadaForTesoreria,
   resolveFacturaEstadoOrigen,
   excludeDocumentoEnTesoreria,

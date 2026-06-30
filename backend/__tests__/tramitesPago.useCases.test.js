@@ -1,6 +1,10 @@
 const { createTramitesPagoUseCases } = require('../services/tramitesPagoUseCases');
 const { TRAMITE_ESTADOS, DOCUMENTO_DECISIONES } = require('../domain/tramitesPago');
 const { FACTURA_ESTADOS } = require('../domain/facturas');
+const usuariosSociedadesRepo = require('../repositories/usuariosSociedadesRepository');
+
+const fullAccessUser = { id: 1, permissions: ['acceso_total'] };
+const assignedUser = { id: 2, permissions: ['sociedades_asignadas', 'documentos_tramitar_pago'] };
 
 const createClientMock = () => ({
   query: jest.fn().mockResolvedValue({}),
@@ -11,8 +15,15 @@ const createRepoMock = (overrides = {}) => {
   const client = overrides.client || createClientMock();
   const repo = {
     getClient: jest.fn().mockResolvedValue(client),
-    getTramiteEstado: jest.fn().mockResolvedValue({ estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA }),
-    getTramiteById: jest.fn().mockResolvedValue({ id: 1, estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA }),
+    getTramiteEstado: jest.fn().mockResolvedValue({
+      estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA,
+      sociedad_id: 10
+    }),
+    getTramiteById: jest.fn().mockResolvedValue({
+      id: 1,
+      estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA,
+      sociedad_id: 10
+    }),
     getSociedadById: jest.fn().mockResolvedValue({
       id: 10,
       nombre_proyecto: 'Esencia Desamparados',
@@ -94,6 +105,10 @@ const createRepoMock = (overrides = {}) => {
 };
 
 describe('tramitesPagoUseCases', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   test('valida contrato minimo del repositorio', () => {
     expect(() => createTramitesPagoUseCases({ tramitesPagoRepo: {} }))
       .toThrow('tramitesPagoRepo incompleto');
@@ -107,7 +122,8 @@ describe('tramitesPagoUseCases', () => {
       id: 1,
       facturaId: 2,
       motivo: 'fuera de tramite',
-      usuario: 'qa'
+      usuario: 'qa',
+      user: fullAccessUser
     });
 
     expect(result).toMatchObject({ factura_id: 2 });
@@ -129,6 +145,27 @@ describe('tramitesPagoUseCases', () => {
     expect(repo.touchTramite).toHaveBeenCalledWith(1, client);
   });
 
+  test('accionTesoreria rechaza tramite fuera de sociedades asignadas antes de tocar documento', async () => {
+    jest.spyOn(usuariosSociedadesRepo, 'listSociedadIdsByUsuarioId').mockResolvedValue([99]);
+    const { repo, client } = createRepoMock();
+    const useCases = createTramitesPagoUseCases({ tramitesPagoRepo: repo });
+
+    await expect(useCases.accionTesoreria({
+      id: 1,
+      facturaId: 2,
+      accion: 'excluir',
+      motivo: 'fuera de alcance',
+      usuario: 'tesoreria@novogar.local',
+      user: assignedUser
+    })).rejects.toMatchObject({
+      status: 403,
+      message: 'No tiene acceso a la sociedad solicitada'
+    });
+    expect(repo.getDocumentoTesoreriaEstado).not.toHaveBeenCalled();
+    expect(repo.updateDocumentoTesoreriaExcluido).not.toHaveBeenCalled();
+    expect(client.query).toHaveBeenCalledWith('ROLLBACK');
+  });
+
   test('decisionDocumento hace rollback cuando una actualizacion falla', async () => {
     const error = new Error('fallo al actualizar tramite');
     const { repo, client } = createRepoMock({
@@ -143,6 +180,7 @@ describe('tramitesPagoUseCases', () => {
       decision: DOCUMENTO_DECISIONES.RECHAZADO,
       motivo: 'rechazo qa',
       usuario: 'qa',
+      user: fullAccessUser,
       actorPermissions: ['documentos_aprobar_gerencia']
     })).rejects.toThrow('fallo al actualizar tramite');
 
@@ -162,7 +200,8 @@ describe('tramitesPagoUseCases', () => {
       accion: 'REENVIAR',
       destino: 'EN_APROBACION_GERENCIA',
       motivo: 'reenvio por prueba',
-      usuario: 'qa'
+      usuario: 'qa',
+      user: fullAccessUser
     });
 
     expect(result).toMatchObject({ factura_id: 2 });
@@ -188,7 +227,8 @@ describe('tramitesPagoUseCases', () => {
       facturaId: 2,
       accion: 'devolver_contabilidad',
       motivo: 'corregir contabilizacion',
-      usuario: 'tesoreria@novogar.local'
+      usuario: 'tesoreria@novogar.local',
+      user: fullAccessUser
     });
 
     expect(result).toMatchObject({ factura_id: 2 });
@@ -218,7 +258,8 @@ describe('tramitesPagoUseCases', () => {
     await expect(useCases.cambiarEstado({
       id: 'abc',
       estado: TRAMITE_ESTADOS.PAGADO,
-      usuario: 'qa'
+      usuario: 'qa',
+      user: fullAccessUser
     })).rejects.toThrow('id invalido');
 
     expect(repo.getClient).not.toHaveBeenCalled();
@@ -228,7 +269,8 @@ describe('tramitesPagoUseCases', () => {
     const { repo, client } = createRepoMock({
       getTramiteById: jest.fn().mockResolvedValue({
         id: 1,
-        estado: TRAMITE_ESTADOS.EN_APROBACION_GERENCIA_FINANCIERA
+        estado: TRAMITE_ESTADOS.EN_APROBACION_GERENCIA_FINANCIERA,
+        sociedad_id: 10
       }),
       updateTramiteEstado: jest.fn().mockResolvedValue({
         id: 1,
@@ -241,6 +283,7 @@ describe('tramitesPagoUseCases', () => {
       id: 1,
       estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA_2,
       usuario: 'financiera@novogar.local',
+      user: fullAccessUser,
       actorPermissions: ['documentos_aprobar_gerencia_financiera']
     });
 
@@ -256,11 +299,38 @@ describe('tramitesPagoUseCases', () => {
     }, client);
   });
 
+  test('cambiarEstado rechaza tramite fuera de sociedades asignadas antes de actualizar estado', async () => {
+    jest.spyOn(usuariosSociedadesRepo, 'listSociedadIdsByUsuarioId').mockResolvedValue([99]);
+    const { repo, client } = createRepoMock({
+      getTramiteById: jest.fn().mockResolvedValue({
+        id: 1,
+        estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA_2,
+        sociedad_id: 10
+      })
+    });
+    const useCases = createTramitesPagoUseCases({ tramitesPagoRepo: repo });
+
+    await expect(useCases.cambiarEstado({
+      id: 1,
+      estado: TRAMITE_ESTADOS.PAGADO,
+      usuario: 'tesoreria@novogar.local',
+      user: assignedUser,
+      actorPermissions: ['documentos_tramitar_pago']
+    })).rejects.toMatchObject({
+      status: 403,
+      message: 'No tiene acceso a la sociedad solicitada'
+    });
+    expect(repo.updateTramiteEstado).not.toHaveBeenCalled();
+    expect(repo.insertPagoFactura).not.toHaveBeenCalled();
+    expect(client.query).toHaveBeenCalledWith('ROLLBACK');
+  });
+
   test('cambiarEstado a gerencia contable exige caratulas resueltas en revision tesoreria inicial', async () => {
     const { repo, client } = createRepoMock({
       getTramiteById: jest.fn().mockResolvedValue({
         id: 1,
-        estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA_1
+        estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA_1,
+        sociedad_id: 10
       }),
       getTramiteCaratulaByTramiteId: jest.fn().mockResolvedValue(null)
     });
@@ -270,6 +340,7 @@ describe('tramitesPagoUseCases', () => {
       id: 1,
       estado: TRAMITE_ESTADOS.EN_APROBACION_GERENCIA_CONTABLE,
       usuario: 'tesoreria@novogar.local',
+      user: fullAccessUser,
       actorPermissions: ['documentos_tramitar_pago']
     })).rejects.toThrow('Debe cargar las caratulas del tramite antes de continuar');
 
@@ -282,7 +353,8 @@ describe('tramitesPagoUseCases', () => {
     const { repo, client } = createRepoMock({
       getTramiteById: jest.fn().mockResolvedValue({
         id: 1,
-        estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA_1
+        estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA_1,
+        sociedad_id: 10
       }),
       getTramiteCaratulaByTramiteId: jest.fn().mockResolvedValue({
         id: 90,
@@ -324,6 +396,7 @@ describe('tramitesPagoUseCases', () => {
       id: 1,
       estado: TRAMITE_ESTADOS.EN_APROBACION_GERENCIA_CONTABLE,
       usuario: 'tesoreria@novogar.local',
+      user: fullAccessUser,
       pagos_documentos: [{ factura_id: 2, monto_pago: 55.5 }],
       actorPermissions: ['documentos_tramitar_pago']
     });
@@ -338,7 +411,8 @@ describe('tramitesPagoUseCases', () => {
     const { repo, client } = createRepoMock({
       getTramiteById: jest.fn().mockResolvedValue({
         id: 1,
-        estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA_2
+        estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA_2,
+        sociedad_id: 10
       })
     });
     const useCases = createTramitesPagoUseCases({ tramitesPagoRepo: repo });
@@ -347,6 +421,7 @@ describe('tramitesPagoUseCases', () => {
       id: 1,
       estado: TRAMITE_ESTADOS.PAGADO,
       usuario: 'financiera@novogar.local',
+      user: fullAccessUser,
       actorPermissions: ['documentos_aprobar_gerencia_financiera']
     })).rejects.toThrow('Permiso requerido: documentos_tramitar_pago');
 
@@ -359,7 +434,8 @@ describe('tramitesPagoUseCases', () => {
     const { repo, client } = createRepoMock({
       getTramiteById: jest.fn().mockResolvedValue({
         id: 1,
-        estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA_2
+        estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA_2,
+        sociedad_id: 10
       }),
       updateTramiteEstado: jest.fn().mockResolvedValue({
         id: 1,
@@ -378,6 +454,7 @@ describe('tramitesPagoUseCases', () => {
       id: 1,
       estado: TRAMITE_ESTADOS.PAGADO,
       usuario: 'tesoreria@novogar.local',
+      user: fullAccessUser,
       actorPermissions: ['documentos_tramitar_pago']
     });
 
@@ -404,7 +481,8 @@ describe('tramitesPagoUseCases', () => {
     const { repo } = createRepoMock({
       getTramiteById: jest.fn().mockResolvedValue({
         id: 1,
-        estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA_2
+        estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA_2,
+        sociedad_id: 10
       }),
       updateTramiteEstado: jest.fn().mockResolvedValue({
         id: 1,
@@ -420,6 +498,7 @@ describe('tramitesPagoUseCases', () => {
       id: 1,
       estado: TRAMITE_ESTADOS.PAGADO,
       usuario: 'tesoreria@novogar.local',
+      user: fullAccessUser,
       actorPermissions: ['documentos_tramitar_pago']
     });
 
@@ -437,7 +516,8 @@ describe('tramitesPagoUseCases', () => {
     const { repo } = createRepoMock({
       getTramiteById: jest.fn().mockResolvedValue({
         id: 1,
-        estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA_2
+        estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA_2,
+        sociedad_id: 10
       }),
       updateTramiteEstado: jest.fn().mockResolvedValue({
         id: 1,
@@ -453,6 +533,7 @@ describe('tramitesPagoUseCases', () => {
       id: 1,
       estado: TRAMITE_ESTADOS.PAGADO,
       usuario: 'tesoreria@novogar.local',
+      user: fullAccessUser,
       actorPermissions: ['documentos_tramitar_pago']
     });
 
@@ -481,7 +562,8 @@ describe('tramitesPagoUseCases', () => {
     const result = await useCases.crearTramite({
       factura_ids: [11, 12],
       retencion_factura_ids: [21],
-      usuario: 'qa'
+      usuario: 'qa',
+      user: fullAccessUser
     });
 
     expect(result).toMatchObject({ id: 1 });
@@ -523,6 +605,28 @@ describe('tramitesPagoUseCases', () => {
     }, client);
   });
 
+  test('crearTramite rechaza sociedad final no asignada antes de insertar tramite', async () => {
+    jest.spyOn(usuariosSociedadesRepo, 'listSociedadIdsByUsuarioId').mockResolvedValue([99]);
+    const { repo, client } = createRepoMock({
+      getFacturasByIds: jest.fn().mockResolvedValue([
+        { id: 11, sociedad_id: 10, estado: FACTURA_ESTADOS.CONTABILIZADO }
+      ])
+    });
+    const useCases = createTramitesPagoUseCases({ tramitesPagoRepo: repo });
+
+    await expect(useCases.crearTramite({
+      factura_ids: [11],
+      usuario: 'qa',
+      user: assignedUser
+    })).rejects.toMatchObject({
+      status: 403,
+      message: 'No tiene acceso a la sociedad solicitada'
+    });
+    expect(repo.findDuplicadosActivos).not.toHaveBeenCalled();
+    expect(repo.insertTramite).not.toHaveBeenCalled();
+    expect(client.query).toHaveBeenCalledWith('ROLLBACK');
+  });
+
   test('crearTramite rechaza facturas en revision contable', async () => {
     const { repo } = createRepoMock({
       getFacturasByIds: jest.fn().mockResolvedValue([
@@ -533,14 +637,21 @@ describe('tramitesPagoUseCases', () => {
 
     await expect(useCases.crearTramite({
       factura_ids: [11],
-      usuario: 'qa'
+      usuario: 'qa',
+      user: fullAccessUser
     })).rejects.toThrow('Solo se pueden tramitar facturas contabilizadas o con pago parcial');
   });
 
   test('decisionDocumento rechazado en gerencia no cambia la factura a en_revision', async () => {
     const { repo, client } = createRepoMock({
-      getTramiteEstado: jest.fn().mockResolvedValue({ estado: TRAMITE_ESTADOS.EN_APROBACION_GERENCIA }),
-      getTramiteByIdForUpdate: jest.fn().mockResolvedValue({ id: 1, estado: TRAMITE_ESTADOS.EN_APROBACION_GERENCIA })
+      getTramiteEstado: jest.fn().mockResolvedValue({
+        estado: TRAMITE_ESTADOS.EN_APROBACION_GERENCIA,
+        sociedad_id: 10
+      }),
+      getTramiteByIdForUpdate: jest.fn().mockResolvedValue({
+        id: 1,
+        estado: TRAMITE_ESTADOS.EN_APROBACION_GERENCIA
+      })
     });
     const useCases = createTramitesPagoUseCases({ tramitesPagoRepo: repo });
 
@@ -551,6 +662,7 @@ describe('tramitesPagoUseCases', () => {
       decision: DOCUMENTO_DECISIONES.RECHAZADO,
       motivo: 'rechazo de negocio',
       usuario: 'gerencia@novogar.local',
+      user: fullAccessUser,
       actorPermissions: ['documentos_aprobar_gerencia']
     });
 
@@ -567,11 +679,35 @@ describe('tramitesPagoUseCases', () => {
     }, client);
   });
 
+  test('decisionDocumento rechaza tramite fuera de sociedades asignadas antes de tocar documento', async () => {
+    jest.spyOn(usuariosSociedadesRepo, 'listSociedadIdsByUsuarioId').mockResolvedValue([99]);
+    const { repo, client } = createRepoMock();
+    const useCases = createTramitesPagoUseCases({ tramitesPagoRepo: repo });
+
+    await expect(useCases.decisionDocumento({
+      id: 1,
+      facturaId: 2,
+      etapa: 'gerencia',
+      decision: DOCUMENTO_DECISIONES.APROBADO,
+      motivo: null,
+      usuario: 'gerencia@novogar.local',
+      user: assignedUser,
+      actorPermissions: ['documentos_aprobar_gerencia']
+    })).rejects.toMatchObject({
+      status: 403,
+      message: 'No tiene acceso a la sociedad solicitada'
+    });
+    expect(repo.getTramiteDocumentoByFacturaIdForUpdate).not.toHaveBeenCalled();
+    expect(repo.updateDocumentoDecision).not.toHaveBeenCalled();
+    expect(client.query).toHaveBeenCalledWith('ROLLBACK');
+  });
+
   test('decisionDocumento aprobado en gerencia avanza el tramite a revision tesoreria inicial', async () => {
     const { repo, client } = createRepoMock({
       getTramiteByIdForUpdate: jest.fn().mockResolvedValue({
         id: 1,
-        estado: TRAMITE_ESTADOS.EN_APROBACION_GERENCIA
+        estado: TRAMITE_ESTADOS.EN_APROBACION_GERENCIA,
+        sociedad_id: 10
       }),
       updateDocumentoDecision: jest.fn().mockResolvedValue({
         factura_id: 2,
@@ -591,6 +727,7 @@ describe('tramitesPagoUseCases', () => {
       decision: DOCUMENTO_DECISIONES.APROBADO,
       motivo: null,
       usuario: 'gerencia@novogar.local',
+      user: fullAccessUser,
       actorPermissions: ['documentos_aprobar_gerencia']
     });
 
@@ -651,6 +788,7 @@ describe('tramitesPagoUseCases', () => {
       motivo: null,
       usuario: 'gerencia@novogar.local',
       actorUserId: 101,
+      user: fullAccessUser,
       actorPermissions: ['documentos_ver']
     });
 
@@ -711,6 +849,7 @@ describe('tramitesPagoUseCases', () => {
       actorUserName: 'Gerencia Backup',
       actorUserEmail: 'backup@novogar.local',
       actorRoleId: 7,
+      user: fullAccessUser,
       actorPermissions: ['documentos_ver']
     });
 
@@ -754,6 +893,7 @@ describe('tramitesPagoUseCases', () => {
       motivo: 'cambio tardio',
       usuario: 'gerencia@novogar.local',
       actorUserId: 101,
+      user: fullAccessUser,
       actorPermissions: ['documentos_ver']
     })).rejects.toThrow('Tu decision de gerencia ya fue registrada para este documento');
 

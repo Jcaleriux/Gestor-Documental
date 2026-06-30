@@ -9,7 +9,8 @@ const { createError, assertFound, throwIfValidationError } = require('../utils/e
 const {
   normalizeUniquePositiveIds,
   parsePositiveIntOrThrow,
-  toNormalizedLowerString
+  toNormalizedLowerString,
+  ensureTramiteSociedadAccess
 } = require('./tramitesPagoUseCases.helpers');
 const {
   createCambioEstadoPolicies,
@@ -64,7 +65,7 @@ const createTramitesPagoWorkflowUseCases = ({ tramitesPagoRepo, runInTransaction
       etapa
     }));
 
-  const crearTramite = async ({ sociedad_id, factura_ids, retencion_factura_ids, usuario }) => {
+  const crearTramite = async ({ sociedad_id, factura_ids, retencion_factura_ids, usuario, user }) => {
     const facturaIds = normalizeUniquePositiveIds(factura_ids);
     const retencionFacturaIds = normalizeUniquePositiveIds(retencion_factura_ids);
 
@@ -86,12 +87,13 @@ const createTramitesPagoWorkflowUseCases = ({ tramitesPagoRepo, runInTransaction
         resolveItemPolicy: resolveCreateItemPolicy,
         sociedadInput,
         usuario,
+        user,
         client
       });
     });
   };
 
-  const cambiarEstado = async ({ id, estado, usuario, motivo, force, pagos_documentos, actorPermissions }) => {
+  const cambiarEstado = async ({ id, estado, usuario, motivo, force, pagos_documentos, actorPermissions, user }) => {
     const tramiteId = parsePositiveIntOrThrow(id, 'id');
     const estadoNormalizadoInput = toNormalizedLowerString(estado);
     const estadoCheck = validateCambioEstadoInput(estadoNormalizadoInput, force, motivo);
@@ -102,6 +104,13 @@ const createTramitesPagoWorkflowUseCases = ({ tramitesPagoRepo, runInTransaction
     return runInTransaction(async (client) => {
       const tramite = await tramitesPagoRepo.getTramiteById(tramiteId, client);
       assertFound(tramite, 'Tramite no encontrado');
+      await ensureTramiteSociedadAccess({
+        tramitesPagoRepo,
+        tramiteId,
+        user,
+        client,
+        tramite
+      });
 
       const actualRaw = tramite.estado;
       const actual = normalizeEstado(actualRaw);
@@ -157,7 +166,8 @@ const createTramitesPagoWorkflowUseCases = ({ tramitesPagoRepo, runInTransaction
     actorUserName,
     actorUserEmail,
     actorRoleId,
-    actorPermissions
+    actorPermissions,
+    user
   }) => {
     const tramiteId = parsePositiveIntOrThrow(id, 'id');
     const normalizedFacturaId = parsePositiveIntOrThrow(facturaId, 'facturaId');
@@ -179,6 +189,13 @@ const createTramitesPagoWorkflowUseCases = ({ tramitesPagoRepo, runInTransaction
     });
 
     return runInTransaction(async (client) => {
+      await ensureTramiteSociedadAccess({
+        tramitesPagoRepo,
+        tramiteId,
+        user,
+        client
+      });
+
       const documento = await tramitesPagoRepo.getTramiteDocumentoByFacturaIdForUpdate({
         tramiteId,
         facturaId: normalizedFacturaId

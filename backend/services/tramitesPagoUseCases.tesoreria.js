@@ -10,6 +10,7 @@ const {
 } = require('./tramitesPagoTesoreriaActionHandlers');
 const {
   loadTramiteEstadoOrFail,
+  ensureTramiteSociedadAccess,
   parsePositiveIntOrThrow,
   toNormalizedLowerString
 } = require('./tramitesPagoUseCases.helpers');
@@ -23,7 +24,7 @@ const createTramitesPagoTesoreriaUseCases = ({ tramitesPagoRepo, runInTransactio
       handlerType
     }));
 
-  const rechazoTesoreria = async ({ id, facturaId, motivo, usuario }) => {
+  const rechazoTesoreria = async ({ id, facturaId, motivo, usuario, user }) => {
     const tramiteId = parsePositiveIntOrThrow(id, 'id');
     const normalizedFacturaId = parsePositiveIntOrThrow(facturaId, 'facturaId');
     const excludeHandler = resolveActionHandler('exclude');
@@ -37,6 +38,13 @@ const createTramitesPagoTesoreriaUseCases = ({ tramitesPagoRepo, runInTransactio
         tramiteId,
         client
       });
+      await ensureTramiteSociedadAccess({
+        tramitesPagoRepo,
+        tramiteId,
+        user,
+        client,
+        tramite
+      });
 
       return excludeHandler({
         id: tramiteId,
@@ -49,7 +57,7 @@ const createTramitesPagoTesoreriaUseCases = ({ tramitesPagoRepo, runInTransactio
     });
   };
 
-  const accionTesoreria = async ({ id, facturaId, accion, destino, motivo, usuario }) => {
+  const accionTesoreria = async ({ id, facturaId, accion, destino, motivo, usuario, user }) => {
     const tramiteId = parsePositiveIntOrThrow(id, 'id');
     const normalizedFacturaId = parsePositiveIntOrThrow(facturaId, 'facturaId');
     const accionNormalizada = toNormalizedLowerString(accion);
@@ -67,6 +75,13 @@ const createTramitesPagoTesoreriaUseCases = ({ tramitesPagoRepo, runInTransactio
         tramitesPagoRepo,
         tramiteId,
         client
+      });
+      await ensureTramiteSociedadAccess({
+        tramitesPagoRepo,
+        tramiteId,
+        user,
+        client,
+        tramite
       });
       const estadoAnterior = tramite.estado;
 

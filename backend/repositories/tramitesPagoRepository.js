@@ -49,7 +49,10 @@ const normalizePositiveIntOrNull = (value) => {
 };
 
 const getTramiteEstado = async (tramiteId, client) => {
-  const { rows } = await getDb(client).query('SELECT estado FROM tramites_pago WHERE id = $1', [tramiteId]);
+  const { rows } = await getDb(client).query(
+    'SELECT estado, sociedad_id FROM tramites_pago WHERE id = $1',
+    [tramiteId]
+  );
   return rows[0] || null;
 };
 
