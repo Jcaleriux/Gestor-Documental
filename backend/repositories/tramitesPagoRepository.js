@@ -7,6 +7,7 @@ const {
   createFacturaEstadoOperativoExpression,
   isFacturaWorkflowPagoEstado
 } = require('./sqlFacturaEstado');
+const { addSociedadScopeClause } = require('./sociedadScopeSql');
 const {
   createTotalFacturaExpression,
   createRebajosAplicadosExpression,
@@ -811,14 +812,17 @@ const updateTramiteEstado = async ({ tramiteId, estado }, client) => {
   return rows[0] || null;
 };
 
-const listTramites = async ({ sociedadId, estado } = {}, client) => {
+const listTramites = async ({ sociedadId, sociedadIds, estado } = {}, client) => {
   const params = [];
   const where = [];
 
-  if (sociedadId) {
-    params.push(sociedadId);
-    where.push(`t.sociedad_id = $${params.length}`);
-  }
+  addSociedadScopeClause({
+    params,
+    clauses: where,
+    column: 't.sociedad_id',
+    sociedadId,
+    sociedadIds
+  });
   if (estado) {
     params.push(estado);
     where.push(`t.estado = $${params.length}`);

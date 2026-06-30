@@ -40,18 +40,19 @@ const accionTesoreria = handleRequest((req) => {
 
 const listTramites = handleRequest((req) => {
   const { sociedadId, estado } = req.query || {};
-  return useCases.listTramites({ sociedadId, estado });
+  return useCases.listTramites({ sociedadId, estado, user: req.user });
 }, 'Error fetching tramites:', 'Error fetching tramites');
 
 const getRetencionesDisponibles = handleRequest((req) => {
   const { sociedadId } = req.query || {};
-  return useCases.getRetencionesDisponibles({ sociedadId });
+  return useCases.getRetencionesDisponibles({ sociedadId, user: req.user });
 }, 'Error fetching retention payments:', 'Error fetching retention payments');
 
 const getTramite = handleRequest((req) => {
   const { id } = req.params;
   return useCases.getTramite({
     id,
+    user: req.user,
     actorUserId: req.user?.id,
     actorRoleId: req.user?.rol
   });
@@ -61,6 +62,7 @@ const getTramitePdfUnificado = handleRequest(async (req, res) => {
   const { id } = req.params;
   const pdfDownload = await useCases.getTramitePdfUnificado({
     id,
+    user: req.user,
     actorUserId: req.user?.id,
     actorRoleId: req.user?.rol,
     providerSortDirection: req.query?.providerSortDirection
@@ -79,7 +81,7 @@ const getTramitePdfUnificado = handleRequest(async (req, res) => {
 
 const getHistorial = handleRequest((req) => {
   const { id } = req.params;
-  return useCases.getHistorial({ id });
+  return useCases.getHistorial({ id, user: req.user });
 }, 'Error fetching tramite history:', 'Error fetching tramite history');
 
 const uploadCaratulas = handleRequest((req) => {
