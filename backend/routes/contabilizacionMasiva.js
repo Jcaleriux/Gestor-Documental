@@ -24,7 +24,8 @@ router.post(
     return useCases.analyzeDiarioDocumentos({
       sociedadId: sociedad_id,
       filePath: file_path || undefined,
-      resolutions
+      resolutions,
+      user: req.user
     });
   }, 'Error analyzing diario documentos:', 'Error analyzing diario documentos')
 );
@@ -41,7 +42,8 @@ router.post(
       sociedadId: sociedad_id,
       filePath: file_path || undefined,
       resolutions,
-      usuario: actorUsuario
+      usuario: actorUsuario,
+      user: req.user
     });
   }, 'Error applying diario documentos:', 'Error applying diario documentos')
 );
@@ -57,7 +59,8 @@ router.get(
     return useCases.searchFacturaCandidates({
       sociedadId,
       query,
-      limit
+      limit,
+      user: req.user
     });
   }, 'Error searching diario documentos candidates:', 'Error searching candidates')
 );

@@ -7,7 +7,7 @@ const {
   DOCUMENTS_DIR_NAME,
   getRelativePathVariants
 } = require('../utils/documentPaths');
-const { ensureFacturaById } = require('./contabilizacionUseCases.helpers');
+const { ensureFacturaSociedadAccess } = require('./contabilizacionUseCases.helpers');
 
 const sanitizeFileName = (value) => {
   const raw = String(value || '').trim();
@@ -136,7 +136,8 @@ const createContabilizacionDocumentosRespaldoUseCases = ({
     filename,
     file_base64,
     metadata,
-    usuario
+    usuario,
+    user
   }) => {
     const pdfBuffer = decodePdfBase64({
       rawBase64: file_base64,
@@ -147,7 +148,12 @@ const createContabilizacionDocumentosRespaldoUseCases = ({
 
     try {
       return await runInTransaction(async (client) => {
-        const factura = await ensureFacturaById({ contabilizacionRepo, facturaId, client });
+        const factura = await ensureFacturaSociedadAccess({
+          contabilizacionRepo,
+          facturaId,
+          user,
+          client
+        });
         const storagePath = buildStoragePath({
           sociedadId: factura.sociedad_id,
           facturaId,
@@ -180,10 +186,15 @@ const createContabilizacionDocumentosRespaldoUseCases = ({
     }
   };
 
-  const deleteDocumentoRespaldo = async ({ facturaId, documentoId }) => {
+  const deleteDocumentoRespaldo = async ({ facturaId, documentoId, user }) => {
     const normalizedDocumentoId = toPositiveInt(documentoId, 'documento_id');
     const deleted = await runInTransaction(async (client) => {
-      await ensureFacturaById({ contabilizacionRepo, facturaId, client });
+      await ensureFacturaSociedadAccess({
+        contabilizacionRepo,
+        facturaId,
+        user,
+        client
+      });
       const existing = await contabilizacionRepo.getDocumentoRespaldoById({
         facturaId,
         documentoId: normalizedDocumentoId
