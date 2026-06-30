@@ -7,6 +7,10 @@ const {
   resolveDocumentPaths
 } = require('../utils/documentPaths');
 const { createError } = require('../utils/errors');
+const {
+  ensureSociedadAccess,
+  resolveSociedadAccessScope
+} = require('./sociedadAccessService');
 
 const PENDING_PDFS_DIR_NAME = 'pdfs_pendientes';
 const PENDING_REPORT_SUFFIX = '.pdfs_pendientes.json';
@@ -230,6 +234,50 @@ const pendingItemMatchesSociedad = async ({ item, sociedad, repo }) => {
   return false;
 };
 
+const loadSociedadByIdOrNull = async ({ repo, sociedadId, client }) => {
+  if (!sociedadId || typeof repo.getSociedadById !== 'function') {
+    return null;
+  }
+  return repo.getSociedadById(Number(sociedadId), client);
+};
+
+const loadSociedadesForScope = async ({ repo, sociedadScope, client }) => {
+  if (sociedadScope.sociedadId) {
+    const sociedad = await loadSociedadByIdOrNull({
+      repo,
+      sociedadId: sociedadScope.sociedadId,
+      client
+    });
+    return sociedad ? [sociedad] : [];
+  }
+
+  if (Array.isArray(sociedadScope.sociedadIds)) {
+    const sociedades = await Promise.all(
+      sociedadScope.sociedadIds.map((sociedadId) => loadSociedadByIdOrNull({
+        repo,
+        sociedadId,
+        client
+      }))
+    );
+    return sociedades.filter(Boolean);
+  }
+
+  return null;
+};
+
+const itemMatchesAnySociedad = async ({ item, sociedades, repo }) => {
+  if (!Array.isArray(sociedades)) {
+    return true;
+  }
+
+  for (const sociedad of sociedades) {
+    if (await pendingItemMatchesSociedad({ item, sociedad, repo })) {
+      return true;
+    }
+  }
+  return false;
+};
+
 const resolveTargetDirForFactura = async ({ baseDir, documentsRootDir, factura }) => {
   const referencePath = factura?.ruta_xml || factura?.ruta_pdf;
   if (!referencePath) {
@@ -293,7 +341,7 @@ const createPdfsPendientesUseCases = ({
     resolvePendingPdfPath
   } = createReportResolver({ baseDir: resolvedBaseDir });
 
-  const listPendingPdfs = async ({ sociedadId } = {}) => {
+  const listPendingPdfs = async ({ sociedadId, user } = {}) => {
     if (!await pathExists(pendingRoot)) {
       return {
         items: [],
@@ -301,10 +349,13 @@ const createPdfsPendientesUseCases = ({
       };
     }
 
-    const sociedad = sociedadId && typeof repo.getSociedadById === 'function'
-      ? await repo.getSociedadById(Number(sociedadId))
-      : null;
-    if (sociedadId && !sociedad) {
+    const sociedadScope = await resolveSociedadAccessScope({
+      user,
+      sociedadId,
+      fieldName: 'sociedadId'
+    });
+    const sociedades = await loadSociedadesForScope({ repo, sociedadScope });
+    if (Array.isArray(sociedades) && sociedades.length === 0) {
       return {
         items: [],
         summary: { totalPdfs: 0, totalLotes: 0 }
@@ -335,7 +386,7 @@ const createPdfsPendientesUseCases = ({
             pdf
           });
 
-          if (await pendingItemMatchesSociedad({ item, sociedad, repo })) {
+          if (await itemMatchesAnySociedad({ item, sociedades, repo })) {
             items.push(item);
           }
         }
@@ -353,13 +404,36 @@ const createPdfsPendientesUseCases = ({
     };
   };
 
-  const searchFacturaCandidates = ({ sociedadId, query, limit } = {}) => (
-    repo.searchFacturaCandidates({
-      sociedadId: sociedadId ? Number(sociedadId) : undefined,
+  const searchFacturaCandidates = async ({ sociedadId, query, limit, user } = {}) => {
+    const sociedadScope = await resolveSociedadAccessScope({
+      user,
+      sociedadId,
+      fieldName: 'sociedadId'
+    });
+
+    if (Array.isArray(sociedadScope.sociedadIds)) {
+      const rowsBySociedad = await Promise.all(
+        sociedadScope.sociedadIds.map((scopedSociedadId) => repo.searchFacturaCandidates({
+          sociedadId: scopedSociedadId,
+          query,
+          limit
+        }))
+      );
+      const uniqueById = new Map();
+      rowsBySociedad.flat().forEach((row) => {
+        if (row?.id != null && !uniqueById.has(Number(row.id))) {
+          uniqueById.set(Number(row.id), row);
+        }
+      });
+      return Array.from(uniqueById.values()).slice(0, Math.min(Math.max(Number(limit) || 15, 1), 50));
+    }
+
+    return repo.searchFacturaCandidates({
+      sociedadId: sociedadScope.sociedadId,
       query,
       limit
-    })
-  );
+    });
+  };
 
   const assignPendingPdf = async ({
     ingestionId,
@@ -367,7 +441,8 @@ const createPdfsPendientesUseCases = ({
     facturaId,
     sociedadId,
     overwrite = false,
-    usuario
+    usuario,
+    user
   } = {}) => {
     let movedFile = null;
     let reportSnapshot = null;
@@ -393,8 +468,27 @@ const createPdfsPendientesUseCases = ({
           throw createError(404, 'Factura destino no encontrada.');
         }
 
+        await ensureSociedadAccess({ user, sociedadId: factura.sociedad_id });
+
         if (sociedadId && Number(factura.sociedad_id) !== Number(sociedadId)) {
           throw createError(400, 'La factura destino no pertenece a la sociedad seleccionada.');
+        }
+
+        const facturaSociedad = await loadSociedadByIdOrNull({
+          repo,
+          sociedadId: factura.sociedad_id,
+          client
+        });
+        const pendingItem = {
+          ...pdfEntry,
+          target_dirs: report.target_dirs
+        };
+        if (facturaSociedad && !await pendingItemMatchesSociedad({
+          item: pendingItem,
+          sociedad: facturaSociedad,
+          repo
+        })) {
+          throw createError(403, 'El PDF pendiente no corresponde a la sociedad de la factura destino.');
         }
 
         if (factura.ruta_pdf && !overwrite) {
