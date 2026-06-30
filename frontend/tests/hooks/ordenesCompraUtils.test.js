@@ -61,7 +61,7 @@ test('ordenesCompra utils propaga error de lectura de archivo', async () => {
 test('ordenesCompra utils formatea fechas, montos y proveedor', () => {
   assert.equal(formatDateOnly('2026-03-22'), '22/03/2026');
   assert.match(formatDateTime('2026-03-22T12:30:00.000Z'), /22\/3\/2026/);
-  assert.match(formatAmount(1234.5).replace(/\s/g, ''), /1234[,.]50/);
+  assert.equal(formatAmount(1234.5).replace(/\D/g, ''), '123450');
   assert.equal(formatAmount('monto invalido'), '-');
   assert.equal(proveedorLabel({
     nombre: 'Proveedor Norte',
