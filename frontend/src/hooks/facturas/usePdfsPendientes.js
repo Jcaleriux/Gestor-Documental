@@ -95,7 +95,17 @@ export const usePdfsPendientes = ({
   }, [api, sociedadId]);
 
   useEffect(() => {
-    fetchPdfs();
+    let shouldFetch = true;
+
+    queueMicrotask(() => {
+      if (shouldFetch) {
+        fetchPdfs();
+      }
+    });
+
+    return () => {
+      shouldFetch = false;
+    };
   }, [fetchPdfs]);
 
   const selectPdf = useCallback((item) => {
