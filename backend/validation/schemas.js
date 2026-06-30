@@ -384,6 +384,14 @@ const analizarDiarioDocumentosSchema = Joi.object({
   resolutions: Joi.array().items(contabilizacionMasivaResolucionSchema).default([])
 });
 
+const assignPdfPendienteSchema = Joi.object({
+  ingestion_id: Joi.string().trim().max(255).required(),
+  pdf_ruta: Joi.string().trim().max(1000).required(),
+  factura_id: Joi.number().integer().positive().required(),
+  sociedad_id: Joi.number().integer().positive().allow(null).optional(),
+  overwrite: Joi.boolean().default(false)
+});
+
 module.exports = {
   createComentarioSchema,
   createAuditoriaSchema,
@@ -427,6 +435,7 @@ module.exports = {
   syncReservaDocumentoSchema,
   replaceReservaOperacionDocumentoSchema,
   analizarDiarioDocumentosSchema,
+  assignPdfPendienteSchema,
 };
 
 

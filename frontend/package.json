@@ -8,6 +8,7 @@
     "build": "vite build",
     "test": "node tests/run-ci-suite.js",
     "test:ci": "node tests/run-ci-suite.js",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=src/**/*.js --test-coverage-exclude=tests/**/*.js tests/run-ci-suite.js",
     "test:watch": "node --test --watch --experimental-specifier-resolution=node tests/**/*.test.js",
     "lint": "eslint .",
     "preview": "vite preview",

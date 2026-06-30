@@ -399,3 +399,188 @@
     border-bottom: none;
   }
 }
+
+.pdfs-pendientes-page {
+  gap: 12px;
+}
+
+.pdfs-pendientes-summary .facturas-summary-value {
+  overflow-wrap: anywhere;
+}
+
+.pdfs-rules-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pdfs-rules-strip > div {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 9px 12px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-lg);
+  background: #ffffff;
+  color: var(--app-muted);
+  font-size: 0.84rem;
+}
+
+.pdfs-rules-strip strong {
+  color: var(--app-text);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pdfs-pendientes-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.pdfs-pendientes-list-card,
+.pdfs-pendientes-resolver-card {
+  min-width: 0;
+}
+
+.pdfs-pendientes-table td,
+.pdfs-candidates-table td {
+  vertical-align: middle;
+}
+
+.pdfs-pending-main,
+.pdfs-selected-detail,
+.pdfs-assignment-target {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.pdfs-pending-main strong,
+.pdfs-selected-detail strong,
+.pdfs-assignment-target strong {
+  color: var(--app-text);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.pdfs-pending-main span,
+.pdfs-selected-detail span,
+.pdfs-assignment-target span {
+  color: var(--app-muted);
+  font-size: 0.76rem;
+  overflow-wrap: anywhere;
+}
+
+.pdfs-pending-actions {
+  display: inline-flex;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pdfs-selected-detail {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-lg);
+  background: #f8fafc;
+  margin-bottom: 12px;
+}
+
+.pdfs-candidate-search {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.pdfs-candidate-search .search-input {
+  flex: 1;
+  position: relative;
+}
+
+.pdfs-candidate-search .search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #667085;
+}
+
+.pdfs-candidate-search .form-control {
+  padding-left: 36px;
+}
+
+.pdfs-candidates-table-wrap {
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-lg);
+  overflow: auto;
+  max-height: 360px;
+}
+
+.pdfs-candidates-empty {
+  padding: 12px;
+  border: 1px dashed var(--app-border);
+  border-radius: var(--app-radius-lg);
+}
+
+.pdfs-assignment-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 12px;
+  margin-top: 12px;
+  border-top: 1px solid var(--app-border);
+}
+
+.pdfs-overwrite-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--app-text);
+  font-size: 0.84rem;
+  margin: 0;
+}
+
+@media (max-width: 1180px) {
+  .pdfs-pendientes-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .pdfs-rules-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .pdfs-rules-strip > div {
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .pdfs-candidate-search,
+  .pdfs-assignment-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pdfs-candidate-search .btn,
+  .pdfs-assignment-footer .btn {
+    width: 100%;
+  }
+
+  .pdfs-pending-actions {
+    width: 100%;
+  }
+
+  .pdfs-pending-actions .btn {
+    flex: 1;
+  }
+}

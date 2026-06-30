@@ -199,6 +199,42 @@ const RETENCIONES_PENDIENTES_LABELS = {
   emptyFilters: 'No hay retenciones pendientes para los filtros seleccionados.'
 };
 
+const PDFS_PENDIENTES_LABELS = {
+  pageTitle: 'PDFs pendientes',
+  pageSubtitle: 'Resuelve PDFs que quedaron sin asociacion confiable durante la importacion',
+  refreshButton: 'Actualizar',
+  searchPlaceholder: 'Buscar factura por clave, consecutivo, emisor o receptor',
+  searchButton: 'Buscar',
+  searchingButton: 'Buscando...',
+  assignButton: 'Asociar PDF',
+  assigningButton: 'Asociando...',
+  openPdfButton: 'Abrir PDF',
+  overwriteLabel: 'Reemplazar ruta PDF actual',
+  noSociedad: 'Seleccione una sociedad para buscar facturas destino.',
+  loading: 'Cargando PDFs pendientes...',
+  empty: 'No hay PDFs pendientes.',
+  noSelection: 'Seleccione un PDF pendiente.',
+  readyToSearch: 'Busque la factura destino para este PDF.',
+  noCandidates: 'No hay facturas para la busqueda indicada.',
+  canDoTitle: 'Puedes',
+  cannotDoTitle: 'No puedes',
+  canDoText: 'Abrir el PDF, seleccionar una factura de esta sociedad y asociarlo.',
+  cannotDoText: 'Asociar sin elegir factura destino o mezclar sociedades.',
+  selectedCandidate: 'Factura destino seleccionada',
+  success: 'PDF asociado correctamente.',
+  columns: {
+    lote: 'Lote',
+    pdf: 'PDF',
+    motivo: 'Motivo',
+    acciones: 'Acciones',
+    documento: 'Documento',
+    emisor: 'Emisor',
+    receptor: 'Receptor',
+    fecha: 'Fecha',
+    estado: 'Estado'
+  }
+};
+
 const FACTURA_DETALLE_LABELS = {
   header: {
     title: 'Contabilización de factura',
@@ -405,6 +441,7 @@ export {
   NOTAS_CREDITO_LABELS,
   TIQUETES_ELECTRONICOS_LABELS,
   RETENCIONES_PENDIENTES_LABELS,
+  PDFS_PENDIENTES_LABELS,
   FACTURA_DETALLE_LABELS,
   TRAMITES_LABELS,
   TRAMITES_ACTION_LABELS,

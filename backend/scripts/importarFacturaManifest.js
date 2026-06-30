@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const fse = require("fs-extra");
+const { PDFParse } = require("pdf-parse");
 const { runtimeConfig } = require("../config/runtime");
 const { parseXML } = require("../utils/xmlParser");
 const { resolveDocumentPaths } = require("../utils/documentPaths");
@@ -40,6 +41,16 @@ function safeReadJson(filePath) {
 
 function ensureDir(dir) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+}
+
+async function extractTextFromPdf(pdfPath) {
+  try {
+    const parser = new PDFParse({ data: fs.readFileSync(pdfPath) });
+    const parsed = await parser.getText();
+    return parsed && parsed.text ? String(parsed.text) : "";
+  } catch (error) {
+    return "";
+  }
 }
 
 function parseXmlFile(xmlPath) {
@@ -96,15 +107,64 @@ function normalizeComparableText(value) {
     .replace(/[^a-z0-9]/g, "");
 }
 
-function createPdfAssigner(pdfEntries) {
-  const pdfsByIndex = new Map();
+function getComparableTokens(value) {
+  return String(value || "")
+    .toLowerCase()
+    .match(/[a-z0-9]+/g) || [];
+}
+
+function stripLeadingZeros(value) {
+  const stripped = String(value || "").replace(/^0+/, "");
+  return stripped || String(value || "");
+}
+
+function buildDocumentNumberHints(numeroConsecutivo) {
+  const digits = String(numeroConsecutivo || "").replace(/\D/g, "");
+  if (!digits) return [];
+
+  const hints = new Set();
+  hints.add(digits);
+  hints.add(stripLeadingZeros(digits));
+
+  const suffixLengths = [10, 8, 6, 4, 3];
+
+  for (const length of suffixLengths) {
+    if (digits.length < length) continue;
+    const hint = stripLeadingZeros(digits.slice(-length));
+    if (hint.length >= 3) {
+      hints.add(hint);
+    }
+  }
+
+  return [...hints];
+}
+
+function getPdfSearchText(pdf) {
+  return `${pdf.originalName || ""} ${pdf.savedAs || ""} ${pdf.pdfText || ""}`;
+}
+
+function pdfMatchesDocumentNumber(pdf, numeroConsecutivo) {
+  const hints = buildDocumentNumberHints(numeroConsecutivo);
+  if (hints.length === 0) return false;
+
+  const tokens = getComparableTokens(getPdfSearchText(pdf));
+
+  return hints.some((hint) => tokens.includes(hint));
+}
+
+function pdfMatchesReceptor(pdf, receptorIdentificacion) {
+  const receptor = normalizeComparableText(receptorIdentificacion);
+  if (!receptor) return false;
+
+  const haystack = normalizeComparableText(getPdfSearchText(pdf));
+  return haystack.includes(receptor);
+}
+
+function createPdfAssigner(pdfEntries, { allowSinglePdfFallback = false } = {}) {
   const availablePdfPaths = new Set();
 
   for (const pdf of pdfEntries) {
     availablePdfPaths.add(pdf.filePath);
-    if (Number.isFinite(pdf.index) && !pdfsByIndex.has(pdf.index)) {
-      pdfsByIndex.set(pdf.index, pdf);
-    }
   }
 
   const takePdfIfAvailable = (pdf) => {
@@ -120,31 +180,138 @@ function createPdfAssigner(pdfEntries) {
 
     for (const pdf of pdfEntries) {
       if (!availablePdfPaths.has(pdf.filePath)) continue;
-      const originalName = normalizeComparableText(pdf.originalName);
-      const savedAs = normalizeComparableText(pdf.savedAs);
-      if (
-        (originalName && originalName.includes(claveNormalized)) ||
-        (savedAs && savedAs.includes(claveNormalized))
-      ) {
+      const haystack = normalizeComparableText(getPdfSearchText(pdf));
+      if (haystack.includes(claveNormalized)) {
         return takePdfIfAvailable(pdf);
       }
     }
     return null;
   };
 
+  const assignByDocumentNumber = ({ numeroConsecutivo, receptorIdentificacion }) => {
+    const matches = pdfEntries.filter((pdf) => (
+      availablePdfPaths.has(pdf.filePath) &&
+      pdfMatchesDocumentNumber(pdf, numeroConsecutivo)
+    ));
+
+    if (matches.length === 0) return null;
+    if (matches.length === 1) return takePdfIfAvailable(matches[0]);
+
+    const receptorMatches = matches.filter((pdf) => pdfMatchesReceptor(pdf, receptorIdentificacion));
+    return receptorMatches.length === 1
+      ? takePdfIfAvailable(receptorMatches[0])
+      : null;
+  };
+
   return {
-    assign(docEntry, claveDoc) {
+    assign({ claveDoc, numeroConsecutivo, receptorIdentificacion }) {
       return (
         assignByClave(claveDoc) ||
-        (Number.isFinite(docEntry.index) ? takePdfIfAvailable(pdfsByIndex.get(docEntry.index)) : null) ||
-        takePdfIfAvailable(pdfEntries.find((pdf) => availablePdfPaths.has(pdf.filePath))) ||
+        assignByDocumentNumber({ numeroConsecutivo, receptorIdentificacion }) ||
+        (allowSinglePdfFallback
+          ? takePdfIfAvailable(pdfEntries.find((pdf) => availablePdfPaths.has(pdf.filePath)))
+          : null) ||
         null
       );
     },
     getRemainingCount() {
       return availablePdfPaths.size;
+    },
+    getRemainingEntries() {
+      return pdfEntries.filter((pdf) => availablePdfPaths.has(pdf.filePath));
     }
   };
+}
+
+async function attachPdfText(pdfEntries, extractPdfText = extractTextFromPdf) {
+  const withText = [];
+
+  for (const pdf of pdfEntries) {
+    withText.push({
+      ...pdf,
+      pdfText: await extractPdfText(pdf.filePath)
+    });
+  }
+
+  return withText;
+}
+
+function buildProcessingDirs(carpetaProcesados, receptorIdentificacion, ingestionId) {
+  return {
+    loteDir: path.join(carpetaProcesados, receptorIdentificacion, ingestionId),
+    dupDir: path.join(carpetaProcesados, receptorIdentificacion, "duplicados", ingestionId),
+    sinSocDir: path.join(carpetaProcesados, "sin_sociedad", ingestionId)
+  };
+}
+
+function getTargetDirForStatus(status, dirs) {
+  if (status === "inserted" || status === "skipped") return dirs.loteDir;
+  if (status === "duplicate") return dirs.dupDir;
+  if (status === "sociedad_missing") return dirs.sinSocDir;
+  return null;
+}
+
+function moveFileToDirIfExists(filePath, targetDir) {
+  if (!filePath || !targetDir || !fs.existsSync(filePath)) return null;
+
+  ensureDir(targetDir);
+  const targetPath = path.join(targetDir, path.basename(filePath));
+  fse.moveSync(filePath, targetPath, { overwrite: true });
+  return targetPath;
+}
+
+function moveManifestToTargetDirs(manifestPath, targetDirs) {
+  const dirs = [...targetDirs].filter(Boolean);
+  if (dirs.length === 0 || !fs.existsSync(manifestPath)) return;
+
+  const manifestFile = path.basename(manifestPath);
+  const [primaryDir, ...copyDirs] = dirs;
+  ensureDir(primaryDir);
+  const primaryManifestPath = path.join(primaryDir, manifestFile);
+  fse.moveSync(manifestPath, primaryManifestPath, { overwrite: true });
+
+  for (const targetDir of copyDirs) {
+    ensureDir(targetDir);
+    fse.copySync(primaryManifestPath, path.join(targetDir, manifestFile), { overwrite: true });
+  }
+}
+
+function buildPendingPdfDir(carpetaProcesados, ingestionId) {
+  return path.join(carpetaProcesados, "pdfs_pendientes", ingestionId);
+}
+
+function movePendingPdfEntries({ pdfEntries, carpetaProcesados, ingestionId, baseDir, targetDirs }) {
+  if (pdfEntries.length === 0) return null;
+
+  const pendingDir = buildPendingPdfDir(carpetaProcesados, ingestionId);
+  ensureDir(pendingDir);
+
+  const moved = pdfEntries.map((pdf) => {
+    const targetPath = path.join(pendingDir, path.basename(pdf.filePath));
+    if (fs.existsSync(pdf.filePath)) {
+      fse.moveSync(pdf.filePath, targetPath, { overwrite: true });
+    }
+
+    return {
+      savedAs: pdf.savedAs,
+      originalName: pdf.originalName,
+      ruta: normalizarRuta(path.relative(baseDir, targetPath)),
+      motivo: "PDF sin asociacion confiable con DOC/XML"
+    };
+  });
+
+  const reportPath = path.join(pendingDir, `${ingestionId}.pdfs_pendientes.json`);
+  fs.writeFileSync(
+    reportPath,
+    JSON.stringify({
+      ingestion_id: ingestionId,
+      motivo: "Hay PDFs sin asociacion confiable. Requieren revision manual.",
+      target_dirs: [...targetDirs].map((targetDir) => normalizarRuta(path.relative(baseDir, targetDir))),
+      pdfs: moved
+    }, null, 2)
+  );
+
+  return pendingDir;
 }
 
 async function procesarManifest(manifestPath, options = {}) {
@@ -162,10 +329,10 @@ async function procesarManifest(manifestPath, options = {}) {
 
   const attachments = Array.isArray(manifest.attachments_saved) ? manifest.attachments_saved : [];
 
-  const pdfEntries = buildAttachmentEntries(attachments, carpetaEntrada, {
+  const pdfEntries = await attachPdfText(buildAttachmentEntries(attachments, carpetaEntrada, {
     type: "PDF",
     validator: isPdfSavedAs
-  });
+  }), options.extractPdfText);
   const docEntries = buildAttachmentEntries(attachments, carpetaEntrada, {
     type: "DOC",
     validator: isDocXmlSavedAs
@@ -180,10 +347,10 @@ async function procesarManifest(manifestPath, options = {}) {
   }
 
   let receptorIdentificacion = null;
-  let insertedAny = false;
-  let duplicateAny = false;
-  let missingAny = false;
-  const pdfAssigner = createPdfAssigner(pdfEntries);
+  const pdfAssigner = createPdfAssigner(pdfEntries, {
+    allowSinglePdfFallback: docEntries.length === 1 && pdfEntries.length === 1
+  });
+  const targetDirs = new Set();
 
   if (docEntries.length > pdfEntries.length) {
     console.warn(
@@ -203,14 +370,16 @@ async function procesarManifest(manifestPath, options = {}) {
 
     receptorIdentificacion = receptor;
 
-    const loteDir = path.join(carpetaProcesados, receptorIdentificacion, ingestionId);
-    const dupDir = path.join(carpetaProcesados, receptorIdentificacion, "duplicados", ingestionId);
-    const sinSocDir = path.join(carpetaProcesados, "sin_sociedad", ingestionId);
+    const dirs = buildProcessingDirs(carpetaProcesados, receptorIdentificacion, ingestionId);
 
     const xmlFile = path.basename(xmlPath);
-    const destinoXmlPath = path.join(loteDir, xmlFile);
+    const destinoXmlPath = path.join(dirs.loteDir, xmlFile);
     const claveDoc = data && data.Clave ? String(data.Clave) : null;
-    const assignedPdf = pdfAssigner.assign(docEntry, claveDoc);
+    const assignedPdf = pdfAssigner.assign({
+      claveDoc,
+      numeroConsecutivo: data && data.NumeroConsecutivo,
+      receptorIdentificacion
+    });
     const assignedPdfName = assignedPdf ? path.basename(assignedPdf.filePath) : null;
 
     if (!assignedPdfName) {
@@ -219,7 +388,7 @@ async function procesarManifest(manifestPath, options = {}) {
 
     const relXml = normalizarRuta(path.relative(baseDir, destinoXmlPath));
     const relPdf = assignedPdfName
-      ? normalizarRuta(path.relative(baseDir, path.join(loteDir, assignedPdfName)))
+      ? normalizarRuta(path.relative(baseDir, path.join(dirs.loteDir, assignedPdfName)))
       : null;
 
     let resultado = { status: "inserted", id: null };
@@ -234,24 +403,11 @@ async function procesarManifest(manifestPath, options = {}) {
       resultado = { status: "skipped", id: null };
     }
 
-    if (resultado.status === "inserted") {
-      insertedAny = true;
-      ensureDir(loteDir);
-      fse.moveSync(xmlPath, destinoXmlPath, { overwrite: true });
-    } else if (resultado.status === "duplicate") {
-      duplicateAny = true;
-      ensureDir(dupDir);
-      const dupXmlPath = path.join(dupDir, xmlFile);
-      fse.moveSync(xmlPath, dupXmlPath, { overwrite: true });
-    } else if (resultado.status === "sociedad_missing") {
-      missingAny = true;
-      ensureDir(sinSocDir);
-      const sinXmlPath = path.join(sinSocDir, xmlFile);
-      fse.moveSync(xmlPath, sinXmlPath, { overwrite: true });
-    } else if (resultado.status === "skipped") {
-      insertedAny = true;
-      ensureDir(loteDir);
-      fse.moveSync(xmlPath, destinoXmlPath, { overwrite: true });
+    const targetDir = getTargetDirForStatus(resultado.status, dirs);
+    if (targetDir) {
+      targetDirs.add(targetDir);
+      moveFileToDirIfExists(xmlPath, targetDir);
+      moveFileToDirIfExists(assignedPdf && assignedPdf.filePath, targetDir);
     }
   }
 
@@ -260,19 +416,17 @@ async function procesarManifest(manifestPath, options = {}) {
     const { tipo, data } = parseXmlFile(xmlPath);
 
     const receptor = obtenerReceptorIdentificacion(tipo, data);
-    receptorIdentificacion = receptorIdentificacion || receptor;
 
-    if (!receptorIdentificacion) {
+    if (!receptor) {
       console.log(`RH sin receptor identificable: ${tipo} (${xmlPath})`);
       continue;
     }
 
-    const loteDir = path.join(carpetaProcesados, receptorIdentificacion, ingestionId);
-    const dupDir = path.join(carpetaProcesados, receptorIdentificacion, "duplicados", ingestionId);
-    const sinSocDir = path.join(carpetaProcesados, "sin_sociedad", ingestionId);
+    receptorIdentificacion = receptor;
+    const dirs = buildProcessingDirs(carpetaProcesados, receptorIdentificacion, ingestionId);
 
     const xmlFile = path.basename(xmlPath);
-    const destinoXmlPath = path.join(loteDir, xmlFile);
+    const destinoXmlPath = path.join(dirs.loteDir, xmlFile);
 
     const relXml = normalizarRuta(path.relative(baseDir, destinoXmlPath));
 
@@ -284,94 +438,33 @@ async function procesarManifest(manifestPath, options = {}) {
       resultado = { status: "skipped", id: null };
     }
 
-    if (resultado.status === "inserted") {
-      insertedAny = true;
-      ensureDir(loteDir);
-      fse.moveSync(xmlPath, destinoXmlPath, { overwrite: true });
-    } else if (resultado.status === "duplicate") {
-      duplicateAny = true;
-      ensureDir(dupDir);
-      const dupXmlPath = path.join(dupDir, xmlFile);
-      fse.moveSync(xmlPath, dupXmlPath, { overwrite: true });
-    } else if (resultado.status === "sociedad_missing") {
-      missingAny = true;
-      ensureDir(sinSocDir);
-      const sinXmlPath = path.join(sinSocDir, xmlFile);
-      fse.moveSync(xmlPath, sinXmlPath, { overwrite: true });
-    } else if (resultado.status === "skipped") {
-      insertedAny = true;
-      ensureDir(loteDir);
-      fse.moveSync(xmlPath, destinoXmlPath, { overwrite: true });
+    const targetDir = getTargetDirForStatus(resultado.status, dirs);
+    if (targetDir) {
+      targetDirs.add(targetDir);
+      moveFileToDirIfExists(xmlPath, targetDir);
     }
   }
 
   if (pdfAssigner.getRemainingCount() > 0) {
     console.warn(
-      `Manifest ${path.basename(manifestPath)}: quedaron ${pdfAssigner.getRemainingCount()} PDF sin asociar a un DOC.`
+      `Manifest ${path.basename(manifestPath)}: quedaron ${pdfAssigner.getRemainingCount()} PDF pendientes de asociacion manual.`
     );
   }
 
-  if (receptorIdentificacion) {
-    const loteDir = path.join(carpetaProcesados, receptorIdentificacion, ingestionId);
-    const dupDir = path.join(carpetaProcesados, receptorIdentificacion, "duplicados", ingestionId);
-    const sinSocDir = path.join(carpetaProcesados, "sin_sociedad", ingestionId);
+  const pendingDir = movePendingPdfEntries({
+    pdfEntries: pdfAssigner.getRemainingEntries(),
+    carpetaProcesados,
+    ingestionId,
+    baseDir,
+    targetDirs
+  });
 
-    const targetDir = insertedAny ? loteDir : (duplicateAny ? dupDir : (missingAny ? sinSocDir : null));
-    if (targetDir) {
-      ensureDir(targetDir);
-      for (const pdfEntry of pdfEntries) {
-        const pdfPath = pdfEntry.filePath;
-        const pdfFile = path.basename(pdfPath);
-        const destinoPdfPath = path.join(targetDir, pdfFile);
-        if (fs.existsSync(pdfPath)) {
-          fse.moveSync(pdfPath, destinoPdfPath, { overwrite: true });
-        }
-      }
-      if (insertedAny && duplicateAny) {
-        ensureDir(dupDir);
-        for (const pdfEntry of pdfEntries) {
-          const pdfPath = pdfEntry.filePath;
-          const pdfFile = path.basename(pdfPath);
-          const sourcePdfPath = path.join(targetDir, pdfFile);
-          const dupPdfPath = path.join(dupDir, pdfFile);
-          if (fs.existsSync(sourcePdfPath)) {
-            fse.copySync(sourcePdfPath, dupPdfPath, { overwrite: true });
-          }
-        }
-      }
-      if (missingAny && targetDir !== sinSocDir) {
-        ensureDir(sinSocDir);
-        for (const pdfEntry of pdfEntries) {
-          const pdfPath = pdfEntry.filePath;
-          const pdfFile = path.basename(pdfPath);
-          const sourcePdfPath = path.join(targetDir, pdfFile);
-          const sinPdfPath = path.join(sinSocDir, pdfFile);
-          if (fs.existsSync(sourcePdfPath)) {
-            fse.copySync(sourcePdfPath, sinPdfPath, { overwrite: true });
-          }
-        }
-      }
-      const manifestFile = path.basename(manifestPath);
-      const destinoManifest = path.join(targetDir, manifestFile);
-      if (fs.existsSync(manifestPath)) {
-        fse.moveSync(manifestPath, destinoManifest, { overwrite: true });
-      }
-      if (insertedAny && duplicateAny) {
-        ensureDir(dupDir);
-        const dupManifest = path.join(dupDir, manifestFile);
-        if (fs.existsSync(destinoManifest)) {
-          fse.copySync(destinoManifest, dupManifest, { overwrite: true });
-        }
-      }
-      if (missingAny && targetDir !== sinSocDir) {
-        ensureDir(sinSocDir);
-        const sinManifest = path.join(sinSocDir, manifestFile);
-        if (fs.existsSync(destinoManifest)) {
-          fse.copySync(destinoManifest, sinManifest, { overwrite: true });
-        }
-      }
-    }
+  if (pendingDir) {
+    targetDirs.add(pendingDir);
+  }
 
+  if (targetDirs.size > 0) {
+    moveManifestToTargetDirs(manifestPath, targetDirs);
     return receptorIdentificacion;
   }
 

@@ -73,7 +73,7 @@ test('buildNavigationSections muestra sociedades sin requerir administracion de 
   );
 });
 
-test('buildNavigationSections muestra contabilizacion masiva solo con permiso de contabilizar', () => {
+test('buildNavigationSections muestra herramientas contables solo con permiso de contabilizar', () => {
   const sections = buildNavigationSections({
     canManageSociedades: false,
     canManageUsers: false,
@@ -86,6 +86,13 @@ test('buildNavigationSections muestra contabilizacion masiva solo con permiso de
 
   assert.deepEqual(
     sections.find((section) => section.id === 'compras')?.items.map((item) => item.id),
-    ['facturas', 'retenciones-pendientes', 'notas-credito', 'tiquetes-electronicos', 'contabilizacion-masiva'],
+    [
+      'facturas',
+      'retenciones-pendientes',
+      'notas-credito',
+      'tiquetes-electronicos',
+      'pdfs-pendientes',
+      'contabilizacion-masiva',
+    ],
   );
 });
