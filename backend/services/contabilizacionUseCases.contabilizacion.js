@@ -1,7 +1,7 @@
 const { FACTURA_ESTADOS } = require('../domain/facturas');
 const {
   mapContabilizacionWithPayments,
-  ensureFacturaById
+  ensureFacturaSociedadAccess
 } = require('./contabilizacionUseCases.helpers');
 const { resolveAssociationContext } = require('./contabilizacionUseCases.associations');
 
@@ -37,11 +37,20 @@ const resolveWorkflowMotivo = (workflowAction) => {
 };
 
 const createContabilizacionCrudUseCases = ({ contabilizacionRepo, runInTransaction }) => {
-  const getContabilizacion = async ({ facturaId }) => mapContabilizacionWithPayments({
-    contabilizacionRepo,
-    facturaId,
-    client: null
-  });
+  const getContabilizacion = async ({ facturaId, user }) => {
+    await ensureFacturaSociedadAccess({
+      contabilizacionRepo,
+      facturaId,
+      user,
+      client: null
+    });
+
+    return mapContabilizacionWithPayments({
+      contabilizacionRepo,
+      facturaId,
+      client: null
+    });
+  };
 
   const upsertContabilizacion = async ({
     facturaId,
@@ -66,9 +75,15 @@ const createContabilizacionCrudUseCases = ({ contabilizacionRepo, runInTransacti
     notas,
     workflow_action,
     metadata,
-    usuario
+    usuario,
+    user
   }) => runInTransaction(async (client) => {
-    const factura = await ensureFacturaById({ contabilizacionRepo, facturaId, client });
+    const factura = await ensureFacturaSociedadAccess({
+      contabilizacionRepo,
+      facturaId,
+      user,
+      client
+    });
     const estadoAnterior = factura.estado || null;
     const workflowAction = normalizeWorkflowAction(workflow_action);
     const estadoDestino = resolveWorkflowState(workflowAction);

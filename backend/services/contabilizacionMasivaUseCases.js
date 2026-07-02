@@ -3,6 +3,7 @@ const {
   parseDiarioDocumentosFile
 } = require('./diarioDocumentosParser');
 const { FACTURA_ESTADOS } = require('../domain/facturas');
+const { ensureSociedadAccess } = require('./sociedadAccessService');
 
 const normalizeCode = (value) => String(value || '').trim().toUpperCase();
 const READY_TO_APPLY_STATUSES = new Set(['ready_new', 'ready_update', 'ready_assigned']);
@@ -184,9 +185,11 @@ const createContabilizacionMasivaUseCases = ({ repo, runInTransaction }) => {
   const analyzeDiarioDocumentos = async ({
     sociedadId,
     filePath,
-    resolutions = []
+    resolutions = [],
+    user
   }) => {
-    const sociedad = await repo.getSociedadById(sociedadId);
+    const normalizedSociedadId = await ensureSociedadAccess({ user, sociedadId });
+    const sociedad = await repo.getSociedadById(normalizedSociedadId);
     if (!sociedad) {
       const error = new Error('Sociedad no encontrada');
       error.status = 404;
@@ -344,8 +347,9 @@ const createContabilizacionMasivaUseCases = ({ repo, runInTransaction }) => {
     };
   };
 
-  const searchFacturaCandidates = async ({ sociedadId, query, limit }) => {
-    const sociedad = await repo.getSociedadById(sociedadId);
+  const searchFacturaCandidates = async ({ sociedadId, query, limit, user }) => {
+    const normalizedSociedadId = await ensureSociedadAccess({ user, sociedadId });
+    const sociedad = await repo.getSociedadById(normalizedSociedadId);
     if (!sociedad) {
       const error = new Error('Sociedad no encontrada');
       error.status = 404;
@@ -369,7 +373,8 @@ const createContabilizacionMasivaUseCases = ({ repo, runInTransaction }) => {
     sociedadId,
     filePath,
     resolutions = [],
-    usuario
+    usuario,
+    user
   }) => {
     if (typeof runInTransaction !== 'function') {
       throw new Error('runInTransaction requerido');
@@ -378,7 +383,8 @@ const createContabilizacionMasivaUseCases = ({ repo, runInTransaction }) => {
     const report = await analyzeDiarioDocumentos({
       sociedadId,
       filePath,
-      resolutions
+      resolutions,
+      user
     });
 
     const applyItems = report.items.filter((item) => (

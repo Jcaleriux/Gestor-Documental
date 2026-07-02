@@ -18,7 +18,8 @@ router.get(
   '/pdfs-pendientes',
   requirePermission(PERMISSIONS.DOCUMENTOS_CONTABILIZAR),
   handleRequest(async (req) => useCases.listPendingPdfs({
-    sociedadId: req.query.sociedad_id || req.query.sociedadId
+    sociedadId: req.query.sociedad_id || req.query.sociedadId,
+    user: req.user
   }), 'Error listing pending PDFs:', 'Error listing pending PDFs')
 );
 
@@ -28,7 +29,8 @@ router.get(
   handleRequest(async (req) => useCases.searchFacturaCandidates({
     sociedadId: req.query.sociedad_id || req.query.sociedadId,
     query: req.query.query || req.query.q || '',
-    limit: req.query.limit
+    limit: req.query.limit,
+    user: req.user
   }), 'Error searching pending PDF candidates:', 'Error searching candidates')
 );
 
@@ -45,7 +47,8 @@ router.post(
       facturaId: req.body.factura_id,
       sociedadId: req.body.sociedad_id,
       overwrite: req.body.overwrite,
-      usuario: actorUsuario
+      usuario: actorUsuario,
+      user: req.user
     });
   }, 'Error assigning pending PDF:', 'Error assigning pending PDF')
 );

@@ -1,6 +1,7 @@
 const { TRAMITE_ESTADOS, TRAMITE_ACCIONES } = require('../domain/tramitesPago');
 const { FACTURA_ESTADOS } = require('../domain/facturas');
 const { createError } = require('../utils/errors');
+const { ensureSociedadAccess } = require('./sociedadAccessService');
 const {
   validateFacturasExistentes,
   resolveSociedadFinal
@@ -131,6 +132,7 @@ const createTramiteWithPolicies = async ({
   resolveItemPolicy,
   sociedadInput,
   usuario,
+  user,
   client
 }) => {
   const itemContexts = [];
@@ -170,6 +172,7 @@ const createTramiteWithPolicies = async ({
     throw createError(sociedadCheck.status, sociedadCheck.error, sociedadCheck.data);
   }
   const sociedadFinal = sociedadCheck.sociedadFinal;
+  await ensureSociedadAccess({ user, sociedadId: sociedadFinal });
 
   for (const itemContext of itemContexts) {
     await itemContext.policy.validateDuplicates({

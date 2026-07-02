@@ -3,6 +3,10 @@ const os = require('os');
 const path = require('path');
 const { createContabilizacionUseCases } = require('../services/contabilizacionUseCases');
 const { FACTURA_ESTADOS } = require('../domain/facturas');
+const usuariosSociedadesRepo = require('../repositories/usuariosSociedadesRepository');
+
+const fullAccessUser = { id: 1, permissions: ['acceso_total'] };
+const assignedUser = { id: 2, permissions: ['sociedades_asignadas', 'documentos_contabilizar'] };
 
 const createClientMock = () => ({
   query: jest.fn().mockResolvedValue({}),
@@ -70,6 +74,10 @@ const createRepoMock = (overrides = {}) => {
 };
 
 describe('contabilizacionUseCases', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   test('valida contrato minimo del repositorio', () => {
     expect(() => createContabilizacionUseCases({ contabilizacionRepo: {} }))
       .toThrow('contabilizacionRepo incompleto');
@@ -82,7 +90,8 @@ describe('contabilizacionUseCases', () => {
     await useCases.upsertContabilizacion({
       facturaId: 1,
       tabla_pago_id: 20,
-      usuario: 'qa'
+      usuario: 'qa',
+      user: fullAccessUser
     });
 
     expect(client.query).toHaveBeenNthCalledWith(1, 'BEGIN');
@@ -115,7 +124,10 @@ describe('contabilizacionUseCases', () => {
     });
     const useCases = createContabilizacionUseCases({ contabilizacionRepo: repo });
 
-    await expect(useCases.getContabilizacion({ facturaId: 1 })).resolves.toMatchObject({
+    await expect(useCases.getContabilizacion({
+      facturaId: 1,
+      user: fullAccessUser
+    })).resolves.toMatchObject({
       factura_id: 1,
       documentos_respaldo: [
         {
@@ -126,6 +138,40 @@ describe('contabilizacionUseCases', () => {
       retencion_pagos: []
     });
     expect(repo.listRetencionPagosByFacturaId).not.toHaveBeenCalled();
+  });
+
+  test('getContabilizacion rechaza facturas fuera de sociedades asignadas', async () => {
+    jest.spyOn(usuariosSociedadesRepo, 'listSociedadIdsByUsuarioId').mockResolvedValue([99]);
+    const { repo } = createRepoMock();
+    const useCases = createContabilizacionUseCases({ contabilizacionRepo: repo });
+
+    await expect(useCases.getContabilizacion({
+      facturaId: 1,
+      user: assignedUser
+    })).rejects.toMatchObject({
+      status: 403,
+      message: 'No tiene acceso a la sociedad solicitada'
+    });
+    expect(repo.getContabilizacionByFacturaId).not.toHaveBeenCalled();
+  });
+
+  test('upsertContabilizacion rechaza facturas fuera de sociedades asignadas antes de escribir', async () => {
+    jest.spyOn(usuariosSociedadesRepo, 'listSociedadIdsByUsuarioId').mockResolvedValue([99]);
+    const { repo, client } = createRepoMock();
+    const useCases = createContabilizacionUseCases({ contabilizacionRepo: repo });
+
+    await expect(useCases.upsertContabilizacion({
+      facturaId: 1,
+      proveedor_id: 30,
+      usuario: 'qa',
+      user: assignedUser
+    })).rejects.toMatchObject({
+      status: 403,
+      message: 'No tiene acceso a la sociedad solicitada'
+    });
+    expect(repo.upsertContabilizacion).not.toHaveBeenCalled();
+    expect(repo.updateFacturaEstado).not.toHaveBeenCalled();
+    expect(client.query).toHaveBeenCalledWith('ROLLBACK');
   });
 
   test('uploadDocumentoRespaldo guarda archivo y registra el documento', async () => {
@@ -150,7 +196,8 @@ describe('contabilizacionUseCases', () => {
         facturaId: 1,
         filename: 'Respaldo Final!!.pdf',
         file_base64: fileBase64,
-        usuario: 'qa'
+        usuario: 'qa',
+        user: fullAccessUser
       });
 
       const createdPayload = repo.createDocumentoRespaldo.mock.calls[0][0];
@@ -203,7 +250,8 @@ describe('contabilizacionUseCases', () => {
     try {
       await expect(useCases.deleteDocumentoRespaldo({
         facturaId: 1,
-        documentoId: 55
+        documentoId: 55,
+        user: fullAccessUser
       })).resolves.toEqual({
         id: 55,
         nombre_archivo: 'respaldo_demo.pdf',
@@ -230,7 +278,8 @@ describe('contabilizacionUseCases', () => {
     await expect(useCases.registrarPagoRetencion({
       facturaId: 1,
       monto: 100,
-      usuario: 'qa'
+      usuario: 'qa',
+      user: fullAccessUser
     })).rejects.toThrow('fallo aplicando retencion');
 
     expect(client.query).toHaveBeenNthCalledWith(1, 'BEGIN');
@@ -272,7 +321,8 @@ describe('contabilizacionUseCases', () => {
       facturaId: 1,
       proveedor_id: 30,
       orden_compra_id: 40,
-      usuario: 'qa'
+      usuario: 'qa',
+      user: fullAccessUser
     });
 
     expect(repo.refreshEstadoOrdenCompraById).toHaveBeenCalledWith(40, expect.anything());
@@ -297,7 +347,8 @@ describe('contabilizacionUseCases', () => {
       facturaId: 1,
       proveedor_id: 30,
       workflow_action: 'save_draft',
-      usuario: 'qa'
+      usuario: 'qa',
+      user: fullAccessUser
     });
 
     expect(repo.updateFacturaEstado).toHaveBeenCalledWith({
@@ -328,7 +379,8 @@ describe('contabilizacionUseCases', () => {
       facturaId: 1,
       proveedor_id: 30,
       workflow_action: 'mark_in_review',
-      usuario: 'qa'
+      usuario: 'qa',
+      user: fullAccessUser
     });
 
     expect(repo.updateFacturaEstado).toHaveBeenCalledWith({

@@ -21,7 +21,8 @@ const rechazoTesoreria = handleRequest((req) => {
     id,
     facturaId,
     motivo,
-    usuario: resolveActorUsuario(req, usuario)
+    usuario: resolveActorUsuario(req, usuario),
+    user: req.user
   });
 }, 'Error excluding document in tesoreria:', 'Error excluding document in tesoreria');
 
@@ -34,7 +35,8 @@ const accionTesoreria = handleRequest((req) => {
     accion,
     destino,
     motivo,
-    usuario: resolveActorUsuario(req, usuario)
+    usuario: resolveActorUsuario(req, usuario),
+    user: req.user
   });
 }, 'Error resolving tesoreria action:', 'Error resolving tesoreria action');
 
@@ -173,7 +175,8 @@ const crearTramite = handleRequest((req) => {
     sociedad_id,
     factura_ids,
     retencion_factura_ids,
-    usuario: resolveActorUsuario(req, usuario)
+    usuario: resolveActorUsuario(req, usuario),
+    user: req.user
   });
 }, 'Error creating tramite:', 'Error creating tramite');
 
@@ -187,7 +190,8 @@ const cambiarEstado = handleRequest((req) => {
     motivo,
     force,
     pagos_documentos,
-    actorPermissions: req.user?.permissions
+    actorPermissions: req.user?.permissions,
+    user: req.user
   });
 }, 'Error updating tramite state:', 'Error updating tramite state');
 
@@ -205,7 +209,8 @@ const decisionDocumento = handleRequest((req) => {
     actorUserName: req.user?.nombre,
     actorUserEmail: req.user?.email,
     actorRoleId: req.user?.rol,
-    actorPermissions: req.user?.permissions
+    actorPermissions: req.user?.permissions,
+    user: req.user
   });
 }, 'Error updating document decision:', 'Error updating document decision');
 

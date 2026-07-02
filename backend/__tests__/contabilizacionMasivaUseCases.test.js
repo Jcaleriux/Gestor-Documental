@@ -1,5 +1,9 @@
 const { createContabilizacionMasivaUseCases } = require('../services/contabilizacionMasivaUseCases');
 const diarioParser = require('../services/diarioDocumentosParser');
+const usuariosSociedadesRepo = require('../repositories/usuariosSociedadesRepository');
+
+const fullAccessUser = { id: 1, permissions: ['acceso_total'] };
+const assignedUser = { id: 2, permissions: ['sociedades_asignadas', 'documentos_contabilizar'] };
 
 jest.mock('../services/diarioDocumentosParser', () => {
   const actual = jest.requireActual('../services/diarioDocumentosParser');
@@ -89,6 +93,10 @@ const createRepo = () => ({
 });
 
 describe('contabilizacionMasivaUseCases', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   beforeEach(() => {
     diarioParser.parseDiarioDocumentosFile.mockReturnValue({
       filePath: 'docs/datos/Documentos/Diario de documentos (1).csv',
@@ -133,7 +141,10 @@ describe('contabilizacionMasivaUseCases', () => {
   test('clasifica listas nuevas, existentes, ambiguas y referencias invalidas', async () => {
     const useCases = createContabilizacionMasivaUseCases({ repo: createRepo() });
 
-    const report = await useCases.analyzeDiarioDocumentos({ sociedadId: 23 });
+    const report = await useCases.analyzeDiarioDocumentos({
+      sociedadId: 23,
+      user: fullAccessUser
+    });
 
     expect(report.summary).toMatchObject({
       total: 4,
@@ -151,11 +162,47 @@ describe('contabilizacionMasivaUseCases', () => {
     expect(report.items[1].metadata_preview.centros_costo_lineas).toHaveLength(2);
   });
 
+  test('analyzeDiarioDocumentos rechaza sociedades no asignadas antes de leer facturas', async () => {
+    jest.spyOn(usuariosSociedadesRepo, 'listSociedadIdsByUsuarioId').mockResolvedValue([99]);
+    const repo = createRepo();
+    const useCases = createContabilizacionMasivaUseCases({ repo });
+
+    await expect(useCases.analyzeDiarioDocumentos({
+      sociedadId: 23,
+      user: assignedUser
+    })).rejects.toMatchObject({
+      status: 403,
+      message: 'No tiene acceso a la sociedad solicitada'
+    });
+    expect(repo.getSociedadById).not.toHaveBeenCalled();
+    expect(repo.listFacturasBySociedad).not.toHaveBeenCalled();
+  });
+
+  test('applyDiarioDocumentos rechaza sociedades no asignadas antes de abrir transaccion', async () => {
+    jest.spyOn(usuariosSociedadesRepo, 'listSociedadIdsByUsuarioId').mockResolvedValue([99]);
+    const repo = createRepo();
+    const runInTransaction = jest.fn(async (handler) => handler({ tx: true }));
+    const useCases = createContabilizacionMasivaUseCases({ repo, runInTransaction });
+
+    await expect(useCases.applyDiarioDocumentos({
+      sociedadId: 23,
+      user: assignedUser,
+      usuario: 'contador@novogar.local'
+    })).rejects.toMatchObject({
+      status: 403,
+      message: 'No tiene acceso a la sociedad solicitada'
+    });
+    expect(runInTransaction).not.toHaveBeenCalled();
+    expect(repo.insertContabilizacionFromImport).not.toHaveBeenCalled();
+    expect(repo.updateContabilizacionImportFields).not.toHaveBeenCalled();
+  });
+
   test('aplica resoluciones de saltar y asignar en el reporte', async () => {
     const useCases = createContabilizacionMasivaUseCases({ repo: createRepo() });
 
     const report = await useCases.analyzeDiarioDocumentos({
       sociedadId: 23,
+      user: fullAccessUser,
       resolutions: [
         { asiento: '2596', action: 'skip' },
         { asiento: '2597', action: 'assign', factura_id: 3 }
@@ -215,7 +262,10 @@ describe('contabilizacionMasivaUseCases', () => {
     ]);
     const useCases = createContabilizacionMasivaUseCases({ repo });
 
-    const report = await useCases.analyzeDiarioDocumentos({ sociedadId: 23 });
+    const report = await useCases.analyzeDiarioDocumentos({
+      sociedadId: 23,
+      user: fullAccessUser
+    });
 
     expect(report.summary).toMatchObject({
       ready_new: 1,
@@ -236,6 +286,7 @@ describe('contabilizacionMasivaUseCases', () => {
 
     const result = await useCases.applyDiarioDocumentos({
       sociedadId: 23,
+      user: fullAccessUser,
       usuario: 'contador@novogar.local'
     });
 

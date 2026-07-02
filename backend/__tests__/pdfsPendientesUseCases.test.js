@@ -2,6 +2,10 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { createPdfsPendientesUseCases } = require('../services/pdfsPendientesUseCases');
+const usuariosSociedadesRepo = require('../repositories/usuariosSociedadesRepository');
+
+const fullAccessUser = { id: 1, permissions: ['acceso_total'] };
+const assignedUser = { id: 2, permissions: ['sociedades_asignadas', 'documentos_contabilizar'] };
 
 const toPosix = (value) => String(value || '').replace(/\\/g, '/');
 
@@ -56,6 +60,7 @@ describe('pdfsPendientesUseCases', () => {
   });
 
   afterEach(() => {
+    jest.restoreAllMocks();
     fs.rmSync(tempRoot, { recursive: true, force: true });
   });
 
@@ -66,7 +71,7 @@ describe('pdfsPendientesUseCases', () => {
       repo: {}
     });
 
-    const result = await useCases.listPendingPdfs();
+    const result = await useCases.listPendingPdfs({ user: fullAccessUser });
 
     expect(result.summary).toEqual({ totalPdfs: 1, totalLotes: 1 });
     expect(result.items).toEqual([
@@ -95,9 +100,9 @@ describe('pdfsPendientesUseCases', () => {
       repo
     });
 
-    await expect(useCases.listPendingPdfs({ sociedadId: 7 }))
+    await expect(useCases.listPendingPdfs({ sociedadId: 7, user: fullAccessUser }))
       .resolves.toMatchObject({ summary: { totalPdfs: 1, totalLotes: 1 } });
-    await expect(useCases.listPendingPdfs({ sociedadId: 8 }))
+    await expect(useCases.listPendingPdfs({ sociedadId: 8, user: fullAccessUser }))
       .resolves.toMatchObject({ summary: { totalPdfs: 0, totalLotes: 0 } });
 
     expect(fixture.ruta).toContain('pdfs_pendientes');
@@ -125,10 +130,63 @@ describe('pdfsPendientesUseCases', () => {
       repo
     });
 
-    await expect(useCases.listPendingPdfs({ sociedadId: 7 }))
+    await expect(useCases.listPendingPdfs({ sociedadId: 7, user: fullAccessUser }))
       .resolves.toMatchObject({ summary: { totalPdfs: 1, totalLotes: 1 } });
-    await expect(useCases.listPendingPdfs({ sociedadId: 8 }))
+    await expect(useCases.listPendingPdfs({ sociedadId: 8, user: fullAccessUser }))
       .resolves.toMatchObject({ summary: { totalPdfs: 0, totalLotes: 0 } });
+  });
+
+  test('lista PDFs pendientes solo de sociedades asignadas cuando no se envia sociedad', async () => {
+    jest.spyOn(usuariosSociedadesRepo, 'listSociedadIdsByUsuarioId').mockResolvedValue([7]);
+    createPendingFixture({
+      root: tempRoot,
+      ingestionId: '20260625_100000_SOC7',
+      targetDirs: [toPosix(path.join('documentos', 'facturas procesadas', '3101000000', 'lote'))]
+    });
+    createPendingFixture({
+      root: tempRoot,
+      ingestionId: '20260625_100000_SOC8',
+      targetDirs: [toPosix(path.join('documentos', 'facturas procesadas', '3101999999', 'lote'))]
+    });
+    const repo = {
+      getSociedadById: jest.fn(async (sociedadId) => ({
+        id: sociedadId,
+        cedula_juridica: sociedadId === 7 ? '3101000000' : '3101999999'
+      })),
+      searchFacturaCandidates: jest.fn().mockResolvedValue([])
+    };
+    const useCases = createPdfsPendientesUseCases({
+      baseDir: tempRoot,
+      repo
+    });
+
+    const result = await useCases.listPendingPdfs({ user: assignedUser });
+
+    expect(result.summary).toEqual({ totalPdfs: 1, totalLotes: 1 });
+    expect(result.items[0]).toMatchObject({
+      ingestion_id: '20260625_100000_SOC7'
+    });
+  });
+
+  test('searchFacturaCandidates rechaza sociedad no asignada', async () => {
+    jest.spyOn(usuariosSociedadesRepo, 'listSociedadIdsByUsuarioId').mockResolvedValue([7]);
+    const repo = {
+      searchFacturaCandidates: jest.fn().mockResolvedValue([])
+    };
+    const useCases = createPdfsPendientesUseCases({
+      baseDir: tempRoot,
+      repo
+    });
+
+    await expect(useCases.searchFacturaCandidates({
+      sociedadId: 8,
+      query: 'clave',
+      user: assignedUser
+    })).rejects.toMatchObject({
+      status: 403,
+      message: 'No tiene acceso a la sociedad solicitada'
+    });
+    expect(repo.searchFacturaCandidates).not.toHaveBeenCalled();
   });
 
   test('asocia un PDF pendiente moviendolo al directorio de la factura y actualiza el reporte', async () => {
@@ -147,6 +205,10 @@ describe('pdfsPendientesUseCases', () => {
         ruta_xml: toPosix(path.relative(tempRoot, xmlPath)),
         ruta_pdf: null
       }),
+      getSociedadById: jest.fn().mockResolvedValue({
+        id: 7,
+        cedula_juridica: '3101000000'
+      }),
       updateFacturaRutaPdf: jest.fn(async ({ facturaId, rutaPdf }) => ({
         id: facturaId,
         ruta_pdf: rutaPdf
@@ -164,7 +226,8 @@ describe('pdfsPendientesUseCases', () => {
       facturaId: 42,
       sociedadId: 7,
       overwrite: false,
-      usuario: 'qa@example.com'
+      usuario: 'qa@example.com',
+      user: fullAccessUser
     });
 
     const expectedDestination = path.join(facturaDir, fixture.pdfName);
@@ -207,6 +270,10 @@ describe('pdfsPendientesUseCases', () => {
         ruta_xml: toPosix(path.relative(tempRoot, xmlPath)),
         ruta_pdf: toPosix(path.join('documentos', 'facturas procesadas', '3101000000', fixture.ingestionId, 'actual.pdf'))
       }),
+      getSociedadById: jest.fn().mockResolvedValue({
+        id: 7,
+        cedula_juridica: '3101000000'
+      }),
       updateFacturaRutaPdf: jest.fn()
     };
     const useCases = createPdfsPendientesUseCases({
@@ -220,12 +287,96 @@ describe('pdfsPendientesUseCases', () => {
       pdfRuta: fixture.ruta,
       facturaId: 42,
       sociedadId: 7,
-      overwrite: false
+      overwrite: false,
+      user: fullAccessUser
     })).rejects.toMatchObject({
       status: 409,
       data: expect.objectContaining({ requiresOverwrite: true })
     });
 
+    expect(fs.existsSync(fixture.pdfPath)).toBe(true);
+    expect(repo.updateFacturaRutaPdf).not.toHaveBeenCalled();
+  });
+
+  test('assignPendingPdf rechaza factura destino fuera de sociedades asignadas antes de mover archivo', async () => {
+    jest.spyOn(usuariosSociedadesRepo, 'listSociedadIdsByUsuarioId').mockResolvedValue([8]);
+    const fixture = createPendingFixture({ root: tempRoot });
+    const facturaDir = path.join(tempRoot, 'documentos', 'facturas procesadas', '3101000000', fixture.ingestionId);
+    const xmlPath = path.join(facturaDir, `${fixture.ingestionId}.DOC.1.xml`);
+    fs.mkdirSync(facturaDir, { recursive: true });
+    fs.writeFileSync(xmlPath, '<xml />');
+
+    const repo = {
+      getFacturaForPdfAssignment: jest.fn().mockResolvedValue({
+        id: 42,
+        sociedad_id: 7,
+        ruta_xml: toPosix(path.relative(tempRoot, xmlPath)),
+        ruta_pdf: null
+      }),
+      updateFacturaRutaPdf: jest.fn()
+    };
+    const useCases = createPdfsPendientesUseCases({
+      baseDir: tempRoot,
+      repo,
+      runInTransaction: (handler) => handler({})
+    });
+
+    await expect(useCases.assignPendingPdf({
+      ingestionId: fixture.ingestionId,
+      pdfRuta: fixture.ruta,
+      facturaId: 42,
+      sociedadId: 7,
+      overwrite: false,
+      user: assignedUser
+    })).rejects.toMatchObject({
+      status: 403,
+      message: 'No tiene acceso a la sociedad solicitada'
+    });
+    expect(fs.existsSync(fixture.pdfPath)).toBe(true);
+    expect(repo.updateFacturaRutaPdf).not.toHaveBeenCalled();
+  });
+
+  test('assignPendingPdf rechaza PDF pendiente que no corresponde a la sociedad destino', async () => {
+    const fixture = createPendingFixture({
+      root: tempRoot,
+      targetDirs: [toPosix(path.join('documentos', 'facturas procesadas', '3101999999', 'lote'))]
+    });
+    const facturaDir = path.join(tempRoot, 'documentos', 'facturas procesadas', '3101000000', fixture.ingestionId);
+    const xmlPath = path.join(facturaDir, `${fixture.ingestionId}.DOC.1.xml`);
+    fs.mkdirSync(facturaDir, { recursive: true });
+    fs.writeFileSync(xmlPath, '<xml />');
+
+    const repo = {
+      getFacturaForPdfAssignment: jest.fn().mockResolvedValue({
+        id: 42,
+        sociedad_id: 7,
+        ruta_xml: toPosix(path.relative(tempRoot, xmlPath)),
+        ruta_pdf: null
+      }),
+      getSociedadById: jest.fn().mockResolvedValue({
+        id: 7,
+        cedula_juridica: '3101000000'
+      }),
+      searchFacturaCandidates: jest.fn().mockResolvedValue([]),
+      updateFacturaRutaPdf: jest.fn()
+    };
+    const useCases = createPdfsPendientesUseCases({
+      baseDir: tempRoot,
+      repo,
+      runInTransaction: (handler) => handler({})
+    });
+
+    await expect(useCases.assignPendingPdf({
+      ingestionId: fixture.ingestionId,
+      pdfRuta: fixture.ruta,
+      facturaId: 42,
+      sociedadId: 7,
+      overwrite: false,
+      user: fullAccessUser
+    })).rejects.toMatchObject({
+      status: 403,
+      message: 'El PDF pendiente no corresponde a la sociedad de la factura destino.'
+    });
     expect(fs.existsSync(fixture.pdfPath)).toBe(true);
     expect(repo.updateFacturaRutaPdf).not.toHaveBeenCalled();
   });

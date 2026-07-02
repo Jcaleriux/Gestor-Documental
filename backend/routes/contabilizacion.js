@@ -21,7 +21,7 @@ router.get(
   requirePermission(PERMISSIONS.DOCUMENTOS_VER),
   handleRequest(async (req) => {
     const { facturaId } = req.params;
-    return useCases.getContabilizacion({ facturaId });
+    return useCases.getContabilizacion({ facturaId, user: req.user });
   }, 'Error fetching contabilizacion:', 'Error fetching contabilizacion')
 );
 
@@ -81,7 +81,8 @@ router.post(
     notas,
     workflow_action,
     metadata,
-    usuario: actorUsuario
+    usuario: actorUsuario,
+    user: req.user
   });
   }, 'Error saving contabilizacion:', 'Error saving contabilizacion')
 );
@@ -100,7 +101,8 @@ router.post(
       filename,
       file_base64,
       metadata,
-      usuario: actorUsuario
+      usuario: actorUsuario,
+      user: req.user
     });
   }, 'Error uploading contabilizacion support document:', 'Error uploading contabilizacion support document')
 );
@@ -113,7 +115,8 @@ router.delete(
 
     return useCases.deleteDocumentoRespaldo({
       facturaId,
-      documentoId
+      documentoId,
+      user: req.user
     });
   }, 'Error deleting contabilizacion support document:', 'Error deleting contabilizacion support document')
 );
@@ -132,7 +135,8 @@ router.post(
       monto,
       fecha_pago,
       notas,
-      usuario: actorUsuario
+      usuario: actorUsuario,
+      user: req.user
     });
   }, 'Error saving retencion payment:', 'Error saving retencion payment')
 );

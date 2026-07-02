@@ -1,5 +1,6 @@
 const { createError } = require('../utils/errors');
 const { mapContabilizacionRow } = require('../mappers/contabilizacionMapper');
+const { ensureSociedadAccess } = require('./sociedadAccessService');
 
 const REQUIRED_REPO_METHODS = [
   'getClient',
@@ -104,6 +105,12 @@ const ensureFacturaById = async ({ contabilizacionRepo, facturaId, client }) => 
   return factura;
 };
 
+const ensureFacturaSociedadAccess = async ({ contabilizacionRepo, facturaId, user, client }) => {
+  const factura = await ensureFacturaById({ contabilizacionRepo, facturaId, client });
+  await ensureSociedadAccess({ user, sociedadId: factura.sociedad_id });
+  return factura;
+};
+
 const ensureProveedorById = async ({ contabilizacionRepo, proveedorId, sociedadId, client }) => {
   const proveedor = await contabilizacionRepo.getProveedorById(proveedorId, client);
   if (!proveedor || Number(proveedor.sociedad_id) !== sociedadId) {
@@ -121,5 +128,6 @@ module.exports = {
   assertRepoContract,
   mapContabilizacionWithPayments,
   ensureFacturaById,
+  ensureFacturaSociedadAccess,
   ensureProveedorById
 };

@@ -38,6 +38,15 @@ const listAuditoriaByFacturaId = async (facturaId) => {
   return rows;
 };
 
+const getFacturaById = async (facturaId) => {
+  const { rows } = await pool.query(
+    'SELECT id, sociedad_id FROM facturas WHERE id = $1',
+    [facturaId]
+  );
+
+  return rows[0] || null;
+};
+
 const createAuditoria = async ({ facturaId, accion, usuario, detalles, ip_address }) => {
   const { rows } = await pool.query(
     `INSERT INTO auditoria (factura_id, accion, usuario, detalles, ip_address)
@@ -270,6 +279,7 @@ const updateFacturaEstado = async ({ facturaId, estado }) => {
 };
 
 module.exports = {
+  getFacturaById,
   listAuditoriaByFacturaId,
   createAuditoria,
   listEstadosByFacturaId,

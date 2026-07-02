@@ -2,7 +2,7 @@ const { createError } = require('../utils/errors');
 const {
   toRequiredPositiveNumber,
   toDateOnlyOrToday,
-  ensureFacturaById,
+  ensureFacturaSociedadAccess,
   mapContabilizacionWithPayments
 } = require('./contabilizacionUseCases.helpers');
 
@@ -31,13 +31,19 @@ const createContabilizacionRetencionUseCases = ({ contabilizacionRepo, runInTran
     monto,
     fecha_pago,
     usuario,
-    notas
+    notas,
+    user
   }) => {
     const montoPago = toRequiredPositiveNumber(monto, 'monto');
     const fechaPago = toDateOnlyOrToday(fecha_pago);
 
     return runInTransaction(async (client) => {
-      await ensureFacturaById({ contabilizacionRepo, facturaId, client });
+      await ensureFacturaSociedadAccess({
+        contabilizacionRepo,
+        facturaId,
+        user,
+        client
+      });
 
       const contabilizacion = await contabilizacionRepo.getContabilizacionRetencionByFacturaIdForUpdate(
         facturaId,

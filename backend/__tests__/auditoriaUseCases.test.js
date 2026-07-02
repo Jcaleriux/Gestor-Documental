@@ -1,6 +1,11 @@
 const { createAuditoriaUseCases } = require('../services/auditoriaUseCases');
+const usuariosSociedadesRepo = require('../repositories/usuariosSociedadesRepository');
+
+const fullAccessUser = { id: 1, permissions: ['acceso_total'] };
+const assignedUser = { id: 2, permissions: ['sociedades_asignadas', 'documentos_contabilizar'] };
 
 const createRepoMock = (overrides = {}) => ({
+  getFacturaById: jest.fn().mockResolvedValue({ id: 99, sociedad_id: 10 }),
   listAuditoriaByFacturaId: jest.fn().mockResolvedValue([]),
   createAuditoria: jest.fn().mockResolvedValue(null),
   listEstadosByFacturaId: jest.fn().mockResolvedValue([]),
@@ -15,6 +20,10 @@ const createRepoMock = (overrides = {}) => ({
 });
 
 describe('auditoriaUseCases', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   test('listEstados unifica la trazabilidad del documento y la ordena por fecha', async () => {
     const repo = createRepoMock({
       listEstadosByFacturaId: jest.fn().mockResolvedValue([
@@ -102,7 +111,10 @@ describe('auditoriaUseCases', () => {
     });
     const useCases = createAuditoriaUseCases({ auditoriaRepo: repo });
 
-    const result = await useCases.listEstados({ facturaId: 99 });
+    const result = await useCases.listEstados({
+      facturaId: 99,
+      user: fullAccessUser
+    });
 
     expect(result).toHaveLength(6);
     expect(result[0]).toMatchObject({
@@ -144,5 +156,38 @@ describe('auditoriaUseCases', () => {
       ])
     );
     expect(result.find((item) => item.usuario === 'gerencia@novogar.local')).toBeUndefined();
+  });
+
+  test('actualizarEstadoFactura rechaza factura fuera de sociedades asignadas antes de escribir', async () => {
+    jest.spyOn(usuariosSociedadesRepo, 'listSociedadIdsByUsuarioId').mockResolvedValue([20]);
+    const repo = createRepoMock();
+    const useCases = createAuditoriaUseCases({ auditoriaRepo: repo });
+
+    await expect(useCases.actualizarEstadoFactura({
+      facturaId: 99,
+      estado: 'pagado',
+      user: assignedUser
+    })).rejects.toMatchObject({
+      status: 403,
+      message: 'No tiene acceso a la sociedad solicitada'
+    });
+    expect(repo.updateFacturaEstado).not.toHaveBeenCalled();
+  });
+
+  test('crearEstado rechaza factura fuera de sociedades asignadas antes de registrar historial', async () => {
+    jest.spyOn(usuariosSociedadesRepo, 'listSociedadIdsByUsuarioId').mockResolvedValue([20]);
+    const repo = createRepoMock();
+    const useCases = createAuditoriaUseCases({ auditoriaRepo: repo });
+
+    await expect(useCases.crearEstado({
+      facturaId: 99,
+      estado_nuevo: 'contabilizado',
+      usuario: 'qa',
+      user: assignedUser
+    })).rejects.toMatchObject({
+      status: 403,
+      message: 'No tiene acceso a la sociedad solicitada'
+    });
+    expect(repo.createEstado).not.toHaveBeenCalled();
   });
 });

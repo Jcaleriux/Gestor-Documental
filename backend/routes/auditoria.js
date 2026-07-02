@@ -17,7 +17,7 @@ router.get(
   requirePermission(PERMISSIONS.AUDITORIA_VER),
   handleRequest(async (req) => {
     const { facturaId } = req.params;
-    return useCases.listAuditoria({ facturaId });
+    return useCases.listAuditoria({ facturaId, user: req.user });
   }, 'Error fetching audit:', 'Error fetching audit')
 );
 
@@ -29,7 +29,7 @@ router.post(
   handleRequest(async (req) => {
     const { facturaId } = req.params;
     const { accion, usuario, detalles, ip_address } = req.body || {};
-    return useCases.crearAuditoria({ facturaId, accion, usuario, detalles, ip_address });
+    return useCases.crearAuditoria({ facturaId, accion, usuario, detalles, ip_address, user: req.user });
   }, 'Error creating audit record:', 'Error creating audit record')
 );
 
@@ -39,7 +39,7 @@ router.get(
   requirePermission(PERMISSIONS.DOCUMENTOS_VER),
   handleRequest(async (req) => {
     const { facturaId } = req.params;
-    return useCases.listEstados({ facturaId });
+    return useCases.listEstados({ facturaId, user: req.user });
   }, 'Error fetching states:', 'Error fetching states')
 );
 
@@ -50,7 +50,15 @@ router.post(
   handleRequest(async (req) => {
     const { facturaId } = req.params;
     const { dominio, estado_anterior, estado_nuevo, usuario, motivo } = req.body || {};
-    return useCases.crearEstado({ facturaId, dominio, estado_anterior, estado_nuevo, usuario, motivo });
+    return useCases.crearEstado({
+      facturaId,
+      dominio,
+      estado_anterior,
+      estado_nuevo,
+      usuario,
+      motivo,
+      user: req.user
+    });
   }, 'Error creating state record:', 'Error creating state record')
 );
 
@@ -62,7 +70,7 @@ router.patch(
   handleRequest(async (req) => {
     const { facturaId } = req.params;
     const { estado } = req.body || {};
-    return useCases.actualizarEstadoFactura({ facturaId, estado });
+    return useCases.actualizarEstadoFactura({ facturaId, estado, user: req.user });
   }, 'Error updating state:', 'Error updating state')
 );
 

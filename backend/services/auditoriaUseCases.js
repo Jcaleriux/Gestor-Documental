@@ -1,4 +1,5 @@
 const { createError } = require('../utils/errors');
+const { ensureSociedadAccess } = require('./sociedadAccessService');
 const {
   mapAuditoriaRow,
   mapEstadoDocumentoRow,
@@ -24,15 +25,32 @@ const createAuditoriaUseCases = ({ auditoriaRepo }) => {
     throw new Error('auditoriaRepo requerido');
   }
 
-  const listAuditoria = async ({ facturaId }) => {
+  const ensureFacturaSociedadAccess = async ({ facturaId, user }) => {
+    if (typeof auditoriaRepo.getFacturaById !== 'function') {
+      throw new Error('auditoriaRepo incompleto: falta getFacturaById');
+    }
+
+    const factura = await auditoriaRepo.getFacturaById(facturaId);
+    if (!factura) {
+      throw createError(404, 'Factura no encontrada');
+    }
+
+    await ensureSociedadAccess({ user, sociedadId: factura.sociedad_id });
+    return factura;
+  };
+
+  const listAuditoria = async ({ facturaId, user }) => {
+    await ensureFacturaSociedadAccess({ facturaId, user });
     const rows = await auditoriaRepo.listAuditoriaByFacturaId(facturaId);
     return rows.map(mapAuditoriaRow);
   };
 
-  const crearAuditoria = async ({ facturaId, accion, usuario, detalles, ip_address }) => {
+  const crearAuditoria = async ({ facturaId, accion, usuario, detalles, ip_address, user }) => {
     if (!accion || !usuario) {
       throw createError(400, 'accion y usuario requeridos');
     }
+
+    await ensureFacturaSociedadAccess({ facturaId, user });
 
     const detallesPayload = detalles ? JSON.stringify(detalles) : null;
     const ip = ip_address || '127.0.0.1';
@@ -46,7 +64,9 @@ const createAuditoriaUseCases = ({ auditoriaRepo }) => {
     });
   };
 
-  const listEstados = async ({ facturaId }) => {
+  const listEstados = async ({ facturaId, user }) => {
+    await ensureFacturaSociedadAccess({ facturaId, user });
+
     const [
       estadosRows,
       tramiteHistorialRows,
@@ -79,10 +99,12 @@ const createAuditoriaUseCases = ({ auditoriaRepo }) => {
       .map(({ sort_at, ...event }) => event);
   };
 
-  const crearEstado = async ({ facturaId, dominio, estado_anterior, estado_nuevo, usuario, motivo }) => {
+  const crearEstado = async ({ facturaId, dominio, estado_anterior, estado_nuevo, usuario, motivo, user }) => {
     if (!estado_nuevo || !usuario) {
       throw createError(400, 'estado_nuevo y usuario requeridos');
     }
+
+    await ensureFacturaSociedadAccess({ facturaId, user });
 
     return auditoriaRepo.createEstado({
       facturaId,
@@ -94,10 +116,12 @@ const createAuditoriaUseCases = ({ auditoriaRepo }) => {
     });
   };
 
-  const actualizarEstadoFactura = async ({ facturaId, estado }) => {
+  const actualizarEstadoFactura = async ({ facturaId, estado, user }) => {
     if (!estado) {
       throw createError(400, 'estado requerido');
     }
+
+    await ensureFacturaSociedadAccess({ facturaId, user });
 
     const row = await auditoriaRepo.updateFacturaEstado({ facturaId, estado });
     if (!row) {
