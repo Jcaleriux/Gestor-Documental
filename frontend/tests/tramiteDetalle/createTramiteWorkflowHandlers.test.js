@@ -45,7 +45,7 @@ const createDeps = () => ({
 
 const createWorkflowInputs = () => ({
   id: 88,
-  actorUsuario: 'gerencia@novogar.local',
+  actorUsuario: 'gerencia@sendadocs.local',
   documentosActivos: [
     { factura_id: 1, total_a_pagar: 100, consecutivo: 'FAC-1' }
   ],
@@ -102,7 +102,7 @@ test('createTramiteWorkflowHandlers.handleDecision usa prompt en rechazo y refre
   assert.deepEqual(deps.api.decisionDocumento.calls[0], [
     88,
     1,
-    { etapa: 'gerencia', decision: 'rechazado', motivo: 'motivo-demo', usuario: 'gerencia@novogar.local' }
+    { etapa: 'gerencia', decision: 'rechazado', motivo: 'motivo-demo', usuario: 'gerencia@sendadocs.local' }
   ]);
   assert.equal(workflowInputs.fetchDetalle.calls.length, 1);
   assert.deepEqual(workflowInputs.setActionMessage.calls.at(-1), ['decision-ok']);
@@ -206,7 +206,7 @@ test('createTramiteWorkflowHandlers.handleAccionSiguiente cambia estado simple s
     88,
     {
       estado: 'en_revision_tesoreria',
-      usuario: 'gerencia@novogar.local',
+      usuario: 'gerencia@sendadocs.local',
       motivo: null,
       force: false
     }
@@ -232,7 +232,7 @@ test('createTramiteWorkflowHandlers.handleAccionSiguiente para pagado envía pag
     88,
     {
       estado: 'pagado',
-      usuario: 'gerencia@novogar.local',
+      usuario: 'gerencia@sendadocs.local',
       motivo: null,
       force: false,
       pagos_documentos: [{ factura_id: 1, monto_pago: 99.99 }]
@@ -259,7 +259,7 @@ test('createTramiteWorkflowHandlers.handleAccionSiguiente para gerencia contable
     88,
     {
       estado: 'en_aprobacion_gerencia_contable',
-      usuario: 'gerencia@novogar.local',
+      usuario: 'gerencia@sendadocs.local',
       motivo: null,
       force: false,
       pagos_documentos: [{ factura_id: 1, monto_pago: 88.25 }]
@@ -289,7 +289,7 @@ test('createTramiteWorkflowHandlers tolera redondeo visible del saldo y envía e
     88,
     {
       estado: 'pagado',
-      usuario: 'gerencia@novogar.local',
+      usuario: 'gerencia@sendadocs.local',
       motivo: null,
       force: false,
       pagos_documentos: [{ factura_id: 1, monto_pago: 404351.9996 }]
@@ -320,7 +320,7 @@ test('createTramiteWorkflowHandlers.handleResolveCaratulas llama API y refresca 
       group_key: 'group_1',
       provider_factura_id: 1,
       line_matches: [{ line_key: 'line_1', factura_id: 1 }],
-      usuario: 'gerencia@novogar.local'
+      usuario: 'gerencia@sendadocs.local'
     }
   ]);
   assert.deepEqual(workflowState.setResolvingCaratulaGroupKey.calls[0], ['group_1']);
@@ -350,7 +350,7 @@ test('createTramiteWorkflowHandlers maneja carga y confirmaciones de caratulas p
       {
         filename: 'caratulas.pdf',
         file_base64: 'Y2FyYXR1bGE=',
-        usuario: 'gerencia@novogar.local'
+        usuario: 'gerencia@sendadocs.local'
       }
     ]);
     assert.deepEqual(workflowState.setUploadingCaratulas.calls, [[true], [false]]);
@@ -366,7 +366,7 @@ test('createTramiteWorkflowHandlers maneja carga y confirmaciones de caratulas p
       {
         factura_ids: [3, 2, 1],
         order_source: 'visible',
-        usuario: 'gerencia@novogar.local'
+        usuario: 'gerencia@sendadocs.local'
       }
     ]);
     assert.deepEqual(workflowState.setConfirmingOrderProviderKey.calls.at(-1), ['']);
@@ -381,7 +381,7 @@ test('createTramiteWorkflowHandlers maneja carga y confirmaciones de caratulas p
       {
         filename: 'proveedor.pdf',
         file_base64: 'Y2FyYXR1bGE=',
-        usuario: 'gerencia@novogar.local'
+        usuario: 'gerencia@sendadocs.local'
       }
     ]);
     assert.deepEqual(workflowState.setUploadingProviderKey.calls.at(-1), ['']);
@@ -390,7 +390,7 @@ test('createTramiteWorkflowHandlers maneja carga y confirmaciones de caratulas p
     assert.deepEqual(deps.api.confirmProviderCaratula.calls.at(-1), [
       88,
       'prov-1',
-      { usuario: 'gerencia@novogar.local' }
+      { usuario: 'gerencia@sendadocs.local' }
     ]);
 
     assert.equal(await handlers.handleAssignOrphanCaratula({ orphanId: 55, providerKey: 'prov-1' }), true);
@@ -399,7 +399,7 @@ test('createTramiteWorkflowHandlers maneja carga y confirmaciones de caratulas p
       55,
       {
         provider_key: 'prov-1',
-        usuario: 'gerencia@novogar.local'
+        usuario: 'gerencia@sendadocs.local'
       }
     ]);
 
@@ -407,7 +407,7 @@ test('createTramiteWorkflowHandlers maneja carga y confirmaciones de caratulas p
     assert.deepEqual(deps.api.discardOrphanCaratula.calls.at(-1), [
       88,
       56,
-      { usuario: 'gerencia@novogar.local' }
+      { usuario: 'gerencia@sendadocs.local' }
     ]);
     assert.deepEqual(workflowState.setOrphanActionId.calls.at(-1), ['']);
   } finally {

@@ -3,6 +3,10 @@ const path = require('path');
 
 const repoRootDir = path.resolve(__dirname, '..', '..');
 
+const readReleaseEnvValue = (env, key) => (
+  readOptionalEnvValue(env[`SENDADOCS_RELEASE_${key}`])
+);
+
 const readOptionalEnvValue = (value) => {
   if (typeof value !== 'string') {
     return '';
@@ -13,13 +17,13 @@ const readOptionalEnvValue = (value) => {
 };
 
 const readBranchFromEnv = (env = process.env) => (
-  readOptionalEnvValue(env.NOVOGAR_RELEASE_BRANCH)
+  readReleaseEnvValue(env, 'BRANCH')
   || readOptionalEnvValue(env.GITHUB_HEAD_REF)
   || readOptionalEnvValue(env.GITHUB_REF_NAME)
 );
 
 const readCommitFromEnv = (env = process.env) => (
-  readOptionalEnvValue(env.NOVOGAR_RELEASE_COMMIT)
+  readReleaseEnvValue(env, 'COMMIT')
   || readOptionalEnvValue(env.GITHUB_SHA)
 );
 
@@ -126,9 +130,9 @@ const resolveReleaseInfo = ({
   versionFilePath,
   rootDir = repoRootDir,
 } = {}) => {
-  const explicitVersion = readOptionalEnvValue(env.NOVOGAR_RELEASE_VERSION);
-  const explicitCommit = readOptionalEnvValue(env.NOVOGAR_RELEASE_COMMIT);
-  const explicitBranch = readOptionalEnvValue(env.NOVOGAR_RELEASE_BRANCH);
+  const explicitVersion = readReleaseEnvValue(env, 'VERSION');
+  const explicitCommit = readReleaseEnvValue(env, 'COMMIT');
+  const explicitBranch = readReleaseEnvValue(env, 'BRANCH');
 
   let version = explicitVersion;
   let versionSource = explicitVersion ? 'env' : 'unknown';
@@ -164,20 +168,20 @@ const resolveReleaseInfo = ({
 
 const applyReleaseHeaders = (response, releaseInfo = resolveReleaseInfo()) => {
   if (releaseInfo.version) {
-    response.setHeader('X-Novogar-Release-Version', releaseInfo.version);
+    response.setHeader('X-SendaDocs-Release-Version', releaseInfo.version);
   }
 
   if (releaseInfo.tag) {
-    response.setHeader('X-Novogar-Release-Tag', releaseInfo.tag);
+    response.setHeader('X-SendaDocs-Release-Tag', releaseInfo.tag);
   }
 
   if (releaseInfo.commit) {
-    response.setHeader('X-Novogar-Release-Commit', releaseInfo.commit);
-    response.setHeader('X-Novogar-Release-Commit-Short', releaseInfo.commitShort);
+    response.setHeader('X-SendaDocs-Release-Commit', releaseInfo.commit);
+    response.setHeader('X-SendaDocs-Release-Commit-Short', releaseInfo.commitShort);
   }
 
   if (releaseInfo.branch) {
-    response.setHeader('X-Novogar-Release-Branch', releaseInfo.branch);
+    response.setHeader('X-SendaDocs-Release-Branch', releaseInfo.branch);
   }
 
   return response;

@@ -56,11 +56,11 @@ test('useTramiteWorkflowState resincroniza overrideUser con actorUsuario sin eff
     hook: useTramiteWorkflowStateHarness,
     initialProps: {
       ...createBaseProps(),
-      actorUsuario: 'ana@novogar.local',
+      actorUsuario: 'ana@sendadocs.local',
     },
   });
 
-  assert.equal(hook.result.overrideUser, 'ana@novogar.local');
+  assert.equal(hook.result.overrideUser, 'ana@sendadocs.local');
 
   hook.result.setOverrideUser('operador-manual');
   await hook.flush({ cycles: 2 });
@@ -68,9 +68,9 @@ test('useTramiteWorkflowState resincroniza overrideUser con actorUsuario sin eff
 
   hook.rerender({
     ...createBaseProps(),
-    actorUsuario: 'gerencia@novogar.local',
+    actorUsuario: 'gerencia@sendadocs.local',
   });
   await hook.flush({ cycles: 2 });
 
-  assert.equal(hook.result.overrideUser, 'gerencia@novogar.local');
+  assert.equal(hook.result.overrideUser, 'gerencia@sendadocs.local');
 });

@@ -1,6 +1,6 @@
 # Checklist De Despliegue
 
-Guia manual minima para desplegar `Proyecto Novogar` sin depender de memoria. Esta lista asume el estado actual del repo: backend Node.js/Express, frontend React/Vite, PostgreSQL administrado por scripts del proyecto y configuracion sensible externalizada via `backend/.env`.
+Guia manual minima para desplegar `SendaDocs` sin depender de memoria. Esta lista asume el estado actual del repo: backend Node.js/Express, frontend React/Vite, PostgreSQL administrado por scripts del proyecto y configuracion sensible externalizada via `backend/.env`.
 
 ## 1. Antes De Empezar
 
@@ -31,7 +31,7 @@ Partir de `backend/.env.example` y completar como minimo:
 Notas:
 
 - No desplegar con `JWT_SECRET=dev-secret`.
-- No dejar credenciales dev por defecto (`postgres` / `admin` / `novogar_db`) salvo que el entorno sea realmente local y controlado.
+- No dejar credenciales dev por defecto (`postgres` / `admin` / `sendadocs_db`) salvo que el entorno sea realmente local y controlado.
 - Si el servidor usa rutas distintas para documentos, revisar tambien `JSON_BODY_LIMIT` y limites de archivos (`TABLAS_PAGO_MAX_FILE_MB`, `ORDENES_COMPRA_MAX_FILE_MB`, `RESERVAS_DOC_MAX_FILE_MB`).
 
 ## 3. Validacion Previa Del Release

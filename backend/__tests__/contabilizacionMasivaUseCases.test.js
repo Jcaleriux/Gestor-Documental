@@ -70,7 +70,7 @@ const createRepo = () => ({
       nombre: 'Centro Z',
       usuario_aprobador_id: 7,
       usuario_aprobador_nombre: 'Aprobador',
-      usuario_aprobador_email: 'aprobador@novogar.local',
+      usuario_aprobador_email: 'aprobador@sendadocs.local',
       activo: true,
       seleccionable_en_contabilizacion: true
     },
@@ -187,7 +187,7 @@ describe('contabilizacionMasivaUseCases', () => {
     await expect(useCases.applyDiarioDocumentos({
       sociedadId: 23,
       user: assignedUser,
-      usuario: 'contador@novogar.local'
+      usuario: 'contador@sendadocs.local'
     })).rejects.toMatchObject({
       status: 403,
       message: 'No tiene acceso a la sociedad solicitada'
@@ -287,7 +287,7 @@ describe('contabilizacionMasivaUseCases', () => {
     const result = await useCases.applyDiarioDocumentos({
       sociedadId: 23,
       user: fullAccessUser,
-      usuario: 'contador@novogar.local'
+      usuario: 'contador@sendadocs.local'
     });
 
     expect(runInTransaction).toHaveBeenCalledTimes(1);
@@ -296,7 +296,7 @@ describe('contabilizacionMasivaUseCases', () => {
       facturaId: 1,
       asiento: '2594',
       centroCosto: '11Z0606 - Centro Z',
-      usuario: 'contador@novogar.local'
+      usuario: 'contador@sendadocs.local'
     }), { tx: true });
     expect(repo.updateContabilizacionImportFields).toHaveBeenCalledTimes(1);
     expect(repo.updateContabilizacionImportFields).toHaveBeenCalledWith(expect.objectContaining({

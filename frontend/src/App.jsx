@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -16,6 +16,19 @@ import {
 import { buildNavigationSections } from './app/buildNavigationSections.js';
 import { useAppSession } from './hooks/app/useAppSession.js';
 import LoadingState from './components/common/LoadingState.jsx';
+import UserSettingsModal from './components/UserSettingsModal.jsx';
+import {
+  deleteUserAvatar,
+  fetchUserAvatarObjectUrl,
+  getUserProfile,
+  updateUserPreferences as updateRemoteUserPreferences,
+  uploadUserAvatar,
+} from './services/userProfileApi.js';
+import {
+  normalizeUserPreferences,
+  readUserPreferences,
+  saveUserPreferences,
+} from './utils/userPreferences.js';
 import './styles/app.css';
 
 const Dashboard = lazy(() => import('./components/Dashboard.jsx'));
@@ -37,8 +50,8 @@ const TablasPagoIngenieria = lazy(() => import('./components/TablasPagoIngenieri
 const OrdenesCompraIngenieria = lazy(() => import('./components/OrdenesCompraIngenieria.jsx'));
 const ReservasOperaciones = lazy(() => import('./components/ReservasOperaciones.jsx'));
 
-const SIDEBAR_COLLAPSED_KEY = 'novogar.sidebar.collapsed';
-const SIDEBAR_SECTIONS_KEY = 'novogar.sidebar.sections.v2';
+const SIDEBAR_COLLAPSED_KEY = 'sendadocs.sidebar.collapsed';
+const SIDEBAR_SECTIONS_KEY = 'sendadocs.sidebar.sections.v2';
 const MOBILE_MEDIA_QUERY = '(max-width: 991.98px)';
 
 const pathMatches = (pathname, target) => {
@@ -62,10 +75,14 @@ const parseJsonStorage = (key, fallback) => {
   }
 };
 
-const readCollapsedPreference = () => parseJsonStorage(SIDEBAR_COLLAPSED_KEY, false) === true;
+const readCollapsedPreference = () =>
+  parseJsonStorage(SIDEBAR_COLLAPSED_KEY, false) === true;
 
 const readExpandedSectionsPreference = (sections) =>
-  buildExpandedSectionsState(sections, parseJsonStorage(SIDEBAR_SECTIONS_KEY, {}));
+  buildExpandedSectionsState(
+    sections,
+    parseJsonStorage(SIDEBAR_SECTIONS_KEY, {}),
+  );
 
 const getMediaQuerySnapshot = (query) => {
   if (typeof window === 'undefined') {
@@ -97,6 +114,53 @@ const useMediaQueryValue = (query) => useSyncExternalStore(
   () => getMediaQuerySnapshot(query),
   () => false,
 );
+
+const buildInitialUserProfileState = (user) => {
+  const preferences = readUserPreferences(user);
+  return {
+    preferences,
+    profilePhotoPreviewUrl: preferences.profilePhotoDataUrl,
+  };
+};
+
+const userProfileReducer = (state, action) => {
+  switch (action.type) {
+    case 'updatePreferences': {
+      const currentPreferences = state.preferences || {};
+      const nextValue = typeof action.updater === 'function'
+        ? action.updater(currentPreferences)
+        : action.value;
+      const preferences = normalizeUserPreferences(nextValue);
+      return {
+        ...state,
+        preferences,
+        profilePhotoPreviewUrl: action.syncPhotoPreview
+          ? preferences.profilePhotoDataUrl
+          : state.profilePhotoPreviewUrl,
+      };
+    }
+    case 'mergePreferences': {
+      const preferences = normalizeUserPreferences({
+        ...state.preferences,
+        ...(action.value || {}),
+      });
+      return {
+        ...state,
+        preferences,
+        profilePhotoPreviewUrl: action.syncPhotoPreview
+          ? preferences.profilePhotoDataUrl
+          : state.profilePhotoPreviewUrl,
+      };
+    }
+    case 'setProfilePhotoPreview':
+      return {
+        ...state,
+        profilePhotoPreviewUrl: action.value || '',
+      };
+    default:
+      return state;
+  }
+};
 
 const ICONS = Object.freeze({
   menu: (
@@ -329,6 +393,113 @@ function AuthenticatedAppShell({
     open: false,
   }));
   const [sidebarTooltip, setSidebarTooltip] = useState(null);
+  const [userSettingsOpen, setUserSettingsOpen] = useState(false);
+  const [userProfileState, dispatchUserProfile] = useReducer(
+    userProfileReducer,
+    authUser,
+    buildInitialUserProfileState,
+  );
+  const profilePhotoObjectUrlRef = useRef('');
+  const userPreferences = userProfileState.preferences;
+  const profilePhotoPreviewUrl = userProfileState.profilePhotoPreviewUrl;
+
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return undefined;
+    }
+
+    document.documentElement.dataset.appTheme = userPreferences.themeMode;
+    return () => {
+      delete document.documentElement.dataset.appTheme;
+    };
+  }, [userPreferences.themeMode]);
+
+  useEffect(() => {
+    saveUserPreferences(authUser, userPreferences);
+  }, [authUser, userPreferences]);
+
+  const revokeProfilePhotoObjectUrl = useCallback(() => {
+    if (!profilePhotoObjectUrlRef.current) {
+      return;
+    }
+
+    const objectUrl = profilePhotoObjectUrlRef.current;
+    profilePhotoObjectUrlRef.current = '';
+
+    try {
+      const urlApi = typeof window !== 'undefined' ? window.URL : globalThis.URL;
+      urlApi?.revokeObjectURL?.(objectUrl);
+    } catch {
+      // Ignore cleanup failures for transient blob URLs.
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      revokeProfilePhotoObjectUrl();
+    };
+  }, [revokeProfilePhotoObjectUrl]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadRemoteUserProfile = async () => {
+      try {
+        const profile = await getUserProfile();
+        if (cancelled || !profile) {
+          return;
+        }
+
+        const remoteThemeMode = profile.preferencias?.theme_mode;
+        if (remoteThemeMode) {
+          dispatchUserProfile({
+            type: 'mergePreferences',
+            value: { themeMode: remoteThemeMode },
+            syncPhotoPreview: false,
+          });
+        }
+
+        if (profile.avatar?.has_avatar) {
+          const objectUrl = await fetchUserAvatarObjectUrl({
+            url: profile.avatar.url || '/api/me/avatar',
+          });
+
+          if (cancelled) {
+            try {
+              const urlApi = typeof window !== 'undefined' ? window.URL : globalThis.URL;
+              urlApi?.revokeObjectURL?.(objectUrl);
+            } catch {
+              // Ignore cleanup failures for transient blob URLs.
+            }
+            return;
+          }
+
+          revokeProfilePhotoObjectUrl();
+          profilePhotoObjectUrlRef.current = objectUrl;
+          dispatchUserProfile({
+            type: 'setProfilePhotoPreview',
+            value: objectUrl,
+          });
+          return;
+        }
+
+        revokeProfilePhotoObjectUrl();
+        dispatchUserProfile({
+          type: 'mergePreferences',
+          value: { profilePhotoDataUrl: '' },
+          syncPhotoPreview: true,
+        });
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    loadRemoteUserProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser?.email, authUser?.id, revokeProfilePhotoObjectUrl]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -409,6 +580,58 @@ function AuthenticatedAppShell({
     setSidebarTooltip(null);
   }, []);
 
+  const updateLocalUserPreferences = useCallback((updater, options = {}) => {
+    dispatchUserProfile({
+      type: 'updatePreferences',
+      updater,
+      syncPhotoPreview: options.syncPhotoPreview === true,
+    });
+  }, []);
+
+  const openUserSettings = useCallback(() => {
+    hideSidebarTooltip();
+    setUserSettingsOpen(true);
+  }, [hideSidebarTooltip]);
+
+  const closeUserSettings = useCallback(() => {
+    setUserSettingsOpen(false);
+  }, []);
+
+  const handleProfilePhotoChange = useCallback(async (profilePhotoDataUrl, fileInfo = {}) => {
+    const dataUrlMimeType = profilePhotoDataUrl.match(/^data:([^;]+);base64,/i)?.[1] || '';
+    await uploadUserAvatar({
+      fileBase64: profilePhotoDataUrl,
+      filename: fileInfo.filename || 'avatar.jpg',
+      mimeType: fileInfo.mimeType || dataUrlMimeType || 'image/jpeg',
+    });
+    revokeProfilePhotoObjectUrl();
+    updateLocalUserPreferences((previous) => ({
+      ...previous,
+      profilePhotoDataUrl,
+    }), { syncPhotoPreview: true });
+  }, [revokeProfilePhotoObjectUrl, updateLocalUserPreferences]);
+
+  const handleProfilePhotoRemove = useCallback(async () => {
+    await deleteUserAvatar();
+    revokeProfilePhotoObjectUrl();
+    updateLocalUserPreferences((previous) => ({
+      ...previous,
+      profilePhotoDataUrl: '',
+    }), { syncPhotoPreview: true });
+  }, [revokeProfilePhotoObjectUrl, updateLocalUserPreferences]);
+
+  const handleThemeModeChange = useCallback(async (themeMode) => {
+    updateLocalUserPreferences((previous) => ({
+      ...previous,
+      themeMode,
+    }));
+    try {
+      await updateRemoteUserPreferences({ themeMode });
+    } catch (error) {
+      console.error(error);
+    }
+  }, [updateLocalUserPreferences]);
+
   const toggleSection = useCallback((sectionId) => {
     setExpandedSectionsState({
       pathname: location.pathname,
@@ -446,10 +669,11 @@ function AuthenticatedAppShell({
       <aside className={`sidebar${sidebarCollapsed ? ' collapsed' : ''}${mobileSidebarOpen ? ' mobile-open' : ''}`}>
         <div className="sidebar-header">
           <div className="brand">
-            <div className="brand-icon">N</div>
+            <div className="brand-icon" aria-hidden="true">
+              <img className="brand-icon-image" src="/logo-icon.svg" alt="" />
+            </div>
             <div className="brand-copy">
-              <div className="brand-title">Proyecto Gestión documental</div>
-              <div className="brand-sub">Sistema de Gestión</div>
+              <img className="brand-logo" src="/logo-horizontal.svg" alt="SendaDocs" />
             </div>
           </div>
 
@@ -530,21 +754,42 @@ function AuthenticatedAppShell({
           })}
         </div>
 
-        <div
+        <button
+          type="button"
           className="sidebar-footer"
-          aria-label={`${userName} · ${userRole}`}
-          onMouseEnter={(event) => showSidebarTooltip(event, `${userName} · ${userRole}`)}
+          onClick={openUserSettings}
+          aria-label={`Abrir configuracion de usuario: ${userName} - ${userRole}`}
+          onMouseEnter={(event) => showSidebarTooltip(event, `${userName} - ${userRole}`)}
           onMouseLeave={hideSidebarTooltip}
-          onFocus={(event) => showSidebarTooltip(event, `${userName} · ${userRole}`)}
+          onFocus={(event) => showSidebarTooltip(event, `${userName} - ${userRole}`)}
           onBlur={hideSidebarTooltip}
         >
-          <div className="avatar">{userInitials}</div>
+          <div className="avatar">
+            {profilePhotoPreviewUrl ? (
+              <img src={profilePhotoPreviewUrl} alt="" />
+            ) : (
+              userInitials
+            )}
+          </div>
           <div className="sidebar-footer-copy">
             <div className="user-name">{userName}</div>
             <div className="user-role">{userRole}</div>
           </div>
-        </div>
+        </button>
       </aside>
+
+      <UserSettingsModal
+        isOpen={userSettingsOpen}
+        onClose={closeUserSettings}
+        onProfilePhotoChange={handleProfilePhotoChange}
+        onProfilePhotoRemove={handleProfilePhotoRemove}
+        onThemeModeChange={handleThemeModeChange}
+        profilePhotoDataUrl={profilePhotoPreviewUrl}
+        themeMode={userPreferences.themeMode}
+        userInitials={userInitials}
+        userName={userName}
+        userRole={userRole}
+      />
 
       <div className="main-area">
         <header className="topbar">
@@ -737,6 +982,7 @@ function App() {
   return (
     <Router>
       <AuthenticatedAppShell
+        key={authUser?.id ?? authUser?.email ?? 'authenticated'}
         sociedades={sociedades}
         sociedadId={sociedadId}
         selectedSociedad={selectedSociedad}

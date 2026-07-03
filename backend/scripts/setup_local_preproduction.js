@@ -12,9 +12,9 @@ const buildLocalPreproductionEnvTemplate = ({
   port = 3302,
   dbHost = 'localhost',
   dbPort = 5432,
-  dbUser = 'novogar_preprod_app',
+  dbUser = 'sendadocs_preprod_app',
   dbPassword = 'change-this-before-production',
-  dbName = 'novogar_preprod',
+  dbName = 'sendadocs_preprod',
   jwtSecret = 'change-this-before-production',
   corsAllowedOrigins = 'http://127.0.0.1:4173,http://localhost:4173',
   runtimeBaseDir = defaultRuntimeBaseDir,
@@ -23,7 +23,7 @@ const buildLocalPreproductionEnvTemplate = ({
   const relativeRuntimeBaseDir = toPosixPath(path.relative(backendRootDir, runtimeBaseDir) || '.');
 
   return [
-    '# Entorno local casi-productivo para Novogar',
+    '# Entorno local casi-productivo para SendaDocs',
     '# No versionar este archivo con secretos reales.',
     'NODE_ENV=production',
     `PORT=${port}`,
@@ -114,7 +114,7 @@ const renderSetupSummary = (result) => {
     '',
     'Siguientes pasos sugeridos:',
     '- Editar backend/.env.production.local y reemplazar placeholders de DB_PASSWORD y JWT_SECRET.',
-    '- Crear o confirmar una base separada, por ejemplo novogar_preprod.',
+    '- Crear o confirmar una base separada, por ejemplo sendadocs_preprod.',
     '- Ejecutar: pnpm --dir backend run preprod:db:migrate',
     '- Ejecutar: pnpm --dir backend run preprod:readiness',
     '- Levantar backend con: pnpm --dir backend run preprod:start',

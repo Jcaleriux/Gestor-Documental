@@ -1,17 +1,17 @@
-﻿Option Explicit
+Option Explicit
 
 ' ================== CONFIG ==================
-Private Const TARGET_MAILBOX As String = "facturas@novogar.cr"      ' Puede ser DisplayName o SMTP (depende del Outlook)
+Private Const TARGET_MAILBOX As String = "facturas@sendadocs.cr"      ' Puede ser DisplayName o SMTP (depende del Outlook)
 Private Const INBOX_NAME As String = "Bandeja de entrada"
-Private Const TARGET_FOLDER_NAME As String = "FACTURAS RECIBIDAS"  ' Subcarpeta dentro de Bandeja de entrada (o se busca en todo el buzón)
-Private Const SAVE_FOLDER As String = "C:\Jose\Proyecto Novogar\documentos\facturas recibidas\"
+Private Const TARGET_FOLDER_NAME As String = "FACTURAS RECIBIDAS"  ' Subcarpeta dentro de Bandeja de entrada (o se busca en todo el buz�n)
+Private Const SAVE_FOLDER As String = "C:\Jose\Gestor-Documental\documentos\facturas recibidas\"
 ' ============================================
 
 ' ================== ENTRYPOINT (recomendado) ==================
 ' 1) Te pide rango (dd/mm/yyyy hh:mm 24h)
 ' 2) Te deja elegir el folder real:
-'    - Si tienes un correo seleccionado, usa EXACTAMENTE la carpeta real de ese correo (lo más robusto).
-'    - Si no hay selección, intenta por ruta (Inbox\FACTURAS RECIBIDAS) y si no, busca por nombre en todo el buzón.
+'    - Si tienes un correo seleccionado, usa EXACTAMENTE la carpeta real de ese correo (lo m�s robusto).
+'    - Si no hay selecci�n, intenta por ruta (Inbox\FACTURAS RECIBIDAS) y si no, busca por nombre en todo el buz�n.
 Public Sub DescargarAdjuntos_FACTURAS_RECIBIDAS_RangoFecha()
     Dim startDate As Date, endDate As Date
     Dim targetFolder As Outlook.Folder
@@ -84,7 +84,7 @@ Private Sub ProcessFolderByDateRange(ByVal targetFolder As Outlook.Folder, ByVal
     On Error GoTo EH
 
     Set items = targetFolder.items
-    items.Sort "[ReceivedTime]", True ' más nuevos primero
+    items.Sort "[ReceivedTime]", True ' m�s nuevos primero
 
     Debug.Print "==== PROCESO ===="
     Debug.Print "Folder:", targetFolder.folderPath
@@ -105,9 +105,9 @@ Private Sub ProcessFolderByDateRange(ByVal targetFolder As Outlook.Folder, ByVal
             Set mail = it
 
             If mail.ReceivedTime > endDate Then
-                ' Aún más nuevo que el rango -> seguir bajando
+                ' A�n m�s nuevo que el rango -> seguir bajando
             ElseIf mail.ReceivedTime < startDate Then
-                ' Ya pasamos el rango (como está ordenado desc, podemos salir)
+                ' Ya pasamos el rango (como est� ordenado desc, podemos salir)
                 Exit For
             Else
                 ' Dentro del rango
@@ -130,7 +130,7 @@ Private Sub ProcessFolderByDateRange(ByVal targetFolder As Outlook.Folder, ByVal
     MsgBox "Proceso finalizado." & vbCrLf & _
            "Carpeta: " & targetFolder.folderPath & vbCrLf & _
            "Correos procesados (>=1 PDF y >=2 XML): " & countMails & vbCrLf & _
-           "Correos omitidos por regla mínima: " & countSkippedRule & vbCrLf & _
+           "Correos omitidos por regla m�nima: " & countSkippedRule & vbCrLf & _
            "Archivos guardados (solo PDF/XML): " & countFiles & vbCrLf & _
            "Destino: " & SAVE_FOLDER, vbInformation
     Exit Sub
@@ -141,9 +141,9 @@ End Sub
 
 ' ================== Folder Resolution (robusto) ==================
 ' Prioridad:
-' A) Si hay un correo seleccionado -> usar su carpeta real (lo más confiable)
+' A) Si hay un correo seleccionado -> usar su carpeta real (lo m�s confiable)
 ' B) Intentar ruta: TARGET_MAILBOX\Bandeja de entrada\FACTURAS RECIBIDAS
-' C) Buscar por nombre en todo el buzón
+' C) Buscar por nombre en todo el buz�n
 Private Function ResolveTargetFolderRobust() As Outlook.Folder
     Dim fromSelection As Outlook.Folder
     Dim byPath As Outlook.Folder
@@ -151,7 +151,7 @@ Private Function ResolveTargetFolderRobust() As Outlook.Folder
 
     Set fromSelection = GetSelectedMailParentFolder()
     If Not fromSelection Is Nothing Then
-        Debug.Print "Usando carpeta desde selección:", fromSelection.folderPath
+        Debug.Print "Usando carpeta desde selecci�n:", fromSelection.folderPath
         Set ResolveTargetFolderRobust = fromSelection
         Exit Function
     End If
@@ -165,7 +165,7 @@ Private Function ResolveTargetFolderRobust() As Outlook.Folder
 
     Set bySearch = FindFolderRecursive(GetStoreRoot(), TARGET_FOLDER_NAME)
     If Not bySearch Is Nothing Then
-        Debug.Print "Usando carpeta por búsqueda global:", bySearch.folderPath
+        Debug.Print "Usando carpeta por b�squeda global:", bySearch.folderPath
         Set ResolveTargetFolderRobust = bySearch
         Exit Function
     End If
@@ -267,7 +267,7 @@ Private Function PromptDateRange(ByRef startDate As Date, ByRef endDate As Date)
     End If
 
     If Not IsDate(inputStart) Or Not IsDate(inputEnd) Then
-        MsgBox "Formato de fecha inválido. Use: dd/mm/yyyy hh:mm (24h)." & vbCrLf & _
+        MsgBox "Formato de fecha inv�lido. Use: dd/mm/yyyy hh:mm (24h)." & vbCrLf & _
                "Ejemplo: 27/02/2026 09:30", vbCritical
         PromptDateRange = False
         Exit Function
@@ -277,7 +277,7 @@ Private Function PromptDateRange(ByRef startDate As Date, ByRef endDate As Date)
     endDate = CDate(inputEnd)
 
     If endDate < startDate Then
-        MsgBox "Rango inválido: la fecha/hora final es menor que la inicial.", vbCritical
+        MsgBox "Rango inv�lido: la fecha/hora final es menor que la inicial.", vbCritical
         PromptDateRange = False
         Exit Function
     End If
@@ -498,7 +498,7 @@ Private Function GetExtension(ByVal fileName As String) As String
     End If
 End Function
 
-' Regla mínima: al menos 1 PDF y 2 XML
+' Regla m�nima: al menos 1 PDF y 2 XML
 Private Function HasMinimumPdfXmlAttachments(ByVal mail As Outlook.MailItem) As Boolean
     Dim att As Outlook.Attachment
     Dim ext As String
@@ -516,7 +516,7 @@ Private Function HasMinimumPdfXmlAttachments(ByVal mail As Outlook.MailItem) As 
     HasMinimumPdfXmlAttachments = (pdfCount >= 1 And xmlCount >= 2 And (pdfCount + xmlCount) >= 3)
 End Function
 
-' Ingestion ID estable: timestamp + cola del EntryID alfanumérico
+' Ingestion ID estable: timestamp + cola del EntryID alfanum�rico
 Private Function BuildIngestionId(ByVal mail As Outlook.MailItem) As String
     Dim ts As String, tail As String
     ts = Format$(mail.ReceivedTime, "yyyymmdd_hhnnss")

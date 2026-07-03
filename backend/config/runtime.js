@@ -18,6 +18,7 @@ const DEFAULT_RUNTIME_CONFIG = Object.freeze({
   maxContabilizacionRespaldoMb: 10,
   maxTramitesCaratulaMb: 15,
   maxReservasDocMb: 15,
+  maxProfileAvatarMb: 3,
   watcher: Object.freeze({
     scanDebounceMs: 600,
     lateFilesDelayMs: 2000,
@@ -198,6 +199,11 @@ const resolveRuntimeConfig = () => {
       name: 'RESERVAS_DOC_MAX_FILE_MB',
       fallback: DEFAULT_RUNTIME_CONFIG.maxReservasDocMb,
       label: 'RESERVAS_DOC_MAX_FILE_MB',
+    }),
+    maxProfileAvatarMb: parsePositiveNumberEnv({
+      name: 'PROFILE_AVATAR_MAX_FILE_MB',
+      fallback: DEFAULT_RUNTIME_CONFIG.maxProfileAvatarMb,
+      label: 'PROFILE_AVATAR_MAX_FILE_MB',
     }),
     watcher: {
       scanDebounceMs,

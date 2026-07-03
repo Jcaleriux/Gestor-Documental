@@ -13,7 +13,7 @@ const createRepoMock = (overrides = {}) => ({
         consecutivo: '00100001010000000001',
         fecha_emision: '2026-03-01T00:00:00.000Z',
         emisor: { nombre: 'Proveedor QA' },
-        receptor: { nombre: 'Novogar' },
+        receptor: { nombre: 'SendaDocs' },
         resumen: {
           CodigoTipoMoneda: { CodigoMoneda: 'CRC' },
           TotalComprobante: 1000,
@@ -194,7 +194,7 @@ describe('facturasUseCases', () => {
             consecutivo: '00100001010000000003',
             fecha_emision: '2026-03-05T00:00:00.000Z',
             emisor: { nombre: 'Proveedor Workflow' },
-            receptor: { nombre: 'Novogar' },
+            receptor: { nombre: 'SendaDocs' },
             resumen: {
               CodigoTipoMoneda: { CodigoMoneda: 'CRC' },
               TotalComprobante: 2000,

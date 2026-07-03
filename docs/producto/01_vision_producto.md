@@ -1,8 +1,8 @@
 # Vision De Producto
 
-## Que es Novogar
+## Que es SendaDocs
 
-`Proyecto Novogar` es un sistema operativo interno para gestionar documentos de compra y su ciclo de vida, con foco en:
+`SendaDocs` es un sistema operativo interno para gestionar documentos de compra y su ciclo de vida, con foco en:
 
 - facturas,
 - notas de credito,
@@ -31,7 +31,7 @@ Usuarios principales:
 
 ## Propuesta de valor
 
-Novogar debe ayudar a que una persona operativa pueda responder rapido:
+SendaDocs debe ayudar a que una persona operativa pueda responder rapido:
 
 - que documentos existen,
 - en que estado documental estan,

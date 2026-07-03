@@ -1,5 +1,5 @@
 -- Crear base de datos del proyecto
-CREATE DATABASE novogar_db
+CREATE DATABASE sendadocs_db
 WITH
   OWNER = postgres
   ENCODING = 'UTF8';

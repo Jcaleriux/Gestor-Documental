@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Definir como se versiona `Proyecto Novogar`, que significa `release` vs `deployment`, y que es obligatorio antes del primer paso a produccion.
+Definir como se versiona `SendaDocs`, que significa `release` vs `deployment`, y que es obligatorio antes del primer paso a produccion.
 
 ## Estado actual
 
@@ -25,7 +25,7 @@ Es la version del software que declaras como candidata o oficial para un entorno
 
 Ejemplo:
 
-- `1.0.0` es la primera release oficial de Novogar.
+- `1.0.0` es la primera release oficial de SendaDocs.
 
 ### Deployment
 
@@ -48,7 +48,7 @@ En conversaciones de ejecucion operativa:
 
 ## Politica de versionado
 
-Novogar usara `SemVer`.
+SendaDocs usara `SemVer`.
 
 ### MAJOR
 
@@ -92,7 +92,7 @@ Las versiones de `backend/package.json` y `frontend/package.json` deben alinears
 
 ## Primera version objetivo
 
-La primera version objetivo de Novogar para release a produccion es:
+La primera version objetivo de SendaDocs para release a produccion es:
 
 - `1.0.0`
 
@@ -184,21 +184,21 @@ El backend ya puede exponer metadata tecnica del deploy en dos formas compatible
 
 - `GET /api/release-info`
 - headers HTTP en respuestas backend:
-  - `X-Novogar-Release-Version`
-  - `X-Novogar-Release-Tag`
-  - `X-Novogar-Release-Commit`
-  - `X-Novogar-Release-Commit-Short`
-  - `X-Novogar-Release-Branch`
+  - `X-SendaDocs-Release-Version`
+  - `X-SendaDocs-Release-Tag`
+  - `X-SendaDocs-Release-Commit`
+  - `X-SendaDocs-Release-Commit-Short`
+  - `X-SendaDocs-Release-Branch`
 
 Prioridad de resolucion:
 
-1. `NOVOGAR_RELEASE_VERSION`, `NOVOGAR_RELEASE_COMMIT`, `NOVOGAR_RELEASE_BRANCH`
+1. `SENDADOCS_RELEASE_VERSION`, `SENDADOCS_RELEASE_COMMIT`, `SENDADOCS_RELEASE_BRANCH`
 2. `VERSION`
 3. metadata de `.git` cuando esta disponible
 
 Residual menor:
 
-- si el entorno final no tiene `.git`, conviene inyectar `NOVOGAR_RELEASE_COMMIT` y `NOVOGAR_RELEASE_BRANCH` en el deployment para no depender del checkout local
+- si el entorno final no tiene `.git`, conviene inyectar `SENDADOCS_RELEASE_COMMIT` y `SENDADOCS_RELEASE_BRANCH` en el deployment para no depender del checkout local
 
 ## Smoke Checks De Release
 

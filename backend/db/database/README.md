@@ -3,7 +3,7 @@
 Este proyecto ahora se construye **desde cero** usando un solo esquema:
 
 - `00_init.sql`: esquema completo (tablas, constraints, FKs e indices).
-- `01_create_db.sql`: script opcional para crear la base `novogar_db`.
+- `01_create_db.sql`: script opcional para crear la base `sendadocs_db`.
 - `seed.sql`: datos iniciales opcionales.
 - `backend/db/migrations/`: migraciones incrementales versionadas sobre el baseline runtime.
 

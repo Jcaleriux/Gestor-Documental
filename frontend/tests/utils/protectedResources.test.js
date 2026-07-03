@@ -6,6 +6,7 @@ import {
   openProtectedInNewTab,
   parseContentDispositionFilename,
 } from '../../src/utils/protectedResources.js';
+import { AUTH_TOKEN_KEY } from '../../src/utils/auth.js';
 import { createMockFn } from '../utils/mockFn.js';
 
 const createHeadersMock = (entries = {}) => ({
@@ -35,7 +36,7 @@ const setLocalStorageMock = ({ token = '' } = {}) => {
   const previous = globalThis.localStorage;
   globalThis.localStorage = {
     getItem(key) {
-      if (key === 'novogar_auth_token') {
+      if (key === AUTH_TOKEN_KEY) {
         return token;
       }
       return null;

@@ -13,8 +13,8 @@ import {
 test('parseCentrosCostoCsv soporta plantilla normalizada', () => {
   const rows = parseCentrosCostoCsv([
     'codigo;nombre;codigo_padre;email_aprobador;rol_aprobador;seleccionable_en_contabilizacion;activo;orden',
-    '11ROOT;11 - PROYECTO DEMO;ROOT;demo@novogar.local;;false;true;1',
-    '1100000;COSTOS DIRECTOS;11ROOT;demo@novogar.local;;true;true;2',
+    '11ROOT;11 - PROYECTO DEMO;ROOT;demo@sendadocs.local;;false;true;1',
+    '1100000;COSTOS DIRECTOS;11ROOT;demo@sendadocs.local;;true;true;2',
   ].join('\n'));
 
   assert.equal(rows.length, 2);
@@ -26,8 +26,8 @@ test('parseCentrosCostoCsv soporta plantilla normalizada', () => {
 test('parseCentrosCostoCsv soporta comillas y delimitadores dentro de celdas', () => {
   const rows = parseCentrosCostoCsv([
     'codigo;nombre;codigo_padre;email_aprobador;rol_aprobador;seleccionable_en_contabilizacion;activo;orden',
-    '11ROOT;"11 - PROYECTO; ""DEMO""";ROOT;demo@novogar.local;;false;true;1',
-    '1100000;"COSTOS DIRECTOS, ETAPA 1";11ROOT;demo@novogar.local;;true;true;2',
+    '11ROOT;"11 - PROYECTO; ""DEMO""";ROOT;demo@sendadocs.local;;false;true;1',
+    '1100000;"COSTOS DIRECTOS, ETAPA 1";11ROOT;demo@sendadocs.local;;true;true;2',
   ].join('\n'));
 
   assert.equal(rows.length, 2);
@@ -58,7 +58,7 @@ test('buildCentrosCostoTemplateCsv exporta el catalogo actual y se puede reimpor
       codigo: '1100000',
       nombre: 'COSTOS DIRECTOS; ETAPA 1',
       centro_padre_codigo: '11ROOT',
-      usuario_aprobador_email: 'obra@novogar.local',
+      usuario_aprobador_email: 'obra@sendadocs.local',
       rol_aprobador_codigo: '',
       seleccionable_en_contabilizacion: true,
       activo: true,

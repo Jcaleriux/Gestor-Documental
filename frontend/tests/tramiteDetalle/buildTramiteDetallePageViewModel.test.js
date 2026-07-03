@@ -48,14 +48,14 @@ test('buildTramiteWorkflowInputs arma actor y callbacks base del workflow', () =
     id: '55',
     tramite: { id: 55 },
     documentosActivos: [{ factura_id: 1 }],
-    authUser: { email: 'tesoreria@novogar.local' },
+    authUser: { email: 'tesoreria@sendadocs.local' },
     fetchDetalle,
     fetchHistorial,
     setActionMessage,
     setActionError,
   });
 
-  assert.equal(workflowInputs.actorUsuario, 'tesoreria@novogar.local');
+  assert.equal(workflowInputs.actorUsuario, 'tesoreria@sendadocs.local');
   assert.equal(workflowInputs.id, '55');
   assert.equal(workflowInputs.documentosActivos.length, 1);
   assert.equal(workflowInputs.fetchDetalle, fetchDetalle);

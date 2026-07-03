@@ -18,7 +18,7 @@ describe('facturaEstadoHistorialStore', () => {
       dominio: FACTURA_ESTADO_DOMINIOS.CONTABILIZACION,
       estadoAnterior: 'no_contabilizado',
       estadoNuevo: 'contabilizado',
-      usuario: 'conta@novogar.local',
+      usuario: 'conta@sendadocs.local',
       motivo: 'Contabilizacion inicial'
     });
 
@@ -36,7 +36,7 @@ describe('facturaEstadoHistorialStore', () => {
       dominio: FACTURA_ESTADO_DOMINIOS.WORKFLOW_PAGO,
       estadoAnterior: 'contabilizado',
       estadoNuevo: 'en_tramite_pago',
-      usuario: 'tesoreria@novogar.local',
+      usuario: 'tesoreria@sendadocs.local',
       motivo: 'Enviado a pago'
     });
 

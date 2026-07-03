@@ -32,7 +32,7 @@ describe('auditoriaUseCases', () => {
           dominio: 'workflow_pago',
           estado_anterior: 'en_tramite_pago',
           estado_nuevo: 'pagado',
-          usuario: 'tesoreria@novogar.local',
+          usuario: 'tesoreria@sendadocs.local',
           creado_en: '2026-03-18T10:00:00.000Z',
           motivo: null
         }
@@ -44,7 +44,7 @@ describe('auditoriaUseCases', () => {
           accion: 'tesoreria_reenviar',
           estado_anterior: 'en_revision_tesoreria',
           estado_nuevo: 'en_aprobacion_gerencia_financiera',
-          usuario: 'tesoreria@novogar.local',
+          usuario: 'tesoreria@sendadocs.local',
           creado_en: '2026-03-17T11:00:00.000Z',
           motivo: 'Requiere una nueva revision'
         },
@@ -54,7 +54,7 @@ describe('auditoriaUseCases', () => {
           accion: 'decision_gerencia',
           estado_anterior: null,
           estado_nuevo: null,
-          usuario: 'gerencia@novogar.local',
+          usuario: 'gerencia@sendadocs.local',
           creado_en: '2026-03-17T10:00:00.000Z',
           motivo: null
         }
@@ -65,7 +65,7 @@ describe('auditoriaUseCases', () => {
           tramite_id: 7,
           usuario_aprobador_id: 101,
           usuario_aprobador_nombre: 'Gerencia Ventas',
-          usuario_aprobador_email: 'ventas@novogar.local',
+          usuario_aprobador_email: 'ventas@sendadocs.local',
           estado_gerencia: 'aprobado',
           motivo_gerencia: null,
           decision_en: '2026-03-16T09:00:00.000Z',
@@ -80,7 +80,7 @@ describe('auditoriaUseCases', () => {
           estado_factura_origen: 'contabilizado',
           tramite_estado: 'en_aprobacion_gerencia',
           tramite_creado_en: '2026-03-15T07:00:00.000Z',
-          tramite_creado_por: 'contabilidad@novogar.local',
+          tramite_creado_por: 'contabilidad@sendadocs.local',
           actualizado_en: '2026-03-15T07:00:00.000Z'
         }
       ]),
@@ -90,7 +90,7 @@ describe('auditoriaUseCases', () => {
           tramite_id: 7,
           monto: '28617.25',
           moneda: 'CRC',
-          usuario: 'tesoreria@novogar.local',
+          usuario: 'tesoreria@sendadocs.local',
           fecha_pago: '2026-03-18',
           creado_en: '2026-03-18T12:00:00.000Z',
           notas: 'Transferencia bancaria'
@@ -102,7 +102,7 @@ describe('auditoriaUseCases', () => {
           contabilizacion_id: 91,
           monto: '4200.00',
           moneda: 'CRC',
-          usuario: 'tesoreria@novogar.local',
+          usuario: 'tesoreria@sendadocs.local',
           fecha_pago: '2026-03-18',
           creado_en: '2026-03-18T13:00:00.000Z',
           notas: 'Pago de retencion'
@@ -155,7 +155,7 @@ describe('auditoriaUseCases', () => {
         })
       ])
     );
-    expect(result.find((item) => item.usuario === 'gerencia@novogar.local')).toBeUndefined();
+    expect(result.find((item) => item.usuario === 'gerencia@sendadocs.local')).toBeUndefined();
   });
 
   test('actualizarEstadoFactura rechaza factura fuera de sociedades asignadas antes de escribir', async () => {

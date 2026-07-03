@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { useFacturaDetalle } from '../../src/hooks/useFacturaDetalle.js';
 import { createHookHarness } from '../utils/hookHarness.js';
 import { createMockFn } from '../utils/mockFn.js';
+import { AUTH_TOKEN_KEY } from '../../src/utils/auth.js';
 
 const useFacturaDetalleHarness = (props) => useFacturaDetalle(props);
 
@@ -10,7 +11,7 @@ const setLocalStorageMock = ({ token = '' } = {}) => {
   const previous = globalThis.localStorage;
   globalThis.localStorage = {
     getItem(key) {
-      if (key === 'novogar_auth_token') return token;
+      if (key === AUTH_TOKEN_KEY) return token;
       return null;
     },
     setItem() {},

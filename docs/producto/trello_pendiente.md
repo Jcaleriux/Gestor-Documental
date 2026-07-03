@@ -26,6 +26,8 @@ Este archivo contiene solo trabajo vivo para cargar en Trello. No incluye epics,
 - `backend`
 - `frontend`
 - `reportes`
+- `perfil`
+- `multiempresa`
 
 ## Epics Vivos
 
@@ -62,13 +64,23 @@ Tarjetas pendientes:
 - `TECH-002`
 - `TECH-003`
 
+### EPIC-A-006 Perfil De Usuario Persistente Multiempresa
+
+Estado sugerido: `Propuesto`
+
+Objetivo: persistir preferencias y avatar de usuario en backend para que acompanen al usuario entre dispositivos, sobrevivan a borrar cache y puedan ser gestionados con validaciones, permisos y respaldo.
+
+Tarjetas pendientes:
+
+- `FEAT-009`
+
 ## Tarjetas Pendientes
 
 ### FEAT-002 Vista de aging y excepciones por moneda y sociedad
 
 - Tipo: `feature`
 - Prioridad: `P1`
-- Estado inicial Trello: `Backlog`
+- Estado inicial Trello: `Hecho`
 - Epic: `EPIC-A-001`
 - Area: dashboard, reportes
 
@@ -166,6 +178,66 @@ Logs/errores mas utiles para endpoints criticos, sin introducir tooling pesado i
 Validacion sugerida:
 Forzar errores controlados y confirmar que la respuesta al usuario y los logs ayudan a diagnosticar.
 
+### FEAT-009 Perfil de usuario persistente multiempresa
+
+- Tipo: `feature`
+- Prioridad: `P2`
+- Estado inicial Trello: `Hecho`
+- Epic: `EPIC-A-006`
+- Area: perfil, usuarios, backend, frontend, storage, multiempresa
+
+Problema:
+La configuracion actual del usuario vive localmente en el navegador. Eso no alcanza para una experiencia multiempresa profesional porque se pierde al borrar cache, no viaja entre computadoras y no puede ser administrada ni respaldada por soporte.
+
+Resultado esperado:
+Perfil persistente con preferencias de usuario y avatar sincronizados desde backend, manteniendo fallback local mientras se migra.
+
+Alcance sugerido:
+- preferencias propias en backend (`theme_mode` inicialmente)
+- avatar con storage seguro y metadata/ruta en DB
+- endpoints `GET/PATCH /api/me/preferencias` y endpoints para avatar propio
+- validacion de tipo/tamano de imagen
+- permisos para perfil propio y gestion administrativa minima
+- auditoria o historial minimo de cambios relevantes
+
+Fuera de alcance inicial:
+- modo oscuro completo
+- guardar imagenes base64 en DB
+- redisenar autenticacion o sesiones
+- migrar storage documental operativo existente
+
+Validacion sugerida:
+Probar cambio de tema y avatar desde dos navegadores, borrar cache local y confirmar que el backend repone la configuracion; validar permisos, tamano/tipo de archivo, fallback a iniciales y eliminacion de avatar.
+
+Implementado:
+- migracion `20260702_0010_usuario_perfil_preferencias_avatar.sql`
+- endpoints propios `GET/PATCH /api/me/preferencias` y `GET/PUT/DELETE /api/me/avatar`
+- endpoint admin `DELETE /api/usuarios/:id/avatar`
+- storage separado en `perfiles/avatares/{usuario_id}/`
+- pruebas backend/frontend, lint y build en verde
+
+### FEAT-010 Limpieza de marca SendaDocs independiente
+
+- Tipo: `feature`
+- Prioridad: `P1`
+- Estado inicial Trello: `Hecho`
+- Epic: `EPIC-A-007`
+- Area: marca, runtime, tooling, frontend, backend, documentacion
+
+Problema:
+El producto ya se presenta como SendaDocs, pero runtime, tooling y documentos operativos conservaban rastros del nombre temporal anterior.
+
+Resultado esperado:
+Nombres SendaDocs consistentes en headers, llaves locales, variables de entorno, paquetes, seeds, scripts y documentacion operativa.
+
+Implementado:
+- headers `X-SendaDocs-*`
+- variables `SENDADOCS_*`
+- llaves `sendadocs.*` con migracion suave desde llaves legacy
+- paquetes root/backend renombrados
+- seed demo y scripts de preproduccion actualizados
+- documentacion operativa/producto actualizada
+
 ## No Cargar En Trello Como Pendiente
 
 Estos items ya estan cerrados o son historicos:
@@ -174,6 +246,8 @@ Estos items ya estan cerrados o son historicos:
 - `FEAT-006`
 - `FEAT-007`
 - `FEAT-008`
+- `FEAT-009`
+- `FEAT-010`
 - `TECH-001`
 - `TECH-004`
 - `TECH-005`

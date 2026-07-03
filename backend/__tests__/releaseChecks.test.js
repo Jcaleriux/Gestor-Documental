@@ -7,7 +7,7 @@ const {
   runReleaseChecks,
 } = require('../scripts/release_checks');
 
-const createTempDir = () => fs.mkdtempSync(path.join(os.tmpdir(), 'novogar-release-'));
+const createTempDir = () => fs.mkdtempSync(path.join(os.tmpdir(), 'SendaDocs-release-'));
 
 const removeDir = (dir) => {
   fs.rmSync(dir, { recursive: true, force: true });

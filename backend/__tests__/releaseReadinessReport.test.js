@@ -20,7 +20,7 @@ describe('release readiness report', () => {
         DB_PORT: '5432',
         DB_USER: 'postgres',
         DB_PASSWORD: 'admin',
-        DB_NAME: 'novogar_db',
+        DB_NAME: 'sendadocs_db',
         JWT_SECRET: 'dev-secret',
         CORS_ALLOWED_ORIGINS: '*',
         FACTURAS_BASE_DIR: 'change-this-before-production',
@@ -36,7 +36,7 @@ describe('release readiness report', () => {
     expect(result.warnings).toEqual(expect.arrayContaining([
       expect.stringContaining('DB_HOST apunta a localhost'),
       expect.stringContaining('DB_USER usa postgres'),
-      expect.stringContaining('DB_NAME usa novogar_db'),
+      expect.stringContaining('DB_NAME usa sendadocs_db'),
     ]));
   });
 

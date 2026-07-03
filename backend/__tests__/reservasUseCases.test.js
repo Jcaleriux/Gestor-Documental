@@ -87,7 +87,7 @@ describe('reservasUseCases', () => {
     const useCases = createReservasUseCases({ reservasRepo: repo, baseDir: path.resolve(__dirname, '..', '..') });
 
     const result = await useCases.createOperacion({
-      user: { id: 1, email: 'qa@novogar.local', permissions: ['acceso_total'] },
+      user: { id: 1, email: 'qa@sendadocs.local', permissions: ['acceso_total'] },
       sociedad_id: 1,
       proyecto_codigo: 'ede',
       unidad_codigo: 'a01',
@@ -168,7 +168,7 @@ describe('reservasUseCases', () => {
     const useCases = createReservasUseCases({ reservasRepo: repo, baseDir: path.resolve(__dirname, '..', '..') });
 
     const result = await useCases.transferOperacion({
-      user: { id: 1, email: 'qa@novogar.local', permissions: ['acceso_total'] },
+      user: { id: 1, email: 'qa@sendadocs.local', permissions: ['acceso_total'] },
       operacionId: 100,
       destino_proyecto_codigo: 'asf',
       destino_unidad_codigo: 'b02',
@@ -231,7 +231,7 @@ describe('reservasUseCases', () => {
     const useCases = createReservasUseCases({ reservasRepo: repo, baseDir: path.resolve(__dirname, '..', '..') });
 
     const result = await useCases.syncOperacionDocumento({
-      user: { id: 1, email: 'qa@novogar.local', permissions: ['acceso_total'] },
+      user: { id: 1, email: 'qa@sendadocs.local', permissions: ['acceso_total'] },
       proyecto_codigo: 'asf',
       unidad_codigo: 'a01',
       cliente_nombre: 'Cliente Nuevo',
@@ -259,7 +259,7 @@ describe('reservasUseCases', () => {
   });
 
   test('getOperacionDocumentoPreview resuelve rutas historicas entre reservas y ventas', async () => {
-    const tempBaseDir = fs.mkdtempSync(path.join(os.tmpdir(), 'novogar-reservas-preview-'));
+    const tempBaseDir = fs.mkdtempSync(path.join(os.tmpdir(), 'SendaDocs-reservas-preview-'));
     const legacyDocumentDir = path.join(tempBaseDir, 'documentos', 'ventas_operaciones', '100');
     const legacyDocumentPath = path.join(legacyDocumentDir, 'PAGO_RESERVA.pdf');
 
@@ -279,7 +279,7 @@ describe('reservasUseCases', () => {
       const useCases = createReservasUseCases({ reservasRepo: repo, baseDir: tempBaseDir });
 
       const result = await useCases.getOperacionDocumentoPreview({
-        user: { id: 1, email: 'qa@novogar.local', permissions: ['acceso_total'] },
+        user: { id: 1, email: 'qa@sendadocs.local', permissions: ['acceso_total'] },
         operacionId: 100,
         documentoId: 88,
       });

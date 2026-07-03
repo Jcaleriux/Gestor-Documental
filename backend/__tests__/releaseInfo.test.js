@@ -13,9 +13,9 @@ describe('release info config', () => {
   test('resolveReleaseInfo prioriza overrides explicitos de entorno', () => {
     const info = resolveReleaseInfo({
       env: {
-        NOVOGAR_RELEASE_VERSION: '1.2.3',
-        NOVOGAR_RELEASE_COMMIT: 'abcdef1234567890',
-        NOVOGAR_RELEASE_BRANCH: 'release/test',
+        SENDADOCS_RELEASE_VERSION: '1.2.3',
+        SENDADOCS_RELEASE_COMMIT: 'abcdef1234567890',
+        SENDADOCS_RELEASE_BRANCH: 'release/test',
       },
     });
 
@@ -34,7 +34,7 @@ describe('release info config', () => {
   });
 
   test('resolveReleaseInfo usa VERSION y git cuando no hay overrides', () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'novogar-release-info-'));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sendadocs-release-info-'));
     const versionFilePath = path.join(tmpDir, 'VERSION');
     const gitDirPath = path.join(tmpDir, '.git');
     const refsDirPath = path.join(gitDirPath, 'refs', 'heads');
@@ -66,7 +66,7 @@ describe('release info config', () => {
   });
 
   test('readTargetVersion exige archivo no vacio', () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'novogar-release-version-'));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sendadocs-release-version-'));
     const versionFilePath = path.join(tmpDir, 'VERSION');
     fs.writeFileSync(versionFilePath, '1.0.0\n', 'utf8');
 
@@ -80,7 +80,7 @@ describe('release info config', () => {
   });
 
   test('readGitMetadata usa fallback de entorno cuando el repo esta detached y se permite', () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'novogar-release-detached-'));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sendadocs-release-detached-'));
     const gitDirPath = path.join(tmpDir, '.git');
     fs.mkdirSync(gitDirPath, { recursive: true });
     fs.writeFileSync(gitDirPath + path.sep + 'HEAD', 'ec3b6d7aee6dbec614c4b60340d203f58798b0aa\n', 'utf8');
@@ -117,11 +117,11 @@ describe('release info config', () => {
     });
 
     expect(headers).toMatchObject({
-      'X-Novogar-Release-Version': '1.0.0',
-      'X-Novogar-Release-Tag': 'v1.0.0',
-      'X-Novogar-Release-Commit': 'abcdef1234567890',
-      'X-Novogar-Release-Commit-Short': 'abcdef1',
-      'X-Novogar-Release-Branch': 'main',
+      'X-SendaDocs-Release-Version': '1.0.0',
+      'X-SendaDocs-Release-Tag': 'v1.0.0',
+      'X-SendaDocs-Release-Commit': 'abcdef1234567890',
+      'X-SendaDocs-Release-Commit-Short': 'abcdef1',
+      'X-SendaDocs-Release-Branch': 'main',
     });
   });
 });

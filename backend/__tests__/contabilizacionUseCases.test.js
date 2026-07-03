@@ -175,7 +175,7 @@ describe('contabilizacionUseCases', () => {
   });
 
   test('uploadDocumentoRespaldo guarda archivo y registra el documento', async () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'novogar-conta-docs-'));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'SendaDocs-conta-docs-'));
     const { repo, client } = createRepoMock({
       createDocumentoRespaldo: jest.fn().mockImplementation(async (payload) => ({
         id: 81,
@@ -223,7 +223,7 @@ describe('contabilizacionUseCases', () => {
   });
 
   test('deleteDocumentoRespaldo elimina el registro y el archivo asociado', async () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'novogar-conta-docs-'));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'SendaDocs-conta-docs-'));
     const relativePath = 'documentos/contabilizacion_respaldo/10/1/respaldo_demo.pdf';
     const storedFilePath = path.join(tempDir, relativePath);
     fs.mkdirSync(path.dirname(storedFilePath), { recursive: true });

@@ -43,11 +43,11 @@ describe('usuariosUseCases', () => {
 
   test('lista usuarios y roles usando sus repositorios', async () => {
     const repos = createRepos();
-    repos.usuariosRepo.listUsuarios.mockResolvedValue([{ id: 1, email: 'admin@novogar.local' }]);
+    repos.usuariosRepo.listUsuarios.mockResolvedValue([{ id: 1, email: 'admin@sendadocs.local' }]);
     repos.rolesRepo.listRoles.mockResolvedValue([{ id: 2, nombre: 'Contabilidad' }]);
     const useCases = createUsuariosUseCases(repos);
 
-    await expect(useCases.listUsuarios()).resolves.toEqual([{ id: 1, email: 'admin@novogar.local' }]);
+    await expect(useCases.listUsuarios()).resolves.toEqual([{ id: 1, email: 'admin@sendadocs.local' }]);
     await expect(useCases.listRoles()).resolves.toEqual([{ id: 2, nombre: 'Contabilidad' }]);
   });
 
@@ -55,23 +55,23 @@ describe('usuariosUseCases', () => {
     const repos = createRepos();
     repos.rolesRepo.getRoleById.mockResolvedValue({ id: 3 });
     repos.usuariosRepo.getByEmail.mockResolvedValue(null);
-    repos.usuariosRepo.createUsuario.mockResolvedValue({ id: 9, email: 'qa@novogar.local' });
+    repos.usuariosRepo.createUsuario.mockResolvedValue({ id: 9, email: 'qa@sendadocs.local' });
     const useCases = createUsuariosUseCases(repos);
 
     const result = await useCases.createUsuario({
       nombre: '  QA User  ',
-      email: '  QA@Novogar.Local ',
-      password: 'Novogar2026!',
+      email: '  QA@sendadocs.local ',
+      password: 'SendaDocs2026!',
       rol_id: '3',
     });
 
-    expect(result).toEqual({ id: 9, email: 'qa@novogar.local' });
+    expect(result).toEqual({ id: 9, email: 'qa@sendadocs.local' });
     expect(repos.rolesRepo.getRoleById).toHaveBeenCalledWith(3);
-    expect(repos.usuariosRepo.getByEmail).toHaveBeenCalledWith('qa@novogar.local');
-    expect(bcrypt.hash).toHaveBeenCalledWith('Novogar2026!', expect.any(Number));
+    expect(repos.usuariosRepo.getByEmail).toHaveBeenCalledWith('qa@sendadocs.local');
+    expect(bcrypt.hash).toHaveBeenCalledWith('SendaDocs2026!', expect.any(Number));
     expect(repos.usuariosRepo.createUsuario).toHaveBeenCalledWith({
       nombre: 'QA User',
-      email: 'qa@novogar.local',
+      email: 'qa@sendadocs.local',
       passwordHash: '$2b$12$hash-demo',
       rolId: 3,
       activo: true,
@@ -85,8 +85,8 @@ describe('usuariosUseCases', () => {
     repos.rolesRepo.getRoleById.mockResolvedValue(null);
     await expect(useCases.createUsuario({
       nombre: 'QA',
-      email: 'qa@novogar.local',
-      password: 'Novogar2026!',
+      email: 'qa@sendadocs.local',
+      password: 'SendaDocs2026!',
       rol_id: 99,
     })).rejects.toMatchObject({
       status: 400,
@@ -97,8 +97,8 @@ describe('usuariosUseCases', () => {
     repos.usuariosRepo.getByEmail.mockResolvedValue({ id: 7 });
     await expect(useCases.createUsuario({
       nombre: 'QA',
-      email: 'qa@novogar.local',
-      password: 'Novogar2026!',
+      email: 'qa@sendadocs.local',
+      password: 'SendaDocs2026!',
       rol_id: 3,
     })).rejects.toMatchObject({
       status: 409,
@@ -111,17 +111,17 @@ describe('usuariosUseCases', () => {
   test('actualiza usuario y solo cambia password cuando viene con contenido', async () => {
     const repos = createRepos();
     repos.usuariosRepo.getUsuarioById
-      .mockResolvedValueOnce({ id: 8, email: 'actual@novogar.local' })
-      .mockResolvedValueOnce({ id: 8, email: 'nuevo@novogar.local', password: '$2b$12$hash-demo' });
+      .mockResolvedValueOnce({ id: 8, email: 'actual@sendadocs.local' })
+      .mockResolvedValueOnce({ id: 8, email: 'nuevo@sendadocs.local', password: '$2b$12$hash-demo' });
     repos.rolesRepo.getRoleById.mockResolvedValue({ id: 4 });
-    repos.usuariosRepo.getByEmail.mockResolvedValue({ id: 8, email: 'nuevo@novogar.local' });
-    repos.usuariosRepo.updateUsuario.mockResolvedValue({ id: 8, email: 'nuevo@novogar.local' });
+    repos.usuariosRepo.getByEmail.mockResolvedValue({ id: 8, email: 'nuevo@sendadocs.local' });
+    repos.usuariosRepo.updateUsuario.mockResolvedValue({ id: 8, email: 'nuevo@sendadocs.local' });
     const useCases = createUsuariosUseCases(repos);
 
     const result = await useCases.updateUsuario({
       id: '8',
       nombre: '  Usuario Editado ',
-      email: ' Nuevo@Novogar.Local ',
+      email: ' Nuevo@sendadocs.local ',
       rol_id: '4',
       activo: false,
       password: '  nueva-clave  ',
@@ -130,13 +130,13 @@ describe('usuariosUseCases', () => {
     expect(repos.usuariosRepo.updateUsuario).toHaveBeenCalledWith({
       userId: 8,
       nombre: 'Usuario Editado',
-      email: 'nuevo@novogar.local',
+      email: 'nuevo@sendadocs.local',
       rolId: 4,
       activo: false,
     });
     expect(bcrypt.hash).toHaveBeenCalledWith('nueva-clave', expect.any(Number));
     expect(repos.usuariosRepo.updatePassword).toHaveBeenCalledWith(8, '$2b$12$hash-demo');
-    expect(result).toEqual({ id: 8, email: 'nuevo@novogar.local', password: '$2b$12$hash-demo' });
+    expect(result).toEqual({ id: 8, email: 'nuevo@sendadocs.local', password: '$2b$12$hash-demo' });
   });
 
   test('rechaza update de usuario inexistente o email de otro usuario', async () => {
@@ -147,7 +147,7 @@ describe('usuariosUseCases', () => {
     await expect(useCases.updateUsuario({
       id: 8,
       nombre: 'QA',
-      email: 'qa@novogar.local',
+      email: 'qa@sendadocs.local',
       rol_id: 3,
     })).rejects.toMatchObject({
       status: 404,
@@ -160,7 +160,7 @@ describe('usuariosUseCases', () => {
     await expect(useCases.updateUsuario({
       id: 8,
       nombre: 'QA',
-      email: 'qa@novogar.local',
+      email: 'qa@sendadocs.local',
       rol_id: 3,
     })).rejects.toMatchObject({
       status: 409,
@@ -197,7 +197,7 @@ describe('usuariosUseCases', () => {
     ]);
     repos.usuariosSociedadesRepo.listSociedadesByUsuarioId.mockResolvedValue([
       { id: 18, razon_social: 'Bio San Pablo SA' },
-      { id: 19, razon_social: 'Novogar SA' },
+      { id: 19, razon_social: 'SendaDocs SA' },
     ]);
     const useCases = createUsuariosUseCases(repos);
 
@@ -220,7 +220,7 @@ describe('usuariosUseCases', () => {
       sociedad_ids: [18, 19],
       sociedades: [
         { id: 18, razon_social: 'Bio San Pablo SA' },
-        { id: 19, razon_social: 'Novogar SA' },
+        { id: 19, razon_social: 'SendaDocs SA' },
       ]
     });
   });

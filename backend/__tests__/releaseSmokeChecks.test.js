@@ -11,12 +11,12 @@ describe('release smoke checks script', () => {
     expect(resolveSmokeConfig({})).toEqual(DEFAULT_SMOKE_CONFIG);
 
     expect(resolveSmokeConfig({
-      SMOKE_USER_EMAIL: 'ops@novogar.local',
+      SMOKE_USER_EMAIL: 'ops@sendadocs.local',
       SMOKE_USER_PASSWORD: 'secreta',
       SMOKE_SOCIEDAD_ID: '18',
       SMOKE_FACTURAS_PAGE_SIZE: '7',
     })).toEqual({
-      email: 'ops@novogar.local',
+      email: 'ops@sendadocs.local',
       password: 'secreta',
       sociedadId: '18',
       facturasPageSize: 7,
@@ -35,7 +35,7 @@ describe('release smoke checks script', () => {
       ok: true,
       generatedAt: '2026-03-22T08:00:00.000Z',
       config: {
-        email: 'admin@novogar.local',
+        email: 'admin@sendadocs.local',
         sociedadId: '18',
       },
       checks: [

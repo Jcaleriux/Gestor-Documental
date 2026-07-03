@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Proyecto Novogar | Presentación ejecutiva</title>
+  <title>SendaDocs | Presentación ejecutiva</title>
   <style>
     :root {
       color-scheme: dark;
@@ -265,8 +265,8 @@
     <div class="brand">
       <div class="brand-mark" aria-hidden="true"></div>
       <div class="brand-copy">
-        <p class="brand-kicker">Proyecto Novogar | Presentación ejecutiva</p>
-        <h1 class="brand-title" id="deck-title">Proyecto Novogar</h1>
+        <p class="brand-kicker">SendaDocs | Presentación ejecutiva</p>
+        <h1 class="brand-title" id="deck-title">SendaDocs</h1>
       </div>
     </div>
     <div class="meta">
@@ -285,17 +285,17 @@
 
   <script>
     const slides = [
-      { file: "slide1.html", title: "Proyecto Novogar" },
+      { file: "slide1.html", title: "SendaDocs" },
       { file: "slide2.html", title: "Resumen ejecutivo" },
       { file: "slide3.html", title: "Problema actual y riesgo operativo" },
-      { file: "slide4.html", title: "Qué resuelve Proyecto Novogar hoy" },
+      { file: "slide4.html", title: "Qué resuelve SendaDocs hoy" },
       { file: "slide5.html", title: "Flujo operativo end-to-end" },
       { file: "slide6.html", title: "Capacidades implementadas hoy" },
       { file: "slide7.html", title: "Visibilidad gerencial" },
       { file: "slide8.html", title: "Seguridad y control actual" },
       { file: "slide9.html", title: "Arquitectura y despliegue propuesto en Azure" },
       { file: "slide10.html", title: "Respaldo, rollback y continuidad operativa" },
-      { file: "slide11.html", title: "Por qué Proyecto Novogar puede crecer más" },
+      { file: "slide11.html", title: "Por qué SendaDocs puede crecer más" },
       { file: "slide12.html", title: "Demo 1 | Vista general y entrada a la operación" },
       { file: "slide13.html", title: "Demo 2 | Documento, contexto y trazabilidad" },
       { file: "slide14.html", title: "Demo 3 | Trámite, carátulas y aprobación" },
@@ -346,7 +346,7 @@
       const slide = slides[currentIndex];
       deckTitle.textContent = slide.title;
       deckCounter.textContent = `${currentIndex + 1} de ${slides.length}`;
-      document.title = `Proyecto Novogar | ${slide.title}`;
+      document.title = `SendaDocs | ${slide.title}`;
       frame.src = slide.file;
       prevButton.disabled = currentIndex === 0;
       nextButton.disabled = currentIndex === slides.length - 1;

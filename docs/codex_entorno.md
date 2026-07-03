@@ -1,4 +1,4 @@
-# Entorno Codex Para Proyecto Novogar
+# Entorno Codex Para SendaDocs
 
 Esta guia aterriza como trabajar con Codex en este repo sin depender de memoria o instrucciones repetidas en cada sesion.
 
@@ -6,7 +6,7 @@ Esta guia aterriza como trabajar con Codex en este repo sin depender de memoria 
 
 ### Que es la configuracion en este repo
 
-La configuracion de Codex para `Proyecto Novogar` no es un archivo magico unico. Es la combinacion de:
+La configuracion de Codex para `SendaDocs` no es un archivo magico unico. Es la combinacion de:
 
 - la guia operativa en `AGENTS.md`,
 - el script `scripts/setup-codex-env.ps1`,
@@ -16,7 +16,7 @@ La configuracion de Codex para `Proyecto Novogar` no es un archivo magico unico.
 ### Base tecnica del proyecto
 
 - Sistema operativo actual: Windows + PowerShell
-- Repo root: `C:\Jose\Proyecto Novogar`
+- Repo root: `C:\Jose\Gestor-Documental`
 - Backend: Node.js + Express + PostgreSQL
 - Frontend: React + Vite
 - Puerto backend por defecto: `3002`
@@ -56,7 +56,7 @@ El backend ya carga `backend/.env` y `backend/.env.local` de forma automatica. S
 - `DB_PORT` o `PGPORT`: `5432`
 - `DB_USER` o `PGUSER`: `postgres`
 - `DB_PASSWORD` o `PGPASSWORD`: `admin`
-- `DB_NAME` o `PGDATABASE`: `novogar_db`
+- `DB_NAME` o `PGDATABASE`: `sendadocs_db`
 
 Ademas, el backend ya soporta variables utiles:
 
@@ -142,7 +142,7 @@ Eso es deliberado, porque en este repo esas acciones tienen riesgo operativo.
 ### Instalacion inicial
 
 ```powershell
-cd C:\Jose\Proyecto Novogar\backend
+cd C:\Jose\Gestor-Documental\backend
 npm install
 cd ..\frontend
 npm install
@@ -153,14 +153,14 @@ Antes de levantar el backend, copiar `backend/.env.example` a `backend/.env` y a
 ### Crear base de datos
 
 ```powershell
-cd C:\Jose\Proyecto Novogar
+cd C:\Jose\Gestor-Documental
 psql -U postgres -f backend\db\database\01_create_db.sql
 ```
 
 ### Inicializar schema y seed
 
 ```powershell
-cd C:\Jose\Proyecto Novogar\backend
+cd C:\Jose\Gestor-Documental\backend
 npm run db:reset
 ```
 
@@ -169,14 +169,14 @@ Nota: este comando es destructivo sobre `public`.
 ### Aplicar migraciones versionadas pendientes
 
 ```powershell
-cd C:\Jose\Proyecto Novogar\backend
+cd C:\Jose\Gestor-Documental\backend
 npm run db:migrate
 ```
 
 ### Revisar estado del tracking de migraciones
 
 ```powershell
-cd C:\Jose\Proyecto Novogar\backend
+cd C:\Jose\Gestor-Documental\backend
 npm run db:migrate:status
 ```
 
@@ -188,49 +188,49 @@ Nota:
 ### Levantar backend
 
 ```powershell
-cd C:\Jose\Proyecto Novogar\backend
+cd C:\Jose\Gestor-Documental\backend
 npm run dev
 ```
 
 ### Levantar frontend
 
 ```powershell
-cd C:\Jose\Proyecto Novogar\frontend
+cd C:\Jose\Gestor-Documental\frontend
 npm run dev
 ```
 
 ### Build de frontend
 
 ```powershell
-cd C:\Jose\Proyecto Novogar\frontend
+cd C:\Jose\Gestor-Documental\frontend
 npm run build
 ```
 
 ### Tests backend
 
 ```powershell
-cd C:\Jose\Proyecto Novogar\backend
+cd C:\Jose\Gestor-Documental\backend
 npm test
 ```
 
 ### Tests frontend
 
 ```powershell
-cd C:\Jose\Proyecto Novogar\frontend
+cd C:\Jose\Gestor-Documental\frontend
 npm test
 ```
 
 ### Tests puntuales utiles
 
 ```powershell
-cd C:\Jose\Proyecto Novogar\frontend
+cd C:\Jose\Gestor-Documental\frontend
 node tests/hooks/useAppSession.test.js
 node tests/hooks/useFacturas.test.js
 node tests/facturas/facturasPageHelpers.test.js
 ```
 
 ```powershell
-cd C:\Jose\Proyecto Novogar\backend
+cd C:\Jose\Gestor-Documental\backend
 node node_modules/jest/bin/jest.js --runInBand __tests__/reservasUseCases.test.js
 ```
 
@@ -247,7 +247,7 @@ Sintoma:
 Causa probable:
 
 - `backend/.env`, `backend/.env.local` o las variables del sistema no coinciden con la base real.
-- Si no hay variables definidas, el fallback dev espera `localhost:5432`, usuario `postgres`, password `admin`, base `novogar_db`.
+- Si no hay variables definidas, el fallback dev espera `localhost:5432`, usuario `postgres`, password `admin`, base `sendadocs_db`.
 
 ### `psql` no existe en PATH
 

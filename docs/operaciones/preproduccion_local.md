@@ -27,7 +27,7 @@ La idea es separar:
 
 - archivo de entorno: `backend/.env.production.local`
 - backend en puerto `3302`
-- DB sugerida: `novogar_preprod`
+- DB sugerida: `sendadocs_preprod`
 - storage local separado: `runtime/preprod/`
 
 ## Preparacion Inicial
@@ -48,7 +48,7 @@ Esto hace dos cosas:
 
 - `DB_PASSWORD`
 - `JWT_SECRET`
-- `DB_NAME` si quieres otro nombre distinto a `novogar_preprod`
+- `DB_NAME` si quieres otro nombre distinto a `sendadocs_preprod`
 - `PG_BIN_DIR` si `pg_dump` y `pg_restore` no estan en `PATH`
 
 3. Crear o confirmar la base separada.
@@ -56,13 +56,13 @@ Esto hace dos cosas:
 Ejemplo manual:
 
 ```bash
-createdb -U postgres novogar_preprod
+createdb -U postgres sendadocs_preprod
 ```
 
 O con `psql`:
 
 ```bash
-psql -U postgres -c "CREATE DATABASE novogar_preprod;"
+psql -U postgres -c "CREATE DATABASE sendadocs_preprod;"
 ```
 
 ## Base De Datos
@@ -74,7 +74,7 @@ cd backend
 npm run preprod:db:check
 ```
 
-Si la base `novogar_preprod` esta vacia, inicializar primero:
+Si la base `sendadocs_preprod` esta vacia, inicializar primero:
 
 ```bash
 cd backend

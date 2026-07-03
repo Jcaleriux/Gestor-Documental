@@ -17,7 +17,7 @@ const createStorage = (baseDir, options = {}) => createReservasDocumentStorage({
 
 describe('reservas documentStorage', () => {
   test('decodeUploadFile acepta PDF por data URI', () => {
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'novogar-reservas-storage-'));
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'SendaDocs-reservas-storage-'));
     const storage = createStorage(tempRoot);
 
     const result = storage.decodeUploadFile({
@@ -32,7 +32,7 @@ describe('reservas documentStorage', () => {
   });
 
   test('decodeUploadFile rechaza base64 invalido', () => {
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'novogar-reservas-storage-'));
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'SendaDocs-reservas-storage-'));
     const storage = createStorage(tempRoot);
 
     expect(() => storage.decodeUploadFile({
@@ -43,7 +43,7 @@ describe('reservas documentStorage', () => {
   });
 
   test('resolveStoredDocumentPath resuelve alias historicos entre reservas y ventas', () => {
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'novogar-reservas-storage-'));
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'SendaDocs-reservas-storage-'));
     const realDir = path.join(tempRoot, 'documentos', 'ventas_operaciones', '100');
     fs.mkdirSync(realDir, { recursive: true });
     const realFile = path.join(realDir, 'reserva.pdf');
@@ -58,7 +58,7 @@ describe('reservas documentStorage', () => {
   });
 
   test('writeReplacementDocument guarda archivo, hash y metadata de reemplazo', () => {
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'novogar-reservas-storage-'));
+    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'SendaDocs-reservas-storage-'));
     const fixedDate = new Date('2024-01-01T00:00:00.000Z');
     const storage = createStorage(tempRoot, {
       now: () => fixedDate,

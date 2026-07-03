@@ -5,6 +5,7 @@ import {
   downloadTramiteReportExcel
 } from '../../utils/tramiteExcelReport.js';
 import { downloadProtectedResource } from '../../utils/protectedResources.js';
+import { readResponseHeader } from '../../constants/responseHeaders.js';
 
 export const useTramiteReport = ({
   tramite = null,
@@ -86,9 +87,9 @@ export const useTramiteReport = ({
       const { response } = await downloadProtectedFile(url, {
         fallbackFilename: `tramite_${tramite.id}_vista_unificada.pdf`,
       });
-      const partialDownload = response.headers.get('X-Novogar-Partial-Download') === '1';
-      const omittedCount = Number(response.headers.get('X-Novogar-Omitted-Count') || 0);
-      const omittedItems = response.headers.get('X-Novogar-Omitted-Items') || '';
+      const partialDownload = readResponseHeader(response.headers, 'partialDownload') === '1';
+      const omittedCount = Number(readResponseHeader(response.headers, 'omittedCount') || 0);
+      const omittedItems = readResponseHeader(response.headers, 'omittedItems');
 
       if (partialDownload) {
         const countLabel = omittedCount > 0 ? omittedCount : 'varios';
