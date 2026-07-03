@@ -96,6 +96,38 @@ html[data-app-theme="dark"] .btn-outline-primary {
   --bs-btn-hover-color: #08111f;
 }
 
+html[data-app-theme="dark"] .btn-outline-success {
+  --bs-btn-color: var(--app-success);
+  --bs-btn-border-color: var(--app-success);
+  --bs-btn-hover-bg: var(--app-success);
+  --bs-btn-hover-border-color: var(--app-success);
+  --bs-btn-hover-color: #07150f;
+}
+
+html[data-app-theme="dark"] .btn-outline-danger {
+  --bs-btn-color: var(--app-danger);
+  --bs-btn-border-color: var(--app-danger);
+  --bs-btn-hover-bg: var(--app-danger);
+  --bs-btn-hover-border-color: var(--app-danger);
+  --bs-btn-hover-color: #1f0808;
+}
+
+html[data-app-theme="dark"] .btn-outline-warning {
+  --bs-btn-color: var(--app-warning);
+  --bs-btn-border-color: var(--app-warning);
+  --bs-btn-hover-bg: var(--app-warning);
+  --bs-btn-hover-border-color: var(--app-warning);
+  --bs-btn-hover-color: #1d1302;
+}
+
+html[data-app-theme="dark"] .btn-outline-info {
+  --bs-btn-color: var(--app-info);
+  --bs-btn-border-color: var(--app-info);
+  --bs-btn-hover-bg: var(--app-info);
+  --bs-btn-hover-border-color: var(--app-info);
+  --bs-btn-hover-color: #06131f;
+}
+
 html[data-app-theme="dark"] .form-control,
 html[data-app-theme="dark"] .form-select,
 html[data-app-theme="dark"] .form-check-input,
@@ -122,6 +154,53 @@ html[data-app-theme="dark"] .form-check-input:focus {
 
 html[data-app-theme="dark"] .form-select {
   --bs-form-select-bg-img: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23a7b3c7' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+}
+
+html[data-app-theme="dark"] .list-group {
+  --bs-list-group-bg: var(--app-surface);
+  --bs-list-group-color: var(--app-text);
+  --bs-list-group-border-color: var(--app-border);
+  --bs-list-group-action-color: var(--app-text-secondary);
+  --bs-list-group-action-hover-bg: var(--app-hover);
+  --bs-list-group-action-hover-color: var(--app-text);
+  --bs-list-group-action-active-bg: var(--app-active);
+  --bs-list-group-action-active-color: var(--app-text);
+}
+
+html[data-app-theme="dark"] .list-group-item {
+  background: var(--app-surface);
+  border-color: var(--app-border);
+  color: var(--app-text);
+}
+
+html[data-app-theme="dark"] .list-group-item-action:hover,
+html[data-app-theme="dark"] .list-group-item-action:focus {
+  background: var(--app-hover);
+  color: var(--app-text);
+}
+
+html[data-app-theme="dark"] .alert {
+  border-color: var(--app-border);
+}
+
+html[data-app-theme="dark"] .alert-info {
+  background: var(--app-info-soft);
+  color: var(--app-info);
+}
+
+html[data-app-theme="dark"] .alert-success {
+  background: var(--app-success-soft);
+  color: var(--app-success);
+}
+
+html[data-app-theme="dark"] .alert-warning {
+  background: var(--app-warning-soft);
+  color: var(--app-warning);
+}
+
+html[data-app-theme="dark"] .alert-danger {
+  background: var(--app-danger-soft);
+  color: var(--app-danger);
 }
 
 html[data-app-theme="dark"] .card-header,
@@ -152,6 +231,11 @@ html[data-app-theme="dark"] .factura-document-meta,
 html[data-app-theme="dark"] .factura-emisor-meta,
 html[data-app-theme="dark"] .factura-total-currency,
 html[data-app-theme="dark"] .nota-estado-meta,
+html[data-app-theme="dark"] .facturas-pagination-meta,
+html[data-app-theme="dark"] .facturas-pagination-ellipsis,
+html[data-app-theme="dark"] .facturas-filter-chip-close,
+html[data-app-theme="dark"] .documents-filters .search-input .search-icon,
+html[data-app-theme="dark"] .pdfs-candidate-search .search-icon,
 html[data-app-theme="dark"] .dashboard-work-queue-description,
 html[data-app-theme="dark"] .dashboard-alert-item-description,
 html[data-app-theme="dark"] .dashboard-alert-copy,
@@ -326,6 +410,26 @@ html[data-app-theme="dark"] .data-table-sort-btn.active {
   color: var(--app-primary);
 }
 
+html[data-app-theme="dark"] .text-primary {
+  color: var(--app-primary) !important;
+}
+
+html[data-app-theme="dark"] .text-success {
+  color: var(--app-success) !important;
+}
+
+html[data-app-theme="dark"] .text-warning {
+  color: var(--app-warning) !important;
+}
+
+html[data-app-theme="dark"] .text-danger {
+  color: var(--app-danger) !important;
+}
+
+html[data-app-theme="dark"] .text-info {
+  color: var(--app-info) !important;
+}
+
 html[data-app-theme="dark"] .dashboard-status-chart-track,
 html[data-app-theme="dark"] .status-bar,
 html[data-app-theme="dark"] .activity-item {
@@ -344,6 +448,41 @@ html[data-app-theme="dark"] .text-bg-light {
   background-color: var(--app-surface-muted) !important;
   color: var(--app-text) !important;
   border-color: var(--app-border) !important;
+}
+
+html[data-app-theme="dark"] .bg-primary-subtle,
+html[data-app-theme="dark"] .badge.bg-primary-subtle {
+  background-color: var(--app-primary-soft) !important;
+  color: var(--app-primary) !important;
+}
+
+html[data-app-theme="dark"] .bg-success-subtle,
+html[data-app-theme="dark"] .text-bg-success {
+  background-color: var(--app-success-soft) !important;
+  color: var(--app-success) !important;
+}
+
+html[data-app-theme="dark"] .bg-warning-subtle,
+html[data-app-theme="dark"] .text-bg-warning {
+  background-color: var(--app-warning-soft) !important;
+  color: var(--app-warning) !important;
+}
+
+html[data-app-theme="dark"] .bg-danger-subtle,
+html[data-app-theme="dark"] .text-bg-danger {
+  background-color: var(--app-danger-soft) !important;
+  color: var(--app-danger) !important;
+}
+
+html[data-app-theme="dark"] .bg-info-subtle,
+html[data-app-theme="dark"] .text-bg-info {
+  background-color: var(--app-info-soft) !important;
+  color: var(--app-info) !important;
+}
+
+html[data-app-theme="dark"] .text-bg-secondary {
+  background-color: var(--app-surface-subtle) !important;
+  color: var(--app-muted) !important;
 }
 
 html[data-app-theme="dark"] .border,
@@ -373,6 +512,7 @@ html[data-app-theme="dark"] .bg-soft-danger {
 }
 
 html[data-app-theme="dark"] .badge-soft-info,
+html[data-app-theme="dark"] .badge-soft-primary,
 html[data-app-theme="dark"] .bg-soft-primary {
   background: var(--app-info-soft);
   color: var(--app-info);
@@ -398,4 +538,10 @@ html[data-app-theme="dark"] .protected-pdf-frame {
 html[data-app-theme="dark"] .theme-segmented button.active {
   background: var(--app-primary-strong);
   color: var(--app-primary-contrast);
+}
+
+html[data-app-theme="dark"] .icon-btn > .badge {
+  background: var(--app-danger-soft);
+  color: var(--app-danger);
+  border: 1px solid rgba(255, 138, 128, 0.28);
 }
