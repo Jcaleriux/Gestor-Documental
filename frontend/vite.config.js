@@ -1,7 +1,8 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-const apiProxyTarget = process.env.NOVOGAR_API_PROXY_TARGET || 'http://localhost:3002'
+const apiProxyTarget = process.env.SENDADOCS_API_PROXY_TARGET
+  || 'http://localhost:3002'
 
 // https://vite.dev/config/
 export default defineConfig({

@@ -37,7 +37,7 @@ describe('tramitesPago caratulas use cases', () => {
       sociedad_identificacion_raw: '3-101-887961',
       moneda: 'CRC',
       total_paginas: 15,
-      cargado_por: 'tesoreria@novogar.local',
+      cargado_por: 'tesoreria@sendadocs.local',
       procesado_en: '2026-03-22T12:00:00.000Z',
       actualizado_en: '2026-03-22T12:00:00.000Z',
       parsed_payload: {
@@ -222,7 +222,7 @@ describe('tramitesPago caratulas use cases', () => {
       id: 4,
       filename: '20.bsp crc.pdf',
       file_base64: 'data:application/pdf;base64,JVBERi0=',
-      usuario: 'tesoreria@novogar.local'
+      usuario: 'tesoreria@sendadocs.local'
     });
 
     expect(result).toEqual({
@@ -348,7 +348,7 @@ describe('tramitesPago caratulas use cases', () => {
       group_key: 'group_1_1_1',
       provider_factura_id: 1001,
       line_matches: [],
-      usuario: 'tesoreria@novogar.local'
+      usuario: 'tesoreria@sendadocs.local'
     });
 
     expect(result).toEqual({

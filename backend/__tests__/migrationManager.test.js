@@ -9,7 +9,7 @@ const {
   loadMigrations,
 } = require('../db/migrationManager');
 
-const createTempDir = () => fs.mkdtempSync(path.join(os.tmpdir(), 'novogar-migrations-'));
+const createTempDir = () => fs.mkdtempSync(path.join(os.tmpdir(), 'SendaDocs-migrations-'));
 
 const removeDir = (dir) => {
   fs.rmSync(dir, { recursive: true, force: true });

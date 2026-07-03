@@ -27,7 +27,7 @@ const RELEVANT_ENV_KEYS = [
   'JWT_SECRET',
   'JWT_EXPIRES_IN',
   'BCRYPT_ROUNDS',
-  'NOVOGAR_ENV_FILE',
+  'SENDADOCS_ENV_FILE',
 ];
 
 const ORIGINAL_ENV = new Map(
@@ -65,16 +65,16 @@ describe('env config', () => {
   test('resolveDbConfig usa DB_* explicitos cuando existen', () => {
     process.env.DB_HOST = 'db.internal';
     process.env.DB_PORT = '5544';
-    process.env.DB_USER = 'novogar';
+    process.env.DB_USER = 'sendadocs';
     process.env.DB_PASSWORD = 'segura';
-    process.env.DB_NAME = 'novogar_prod';
+    process.env.DB_NAME = 'sendadocs_prod';
 
     expect(resolveDbConfig()).toEqual({
       host: 'db.internal',
       port: 5544,
-      user: 'novogar',
+      user: 'sendadocs',
       password: 'segura',
-      database: 'novogar_prod',
+      database: 'sendadocs_prod',
     });
   });
 
@@ -110,9 +110,9 @@ describe('env config', () => {
     process.env.NODE_ENV = 'production';
     process.env.DB_HOST = 'db.internal';
     process.env.DB_PORT = 'abc';
-    process.env.DB_USER = 'novogar';
+    process.env.DB_USER = 'sendadocs';
     process.env.DB_PASSWORD = 'segura';
-    process.env.DB_NAME = 'novogar_prod';
+    process.env.DB_NAME = 'sendadocs_prod';
 
     expect(() => resolveDbConfig()).toThrow(
       'DB_PORT debe ser un entero positivo en produccion.'
@@ -142,9 +142,9 @@ describe('env config', () => {
     process.env.BCRYPT_ROUNDS = '14';
     process.env.DB_HOST = 'db.internal';
     process.env.DB_PORT = '5432';
-    process.env.DB_USER = 'novogar';
+    process.env.DB_USER = 'sendadocs';
     process.env.DB_PASSWORD = 'segura';
-    process.env.DB_NAME = 'novogar_prod';
+    process.env.DB_NAME = 'sendadocs_prod';
 
     expect(resolveAuthConfig()).toEqual({
       JWT_SECRET: 'super-secreto-produccion',
@@ -154,7 +154,7 @@ describe('env config', () => {
   });
 
   test('loadEnvFiles soporta un env file explicito para preproduccion local', () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'novogar-env-config-'));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sendadocs-env-config-'));
     const explicitEnvFilePath = path.join(tmpDir, '.env.production.local');
 
     fs.writeFileSync(
@@ -165,13 +165,13 @@ describe('env config', () => {
         'DB_PORT=5544',
         'DB_USER=preprod_user',
         'DB_PASSWORD=super-segura',
-        'DB_NAME=novogar_preprod',
+        'DB_NAME=sendadocs_preprod',
         'JWT_SECRET=jwt-preprod-segura',
       ].join('\n'),
       'utf8'
     );
 
-    process.env.NOVOGAR_ENV_FILE = explicitEnvFilePath;
+    process.env.SENDADOCS_ENV_FILE = explicitEnvFilePath;
     resetEnvFilesLoadedState();
     loadEnvFiles({ forceReload: true });
 
@@ -181,7 +181,7 @@ describe('env config', () => {
       port: 5544,
       user: 'preprod_user',
       password: 'super-segura',
-      database: 'novogar_preprod',
+      database: 'sendadocs_preprod',
     });
     expect(resolveAuthConfig()).toMatchObject({
       JWT_SECRET: 'jwt-preprod-segura',

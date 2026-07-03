@@ -1,6 +1,7 @@
 const { createFacturasUseCases } = require('./facturasUseCases');
 const facturasRepo = require('../repositories/facturasRepository');
 const { handleRequest } = require('../utils/http');
+const { RESPONSE_HEADERS } = require('../constants/responseHeaders');
 
 const useCases = createFacturasUseCases({ facturasRepo });
 
@@ -27,10 +28,10 @@ const getFacturasPdfSeleccionadas = handleRequest(async (req, res) => {
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename="${pdfDownload.filename}"`);
-  res.setHeader('X-Novogar-Partial-Download', pdfDownload.partialDownload ? '1' : '0');
-  res.setHeader('X-Novogar-Omitted-Count', String(pdfDownload.omittedCount || 0));
+  res.setHeader(RESPONSE_HEADERS.partialDownload, pdfDownload.partialDownload ? '1' : '0');
+  res.setHeader(RESPONSE_HEADERS.omittedCount, String(pdfDownload.omittedCount || 0));
   if (pdfDownload.omittedItemsHeader) {
-    res.setHeader('X-Novogar-Omitted-Items', pdfDownload.omittedItemsHeader);
+    res.setHeader(RESPONSE_HEADERS.omittedItems, pdfDownload.omittedItemsHeader);
   }
   res.send(pdfDownload.buffer);
 }, 'Error downloading selected facturas PDF:', 'Error downloading selected facturas PDF');

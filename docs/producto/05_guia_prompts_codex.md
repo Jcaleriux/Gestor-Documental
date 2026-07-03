@@ -398,7 +398,7 @@ Conviene cuando:
 
 ## Recomendacion Para Tu Caso
 
-En Novogar puedes usar prompts de sesion larga sobre todo para:
+En SendaDocs puedes usar prompts de sesion larga sobre todo para:
 
 - `FEAT-*` medianos que tocan varias capas,
 - `TECH-*` importantes,
@@ -466,7 +466,7 @@ entonces normalmente no hace falta Plan mode.
 
 ## Recomendacion Para Tu Caso
 
-Para Novogar, mi recomendacion es:
+Para SendaDocs, mi recomendacion es:
 
 - usar `Plan mode` para epics, roadmap, backlog, sprints y decisiones de arquitectura,
 - usar modo normal para features, bugs y deuda tecnica concreta,

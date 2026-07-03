@@ -104,7 +104,7 @@ test('useAppSession bootstrappea sesion, sociedades y permisos derivados', async
           success: true,
           data: [
             { id: 10, nombre_proyecto: 'EDE', razon_social: 'EDE SA', cedula_juridica: '3-101-111111' },
-            { id: 20, nombre_proyecto: 'NOVO', razon_social: 'Novogar SA', cedula_juridica: '3-101-222222' },
+            { id: 20, nombre_proyecto: 'SENDADOCS', razon_social: 'SendaDocs SA', cedula_juridica: '3-101-222222' },
           ],
         },
       };

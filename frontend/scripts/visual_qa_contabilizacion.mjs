@@ -3,17 +3,19 @@ import { mkdir } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-const AUTH_TOKEN_KEY = 'novogar_auth_token';
-const AUTH_USER_KEY = 'novogar_auth_user';
-const SELECTED_SOCIEDAD_KEY = 'novogar.sociedad.selected';
+const readQaEnv = (key) => process.env[`SENDADOCS_QA_${key}`] || '';
 
-const baseUrl = process.env.NOVOGAR_QA_BASE_URL || 'http://127.0.0.1:5173';
-const facturaId = process.env.NOVOGAR_QA_FACTURA_ID || '4390';
-const email = process.env.NOVOGAR_QA_EMAIL;
-const password = process.env.NOVOGAR_QA_PASSWORD;
-const selectedSociedadId = process.env.NOVOGAR_QA_SOCIEDAD_ID || '';
-const outputDir = process.env.NOVOGAR_QA_OUTPUT_DIR
-  || path.join(os.tmpdir(), 'novogar-visual-qa');
+const AUTH_TOKEN_KEY = 'sendadocs.auth.token';
+const AUTH_USER_KEY = 'sendadocs.auth.user';
+const SELECTED_SOCIEDAD_KEY = 'sendadocs.sociedad.selected';
+
+const baseUrl = readQaEnv('BASE_URL') || 'http://127.0.0.1:5173';
+const facturaId = readQaEnv('FACTURA_ID') || '4390';
+const email = readQaEnv('EMAIL');
+const password = readQaEnv('PASSWORD');
+const selectedSociedadId = readQaEnv('SOCIEDAD_ID');
+const outputDir = readQaEnv('OUTPUT_DIR')
+  || path.join(os.tmpdir(), 'sendadocs-visual-qa');
 
 const targetPath = `/facturas/${facturaId}/contabilizacion`;
 const targetUrl = new URL(targetPath, baseUrl).toString();
@@ -26,7 +28,7 @@ const viewports = [
 const assertEnv = () => {
   if (!email || !password) {
     throw new Error(
-      'Set NOVOGAR_QA_EMAIL and NOVOGAR_QA_PASSWORD before running this script.',
+      'Set SENDADOCS_QA_EMAIL and SENDADOCS_QA_PASSWORD before running this script.',
     );
   }
 };
@@ -96,19 +98,22 @@ const openAuthenticatedPage = async ({ browser, session, viewport }) => {
   });
 
   await context.addInitScript(
-    ({ token, user, sociedadId }) => {
-      window.localStorage.setItem('novogar_auth_token', token);
+    ({ token, user, sociedadId, tokenKey, userKey, sociedadKey }) => {
+      window.localStorage.setItem(tokenKey, token);
       if (user) {
-        window.localStorage.setItem('novogar_auth_user', JSON.stringify(user));
+        window.localStorage.setItem(userKey, JSON.stringify(user));
       }
       if (sociedadId) {
-        window.localStorage.setItem('novogar.sociedad.selected', sociedadId);
+        window.localStorage.setItem(sociedadKey, sociedadId);
       }
     },
     {
       token: session.token,
       user: session.user,
       sociedadId: session.sociedadId,
+      tokenKey: AUTH_TOKEN_KEY,
+      userKey: AUTH_USER_KEY,
+      sociedadKey: SELECTED_SOCIEDAD_KEY,
     },
   );
 

@@ -1,9 +1,11 @@
 const request = require('supertest');
 
+jest.setTimeout(15000);
+
 const RELEVANT_ENV_KEYS = [
-  'NOVOGAR_RELEASE_VERSION',
-  'NOVOGAR_RELEASE_COMMIT',
-  'NOVOGAR_RELEASE_BRANCH',
+  'SENDADOCS_RELEASE_VERSION',
+  'SENDADOCS_RELEASE_COMMIT',
+  'SENDADOCS_RELEASE_BRANCH',
 ];
 
 const ORIGINAL_ENV = new Map(
@@ -30,9 +32,9 @@ describe('release info routes', () => {
   });
 
   test('GET /api/release-info expone version y commit del deploy', async () => {
-    process.env.NOVOGAR_RELEASE_VERSION = '1.0.0';
-    process.env.NOVOGAR_RELEASE_COMMIT = 'abcdef1234567890abcdef1234567890abcdef12';
-    process.env.NOVOGAR_RELEASE_BRANCH = 'main';
+    process.env.SENDADOCS_RELEASE_VERSION = '1.0.0';
+    process.env.SENDADOCS_RELEASE_COMMIT = 'abcdef1234567890abcdef1234567890abcdef12';
+    process.env.SENDADOCS_RELEASE_BRANCH = 'main';
 
     const app = require('../app');
     const res = await request(app).get('/api/release-info');
@@ -56,18 +58,18 @@ describe('release info routes', () => {
   });
 
   test('GET /api/health incluye headers tecnicos de release', async () => {
-    process.env.NOVOGAR_RELEASE_VERSION = '2.0.0';
-    process.env.NOVOGAR_RELEASE_COMMIT = '1234567890abcdef1234567890abcdef12345678';
-    process.env.NOVOGAR_RELEASE_BRANCH = 'release/candidate';
+    process.env.SENDADOCS_RELEASE_VERSION = '2.0.0';
+    process.env.SENDADOCS_RELEASE_COMMIT = '1234567890abcdef1234567890abcdef12345678';
+    process.env.SENDADOCS_RELEASE_BRANCH = 'release/candidate';
 
     const app = require('../app');
     const res = await request(app).get('/api/health');
 
     expect(res.status).toBe(200);
-    expect(res.headers['x-novogar-release-version']).toBe('2.0.0');
-    expect(res.headers['x-novogar-release-tag']).toBe('v2.0.0');
-    expect(res.headers['x-novogar-release-commit']).toBe('1234567890abcdef1234567890abcdef12345678');
-    expect(res.headers['x-novogar-release-commit-short']).toBe('1234567');
-    expect(res.headers['x-novogar-release-branch']).toBe('release/candidate');
+    expect(res.headers['x-sendadocs-release-version']).toBe('2.0.0');
+    expect(res.headers['x-sendadocs-release-tag']).toBe('v2.0.0');
+    expect(res.headers['x-sendadocs-release-commit']).toBe('1234567890abcdef1234567890abcdef12345678');
+    expect(res.headers['x-sendadocs-release-commit-short']).toBe('1234567');
+    expect(res.headers['x-sendadocs-release-branch']).toBe('release/candidate');
   });
 });

@@ -46,7 +46,7 @@ jest.mock('../services/permissionsService', () => ({
 
 const app = require('../server');
 
-const signToken = (rol) => jwt.sign({ sub: rol, email: `rol${rol}@novogar.test`, rol }, JWT_SECRET);
+const signToken = (rol) => jwt.sign({ sub: rol, email: `rol${rol}@SendaDocs.test`, rol }, JWT_SECRET);
 const withAuth = (req, rol) => req.set('Authorization', `Bearer ${signToken(rol)}`);
 
 describe('Dashboard routes permissions', () => {

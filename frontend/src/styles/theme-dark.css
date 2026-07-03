@@ -1,0 +1,401 @@
+html[data-app-theme="dark"] body {
+  background: var(--app-bg);
+  color: var(--app-text);
+}
+
+html[data-app-theme="dark"] {
+  --bs-body-bg: var(--app-bg);
+  --bs-body-color: var(--app-text);
+  --bs-heading-color: var(--app-text);
+  --bs-secondary-color: var(--app-muted);
+  --bs-tertiary-bg: var(--app-surface-muted);
+  --bs-border-color: var(--app-border);
+  --bs-card-bg: var(--app-surface);
+  --bs-card-color: var(--app-text);
+  --bs-card-border-color: var(--app-border);
+  --bs-modal-bg: var(--app-surface);
+  --bs-modal-color: var(--app-text);
+  --bs-dropdown-bg: var(--app-surface);
+  --bs-dropdown-color: var(--app-text-secondary);
+  --bs-dropdown-link-color: var(--app-text-secondary);
+  --bs-dropdown-link-hover-bg: var(--app-hover);
+  --bs-dropdown-link-hover-color: var(--app-text);
+}
+
+html[data-app-theme="dark"] .app-shell {
+  background: var(--app-bg);
+  color: var(--app-text);
+}
+
+html[data-app-theme="dark"] .sidebar,
+html[data-app-theme="dark"] .topbar,
+html[data-app-theme="dark"] .settings-modal,
+html[data-app-theme="dark"] .cc-modal-dialog,
+html[data-app-theme="dark"] .facturas-summary-card,
+html[data-app-theme="dark"] .filters-row,
+html[data-app-theme="dark"] .table-card,
+html[data-app-theme="dark"] .section-card,
+html[data-app-theme="dark"] .card,
+html[data-app-theme="dark"] .modal-content,
+html[data-app-theme="dark"] .dropdown-menu {
+  background: var(--app-surface);
+  color: var(--app-text);
+  border-color: var(--app-border);
+}
+
+html[data-app-theme="dark"] .sidebar-overlay,
+html[data-app-theme="dark"] .settings-modal-backdrop,
+html[data-app-theme="dark"] .cc-modal-backdrop,
+html[data-app-theme="dark"] .modal-backdrop.show {
+  background: var(--app-overlay);
+}
+
+html[data-app-theme="dark"] .sidebar-toggle,
+html[data-app-theme="dark"] .mobile-menu-btn,
+html[data-app-theme="dark"] .settings-close-btn,
+html[data-app-theme="dark"] .icon-btn,
+html[data-app-theme="dark"] .centros-costo-tree-toggle,
+html[data-app-theme="dark"] .centros-costo-filter-toggle,
+html[data-app-theme="dark"] .btn-light,
+html[data-app-theme="dark"] .btn-outline-secondary,
+html[data-app-theme="dark"] .btn-outline-dark {
+  background: var(--app-surface-muted);
+  border-color: var(--app-border);
+  color: var(--app-text-secondary);
+}
+
+html[data-app-theme="dark"] .sidebar-toggle:hover,
+html[data-app-theme="dark"] .mobile-menu-btn:hover,
+html[data-app-theme="dark"] .settings-close-btn:hover,
+html[data-app-theme="dark"] .settings-close-btn:focus-visible,
+html[data-app-theme="dark"] .icon-btn:hover,
+html[data-app-theme="dark"] .centros-costo-tree-toggle:hover,
+html[data-app-theme="dark"] .centros-costo-filter-toggle:hover,
+html[data-app-theme="dark"] .btn-light:hover,
+html[data-app-theme="dark"] .btn-outline-secondary:hover,
+html[data-app-theme="dark"] .btn-outline-dark:hover {
+  background: var(--app-hover);
+  border-color: var(--app-border-strong);
+  color: var(--app-text);
+}
+
+html[data-app-theme="dark"] .btn-primary {
+  --bs-btn-bg: var(--app-primary-strong);
+  --bs-btn-border-color: var(--app-primary-strong);
+  --bs-btn-color: var(--app-primary-contrast);
+  --bs-btn-hover-bg: #a8c7ff;
+  --bs-btn-hover-border-color: #a8c7ff;
+  --bs-btn-hover-color: #08111f;
+}
+
+html[data-app-theme="dark"] .btn-outline-primary {
+  --bs-btn-color: var(--app-primary);
+  --bs-btn-border-color: var(--app-primary);
+  --bs-btn-hover-bg: var(--app-primary);
+  --bs-btn-hover-border-color: var(--app-primary);
+  --bs-btn-hover-color: #08111f;
+}
+
+html[data-app-theme="dark"] .form-control,
+html[data-app-theme="dark"] .form-select,
+html[data-app-theme="dark"] .form-check-input,
+html[data-app-theme="dark"] .sociedad-select,
+html[data-app-theme="dark"] .search-input {
+  background-color: var(--app-input-bg);
+  border-color: var(--app-border);
+  color: var(--app-input-text);
+}
+
+html[data-app-theme="dark"] .form-control::placeholder,
+html[data-app-theme="dark"] .search-input::placeholder {
+  color: var(--app-input-placeholder);
+}
+
+html[data-app-theme="dark"] .form-control:focus,
+html[data-app-theme="dark"] .form-select:focus,
+html[data-app-theme="dark"] .form-check-input:focus {
+  background-color: var(--app-input-bg);
+  border-color: var(--app-primary);
+  color: var(--app-input-text);
+  box-shadow: 0 0 0 0.2rem rgba(122, 167, 255, 0.18);
+}
+
+html[data-app-theme="dark"] .form-select {
+  --bs-form-select-bg-img: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23a7b3c7' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+}
+
+html[data-app-theme="dark"] .card-header,
+html[data-app-theme="dark"] .card-footer,
+html[data-app-theme="dark"] .modal-header,
+html[data-app-theme="dark"] .modal-footer {
+  background: var(--app-surface-muted);
+  border-color: var(--app-border);
+  color: var(--app-text);
+}
+
+html[data-app-theme="dark"] .text-muted,
+html[data-app-theme="dark"] .text-secondary,
+html[data-app-theme="dark"] .text-body-secondary,
+html[data-app-theme="dark"] .page-subtitle,
+html[data-app-theme="dark"] .company,
+html[data-app-theme="dark"] .user-role,
+html[data-app-theme="dark"] .sociedad-label,
+html[data-app-theme="dark"] .filters-row label,
+html[data-app-theme="dark"] .stat-title,
+html[data-app-theme="dark"] .stat-trend,
+html[data-app-theme="dark"] .stat-breakdown-label,
+html[data-app-theme="dark"] .activity-meta,
+html[data-app-theme="dark"] .status-value,
+html[data-app-theme="dark"] .facturas-summary-label,
+html[data-app-theme="dark"] .facturas-summary-meta,
+html[data-app-theme="dark"] .factura-document-meta,
+html[data-app-theme="dark"] .factura-emisor-meta,
+html[data-app-theme="dark"] .factura-total-currency,
+html[data-app-theme="dark"] .nota-estado-meta,
+html[data-app-theme="dark"] .dashboard-work-queue-description,
+html[data-app-theme="dark"] .dashboard-alert-item-description,
+html[data-app-theme="dark"] .dashboard-alert-copy,
+html[data-app-theme="dark"] .dashboard-focus-description,
+html[data-app-theme="dark"] .dashboard-action-description,
+html[data-app-theme="dark"] .dashboard-focus-label,
+html[data-app-theme="dark"] .dashboard-subsection-title,
+html[data-app-theme="dark"] .activity-action-text,
+html[data-app-theme="dark"] .factura-summary-label,
+html[data-app-theme="dark"] .factura-conta-mode-copy,
+html[data-app-theme="dark"] .factura-field-help,
+html[data-app-theme="dark"] .factura-timeline-meta,
+html[data-app-theme="dark"] .factura-timeline-description,
+html[data-app-theme="dark"] .centro-costo-meta-text,
+html[data-app-theme="dark"] .centro-costo-meta-label,
+html[data-app-theme="dark"] .sociedad-meta-text,
+html[data-app-theme="dark"] .sociedad-meta-label,
+html[data-app-theme="dark"] .usuario-meta-text,
+html[data-app-theme="dark"] .usuario-meta-label,
+html[data-app-theme="dark"] .proveedor-meta-text,
+html[data-app-theme="dark"] .proveedor-meta-label {
+  color: var(--app-muted);
+}
+
+html[data-app-theme="dark"] .section-toggle,
+html[data-app-theme="dark"] .menu-link,
+html[data-app-theme="dark"] .factura-actions-item,
+html[data-app-theme="dark"] .dropdown-item {
+  color: var(--app-text-secondary);
+}
+
+html[data-app-theme="dark"] .section-toggle:hover,
+html[data-app-theme="dark"] .menu-link:hover,
+html[data-app-theme="dark"] .factura-actions-item:hover,
+html[data-app-theme="dark"] .dropdown-item:hover {
+  background: var(--app-hover);
+  color: var(--app-text);
+}
+
+html[data-app-theme="dark"] .sidebar-section.active-section .section-toggle,
+html[data-app-theme="dark"] .sidebar-footer:hover,
+html[data-app-theme="dark"] .sidebar-footer:focus-visible {
+  background: var(--app-active);
+  color: var(--app-text);
+}
+
+html[data-app-theme="dark"] .menu-link.active {
+  background: var(--app-primary-strong);
+  color: var(--app-primary-contrast);
+  box-shadow: 0 12px 24px rgba(143, 183, 255, 0.16);
+}
+
+html[data-app-theme="dark"] .sidebar-footer,
+html[data-app-theme="dark"] .sociedad-picker,
+html[data-app-theme="dark"] .search,
+html[data-app-theme="dark"] .search-shortcut,
+html[data-app-theme="dark"] .settings-panel,
+html[data-app-theme="dark"] .theme-segmented,
+html[data-app-theme="dark"] .facturas-table-loading,
+html[data-app-theme="dark"] .factura-summary-item,
+html[data-app-theme="dark"] .factura-static-field,
+html[data-app-theme="dark"] .factura-timeline-motivo,
+html[data-app-theme="dark"] .cc-config-note,
+html[data-app-theme="dark"] .cc-line-approver,
+html[data-app-theme="dark"] .pdfs-selected-detail,
+html[data-app-theme="dark"] .pdfs-rules-strip > div {
+  background: var(--app-surface-muted);
+  border-color: var(--app-border);
+  color: var(--app-text-secondary);
+}
+
+html[data-app-theme="dark"] .data-table,
+html[data-app-theme="dark"] .table {
+  --bs-table-bg: var(--app-surface);
+  --bs-table-color: var(--app-text);
+  --bs-table-border-color: var(--app-border);
+  --bs-table-striped-bg: rgba(255, 255, 255, 0.025);
+  --bs-table-striped-color: var(--app-text);
+  --bs-table-hover-bg: var(--app-hover);
+  --bs-table-hover-color: var(--app-text);
+  color: var(--app-text);
+  border-color: var(--app-border);
+}
+
+html[data-app-theme="dark"] .data-table thead th,
+html[data-app-theme="dark"] .table thead th {
+  background: var(--app-surface-muted);
+  color: var(--app-text-secondary);
+  border-color: var(--app-border);
+}
+
+html[data-app-theme="dark"] .table > :not(caption) > * > * {
+  background-color: var(--bs-table-bg);
+  color: var(--bs-table-color);
+  border-bottom-color: var(--app-border);
+}
+
+html[data-app-theme="dark"] .facturas-selection-summary,
+html[data-app-theme="dark"] .facturas-filter-chip,
+html[data-app-theme="dark"] .facturas-summary-chip,
+html[data-app-theme="dark"] .dashboard-chip,
+html[data-app-theme="dark"] .centros-costo-tree-modal-chips span {
+  background: var(--app-primary-soft);
+  border-color: var(--app-border);
+  color: var(--app-text-secondary);
+}
+
+html[data-app-theme="dark"] .facturas-summary-value,
+html[data-app-theme="dark"] .factura-document-title,
+html[data-app-theme="dark"] .factura-total-amount,
+html[data-app-theme="dark"] .factura-emisor-name,
+html[data-app-theme="dark"] .factura-summary-value,
+html[data-app-theme="dark"] .factura-timeline-title,
+html[data-app-theme="dark"] .factura-static-field,
+html[data-app-theme="dark"] .stat-value,
+html[data-app-theme="dark"] .card-title,
+html[data-app-theme="dark"] .card-text,
+html[data-app-theme="dark"] .text-body,
+html[data-app-theme="dark"] .text-dark,
+html[data-app-theme="dark"] .dashboard-work-queue-label,
+html[data-app-theme="dark"] .dashboard-alert-item-label,
+html[data-app-theme="dark"] .dashboard-alert-item-value,
+html[data-app-theme="dark"] .dashboard-work-queue-value,
+html[data-app-theme="dark"] .dashboard-currency-card-header span:first-child,
+html[data-app-theme="dark"] .dashboard-currency-line-label,
+html[data-app-theme="dark"] .dashboard-status-chart-label strong,
+html[data-app-theme="dark"] .dashboard-focus-value,
+html[data-app-theme="dark"] .activity-text,
+html[data-app-theme="dark"] .status-label,
+html[data-app-theme="dark"] .centro-costo-primary-text,
+html[data-app-theme="dark"] .sociedad-primary-text,
+html[data-app-theme="dark"] .usuario-primary-text,
+html[data-app-theme="dark"] .proveedor-primary-text {
+  color: var(--app-text);
+}
+
+html[data-app-theme="dark"] .factura-actions-popover,
+html[data-app-theme="dark"] .cc-suggestions {
+  background: var(--app-surface-elevated);
+  border-color: var(--app-border);
+  box-shadow: var(--app-shadow-lg);
+}
+
+html[data-app-theme="dark"] .dashboard-work-queue-card,
+html[data-app-theme="dark"] .dashboard-alert-item,
+html[data-app-theme="dark"] .dashboard-currency-card,
+html[data-app-theme="dark"] .dashboard-focus-card,
+html[data-app-theme="dark"] .dashboard-action-item,
+html[data-app-theme="dark"] .factura-timeline-item,
+html[data-app-theme="dark"] .tramite-provider-group,
+html[data-app-theme="dark"] .tramite-provider-lines-header,
+html[data-app-theme="dark"] .centros-costo-tree-row,
+html[data-app-theme="dark"] .cc-line-item,
+html[data-app-theme="dark"] .centros-costo-filter-toggle {
+  background: linear-gradient(180deg, var(--app-surface) 0%, var(--app-surface-muted) 100%);
+  border-color: var(--app-border);
+  color: var(--app-text);
+}
+
+html[data-app-theme="dark"] .dashboard-alert {
+  background: linear-gradient(135deg, var(--app-surface-muted) 0%, var(--app-primary-soft) 100%);
+  border-color: var(--app-border);
+}
+
+html[data-app-theme="dark"] .dashboard-alert-title,
+html[data-app-theme="dark"] .dashboard-eyebrow,
+html[data-app-theme="dark"] .dashboard-action-label,
+html[data-app-theme="dark"] .dashboard-currency-line-amount,
+html[data-app-theme="dark"] .dashboard-work-queue-link-hint,
+html[data-app-theme="dark"] .factura-timeline-amount,
+html[data-app-theme="dark"] .data-table-sort-btn.active {
+  color: var(--app-primary);
+}
+
+html[data-app-theme="dark"] .dashboard-status-chart-track,
+html[data-app-theme="dark"] .status-bar,
+html[data-app-theme="dark"] .activity-item {
+  background: var(--app-surface-subtle);
+  border-color: var(--app-border);
+}
+
+html[data-app-theme="dark"] .bg-light,
+html[data-app-theme="dark"] .bg-light-subtle {
+  background-color: var(--app-surface-muted) !important;
+  color: var(--app-text) !important;
+}
+
+html[data-app-theme="dark"] .bg-white,
+html[data-app-theme="dark"] .text-bg-light {
+  background-color: var(--app-surface-muted) !important;
+  color: var(--app-text) !important;
+  border-color: var(--app-border) !important;
+}
+
+html[data-app-theme="dark"] .border,
+html[data-app-theme="dark"] .border-top,
+html[data-app-theme="dark"] .border-bottom,
+html[data-app-theme="dark"] .border-start,
+html[data-app-theme="dark"] .border-end {
+  border-color: var(--app-border) !important;
+}
+
+html[data-app-theme="dark"] .badge-soft-success,
+html[data-app-theme="dark"] .bg-soft-success {
+  background: var(--app-success-soft);
+  color: var(--app-success);
+}
+
+html[data-app-theme="dark"] .badge-soft-warning,
+html[data-app-theme="dark"] .bg-soft-warning {
+  background: var(--app-warning-soft);
+  color: var(--app-warning);
+}
+
+html[data-app-theme="dark"] .badge-soft-danger,
+html[data-app-theme="dark"] .bg-soft-danger {
+  background: var(--app-danger-soft);
+  color: var(--app-danger);
+}
+
+html[data-app-theme="dark"] .badge-soft-info,
+html[data-app-theme="dark"] .bg-soft-primary {
+  background: var(--app-info-soft);
+  color: var(--app-info);
+}
+
+html[data-app-theme="dark"] .badge-soft-secondary,
+html[data-app-theme="dark"] .bg-soft-secondary {
+  background: var(--app-surface-subtle);
+  color: var(--app-muted);
+}
+
+html[data-app-theme="dark"] .tramite-provider-group-header,
+html[data-app-theme="dark"] .tramite-provider-documents {
+  border-color: var(--app-border);
+}
+
+html[data-app-theme="dark"] .tramite-provider-preview-frame,
+html[data-app-theme="dark"] .protected-pdf-frame {
+  background: var(--app-surface-subtle);
+  border-color: var(--app-border-strong) !important;
+}
+
+html[data-app-theme="dark"] .theme-segmented button.active {
+  background: var(--app-primary-strong);
+  color: var(--app-primary-contrast);
+}

@@ -248,29 +248,29 @@ WHERE r.codigo IN (
 ON CONFLICT (rol_id, permiso_id) DO NOTHING;
 
 -- Seed usuarios base: 1 usuario por rol (excepto personalizado)
--- La password inicial corresponde al hash bcrypt de `Novogar2026!`.
+-- La password inicial corresponde al hash bcrypt de `SendaDocs2026!`.
 -- Debe rotarse antes de usar cualquier entorno compartido o expuesto.
 WITH seed_defaults AS (
-  SELECT '$2b$12$xdaV21ddpyjSymqzYuDnSuN7Ggj0Gf1fvpLCPVPVbpj9Mtg3aXR8W'::text AS password_hash
+  SELECT '$2b$12$t7ynL35k8I5xk1JB1KRSZO12p5Mo6ozZcK8vpKgAac/4pSnQRaD52'::text AS password_hash
 ),
 usuarios_seed AS (
   SELECT *
   FROM (VALUES
-    ('admin@novogar.local', 'Administrador', 'admin'),
-    ('gerencia.financiera@novogar.local', 'Gerencia Financiera', 'gerencia_financiera'),
-    ('gerencia.contable@novogar.local', 'Gerencia Contable', 'gerencia_contable'),
-    ('gerencia.construccion@novogar.local', 'Gerencia Construccion', 'gerencia_construccion'),
-    ('gerencia.presupuesto@novogar.local', 'Gerencia Presupuesto', 'gerencia_presupuesto'),
-    ('gerencia.mercadeo@novogar.local', 'Gerencia Mercadeo', 'gerencia_mercadeo'),
-    ('gerencia.ventas@novogar.local', 'Gerencia Ventas', 'gerencia_ventas'),
-    ('gerencia.infraestructura@novogar.local', 'Gerencia Infraestructura', 'gerencia_infraestructura'),
-    ('gerencia.proyectos@novogar.local', 'Gerencia Proyectos', 'gerencia_proyectos'),
-    ('contabilidad.jefe@novogar.local', 'Contabilidad Jefe', 'contabilidad_jefe'),
-    ('contabilidad.asistente@novogar.local', 'Contabilidad Asistente', 'contabilidad_asistente'),
-    ('tesoreria.encargado@novogar.local', 'Tesoreria Encargado', 'tesoreria_encargado'),
-    ('tesoreria.auxiliar@novogar.local', 'Tesoreria Auxiliar', 'tesoreria_auxiliar'),
-    ('proveeduria@novogar.local', 'Proveeduria', 'proveeduria'),
-    ('asistencia@novogar.local', 'Asistencia', 'asistencia')
+    ('admin@sendadocs.local', 'Administrador', 'admin'),
+    ('gerencia.financiera@sendadocs.local', 'Gerencia Financiera', 'gerencia_financiera'),
+    ('gerencia.contable@sendadocs.local', 'Gerencia Contable', 'gerencia_contable'),
+    ('gerencia.construccion@sendadocs.local', 'Gerencia Construccion', 'gerencia_construccion'),
+    ('gerencia.presupuesto@sendadocs.local', 'Gerencia Presupuesto', 'gerencia_presupuesto'),
+    ('gerencia.mercadeo@sendadocs.local', 'Gerencia Mercadeo', 'gerencia_mercadeo'),
+    ('gerencia.ventas@sendadocs.local', 'Gerencia Ventas', 'gerencia_ventas'),
+    ('gerencia.infraestructura@sendadocs.local', 'Gerencia Infraestructura', 'gerencia_infraestructura'),
+    ('gerencia.proyectos@sendadocs.local', 'Gerencia Proyectos', 'gerencia_proyectos'),
+    ('contabilidad.jefe@sendadocs.local', 'Contabilidad Jefe', 'contabilidad_jefe'),
+    ('contabilidad.asistente@sendadocs.local', 'Contabilidad Asistente', 'contabilidad_asistente'),
+    ('tesoreria.encargado@sendadocs.local', 'Tesoreria Encargado', 'tesoreria_encargado'),
+    ('tesoreria.auxiliar@sendadocs.local', 'Tesoreria Auxiliar', 'tesoreria_auxiliar'),
+    ('proveeduria@sendadocs.local', 'Proveeduria', 'proveeduria'),
+    ('asistencia@sendadocs.local', 'Asistencia', 'asistencia')
   ) AS t(email, nombre, rol_codigo)
 )
 INSERT INTO usuarios (email, nombre, password, rol_id, activo)

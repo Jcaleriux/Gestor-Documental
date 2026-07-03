@@ -36,7 +36,7 @@ describe('authService login', () => {
     usuariosRepo.getByEmail.mockResolvedValue({
       id: 7,
       nombre: 'Admin',
-      email: 'admin@novogar.local',
+      email: 'admin@sendadocs.local',
       rol_id: 3,
       password: '$2b$12$hash-existente',
       activo: true,
@@ -44,17 +44,17 @@ describe('authService login', () => {
     bcrypt.compare.mockResolvedValue(true);
 
     const result = await login({
-      email: 'admin@novogar.local',
-      password: 'Novogar2026!',
+      email: 'admin@sendadocs.local',
+      password: 'SendaDocs2026!',
     });
 
-    expect(bcrypt.compare).toHaveBeenCalledWith('Novogar2026!', '$2b$12$hash-existente');
+    expect(bcrypt.compare).toHaveBeenCalledWith('SendaDocs2026!', '$2b$12$hash-existente');
     expect(bcrypt.hash).not.toHaveBeenCalled();
     expect(usuariosRepo.updatePassword).not.toHaveBeenCalled();
     expect(result).toMatchObject({
       token: 'token-demo',
       user: {
-        email: 'admin@novogar.local',
+        email: 'admin@sendadocs.local',
         permissions: ['documentos_ver'],
       },
     });
@@ -64,7 +64,7 @@ describe('authService login', () => {
     usuariosRepo.getByEmail.mockResolvedValue({
       id: 9,
       nombre: 'Legacy',
-      email: 'legacy@novogar.local',
+      email: 'legacy@sendadocs.local',
       rol_id: 4,
       password: 'clave-legacy',
       activo: true,
@@ -72,7 +72,7 @@ describe('authService login', () => {
     bcrypt.hash.mockResolvedValue('$2b$12$hash-nuevo');
 
     const result = await login({
-      email: 'legacy@novogar.local',
+      email: 'legacy@sendadocs.local',
       password: 'clave-legacy',
     });
 
@@ -86,7 +86,7 @@ describe('authService login', () => {
     usuariosRepo.getByEmail.mockResolvedValue({
       id: 11,
       nombre: 'User',
-      email: 'user@novogar.local',
+      email: 'user@sendadocs.local',
       rol_id: 2,
       password: '$2b$12$hash-existente',
       activo: true,
@@ -94,7 +94,7 @@ describe('authService login', () => {
     bcrypt.compare.mockResolvedValue(false);
 
     await expect(login({
-      email: 'user@novogar.local',
+      email: 'user@sendadocs.local',
       password: 'mala-clave',
     })).rejects.toMatchObject({
       status: 401,

@@ -1,15 +1,28 @@
 :root {
+  color-scheme: light;
+
   /* COLORS - Neutral & Semantic */
   --app-bg: #f5f7fb;
   --app-surface: #ffffff;
   --app-surface-muted: #f8fafc;
+  --app-surface-subtle: #f2f4f7;
+  --app-surface-elevated: #ffffff;
   --app-border: #e6ebf2;
+  --app-border-strong: #cbd5e1;
   --app-text: #1d2939;
   --app-text-secondary: #344054;
   --app-muted: #667085;
   --app-muted-light: #98a2b3;
   --app-primary: #1d4ed8;
   --app-primary-soft: #eef4ff;
+  --app-primary-strong: #003b73;
+  --app-primary-contrast: #ffffff;
+  --app-hover: #f4f7fb;
+  --app-active: #eef4ff;
+  --app-overlay: rgba(15, 23, 42, 0.42);
+  --app-input-bg: #ffffff;
+  --app-input-text: #1d2939;
+  --app-input-placeholder: #98a2b3;
   --app-success: #12b76a;
   --app-success-soft: #ecfdf3;
   --app-warning: #f79009;
@@ -63,4 +76,44 @@
   --app-label-font-size: 0.75rem;
   --app-compact-gap: 0.65rem;
   --app-compact-padding: 0.75rem;
+}
+
+:root[data-app-theme="dark"] {
+  color-scheme: dark;
+
+  --app-bg: #0b1220;
+  --app-surface: #111827;
+  --app-surface-muted: #172033;
+  --app-surface-subtle: #1e293b;
+  --app-surface-elevated: #162033;
+  --app-border: #263449;
+  --app-border-strong: #3b4a63;
+  --app-text: #eef4ff;
+  --app-text-secondary: #d8e2f6;
+  --app-muted: #a7b3c7;
+  --app-muted-light: #7d8aa1;
+  --app-primary: #7aa7ff;
+  --app-primary-soft: #1b2d4f;
+  --app-primary-strong: #8fb7ff;
+  --app-primary-contrast: #08111f;
+  --app-hover: #1b2638;
+  --app-active: #203557;
+  --app-overlay: rgba(2, 6, 23, 0.72);
+  --app-input-bg: #0f172a;
+  --app-input-text: #eef4ff;
+  --app-input-placeholder: #7d8aa1;
+  --app-success: #51d59a;
+  --app-success-soft: #103526;
+  --app-warning: #fbbf5a;
+  --app-warning-soft: #3a2a0f;
+  --app-danger: #ff8a80;
+  --app-danger-soft: #3a1719;
+  --app-info: #7bb7ff;
+  --app-info-soft: #112f4d;
+
+  --app-shadow-xs: 0 4px 12px rgba(0, 0, 0, 0.22);
+  --app-shadow-sm: 0 8px 20px rgba(0, 0, 0, 0.26);
+  --app-shadow-md: 0 12px 28px rgba(0, 0, 0, 0.32);
+  --app-shadow-lg: 0 18px 38px rgba(0, 0, 0, 0.42);
+  --app-shadow-xl: 0 28px 72px rgba(0, 0, 0, 0.55);
 }

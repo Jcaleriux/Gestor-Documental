@@ -17,7 +17,7 @@ const { createOrdenesCompraUseCases } = require('../services/ordenesCompraUseCas
 const user = {
   id: 99,
   rol: 5,
-  email: 'admin@novogar.test',
+  email: 'admin@SendaDocs.test',
   permissions: ['acceso_total']
 };
 
@@ -56,7 +56,7 @@ describe('ordenesCompraUseCases', () => {
   let tempBaseDir;
 
   beforeEach(() => {
-    tempBaseDir = fs.mkdtempSync(path.join(os.tmpdir(), 'novogar-ordenes-compra-'));
+    tempBaseDir = fs.mkdtempSync(path.join(os.tmpdir(), 'SendaDocs-ordenes-compra-'));
     jest.clearAllMocks();
     rolesRepo.getRoleById.mockResolvedValue({ id: 5, nivel_jerarquia: 80 });
     extractOrdenCompraDataFromPdf.mockReturnValue({
@@ -156,7 +156,7 @@ describe('ordenesCompraUseCases', () => {
       moneda: 'USD',
       fecha: '2026-03-15',
       rutaPdf: 'documentos/ordenes_compra/18/7/123_2.pdf',
-      creadoPor: 'admin@novogar.test',
+      creadoPor: 'admin@SendaDocs.test',
       metadata: { origen: 'manual' }
     });
     expect(result.rutaPdf).toBe('documentos/ordenes_compra/18/7/123_2.pdf');
@@ -171,7 +171,7 @@ describe('ordenesCompraUseCases', () => {
       sociedad_id: 18,
       filename: 'auto.pdf',
       file_base64: pdfBase64(),
-      usuario: 'carga@novogar.test'
+      usuario: 'carga@SendaDocs.test'
     });
 
     expect(proveedoresRepo.listProveedoresBySociedad).toHaveBeenCalledWith(18);
@@ -186,7 +186,7 @@ describe('ordenesCompraUseCases', () => {
       monto: 1234.56,
       moneda: 'USD',
       fecha: '2026-03-15',
-      creadoPor: 'carga@novogar.test'
+      creadoPor: 'carga@SendaDocs.test'
     }));
     expect(result.extraido).toEqual({
       proveedor_id: 7,

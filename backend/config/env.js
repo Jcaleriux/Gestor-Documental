@@ -1,14 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 
-const ENV_FILES_LOADED_FLAG = '__NOVOGAR_ENV_FILES_LOADED__';
+const ENV_FILES_LOADED_FLAG = '__SENDADOCS_ENV_FILES_LOADED__';
 
 const DEFAULT_DB_CONFIG = Object.freeze({
   host: 'localhost',
   port: 5432,
   user: 'postgres',
   password: 'admin',
-  database: 'novogar_db',
+  database: 'sendadocs_db',
 });
 
 const DEFAULT_AUTH_CONFIG = Object.freeze({
@@ -72,7 +72,7 @@ const resolveConfiguredEnvFilePaths = () => {
     path.join(backendRootDir, '.env'),
     path.join(backendRootDir, '.env.local'),
   ];
-  const explicitEnvFile = process.env.NOVOGAR_ENV_FILE;
+  const explicitEnvFile = process.env.SENDADOCS_ENV_FILE;
 
   if (typeof explicitEnvFile === 'string' && explicitEnvFile.trim()) {
     envFilePaths.push(

@@ -1,7 +1,7 @@
 {
-    "name": "novogar-backend",
+    "name": "sendadocs-backend",
     "version": "1.0.0",
-    "description": "Backend Proyecto Novogar",
+    "description": "Backend SendaDocs",
     "main": "index.js",
     "type": "commonjs",
     "scripts": {

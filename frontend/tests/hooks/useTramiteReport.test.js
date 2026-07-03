@@ -83,7 +83,7 @@ test('useTramiteReport descarga el PDF unificado con el orden visible actual', a
     response: {
       headers: {
         get(name) {
-          if (name === 'X-Novogar-Partial-Download') return '0';
+          if (name === 'X-SendaDocs-Partial-Download') return '0';
           return '';
         }
       }
@@ -133,9 +133,9 @@ test('useTramiteReport muestra advertencia cuando la descarga unificada es parci
           response: {
             headers: {
               get(name) {
-                if (name === 'X-Novogar-Partial-Download') return '1';
-                if (name === 'X-Novogar-Omitted-Count') return '2';
-                if (name === 'X-Novogar-Omitted-Items') return 'Factura F-001 - Tabla de pagos';
+                if (name === 'X-SendaDocs-Partial-Download') return '1';
+                if (name === 'X-SendaDocs-Omitted-Count') return '2';
+                if (name === 'X-SendaDocs-Omitted-Items') return 'Factura F-001 - Tabla de pagos';
                 return '';
               }
             }

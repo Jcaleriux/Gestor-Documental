@@ -143,7 +143,7 @@ El backend carga variables desde:
 1. entorno del proceso,
 2. `backend/.env`,
 3. `backend/.env.local`,
-4. archivo explicito via `NOVOGAR_ENV_FILE`.
+4. archivo explicito via `SENDADOCS_ENV_FILE`.
 
 Archivos base:
 

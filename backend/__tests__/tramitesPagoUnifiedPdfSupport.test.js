@@ -36,7 +36,7 @@ describe('tramitesPagoUnifiedPdfSupport', () => {
       },
       gerencia_aprobadores: [
         { usuario_aprobador_nombre: 'Gerencia 1', estado: 'aprobado' },
-        { usuario_aprobador_email: 'g2@novogar.local', estado: 'aprobado' },
+        { usuario_aprobador_email: 'g2@sendadocs.local', estado: 'aprobado' },
         { usuario_aprobador_nombre: 'Pendiente', estado: 'pendiente' }
       ]
     }, {
@@ -58,7 +58,7 @@ describe('tramitesPagoUnifiedPdfSupport', () => {
     expect(fieldsMap.contabilizada_por).toBe('DSJ');
     expect(fieldsMap.centro_costo).toBe('11Y0801 - Centro 1, 11Y0802 - Centro 2');
     expect(fieldsMap.asiento).toBe('3263');
-    expect(fieldsMap.aprobada_por).toBe('Gerencia 1, g2@novogar.local');
+    expect(fieldsMap.aprobada_por).toBe('Gerencia 1, g2@sendadocs.local');
   });
 
   test('buildUnifiedPdfResourcePlan respeta el orden visible y agrupa caratula, factura y anexos', () => {

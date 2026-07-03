@@ -14,12 +14,12 @@ const metadataPath = path.join(outputDir, 'capturas-metadata.json');
 
 const FRONTEND_URL = 'http://127.0.0.1:5173';
 const BACKEND_URL = 'http://127.0.0.1:3002';
-const AUTH_TOKEN_KEY = 'novogar_auth_token';
-const AUTH_USER_KEY = 'novogar_auth_user';
-const SELECTED_SOCIEDAD_KEY = 'novogar.sociedad.selected';
+const AUTH_TOKEN_KEY = 'sendadocs.auth.token';
+const AUTH_USER_KEY = 'sendadocs.auth.user';
+const SELECTED_SOCIEDAD_KEY = 'sendadocs.sociedad.selected';
 const credentials = {
-  email: 'admin@novogar.local',
-  password: 'Novogar2026!',
+  email: process.env.SENDADOCS_PORTFOLIO_EMAIL || 'admin@sendadocs.local',
+  password: process.env.SENDADOCS_PORTFOLIO_PASSWORD || 'SendaDocs2026!',
 };
 
 const capturePlan = [

@@ -117,8 +117,8 @@ const evaluateProductionEnvEntries = ({ entries = {}, envFilePath = '' } = {}) =
     warnings.push('DB_USER usa postgres; confirma que no sea una credencial dev por defecto.');
   }
 
-  if ((entries.DB_NAME || '').trim() === 'novogar_db') {
-    warnings.push('DB_NAME usa novogar_db; confirma que corresponde al entorno productivo.');
+  if ((entries.DB_NAME || '').trim() === 'sendadocs_db') {
+    warnings.push('DB_NAME usa sendadocs_db; confirma que corresponde al entorno productivo.');
   }
 
   if ((entries.FACTURAS_BASE_DIR || '').trim() === 'change-this-before-production') {

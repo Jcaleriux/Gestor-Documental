@@ -1,5 +1,5 @@
-const AUTH_TOKEN_KEY = 'novogar_auth_token';
-const AUTH_USER_KEY = 'novogar_auth_user';
+const AUTH_TOKEN_KEY = 'sendadocs.auth.token';
+const AUTH_USER_KEY = 'sendadocs.auth.user';
 
 const getStorage = () => {
   try {
@@ -32,6 +32,16 @@ const getStorageItem = (key) => {
   } catch {
     return '';
   }
+};
+
+const removeStorageKeys = (storage, keys) => {
+  keys.forEach((key) => {
+    try {
+      storage.removeItem(key);
+    } catch {
+      // Ignore storage failures so auth cleanup never blocks the app.
+    }
+  });
 };
 
 const getAuthToken = () => getStorageItem(AUTH_TOKEN_KEY);
@@ -73,8 +83,10 @@ const clearAuthSession = () => {
   }
 
   try {
-    storage.removeItem(AUTH_TOKEN_KEY);
-    storage.removeItem(AUTH_USER_KEY);
+    removeStorageKeys(storage, [
+      AUTH_TOKEN_KEY,
+      AUTH_USER_KEY,
+    ]);
   } catch {
     // Ignore storage failures to avoid crashing logout flows.
   }

@@ -5,12 +5,13 @@ import {
   buildFacturaDetalleActionsParams,
   buildFacturaDetalleHookOutput
 } from '../../src/hooks/facturaDetalle/facturaDetalleHookBuilders.js';
+import { AUTH_TOKEN_KEY } from '../../src/utils/auth.js';
 
 const setLocalStorageMock = ({ token = '' } = {}) => {
   const previous = globalThis.localStorage;
   globalThis.localStorage = {
     getItem(key) {
-      if (key === 'novogar_auth_token') return token;
+      if (key === AUTH_TOKEN_KEY) return token;
       return null;
     },
     setItem() {},
