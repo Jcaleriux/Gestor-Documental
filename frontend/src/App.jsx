@@ -402,6 +402,9 @@ function AuthenticatedAppShell({
   const profilePhotoObjectUrlRef = useRef('');
   const userPreferences = userProfileState.preferences;
   const profilePhotoPreviewUrl = userProfileState.profilePhotoPreviewUrl;
+  const sidebarBrandLogoSrc = userPreferences.themeMode === 'dark'
+    ? '/logo-white.svg'
+    : '/logo-horizontal.svg';
 
   useEffect(() => {
     if (typeof document === 'undefined') {
@@ -673,7 +676,7 @@ function AuthenticatedAppShell({
               <img className="brand-icon-image" src="/logo-icon.svg" alt="" />
             </div>
             <div className="brand-copy">
-              <img className="brand-logo" src="/logo-horizontal.svg" alt="SendaDocs" />
+              <img className="brand-logo" src={sidebarBrandLogoSrc} alt="SendaDocs" />
             </div>
           </div>
 
