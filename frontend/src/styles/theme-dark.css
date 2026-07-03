@@ -330,6 +330,13 @@ html[data-app-theme="dark"] .bg-light-subtle {
   color: var(--app-text) !important;
 }
 
+html[data-app-theme="dark"] .bg-white,
+html[data-app-theme="dark"] .text-bg-light {
+  background-color: var(--app-surface-muted) !important;
+  color: var(--app-text) !important;
+  border-color: var(--app-border) !important;
+}
+
 html[data-app-theme="dark"] .border,
 html[data-app-theme="dark"] .border-top,
 html[data-app-theme="dark"] .border-bottom,
@@ -366,6 +373,17 @@ html[data-app-theme="dark"] .badge-soft-secondary,
 html[data-app-theme="dark"] .bg-soft-secondary {
   background: var(--app-surface-subtle);
   color: var(--app-muted);
+}
+
+html[data-app-theme="dark"] .tramite-provider-group-header,
+html[data-app-theme="dark"] .tramite-provider-documents {
+  border-color: var(--app-border);
+}
+
+html[data-app-theme="dark"] .tramite-provider-preview-frame,
+html[data-app-theme="dark"] .protected-pdf-frame {
+  background: var(--app-surface-subtle);
+  border-color: var(--app-border-strong) !important;
 }
 
 html[data-app-theme="dark"] .theme-segmented button.active {

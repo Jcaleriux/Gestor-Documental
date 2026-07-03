@@ -52,7 +52,14 @@ function ProtectedPdfFrame({ resourceUrl, title, unavailableMessage, height = '5
     <iframe
       title={title}
       src={withPdfFitToWidth(pdfPreviewUrl)}
-      style={{ width: '100%', height, border: '1px solid #e6ebf2', borderRadius: '12px' }}
+      className="protected-pdf-frame"
+      style={{
+        width: '100%',
+        height,
+        border: '1px solid var(--app-border)',
+        borderRadius: '12px',
+        background: 'var(--app-surface-subtle)',
+      }}
     />
   );
 }
