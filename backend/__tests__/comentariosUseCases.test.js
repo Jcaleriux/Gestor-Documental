@@ -12,7 +12,7 @@ const createRepoMock = (overrides = {}) => ({
   createComentario: jest.fn().mockResolvedValue({
     id: 2,
     factura_id: 42,
-    usuario: 'qa@novogar.local',
+    usuario: 'qa@sendadocs.local',
     texto: 'Nuevo comentario'
   }),
   ...overrides
@@ -43,7 +43,7 @@ describe('comentariosUseCases', () => {
 
     await expect(useCases.crearComentario({
       facturaId: 42,
-      usuario: 'qa@novogar.local',
+      usuario: 'qa@sendadocs.local',
       texto: 'Nuevo comentario',
       user: fullAccessUser
     })).resolves.toMatchObject({
@@ -52,7 +52,7 @@ describe('comentariosUseCases', () => {
     });
     expect(repo.createComentario).toHaveBeenCalledWith({
       facturaId: 42,
-      usuario: 'qa@novogar.local',
+      usuario: 'qa@sendadocs.local',
       texto: 'Nuevo comentario'
     });
   });
@@ -64,7 +64,7 @@ describe('comentariosUseCases', () => {
 
     await expect(useCases.crearComentario({
       facturaId: 42,
-      usuario: 'qa@novogar.local',
+      usuario: 'qa@sendadocs.local',
       texto: 'No autorizado',
       user: assignedUser
     })).rejects.toMatchObject({

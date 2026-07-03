@@ -44,6 +44,8 @@ Para contexto historico usa:
 | FEAT-006 | feature | P0 | Hecho | EPIC-A-005 | Parada obligatoria en `en_revision_tesoreria_1` tras gerencia y carga/reemplazo de un solo PDF de caratulas por tramite |
 | FEAT-007 | feature | P0 | Hecho | EPIC-A-005 | Parser PDF y matching automatico/manual de caratulas por sociedad, proveedor y factura con bloqueo del flujo si quedan pendientes |
 | FEAT-008 | feature | P1 | Hecho | EPIC-A-005 | Vista unificada agrupada por proveedor con preview PDF, warnings visibles y resolucion manual desde el detalle del tramite |
+| FEAT-009 | feature | P2 | Hecho | EPIC-A-006 | Perfil de usuario persistente multiempresa con preferencias, avatar, validaciones, storage seguro y fallback local |
+| FEAT-010 | feature | P1 | Hecho | EPIC-A-007 | Limpieza de marca SendaDocs independiente con llaves, headers, tooling, seeds y documentacion operativa sin rastros activos del nombre anterior |
 
 ## Regla para agregar items nuevos
 

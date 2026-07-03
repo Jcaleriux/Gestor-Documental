@@ -7,7 +7,7 @@ const child = spawn(
     stdio: 'inherit',
     env: {
       ...process.env,
-      NOVOGAR_API_PROXY_TARGET: 'http://localhost:3302',
+      SENDADOCS_API_PROXY_TARGET: 'http://localhost:3302',
     },
   }
 );

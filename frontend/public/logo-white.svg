@@ -1,0 +1,26 @@
+<svg width="720" height="180" viewBox="0 0 720 180" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">SendaDocs Logo Blanco</title>
+  <desc id="desc">Logo claro de SendaDocs para fondos oscuros.</desc>
+
+  <g transform="translate(30 25)">
+    <path d="M18 0H95L130 35V130C130 141.046 121.046 150 110 150H18C6.954 150 -2 141.046 -2 130V20C-2 8.954 6.954 0 18 0Z" fill="#FFFFFF"/>
+    <path d="M95 0V23C95 29.627 100.373 35 107 35H130L95 0Z" fill="#0A84FF"/>
+    <path d="M95 0V23C95 29.627 100.373 35 107 35H130" stroke="#EAF2FF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <path d="M32 42H68C82 42 88 53 88 65C88 77 78 84 66 84H44C30 84 24 95 24 108C24 122 36 128 50 128H92" stroke="#0A84FF" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <circle cx="30" cy="42" r="16" fill="#FFFFFF" stroke="#0A84FF" stroke-width="9"/>
+    <circle cx="88" cy="65" r="16" fill="#FFFFFF" stroke="#0A84FF" stroke-width="9"/>
+    <circle cx="24" cy="108" r="16" fill="#FFFFFF" stroke="#0A84FF" stroke-width="9"/>
+
+    <circle cx="112" cy="122" r="31" fill="#FFFFFF"/>
+    <circle cx="112" cy="122" r="25" fill="#22A447"/>
+    <path d="M99 121L108 130L126 110" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <g transform="translate(190 48)">
+    <text x="0" y="76" font-family="Inter, Manrope, Arial, sans-serif" font-size="78" font-weight="800" letter-spacing="-3">
+      <tspan fill="#FFFFFF">Senda</tspan><tspan fill="#0A84FF">Docs</tspan>
+    </text>
+  </g>
+</svg>

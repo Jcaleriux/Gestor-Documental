@@ -2,7 +2,7 @@ const { createCentrosCostoUseCases } = require('../services/centrosCostoUseCases
 
 const user = {
   id: 99,
-  email: 'admin@novogar.test',
+  email: 'admin@SendaDocs.test',
   permissions: ['acceso_total']
 };
 
@@ -103,7 +103,7 @@ describe('centrosCostoUseCases', () => {
       activo: true,
       orden: 2,
       metadata: { origen: 'csv' },
-      creadoPor: 'admin@novogar.test'
+      creadoPor: 'admin@SendaDocs.test'
     });
   });
 

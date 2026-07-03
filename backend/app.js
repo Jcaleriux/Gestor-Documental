@@ -8,6 +8,7 @@ const {
   requireAnyPermission
 } = require('./middleware/permissionsMiddleware');
 const { PERMISSIONS } = require('./domain/permissions');
+const { RESPONSE_HEADERS } = require('./constants/responseHeaders');
 const { applyReleaseHeaders, resolveReleaseInfo } = require('./config/releaseInfo');
 const { runtimeConfig } = require('./config/runtime');
 const { createFilesHandlers } = require('./services/filesService');
@@ -17,9 +18,9 @@ const releaseInfo = resolveReleaseInfo();
 const legacyFilesHandlers = createFilesHandlers(runtimeConfig.storageBaseDir);
 const corsExposedHeaders = [
   'Content-Disposition',
-  'X-Novogar-Partial-Download',
-  'X-Novogar-Omitted-Count',
-  'X-Novogar-Omitted-Items'
+  RESPONSE_HEADERS.partialDownload,
+  RESPONSE_HEADERS.omittedCount,
+  RESPONSE_HEADERS.omittedItems
 ];
 const buildCorsOptions = ({ allowedOrigins, exposedHeaders }) => {
   if (!Array.isArray(allowedOrigins) || allowedOrigins.length === 0) {
@@ -111,6 +112,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const facturasRoutes = require('./routes/facturas');
 const pdfsPendientesRoutes = require('./routes/pdfsPendientes');
 const filesRoutes = require('./routes/files');
+const meRoutes = require('./routes/me');
 const usuariosRoutes = require('./routes/usuarios');
 const sociedadesRoutes = require('./routes/sociedades');
 const proveedoresRoutes = require('./routes/proveedores');
@@ -130,6 +132,7 @@ const reservasRoutes = require('./routes/reservas');
   facturasRoutes,
   pdfsPendientesRoutes,
   filesRoutes,
+  meRoutes,
   usuariosRoutes,
   sociedadesRoutes,
   proveedoresRoutes,

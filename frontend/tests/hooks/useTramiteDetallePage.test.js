@@ -48,7 +48,7 @@ test('useTramiteDetallePage orquesta detalle, resumen y workflow en un solo cont
     hook: useTramiteDetallePageHarness,
     initialProps: {
       sociedadId: 10,
-      authUser: { email: 'tesoreria@novogar.local' },
+      authUser: { email: 'tesoreria@sendadocs.local' },
       userPermissions: ['documentos_tramitar_pago'],
       dependencies: {
         useParamsHook: () => ({ id: '55' }),
@@ -84,7 +84,7 @@ test('useTramiteDetallePage orquesta detalle, resumen y workflow en un solo cont
 
   const workflowInputs = useWorkflowActionsHook.calls[0][0].workflowInputs;
   assert.equal(workflowInputs.id, '55');
-  assert.equal(workflowInputs.actorUsuario, 'tesoreria@novogar.local');
+  assert.equal(workflowInputs.actorUsuario, 'tesoreria@sendadocs.local');
   assert.equal(workflowInputs.fetchDetalle, fetchDetalle);
   assert.equal(workflowInputs.fetchHistorial, fetchHistorial);
   assert.equal(workflowInputs.setActionMessage, setActionMessage);

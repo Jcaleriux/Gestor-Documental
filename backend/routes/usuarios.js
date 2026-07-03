@@ -7,6 +7,7 @@ const {
   listSociedadesUsuario,
   setSociedadesUsuario
 } = require('../services/usuariosService');
+const { deleteUsuarioAvatar } = require('../services/userProfileService');
 const { requirePermission } = require('../middleware/permissionsMiddleware');
 const { validateBody } = require('../middleware/validate');
 const { PERMISSIONS } = require('../domain/permissions');
@@ -42,6 +43,11 @@ router.put(
   requirePermission(PERMISSIONS.USUARIOS_ADMINISTRAR),
   validateBody(setUsuarioSociedadesSchema, { message: 'sociedad_ids invalido' }),
   setSociedadesUsuario
+);
+router.delete(
+  '/usuarios/:id/avatar',
+  requirePermission(PERMISSIONS.USUARIOS_ADMINISTRAR),
+  deleteUsuarioAvatar
 );
 
 module.exports = router;

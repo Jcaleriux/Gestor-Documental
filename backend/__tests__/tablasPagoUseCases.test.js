@@ -5,7 +5,7 @@ const { createTablasPagoUseCases } = require('../services/tablasPagoUseCases');
 
 const user = {
   id: 99,
-  email: 'admin@novogar.test',
+  email: 'admin@SendaDocs.test',
   permissions: ['acceso_total']
 };
 
@@ -43,7 +43,7 @@ describe('tablasPagoUseCases', () => {
   let dateNowSpy;
 
   beforeEach(() => {
-    tempBaseDir = fs.mkdtempSync(path.join(os.tmpdir(), 'novogar-tablas-pago-'));
+    tempBaseDir = fs.mkdtempSync(path.join(os.tmpdir(), 'SendaDocs-tablas-pago-'));
     dateNowSpy = jest.spyOn(Date, 'now').mockReturnValue(1710000000000);
   });
 
@@ -104,7 +104,7 @@ describe('tablasPagoUseCases', () => {
       proveedorId: 7,
       nombre: 'Tabla marzo',
       rutaPdf: 'documentos/tablas_pago/18/7/1710000000000_tabla_marzo.pdf',
-      creadoPor: 'admin@novogar.test',
+      creadoPor: 'admin@SendaDocs.test',
       metadata: { lote: 'marzo' }
     });
     expect(result.rutaPdf).toBe('documentos/tablas_pago/18/7/1710000000000_tabla_marzo.pdf');

@@ -64,8 +64,8 @@ Request:
 
 ```json
 {
-  "email": "admin@novogar.local",
-  "password": "Novogar2026!"
+  "email": "admin@sendadocs.local",
+  "password": "SendaDocs2026!"
 }
 ```
 
@@ -78,7 +78,7 @@ Response:
     "user": {
       "id": 1,
       "nombre": "Admin",
-      "email": "admin@novogar.local",
+      "email": "admin@sendadocs.local",
       "rol": 1,
       "rol_codigo": "ADMIN",
       "rol_nombre": "Administrador",
@@ -106,7 +106,7 @@ Response:
     "user": {
       "id": 1,
       "nombre": "Admin",
-      "email": "admin@novogar.local",
+      "email": "admin@sendadocs.local",
       "rol": 1,
       "rol_codigo": "ADMIN",
       "rol_nombre": "Administrador"
@@ -198,7 +198,7 @@ Request permitido por schema:
   "notas": "Observacion",
   "workflow_action": "save_draft",
   "metadata": {},
-  "usuario": "usuario@novogar.local"
+  "usuario": "usuario@sendadocs.local"
 }
 ```
 
@@ -222,7 +222,7 @@ Request:
   "filename": "respaldo.pdf",
   "file_base64": "base64",
   "metadata": {},
-  "usuario": "usuario@novogar.local"
+  "usuario": "usuario@sendadocs.local"
 }
 ```
 
@@ -235,7 +235,7 @@ Request:
   "monto": 1000,
   "fecha_pago": "2026-06-04",
   "notas": "Pago aplicado",
-  "usuario": "usuario@novogar.local"
+  "usuario": "usuario@sendadocs.local"
 }
 ```
 
@@ -267,7 +267,7 @@ Request:
   "sociedad_id": 1,
   "factura_ids": [10, 11],
   "retencion_factura_ids": [12],
-  "usuario": "usuario@novogar.local"
+  "usuario": "usuario@sendadocs.local"
 }
 ```
 
@@ -283,7 +283,7 @@ Request:
 ```json
 {
   "estado": "en_revision",
-  "usuario": "usuario@novogar.local",
+  "usuario": "usuario@sendadocs.local",
   "motivo": "Cambio solicitado",
   "force": false,
   "pagos_documentos": [
@@ -310,7 +310,7 @@ Request:
   "etapa": "gerencia",
   "decision": "aprobado",
   "motivo": "Aprobado",
-  "usuario": "usuario@novogar.local"
+  "usuario": "usuario@sendadocs.local"
 }
 ```
 
@@ -328,7 +328,7 @@ Request:
   "accion": "reenviar",
   "destino": "contabilidad",
   "motivo": "Correccion requerida",
-  "usuario": "usuario@novogar.local"
+  "usuario": "usuario@sendadocs.local"
 }
 ```
 
@@ -339,7 +339,7 @@ Request:
 ```json
 {
   "motivo": "No procede",
-  "usuario": "usuario@novogar.local"
+  "usuario": "usuario@sendadocs.local"
 }
 ```
 
@@ -363,7 +363,7 @@ Requests:
 {
   "filename": "caratula.pdf",
   "file_base64": "base64",
-  "usuario": "usuario@novogar.local"
+  "usuario": "usuario@sendadocs.local"
 }
 ```
 
@@ -377,7 +377,7 @@ Requests:
       "factura_id": 10
     }
   ],
-  "usuario": "usuario@novogar.local"
+  "usuario": "usuario@sendadocs.local"
 }
 ```
 
@@ -385,14 +385,14 @@ Requests:
 {
   "factura_ids": [10, 11],
   "order_source": "manual",
-  "usuario": "usuario@novogar.local"
+  "usuario": "usuario@sendadocs.local"
 }
 ```
 
 ```json
 {
   "provider_key": "proveedor-1",
-  "usuario": "usuario@novogar.local"
+  "usuario": "usuario@sendadocs.local"
 }
 ```
 
@@ -423,7 +423,7 @@ Request:
 ```json
 {
   "nombre": "Usuario Demo",
-  "email": "usuario@novogar.local",
+  "email": "usuario@sendadocs.local",
   "password": "Password2026!",
   "rol_id": 1,
   "activo": true
@@ -437,7 +437,7 @@ Request:
 ```json
 {
   "nombre": "Usuario Demo",
-  "email": "usuario@novogar.local",
+  "email": "usuario@sendadocs.local",
   "rol_id": 1,
   "activo": true,
   "password": ""
@@ -581,7 +581,7 @@ Request:
   "filename": "tabla-pago.pdf",
   "file_base64": "base64",
   "metadata": {},
-  "usuario": "usuario@novogar.local"
+  "usuario": "usuario@sendadocs.local"
 }
 ```
 
@@ -617,7 +617,7 @@ Request:
   "filename": "orden.pdf",
   "file_base64": "base64",
   "metadata": {},
-  "usuario": "usuario@novogar.local"
+  "usuario": "usuario@sendadocs.local"
 }
 ```
 
@@ -637,7 +637,7 @@ Request:
   "filename": "orden.pdf",
   "file_base64": "base64",
   "metadata": {},
-  "usuario": "usuario@novogar.local"
+  "usuario": "usuario@sendadocs.local"
 }
 ```
 
@@ -691,7 +691,7 @@ Request:
   "cliente_nombre": "Cliente Demo",
   "cliente_identificacion": "1-0000-0000",
   "metadata": {},
-  "usuario": "usuario@novogar.local"
+  "usuario": "usuario@sendadocs.local"
 }
 ```
 
@@ -702,7 +702,7 @@ Request:
 ```json
 {
   "motivo": "Cliente desiste",
-  "usuario": "usuario@novogar.local"
+  "usuario": "usuario@sendadocs.local"
 }
 ```
 
@@ -713,7 +713,7 @@ Request:
 ```json
 {
   "motivo": "Operacion completada",
-  "usuario": "usuario@novogar.local"
+  "usuario": "usuario@sendadocs.local"
 }
 ```
 
@@ -729,7 +729,7 @@ Request:
   "cliente_nombre": "Cliente Demo",
   "cliente_identificacion": "1-0000-0000",
   "motivo": "Cambio de unidad",
-  "usuario": "usuario@novogar.local",
+  "usuario": "usuario@sendadocs.local",
   "metadata": {}
 }
 ```
@@ -747,7 +747,7 @@ Request:
   "tamanio_bytes": 12345,
   "hash_sha256": "hash",
   "metadata": {},
-  "usuario": "usuario@novogar.local"
+  "usuario": "usuario@sendadocs.local"
 }
 ```
 
@@ -769,7 +769,7 @@ Request:
   "tamanio_bytes": 12345,
   "hash_sha256": "hash",
   "metadata": {},
-  "usuario": "usuario@novogar.local"
+  "usuario": "usuario@sendadocs.local"
 }
 ```
 
@@ -784,7 +784,7 @@ Request:
   "mime_type": "application/pdf",
   "motivo": "Correccion de documento",
   "metadata": {},
-  "usuario": "usuario@novogar.local"
+  "usuario": "usuario@sendadocs.local"
 }
 ```
 
@@ -833,7 +833,7 @@ Request:
 
 ```json
 {
-  "usuario": "usuario@novogar.local",
+  "usuario": "usuario@sendadocs.local",
   "texto": "Comentario operativo"
 }
 ```
@@ -848,7 +848,7 @@ Request:
 
 ```json
 {
-  "usuario": "usuario@novogar.local",
+  "usuario": "usuario@sendadocs.local",
   "cambios": "Se reemplazo el PDF",
   "ruta_archivo": "documentos/facturas/factura.pdf"
 }
@@ -861,7 +861,7 @@ Request:
 ```json
 {
   "accion": "actualizar_estado",
-  "usuario": "usuario@novogar.local",
+  "usuario": "usuario@sendadocs.local",
   "detalles": {},
   "ip_address": "127.0.0.1"
 }
@@ -876,7 +876,7 @@ Request:
   "dominio": "workflow_pago",
   "estado_anterior": "pendiente",
   "estado_nuevo": "aprobado",
-  "usuario": "usuario@novogar.local",
+  "usuario": "usuario@sendadocs.local",
   "motivo": "Aprobado por flujo"
 }
 ```

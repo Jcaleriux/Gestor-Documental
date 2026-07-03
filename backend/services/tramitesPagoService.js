@@ -2,6 +2,7 @@ const { createTramitesPagoUseCases } = require('./tramitesPagoUseCases');
 const tramitesPagoRepo = require('../repositories/tramitesPagoRepository');
 const { handleRequest } = require('../utils/http');
 const { runtimeConfig } = require('../config/runtime');
+const { RESPONSE_HEADERS } = require('../constants/responseHeaders');
 
 const useCases = createTramitesPagoUseCases({
   tramitesPagoRepo,
@@ -72,10 +73,10 @@ const getTramitePdfUnificado = handleRequest(async (req, res) => {
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename="${pdfDownload.filename}"`);
-  res.setHeader('X-Novogar-Partial-Download', pdfDownload.partialDownload ? '1' : '0');
-  res.setHeader('X-Novogar-Omitted-Count', String(pdfDownload.omittedCount || 0));
+  res.setHeader(RESPONSE_HEADERS.partialDownload, pdfDownload.partialDownload ? '1' : '0');
+  res.setHeader(RESPONSE_HEADERS.omittedCount, String(pdfDownload.omittedCount || 0));
   if (pdfDownload.omittedItemsHeader) {
-    res.setHeader('X-Novogar-Omitted-Items', pdfDownload.omittedItemsHeader);
+    res.setHeader(RESPONSE_HEADERS.omittedItems, pdfDownload.omittedItemsHeader);
   }
 
   res.send(pdfDownload.buffer);

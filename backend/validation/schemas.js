@@ -180,6 +180,16 @@ const setUsuarioSociedadesSchema = Joi.object({
   sociedad_ids: Joi.array().items(Joi.number().integer().positive()).required()
 });
 
+const updateUserPreferencesSchema = Joi.object({
+  theme_mode: Joi.string().trim().valid('light', 'dark').required()
+});
+
+const uploadUserAvatarSchema = Joi.object({
+  filename: Joi.string().trim().max(255).required(),
+  file_base64: Joi.string().trim().required(),
+  mime_type: Joi.string().trim().max(100).allow('', null)
+});
+
 const sociedadBaseSchema = {
   codigo: Joi.string().trim().max(20).allow('', null),
   nombre_proyecto: Joi.string().trim().max(150).allow('', null),
@@ -416,6 +426,8 @@ module.exports = {
   createUsuarioSchema,
   updateUsuarioSchema,
   setUsuarioSociedadesSchema,
+  updateUserPreferencesSchema,
+  uploadUserAvatarSchema,
   createSociedadSchema,
   updateSociedadSchema,
   createProveedorSchema,

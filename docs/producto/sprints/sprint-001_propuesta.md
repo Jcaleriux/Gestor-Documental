@@ -6,7 +6,7 @@ Propuesto
 
 ## Objetivo del sprint
 
-Dar el siguiente salto de orden y valor en Novogar sin abrir demasiados frentes a la vez.
+Dar el siguiente salto de orden y valor en SendaDocs sin abrir demasiados frentes a la vez.
 
 ## Capacidad sugerida
 

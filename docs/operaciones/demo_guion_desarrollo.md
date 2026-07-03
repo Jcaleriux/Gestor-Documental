@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Tener un recorrido claro, corto y creible para mostrar Novogar con datos reales sin improvisar durante la demo.
+Tener un recorrido claro, corto y creible para mostrar SendaDocs con datos reales sin improvisar durante la demo.
 
 Este guion esta pensado para:
 
@@ -49,22 +49,22 @@ Si vas a subir o revisar archivos manualmente antes de la demo, esas son las car
 
 Si la base fue inicializada con seed, puedes usar:
 
-- `admin@novogar.local`
-- `contabilidad.jefe@novogar.local`
-- `tesoreria.encargado@novogar.local`
-- `gerencia.contable@novogar.local`
-- `gerencia.financiera@novogar.local`
+- `admin@sendadocs.local`
+- `contabilidad.jefe@sendadocs.local`
+- `tesoreria.encargado@sendadocs.local`
+- `gerencia.contable@sendadocs.local`
+- `gerencia.financiera@sendadocs.local`
 
 Password seed:
 
-- `Novogar2026!`
+- `SendaDocs2026!`
 
 Para la demo no hace falta usar todos. La combinacion recomendada es:
 
-1. `admin@novogar.local`
-2. `contabilidad.jefe@novogar.local`
-3. `tesoreria.encargado@novogar.local`
-4. `gerencia.contable@novogar.local` o `gerencia.financiera@novogar.local`
+1. `admin@sendadocs.local`
+2. `contabilidad.jefe@sendadocs.local`
+3. `tesoreria.encargado@sendadocs.local`
+4. `gerencia.contable@sendadocs.local` o `gerencia.financiera@sendadocs.local`
 
 ## Datos Que Conviene Tener Listos
 
@@ -94,7 +94,7 @@ Opcional:
 
 La narrativa recomendada es:
 
-1. Novogar centraliza documentos y workflow por sociedad y rol.
+1. SendaDocs centraliza documentos y workflow por sociedad y rol.
 2. Contabilidad enriquece y prepara documentos.
 3. Tesoreria prioriza, tramita y controla pago.
 4. Gerencia aprueba en etapas segun permiso y contexto.
@@ -110,13 +110,13 @@ Objetivo:
 
 Texto sugerido:
 
-"Voy a mostrar el flujo operativo de Novogar usando una sociedad real y varios perfiles. La idea es ver como cambia la experiencia segun el rol, como se consulta el documento, como se tramita para pago y como queda la trazabilidad."
+"Voy a mostrar el flujo operativo de SendaDocs usando una sociedad real y varios perfiles. La idea es ver como cambia la experiencia segun el rol, como se consulta el documento, como se tramita para pago y como queda la trazabilidad."
 
 ## Paso 1 - Login Y Vista General - 2 minutos
 
 Usuario sugerido:
 
-- `admin@novogar.local`
+- `admin@sendadocs.local`
 
 Mostrar:
 
@@ -142,7 +142,7 @@ No te quedes mucho aqui. Solo ubica:
 
 Usuario sugerido:
 
-- `contabilidad.jefe@novogar.local`
+- `contabilidad.jefe@sendadocs.local`
 
 Pantallas:
 
@@ -176,7 +176,7 @@ Si la factura elegida ya tiene buena informacion:
 
 Usuario sugerido:
 
-- `tesoreria.encargado@novogar.local`
+- `tesoreria.encargado@sendadocs.local`
 
 Pantallas:
 
@@ -208,7 +208,7 @@ Si el tramite elegido esta bueno para mostrar caratulas:
 
 Usuario sugerido:
 
-- `gerencia.contable@novogar.local` o `gerencia.financiera@novogar.local`
+- `gerencia.contable@sendadocs.local` o `gerencia.financiera@sendadocs.local`
 
 Pantallas:
 
@@ -232,7 +232,7 @@ Mensaje clave:
 
 Usuario sugerido:
 
-- `admin@novogar.local` o `contabilidad.jefe@novogar.local`
+- `admin@sendadocs.local` o `contabilidad.jefe@sendadocs.local`
 
 Pantallas opcionales:
 
@@ -263,7 +263,7 @@ Resumen sugerido:
 
 Texto sugerido:
 
-"En resumen, Novogar permite pasar de la recepcion documental a la ejecucion del tramite de pago con visibilidad por rol, control por sociedad y trazabilidad suficiente para operacion y seguimiento."
+"En resumen, SendaDocs permite pasar de la recepcion documental a la ejecucion del tramite de pago con visibilidad por rol, control por sociedad y trazabilidad suficiente para operacion y seguimiento."
 
 ## Version Corta De 10 Minutos
 

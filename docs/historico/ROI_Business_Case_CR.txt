@@ -1,5 +1,5 @@
 ═══════════════════════════════════════════════════════════════
-   ROI / BUSINESS CASE - PROYECTO NOVOGAR
+   ROI / BUSINESS CASE - SENDADOCS
    COSTA RICA - ANÁLISIS PRELIMINAR
 ═══════════════════════════════════════════════════════════════
 
@@ -77,7 +77,7 @@ Escenario actual:
   - ~2 errores/mes por manejo disperso (Excels, correos perdidos)
   - Costo por error: $400-800 USD (retrasos, ajustes manuales, auditoría)
 
-Con Proyecto Novogar:
+Con SendaDocs:
   - Centralización reduce errores a ~0.2-0.3/mes
   - Auditoría automática evita re-trabajos
 
@@ -98,7 +98,7 @@ Estimaciones actuales (por semana):
 
   TOTAL: 3.5-4.5 horas/semana por equipo (15 usuarios distribuidos)
 
-Con Proyecto Novogar:
+Con SendaDocs:
   - Todo centralizado (búsqueda en 5 min vs 30 min)
   - Auditoría automática (0 horas)
   - No hay sincronización manual

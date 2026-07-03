@@ -6,8 +6,8 @@ const request = require('supertest');
 const app = require('../app');
 
 const DEFAULT_SMOKE_CONFIG = Object.freeze({
-  email: 'admin@novogar.local',
-  password: 'Novogar2026!',
+  email: 'admin@sendadocs.local',
+  password: 'SendaDocs2026!',
   sociedadId: '',
   facturasPageSize: 5,
 });
@@ -93,8 +93,8 @@ const runReleaseSmokeChecks = async ({
     status: health.status,
     details: {
       success: health.body?.success === true,
-      releaseVersionHeader: health.headers['x-novogar-release-version'] || '',
-      releaseCommitHeader: health.headers['x-novogar-release-commit-short'] || '',
+      releaseVersionHeader: health.headers['x-sendadocs-release-version'] || '',
+      releaseCommitHeader: health.headers['x-sendadocs-release-commit-short'] || '',
     },
   }));
 

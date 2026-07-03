@@ -1,6 +1,6 @@
 # Gestion De Producto En El Repo
 
-Este directorio es la base operativa para gestionar el crecimiento de `Proyecto Novogar` dentro del repo.
+Este directorio es la base operativa para gestionar el crecimiento de `SendaDocs` dentro del repo.
 
 ## Objetivo
 

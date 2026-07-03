@@ -48,7 +48,7 @@ test('buildTramiteWorkflowStateInputs toma solo campos necesarios para state hoo
     id: 70,
     tramite: { id: 70 },
     documentosActivos: [{ factura_id: 2 }],
-    actorUsuario: 'gerencia@novogar.local',
+    actorUsuario: 'gerencia@sendadocs.local',
     fetchHistorial: createMockFn(),
     fetchDetalle: createMockFn()
   };
@@ -58,7 +58,7 @@ test('buildTramiteWorkflowStateInputs toma solo campos necesarios para state hoo
   assert.deepEqual(Object.keys(stateInputs), ['id', 'tramite', 'documentosActivos', 'actorUsuario', 'fetchHistorial']);
   assert.equal(stateInputs.id, 70);
   assert.equal(stateInputs.documentosActivos.length, 1);
-  assert.equal(stateInputs.actorUsuario, 'gerencia@novogar.local');
+  assert.equal(stateInputs.actorUsuario, 'gerencia@sendadocs.local');
 });
 
 test('buildTramiteWorkflowActionsOutput compone salida publica desde state y handlers', () => {

@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Dejar un procedimiento claro y repetible para preparar backup y rollback antes de un release o deployment productivo de `Proyecto Novogar`.
+Dejar un procedimiento claro y repetible para preparar backup y rollback antes de un release o deployment productivo de `SendaDocs`.
 
 Este runbook es la Fase 1 segura:
 
@@ -29,7 +29,7 @@ Antes de un deployment productivo, deberias proteger al menos:
 3. filesystem operativo
 4. metadata del release
 
-En Novogar, el filesystem operativo relevante suele incluir:
+En SendaDocs, el filesystem operativo relevante suele incluir:
 
 - `documentos/`
 - `facturas/`
@@ -102,7 +102,7 @@ Usa el comando `pg_dump` que te entrega el helper.
 Ejemplo:
 
 ```powershell
-pg_dump --format=custom --verbose --host=localhost --port=5432 --username=postgres --file="C:\Jose\Proyecto Novogar\backend\backups\v1.0.0\2026-03-21T12-00-00-000Z\db\novogar_db_2026-03-21T12-00-00-000Z.dump" novogar_db
+pg_dump --format=custom --verbose --host=localhost --port=5432 --username=postgres --file="C:\Jose\Gestor-Documental\backend\backups\v1.0.0\2026-03-21T12-00-00-000Z\db\sendadocs_db_2026-03-21T12-00-00-000Z.dump" sendadocs_db
 ```
 
 ## Paso 3. Verificar El Dump
@@ -110,7 +110,7 @@ pg_dump --format=custom --verbose --host=localhost --port=5432 --username=postgr
 No basta con generar el archivo. Valida que el dump se pueda listar:
 
 ```powershell
-pg_restore --list "C:\Jose\Proyecto Novogar\backend\backups\v1.0.0\2026-03-21T12-00-00-000Z\db\novogar_db_2026-03-21T12-00-00-000Z.dump"
+pg_restore --list "C:\Jose\Gestor-Documental\backend\backups\v1.0.0\2026-03-21T12-00-00-000Z\db\sendadocs_db_2026-03-21T12-00-00-000Z.dump"
 ```
 
 Si este paso falla, no deberias seguir con el deployment.
@@ -191,7 +191,7 @@ Accion sugerida:
 Ejemplo de restore:
 
 ```powershell
-pg_restore --clean --if-exists --no-owner --no-privileges --host=localhost --port=5432 --username=postgres --dbname=novogar_db "C:\Jose\Proyecto Novogar\backend\backups\v1.0.0\2026-03-21T12-00-00-000Z\db\novogar_db_2026-03-21T12-00-00-000Z.dump"
+pg_restore --clean --if-exists --no-owner --no-privileges --host=localhost --port=5432 --username=postgres --dbname=sendadocs_db "C:\Jose\Gestor-Documental\backend\backups\v1.0.0\2026-03-21T12-00-00-000Z\db\sendadocs_db_2026-03-21T12-00-00-000Z.dump"
 ```
 
 ### C. Rollback De Codigo + Base De Datos + Filesystem

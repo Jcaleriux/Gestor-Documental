@@ -60,7 +60,7 @@ const runWithEnvFile = ({
       stdio: 'inherit',
       env: {
         ...process.env,
-        NOVOGAR_ENV_FILE: resolvedEnvFilePath,
+        SENDADOCS_ENV_FILE: resolvedEnvFilePath,
       },
     }
   );

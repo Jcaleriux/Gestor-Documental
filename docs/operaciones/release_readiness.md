@@ -70,7 +70,7 @@ El reporte revisa:
 Complemento recomendado:
 
 - validar `GET /api/release-info`
-- y revisar los headers `X-Novogar-Release-*` en `/api/health`
+- y revisar los headers `X-SendaDocs-Release-*` en `/api/health`
 - correr smoke checks de dominio con `backend npm run release:smoke` o `backend npm run preprod:smoke`
 
 ## Que Debe Salir Bien

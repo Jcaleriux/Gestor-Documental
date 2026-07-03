@@ -2,6 +2,8 @@ const request = require('supertest');
 
 const mockLogin = jest.fn();
 
+jest.setTimeout(15000);
+
 jest.mock('../services/authService', () => ({
   login: (...args) => mockLogin(...args),
 }));
@@ -26,7 +28,7 @@ describe('auth login rate limit', () => {
   beforeEach(() => {
     jest.resetModules();
     mockLogin.mockReset().mockResolvedValue({
-      user: { id: 1, email: 'admin@novogar.local' },
+      user: { id: 1, email: 'admin@sendadocs.local' },
       token: 'token-demo',
     });
     process.env.AUTH_LOGIN_RATE_LIMIT_WINDOW_MS = '60000';
@@ -43,7 +45,7 @@ describe('auth login rate limit', () => {
       app = require('../server');
     });
 
-    const credentials = { email: 'admin@novogar.local', password: 'Novogar2026!' };
+    const credentials = { email: 'admin@sendadocs.local', password: 'SendaDocs2026!' };
 
     await request(app).post('/api/auth/login').send(credentials).expect(200);
     await request(app).post('/api/auth/login').send(credentials).expect(200);

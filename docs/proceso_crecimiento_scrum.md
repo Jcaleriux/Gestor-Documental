@@ -1,8 +1,8 @@
-# Proceso Ideal Para Hacer Crecer Novogar Con Scrum
+# Proceso Ideal Para Hacer Crecer SendaDocs Con Scrum
 
 ## Objetivo
 
-Este documento explica una forma sana y sostenible de hacer crecer `Proyecto Novogar` sin perder control tecnico ni funcional. La idea no es aplicar Scrum de forma rigida, sino usarlo como marco para:
+Este documento explica una forma sana y sostenible de hacer crecer `SendaDocs` sin perder control tecnico ni funcional. La idea no es aplicar Scrum de forma rigida, sino usarlo como marco para:
 
 - convertir ideas sueltas en backlog visible,
 - decidir mejor que construir primero,
@@ -10,7 +10,7 @@ Este documento explica una forma sana y sostenible de hacer crecer `Proyecto Nov
 - evitar deuda tecnica evitable,
 - y hacer releases con menos sorpresas.
 
-Esta guia asume el contexto real de Novogar hoy:
+Esta guia asume el contexto real de SendaDocs hoy:
 
 - backend `Node.js + Express`,
 - frontend `React + Vite`,
@@ -51,7 +51,7 @@ Estas cosas idealmente se definen al principio del proyecto o cuando se detecta 
 - definicion minima de pruebas,
 - checklist de release.
 
-En Novogar ya se avanzo bastante en esta capa:
+En SendaDocs ya se avanzo bastante en esta capa:
 
 - migraciones versionadas,
 - validacion centralizada de entorno,
@@ -121,7 +121,7 @@ No es correcto dejar esto solo para el final del proyecto. Si se deja para el fi
 
 ## Como Se Ve Un Flujo Sano En Scrum
 
-Para Novogar, una version ligera y realista de Scrum puede verse asi.
+Para SendaDocs, una version ligera y realista de Scrum puede verse asi.
 
 ### Roles
 
@@ -139,7 +139,7 @@ Si hoy eres una sola persona, igual sirve pensar asi:
 
 ## Artefactos Minimos Recomendados
 
-Para crecer ordenadamente, Novogar deberia mantener visibles estos artefactos.
+Para crecer ordenadamente, SendaDocs deberia mantener visibles estos artefactos.
 
 ### 1. Vision del producto
 
@@ -310,7 +310,7 @@ Mala señal:
 
 ### Paso 7. Implementar por slices pequenos
 
-La mejor forma de crecer Novogar es la que ya se ha venido usando:
+La mejor forma de crecer SendaDocs es la que ya se ha venido usando:
 
 - tocar un slice pequeno,
 - mantener compatibilidad,
@@ -336,7 +336,7 @@ Despues del sprint o bloque:
 - que faltaba definir antes,
 - y que deuda tecnica conviene atacar ya.
 
-## Definicion De Epic Para Novogar
+## Definicion De Epic Para SendaDocs
 
 Un template util podria verse asi:
 
@@ -364,7 +364,7 @@ Un template util podria verse asi:
 ## Historias candidatas
 ```
 
-## Definicion De Historia Para Novogar
+## Definicion De Historia Para SendaDocs
 
 ```md
 # HIST-00X Nombre
@@ -447,7 +447,7 @@ En Scrum y gestion de producto conviene separar estos dos conceptos:
 
 Los dos terminos son correctos, pero no significan exactamente lo mismo.
 
-## Regla para Novogar
+## Regla para SendaDocs
 
 - hablar de `release` cuando se define version, changelog y alcance del corte
 - hablar de `deployment` cuando se ejecuta el paso a `staging` o `produccion`
@@ -477,7 +477,7 @@ Ejemplo:
 
 ## Donde vive esta definicion
 
-Para Novogar, esta parte de gobierno vive en:
+Para SendaDocs, esta parte de gobierno vive en:
 
 - `VERSION`
 - `CHANGELOG.md`
@@ -701,7 +701,7 @@ Si hoy el equipo es pequeño o practicamente eres tu, te recomiendo algo simple:
 - que debemos dejar de hacer,
 - que debemos empezar a hacer.
 
-## Como Se Veria Aplicado A Novogar
+## Como Se Veria Aplicado A SendaDocs
 
 Ejemplo de epics razonables para el siguiente periodo:
 
@@ -741,7 +741,7 @@ Si quieres empezar a usar este enfoque sin burocracia, el plan minimo es:
 
 ## Resumen Practico
 
-La forma ideal de construir un programa como Novogar no es:
+La forma ideal de construir un programa como SendaDocs no es:
 
 - primero programar mucho,
 - despues ordenar,

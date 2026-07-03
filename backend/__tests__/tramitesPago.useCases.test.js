@@ -155,7 +155,7 @@ describe('tramitesPagoUseCases', () => {
       facturaId: 2,
       accion: 'excluir',
       motivo: 'fuera de alcance',
-      usuario: 'tesoreria@novogar.local',
+      usuario: 'tesoreria@sendadocs.local',
       user: assignedUser
     })).rejects.toMatchObject({
       status: 403,
@@ -227,7 +227,7 @@ describe('tramitesPagoUseCases', () => {
       facturaId: 2,
       accion: 'devolver_contabilidad',
       motivo: 'corregir contabilizacion',
-      usuario: 'tesoreria@novogar.local',
+      usuario: 'tesoreria@sendadocs.local',
       user: fullAccessUser
     });
 
@@ -282,7 +282,7 @@ describe('tramitesPagoUseCases', () => {
     const result = await useCases.cambiarEstado({
       id: 1,
       estado: TRAMITE_ESTADOS.EN_REVISION_TESORERIA_2,
-      usuario: 'financiera@novogar.local',
+      usuario: 'financiera@sendadocs.local',
       user: fullAccessUser,
       actorPermissions: ['documentos_aprobar_gerencia_financiera']
     });
@@ -313,7 +313,7 @@ describe('tramitesPagoUseCases', () => {
     await expect(useCases.cambiarEstado({
       id: 1,
       estado: TRAMITE_ESTADOS.PAGADO,
-      usuario: 'tesoreria@novogar.local',
+      usuario: 'tesoreria@sendadocs.local',
       user: assignedUser,
       actorPermissions: ['documentos_tramitar_pago']
     })).rejects.toMatchObject({
@@ -339,7 +339,7 @@ describe('tramitesPagoUseCases', () => {
     await expect(useCases.cambiarEstado({
       id: 1,
       estado: TRAMITE_ESTADOS.EN_APROBACION_GERENCIA_CONTABLE,
-      usuario: 'tesoreria@novogar.local',
+      usuario: 'tesoreria@sendadocs.local',
       user: fullAccessUser,
       actorPermissions: ['documentos_tramitar_pago']
     })).rejects.toThrow('Debe cargar las caratulas del tramite antes de continuar');
@@ -395,7 +395,7 @@ describe('tramitesPagoUseCases', () => {
     await useCases.cambiarEstado({
       id: 1,
       estado: TRAMITE_ESTADOS.EN_APROBACION_GERENCIA_CONTABLE,
-      usuario: 'tesoreria@novogar.local',
+      usuario: 'tesoreria@sendadocs.local',
       user: fullAccessUser,
       pagos_documentos: [{ factura_id: 2, monto_pago: 55.5 }],
       actorPermissions: ['documentos_tramitar_pago']
@@ -420,7 +420,7 @@ describe('tramitesPagoUseCases', () => {
     await expect(useCases.cambiarEstado({
       id: 1,
       estado: TRAMITE_ESTADOS.PAGADO,
-      usuario: 'financiera@novogar.local',
+      usuario: 'financiera@sendadocs.local',
       user: fullAccessUser,
       actorPermissions: ['documentos_aprobar_gerencia_financiera']
     })).rejects.toThrow('Permiso requerido: documentos_tramitar_pago');
@@ -453,7 +453,7 @@ describe('tramitesPagoUseCases', () => {
     await useCases.cambiarEstado({
       id: 1,
       estado: TRAMITE_ESTADOS.PAGADO,
-      usuario: 'tesoreria@novogar.local',
+      usuario: 'tesoreria@sendadocs.local',
       user: fullAccessUser,
       actorPermissions: ['documentos_tramitar_pago']
     });
@@ -472,7 +472,7 @@ describe('tramitesPagoUseCases', () => {
       accion: 'cambiar_estado',
       estadoAnterior: FACTURA_ESTADOS.EN_TRAMITE_PAGO,
       estadoNuevo: FACTURA_ESTADOS.PAGADO,
-      usuario: 'tesoreria@novogar.local',
+      usuario: 'tesoreria@sendadocs.local',
       motivo: null
     }, client);
   });
@@ -497,7 +497,7 @@ describe('tramitesPagoUseCases', () => {
     await useCases.cambiarEstado({
       id: 1,
       estado: TRAMITE_ESTADOS.PAGADO,
-      usuario: 'tesoreria@novogar.local',
+      usuario: 'tesoreria@sendadocs.local',
       user: fullAccessUser,
       actorPermissions: ['documentos_tramitar_pago']
     });
@@ -507,7 +507,7 @@ describe('tramitesPagoUseCases', () => {
       tramiteId: 1,
       monto: 40,
       fechaPago: null,
-      usuario: 'tesoreria@novogar.local',
+      usuario: 'tesoreria@sendadocs.local',
       notas: 'Pago principal en tramite #1'
     }, expect.any(Object));
   });
@@ -532,7 +532,7 @@ describe('tramitesPagoUseCases', () => {
     await useCases.cambiarEstado({
       id: 1,
       estado: TRAMITE_ESTADOS.PAGADO,
-      usuario: 'tesoreria@novogar.local',
+      usuario: 'tesoreria@sendadocs.local',
       user: fullAccessUser,
       actorPermissions: ['documentos_tramitar_pago']
     });
@@ -542,7 +542,7 @@ describe('tramitesPagoUseCases', () => {
       tramiteId: 1,
       monto: 404351.99964,
       fechaPago: null,
-      usuario: 'tesoreria@novogar.local',
+      usuario: 'tesoreria@sendadocs.local',
       notas: 'Pago principal en tramite #1'
     }, expect.any(Object));
   });
@@ -661,7 +661,7 @@ describe('tramitesPagoUseCases', () => {
       etapa: 'gerencia',
       decision: DOCUMENTO_DECISIONES.RECHAZADO,
       motivo: 'rechazo de negocio',
-      usuario: 'gerencia@novogar.local',
+      usuario: 'gerencia@sendadocs.local',
       user: fullAccessUser,
       actorPermissions: ['documentos_aprobar_gerencia']
     });
@@ -690,7 +690,7 @@ describe('tramitesPagoUseCases', () => {
       etapa: 'gerencia',
       decision: DOCUMENTO_DECISIONES.APROBADO,
       motivo: null,
-      usuario: 'gerencia@novogar.local',
+      usuario: 'gerencia@sendadocs.local',
       user: assignedUser,
       actorPermissions: ['documentos_aprobar_gerencia']
     })).rejects.toMatchObject({
@@ -726,7 +726,7 @@ describe('tramitesPagoUseCases', () => {
       etapa: 'gerencia',
       decision: DOCUMENTO_DECISIONES.APROBADO,
       motivo: null,
-      usuario: 'gerencia@novogar.local',
+      usuario: 'gerencia@sendadocs.local',
       user: fullAccessUser,
       actorPermissions: ['documentos_aprobar_gerencia']
     });
@@ -772,8 +772,8 @@ describe('tramitesPagoUseCases', () => {
 
     const { repo } = createRepoMock({
       listCentroCostoAprobadoresByFacturaIds: jest.fn().mockResolvedValue([
-        { factura_id: 2, usuario_aprobador_id: 101, usuario_aprobador_nombre: 'Gerencia 1', usuario_aprobador_email: 'g1@novogar.local' },
-        { factura_id: 2, usuario_aprobador_id: 202, usuario_aprobador_nombre: 'Gerencia 2', usuario_aprobador_email: 'g2@novogar.local' }
+        { factura_id: 2, usuario_aprobador_id: 101, usuario_aprobador_nombre: 'Gerencia 1', usuario_aprobador_email: 'g1@sendadocs.local' },
+        { factura_id: 2, usuario_aprobador_id: 202, usuario_aprobador_nombre: 'Gerencia 2', usuario_aprobador_email: 'g2@sendadocs.local' }
       ]),
       listTramiteDocumentoAprobadores,
       listTramiteDocumentoAprobadoresForUpdate: jest.fn().mockResolvedValue(pendingApprovalRows)
@@ -786,7 +786,7 @@ describe('tramitesPagoUseCases', () => {
       etapa: 'gerencia',
       decision: DOCUMENTO_DECISIONES.APROBADO,
       motivo: null,
-      usuario: 'gerencia@novogar.local',
+      usuario: 'gerencia@sendadocs.local',
       actorUserId: 101,
       user: fullAccessUser,
       actorPermissions: ['documentos_ver']
@@ -844,10 +844,10 @@ describe('tramitesPagoUseCases', () => {
       etapa: 'gerencia',
       decision: DOCUMENTO_DECISIONES.APROBADO,
       motivo: null,
-      usuario: 'backup@novogar.local',
+      usuario: 'backup@sendadocs.local',
       actorUserId: 303,
       actorUserName: 'Gerencia Backup',
-      actorUserEmail: 'backup@novogar.local',
+      actorUserEmail: 'backup@sendadocs.local',
       actorRoleId: 7,
       user: fullAccessUser,
       actorPermissions: ['documentos_ver']
@@ -861,7 +861,7 @@ describe('tramitesPagoUseCases', () => {
       estado: DOCUMENTO_DECISIONES.APROBADO,
       decisionUsuarioId: 303,
       decisionUsuarioNombre: 'Gerencia Backup',
-      decisionUsuarioEmail: 'backup@novogar.local'
+      decisionUsuarioEmail: 'backup@sendadocs.local'
     }), expect.any(Object));
     expect(repo.updateDocumentoDecision).toHaveBeenCalled();
   });
@@ -891,7 +891,7 @@ describe('tramitesPagoUseCases', () => {
       etapa: 'gerencia',
       decision: DOCUMENTO_DECISIONES.RECHAZADO,
       motivo: 'cambio tardio',
-      usuario: 'gerencia@novogar.local',
+      usuario: 'gerencia@sendadocs.local',
       actorUserId: 101,
       user: fullAccessUser,
       actorPermissions: ['documentos_ver']

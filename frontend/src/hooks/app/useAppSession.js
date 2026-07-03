@@ -7,7 +7,7 @@ import {
   saveAuthSession,
 } from '../../utils/auth.js';
 
-const SELECTED_SOCIEDAD_KEY = 'novogar.sociedad.selected';
+const SELECTED_SOCIEDAD_KEY = 'sendadocs.sociedad.selected';
 const DEFAULT_AUTH_SESSION = Object.freeze({
   clearAuthSession,
   getAuthToken,
