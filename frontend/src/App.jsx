@@ -16,6 +16,7 @@ import {
 import { buildNavigationSections } from './app/buildNavigationSections.js';
 import { useAppSession } from './hooks/app/useAppSession.js';
 import LoadingState from './components/common/LoadingState.jsx';
+import NotificationCenter from './components/notifications/NotificationCenter.jsx';
 import UserSettingsModal from './components/UserSettingsModal.jsx';
 import {
   deleteUserAvatar,
@@ -827,10 +828,10 @@ function AuthenticatedAppShell({
                 ))}
               </select>
             </div>
-            <button className="icon-btn" type="button" aria-label="Notificaciones">
-              <span className="badge">1</span>
-              N
-            </button>
+            <NotificationCenter
+              sociedadId={sociedadId}
+              selectedSociedadName={selectedSociedad?.nombre_proyecto || selectedSociedad?.razon_social || ''}
+            />
             <button className="btn btn-sm btn-outline-secondary" type="button" onClick={handleLogout}>
               Cerrar sesión
             </button>
