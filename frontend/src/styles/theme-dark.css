@@ -166,7 +166,13 @@ html[data-app-theme="dark"] .factura-field-help,
 html[data-app-theme="dark"] .factura-timeline-meta,
 html[data-app-theme="dark"] .factura-timeline-description,
 html[data-app-theme="dark"] .centro-costo-meta-text,
-html[data-app-theme="dark"] .centro-costo-meta-label {
+html[data-app-theme="dark"] .centro-costo-meta-label,
+html[data-app-theme="dark"] .sociedad-meta-text,
+html[data-app-theme="dark"] .sociedad-meta-label,
+html[data-app-theme="dark"] .usuario-meta-text,
+html[data-app-theme="dark"] .usuario-meta-label,
+html[data-app-theme="dark"] .proveedor-meta-text,
+html[data-app-theme="dark"] .proveedor-meta-label {
   color: var(--app-muted);
 }
 
@@ -275,7 +281,10 @@ html[data-app-theme="dark"] .dashboard-status-chart-label strong,
 html[data-app-theme="dark"] .dashboard-focus-value,
 html[data-app-theme="dark"] .activity-text,
 html[data-app-theme="dark"] .status-label,
-html[data-app-theme="dark"] .centro-costo-primary-text {
+html[data-app-theme="dark"] .centro-costo-primary-text,
+html[data-app-theme="dark"] .sociedad-primary-text,
+html[data-app-theme="dark"] .usuario-primary-text,
+html[data-app-theme="dark"] .proveedor-primary-text {
   color: var(--app-text);
 }
 
