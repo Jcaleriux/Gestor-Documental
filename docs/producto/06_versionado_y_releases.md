@@ -207,6 +207,8 @@ El repo ya tiene un runner de smoke checks de dominio:
 - `backend npm run release:smoke`
 - `backend npm run preprod:smoke`
 
+Si el entorno ya tiene usuarios, los smoke checks protegidos deben recibir `SMOKE_USER_EMAIL` y `SMOKE_USER_PASSWORD` desde variables de entorno. Si la base esta limpia y sin usuarios, el runner valida explicitamente que el onboarding inicial este pendiente.
+
 Cobertura base de la Fase 2:
 
 - `GET /api/health`

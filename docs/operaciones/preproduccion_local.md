@@ -104,6 +104,8 @@ cd backend
 npm run preprod:smoke
 ```
 
+Si `SMOKE_USER_EMAIL` y `SMOKE_USER_PASSWORD` no estan definidos, el smoke valida que una base limpia este pendiente de onboarding. Para validar endpoints protegidos, crea el admin inicial o un usuario operativo y agrega esas variables en `backend/.env.production.local`.
+
 Para preparar el plan de backup/rollback sobre ese mismo entorno:
 
 ```bash
@@ -139,7 +141,8 @@ Nota:
 
 - `http://localhost:3302/api/health` responde `200`
 - `GET /api/release-info` expone version y commit
-- login funciona
+- `GET /api/onboarding/status` responde correctamente
+- login funciona despues de crear el primer admin o cargar usuarios demo de forma explicita
 - dashboard carga
 - facturas cargan
 - tramites cargan

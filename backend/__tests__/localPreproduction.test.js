@@ -21,6 +21,8 @@ describe('local preproduction setup', () => {
     expect(content).toContain('JWT_SECRET=change-this-before-production');
     expect(content).toContain('CORS_ALLOWED_ORIGINS=http://127.0.0.1:4173,http://localhost:4173');
     expect(content).toContain('FACTURAS_BASE_DIR=');
+    expect(content).toContain('SMOKE_USER_EMAIL=');
+    expect(content).toContain('SMOKE_USER_PASSWORD=');
   });
 
   test('setupLocalPreproduction crea runtime dir y env file si no existian', () => {
@@ -41,6 +43,7 @@ describe('local preproduction setup', () => {
     const envContent = fs.readFileSync(envFilePath, 'utf8');
     expect(envContent).toContain('DB_NAME=sendadocs_preprod');
     expect(envContent).toContain('PORT=3302');
+    expect(envContent).toContain('SMOKE_FACTURAS_PAGE_SIZE=5');
 
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });

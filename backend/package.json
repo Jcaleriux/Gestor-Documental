@@ -8,6 +8,7 @@
         "db:init": "node db/create_tables.js",
         "db:reset": "node db/reset_schema.js",
         "db:check": "node db/check_structure.js",
+        "db:seed:demo": "node db/seed_demo.js",
         "db:migrate": "node db/migrate.js",
         "db:migrate:status": "node db/migrate_status.js",
         "importar": "node scripts/importarFactura.js",

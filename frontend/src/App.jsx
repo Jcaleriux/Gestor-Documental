@@ -15,6 +15,7 @@ import {
 } from './app/appShellState.js';
 import { buildNavigationSections } from './app/buildNavigationSections.js';
 import { useAppSession } from './hooks/app/useAppSession.js';
+import { useOnboardingStatus } from './hooks/app/useOnboardingStatus.js';
 import LoadingState from './components/common/LoadingState.jsx';
 import NotificationCenter from './components/notifications/NotificationCenter.jsx';
 import ThemeDiscoveryTooltip from './components/ThemeDiscoveryTooltip.jsx';
@@ -55,6 +56,7 @@ const CentrosCosto = lazy(() => import('./components/CentrosCosto.jsx'));
 const TablasPagoIngenieria = lazy(() => import('./components/TablasPagoIngenieria.jsx'));
 const OrdenesCompraIngenieria = lazy(() => import('./components/OrdenesCompraIngenieria.jsx'));
 const ReservasOperaciones = lazy(() => import('./components/ReservasOperaciones.jsx'));
+const OnboardingSetup = lazy(() => import('./components/OnboardingSetup.jsx'));
 
 const SIDEBAR_COLLAPSED_KEY = 'sendadocs.sidebar.collapsed';
 const SIDEBAR_SECTIONS_KEY = 'sendadocs.sidebar.sections.v2';
@@ -340,6 +342,27 @@ function RouteLoadingFallback({ fullPage = false }) {
         : { padding: '1rem 1.25rem' }}
     >
       <LoadingState label="Cargando página..." />
+    </div>
+  );
+}
+
+function OnboardingStatusFallback({ error, loading, onRetry }) {
+  return (
+    <div className="auth-page">
+      <section className="auth-card" aria-labelledby="onboarding-status-title">
+        <div className="auth-brand">
+          <img src="/logo-horizontal.svg" alt="SendaDocs" className="auth-logo" />
+        </div>
+        <header className="auth-header">
+          <h1 id="onboarding-status-title">Configuracion inicial</h1>
+          <p>{error || 'Validando configuracion inicial...'}</p>
+        </header>
+        {error && (
+          <button className="btn btn-primary auth-submit" type="button" onClick={onRetry} disabled={loading}>
+            {loading ? 'Validando...' : 'Reintentar'}
+          </button>
+        )}
+      </section>
     </div>
   );
 }
@@ -990,6 +1013,19 @@ function App() {
     userPermissions,
     userRole,
   } = useAppSession();
+  const shouldCheckOnboarding = !authLoading && !isAuthenticated;
+  const {
+    checked: onboardingChecked,
+    error: onboardingError,
+    loading: onboardingLoading,
+    requiresSetup,
+    refresh: refreshOnboardingStatus,
+  } = useOnboardingStatus({
+    enabled: shouldCheckOnboarding,
+  });
+  const handleSetupComplete = useCallback(async () => {
+    await refreshOnboardingStatus();
+  }, [refreshOnboardingStatus]);
 
   if (authLoading) {
     return (
@@ -1000,11 +1036,45 @@ function App() {
   }
 
   if (!isAuthenticated) {
+    if (!onboardingChecked || onboardingLoading) {
+      return (
+        <OnboardingStatusFallback
+          error=""
+          loading={onboardingLoading}
+          onRetry={refreshOnboardingStatus}
+        />
+      );
+    }
+
+    if (onboardingError) {
+      return (
+        <OnboardingStatusFallback
+          error={onboardingError}
+          loading={onboardingLoading}
+          onRetry={refreshOnboardingStatus}
+        />
+      );
+    }
+
+    if (requiresSetup) {
+      return (
+        <Router>
+          <Suspense fallback={<RouteLoadingFallback fullPage />}>
+            <Routes>
+              <Route path="/setup" element={<OnboardingSetup onSetupComplete={handleSetupComplete} />} />
+              <Route path="*" element={<Navigate to="/setup" replace />} />
+            </Routes>
+          </Suspense>
+        </Router>
+      );
+    }
+
     return (
       <Router>
         <Suspense fallback={<RouteLoadingFallback fullPage />}>
           <Routes>
             <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
+            <Route path="/setup" element={<Navigate to="/login" replace />} />
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </Suspense>

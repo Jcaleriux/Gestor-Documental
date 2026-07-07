@@ -54,6 +54,7 @@ Regla practica: las rutas no deben acumular negocio, los repositorios no deben d
 ## Modulos Funcionales Vigentes
 
 - Autenticacion y sesion: JWT, login, `me`, expiracion y rate limit.
+- Onboarding inicial: primer admin desde la app cuando no existen usuarios activos.
 - Seguridad: usuarios, roles, permisos, sociedades asignadas.
 - Documentos fiscales: facturas, notas de credito, tiquetes electronicos y mensajes de Hacienda.
 - Contabilizacion: datos contables, proveedores, centros de costo, respaldos, retenciones y pagos.
@@ -71,6 +72,8 @@ Publicos:
 - `GET /api`
 - `GET /api/health`
 - `GET /api/release-info`
+- `GET /api/onboarding/status`
+- `POST /api/onboarding/setup`
 - `POST /api/auth/login`
 
 Protegidos por `requireAuth` y `loadUserPermissions`:
@@ -123,7 +126,8 @@ Regla practica: las pantallas deben renderizar y coordinar vista; transporte, pa
 Fuentes actuales:
 
 - Baseline runtime: `backend/db/database/00_init.sql`.
-- Seed: `backend/db/database/seed.sql`.
+- Seed base: `backend/db/database/seed.sql` para permisos, roles y `roles_permisos`.
+- Seed demo opcional: `backend/db/database/demo_seed.sql`, ejecutado solo con `pnpm --dir backend run db:seed:demo`.
 - Migraciones nuevas: `backend/db/migrations/`.
 - Tracking: tabla `schema_migrations`.
 - SQL legacy: `backend/db/database/legacy/`.

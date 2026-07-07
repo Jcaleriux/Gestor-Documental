@@ -51,6 +51,28 @@ const countLegacyPasswordUsers = async (client) => {
   return rows[0]?.total || 0;
 };
 
+const countActiveUsuarios = async (client) => {
+  const { rows } = await getDb(client).query(
+    `SELECT COUNT(*)::int AS total
+     FROM usuarios
+     WHERE activo = true`
+  );
+
+  return rows[0]?.total || 0;
+};
+
+const countActiveAdmins = async (client) => {
+  const { rows } = await getDb(client).query(
+    `SELECT COUNT(*)::int AS total
+     FROM usuarios u
+     JOIN roles r ON r.id = u.rol_id
+     WHERE u.activo = true
+       AND r.codigo = 'admin'`
+  );
+
+  return rows[0]?.total || 0;
+};
+
 const listUsuarios = async (client) => {
   const { rows } = await getDb(client).query(
     `SELECT ${USER_PUBLIC_SELECT}
@@ -124,6 +146,8 @@ module.exports = {
   getByEmail,
   updatePassword,
   countLegacyPasswordUsers,
+  countActiveUsuarios,
+  countActiveAdmins,
   listUsuarios,
   getUsuarioById,
   createUsuario,

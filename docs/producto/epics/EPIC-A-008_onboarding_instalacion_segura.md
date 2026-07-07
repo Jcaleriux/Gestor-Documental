@@ -2,11 +2,11 @@
 
 ## Estado
 
-Propuesto
+Hecho para el alcance inicial de FEAT-011. El trabajo posterior de administracion avanzada de roles/permisos queda como historia separada.
 
 ## Problema
 
-El bootstrap actual crea usuarios demo con credenciales conocidas dentro de `seed.sql`. Eso sirve para desarrollo local, pero no es aceptable como flujo normal de instalacion porque una base limpia deberia quedar sin usuarios reales hasta que el primer administrador se registre desde la app.
+Antes de FEAT-011, el bootstrap creaba usuarios demo con credenciales conocidas dentro de `seed.sql`. Eso servia para desarrollo local, pero no era aceptable como flujo normal de instalacion porque una base limpia debia quedar sin usuarios reales hasta que el primer administrador se registrara desde la app.
 
 Al mismo tiempo, el sistema necesita conservar un catalogo minimo de roles y permisos para que el primer usuario pueda recibir `admin` y `acceso_total` sin depender de ediciones manuales en SQL.
 
@@ -55,11 +55,12 @@ Para FEAT-011 conviene mantener el catalogo base en SQL porque el sistema necesi
 
 ## Nota Sobre Smoke Checks
 
-`SMOKE_USER_EMAIL` y `SMOKE_USER_PASSWORD` son variables de entorno usadas por los smoke checks de release para iniciar sesion y probar endpoints protegidos. Hoy el script puede caer a credenciales demo por defecto; con FEAT-011 eso debe cambiar para que cada entorno entregue sus propias credenciales o, si la base esta limpia, se valide explicitamente que el onboarding esta pendiente.
+`SMOKE_USER_EMAIL` y `SMOKE_USER_PASSWORD` son variables de entorno usadas por los smoke checks de release para iniciar sesion y probar endpoints protegidos. El script ya no cae a credenciales demo por defecto: cada entorno configurado debe entregar sus propias credenciales o, si la base esta limpia, se valida explicitamente que el onboarding esta pendiente.
 
 ## Historias candidatas
 
-- FEAT-011: Onboarding inicial sin usuarios seed.
+- FEAT-011: Onboarding inicial sin usuarios seed. Estado: `Hecho`.
+- Historia futura: administracion avanzada de roles/permisos desde UI.
 
 ## Riesgos
 

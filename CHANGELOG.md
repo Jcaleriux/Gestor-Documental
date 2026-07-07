@@ -10,6 +10,10 @@ Regla actual:
 
 ## [Unreleased]
 
+### Added
+
+- Onboarding inicial para crear el primer admin desde la app, sin usuarios seed por defecto.
+
 ### Planned first production release
 
 - Target version: `1.0.0`

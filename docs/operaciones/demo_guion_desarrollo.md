@@ -47,7 +47,17 @@ Si vas a subir o revisar archivos manualmente antes de la demo, esas son las car
 
 ## Usuarios Recomendados Para La Demo
 
-Si la base fue inicializada con seed, puedes usar:
+El flujo normal de una base limpia no crea usuarios demo. Para una demo rapida tienes dos opciones:
+
+1. Crear el primer admin desde la pantalla de configuracion inicial y luego crear los usuarios necesarios desde la app.
+2. Cargar usuarios demo de forma explicita:
+
+```bash
+cd backend
+npm run db:seed:demo
+```
+
+Si usas el seed demo opcional, puedes usar:
 
 - `admin@sendadocs.local`
 - `contabilidad.jefe@sendadocs.local`
@@ -55,7 +65,7 @@ Si la base fue inicializada con seed, puedes usar:
 - `gerencia.contable@sendadocs.local`
 - `gerencia.financiera@sendadocs.local`
 
-Password seed:
+Password demo:
 
 - `SendaDocs2026!`
 
@@ -117,6 +127,8 @@ Texto sugerido:
 Usuario sugerido:
 
 - `admin@sendadocs.local`
+
+Si no cargaste seed demo, usa el admin creado desde la pantalla de configuracion inicial.
 
 Mostrar:
 
@@ -294,7 +306,8 @@ Fallbacks recomendados:
 
 - backend dev arriba
 - frontend dev arriba
-- login probado con cada usuario demo
+- si se requiere demo multirol, `npm run db:seed:demo` ejecutado explicitamente
+- login probado con cada usuario demo o usuario creado manualmente
 - sociedad demo seleccionada y recordada
 - factura demo ya localizada
 - tramite demo ya localizado

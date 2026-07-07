@@ -56,6 +56,12 @@ const buildLocalPreproductionEnvTemplate = ({
     'WATCHER_AWF_STABILITY_MS=2000',
     'WATCHER_AWF_POLL_MS=100',
     '',
+    '# Release smoke checks',
+    'SMOKE_USER_EMAIL=',
+    'SMOKE_USER_PASSWORD=',
+    'SMOKE_SOCIEDAD_ID=',
+    'SMOKE_FACTURAS_PAGE_SIZE=5',
+    '',
   ].join('\n');
 };
 
@@ -117,6 +123,7 @@ const renderSetupSummary = (result) => {
     '- Crear o confirmar una base separada, por ejemplo sendadocs_preprod.',
     '- Ejecutar: pnpm --dir backend run preprod:db:migrate',
     '- Ejecutar: pnpm --dir backend run preprod:readiness',
+    '- Si el entorno ya tiene usuarios, configurar SMOKE_USER_EMAIL y SMOKE_USER_PASSWORD antes de preprod:smoke.',
     '- Levantar backend con: pnpm --dir backend run preprod:start',
     '- Para frontend local tipo release: pnpm --dir frontend run build && pnpm --dir frontend run preview -- --host 127.0.0.1 --port 4173',
   ].join('\n');

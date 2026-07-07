@@ -160,10 +160,37 @@ const registrarPagoRetencionSchema = Joi.object({
   usuario: Joi.string().allow('', null)
 });
 
+const STRONG_PASSWORD_MESSAGE = 'La contrasena debe tener al menos 12 caracteres e incluir mayuscula, minuscula, numero y simbolo';
+
+const validateStrongPassword = (value, helpers) => {
+  const password = String(value || '');
+  const hasRequiredMix = /[a-z]/.test(password)
+    && /[A-Z]/.test(password)
+    && /\d/.test(password)
+    && /[^A-Za-z0-9]/.test(password);
+
+  if (!hasRequiredMix) {
+    return helpers.error('password.weak');
+  }
+
+  return value;
+};
+
+const strongPasswordSchema = Joi.string()
+  .min(12)
+  .max(255)
+  .custom(validateStrongPassword, 'strong password validation')
+  .messages({
+    'password.weak': STRONG_PASSWORD_MESSAGE,
+    'string.min': STRONG_PASSWORD_MESSAGE,
+    'string.max': 'La contrasena no puede exceder 255 caracteres',
+    'string.empty': 'La contrasena es requerida',
+  });
+
 const createUsuarioSchema = Joi.object({
   nombre: Joi.string().trim().min(2).max(100).required(),
   email: Joi.string().trim().email({ tlds: { allow: false } }).max(100).required(),
-  password: Joi.string().min(8).max(255).required(),
+  password: strongPasswordSchema.required(),
   rol_id: Joi.number().integer().positive().required(),
   activo: Joi.boolean().optional()
 });
@@ -173,7 +200,13 @@ const updateUsuarioSchema = Joi.object({
   email: Joi.string().trim().email({ tlds: { allow: false } }).max(100).required(),
   rol_id: Joi.number().integer().positive().required(),
   activo: Joi.boolean().optional(),
-  password: Joi.string().min(8).max(255).allow('', null)
+  password: strongPasswordSchema.allow('', null)
+});
+
+const onboardingSetupSchema = Joi.object({
+  nombre: Joi.string().trim().min(2).max(100).required(),
+  email: Joi.string().trim().email({ tlds: { allow: false } }).max(100).required(),
+  password: strongPasswordSchema.required()
 });
 
 const setUsuarioSociedadesSchema = Joi.object({
@@ -425,6 +458,7 @@ module.exports = {
   registrarPagoRetencionSchema,
   createUsuarioSchema,
   updateUsuarioSchema,
+  onboardingSetupSchema,
   setUsuarioSociedadesSchema,
   updateUserPreferencesSchema,
   uploadUserAvatarSchema,

@@ -21,7 +21,18 @@ const getRoleById = async (roleId, client) => {
   return rows[0] || null;
 };
 
+const getRoleByCodigo = async (codigo, client) => {
+  const { rows } = await getDb(client).query(
+    `SELECT id, codigo, nombre, descripcion, nivel_jerarquia
+     FROM roles
+     WHERE codigo = $1`,
+    [codigo]
+  );
+  return rows[0] || null;
+};
+
 module.exports = {
   listRoles,
-  getRoleById
+  getRoleById,
+  getRoleByCodigo
 };

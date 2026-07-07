@@ -49,6 +49,70 @@ Este catalogo documenta los endpoints de mayor riesgo operativo y de mantenimien
 }
 ```
 
+## Onboarding
+
+Fuente: `backend/routes/onboarding.js`, `backend/services/onboardingUseCases.js`.
+
+Estos endpoints son publicos porque existen antes de que haya usuarios. `POST /api/onboarding/setup` se bloquea en backend si ya existe algun usuario activo o admin activo.
+
+| Metodo | Endpoint | Auth | Permiso | Descripcion | Tests relacionados |
+| --- | --- | --- | --- | --- | --- |
+| `GET` | `/api/onboarding/status` | No | Publico | Indica si una instalacion limpia requiere setup inicial. | `onboardingRoutes.test.js`, `onboardingUseCases.test.js` |
+| `POST` | `/api/onboarding/setup` | No | Publico condicionado | Crea el primer usuario admin solo si el sistema aun no fue configurado. | `onboardingRoutes.test.js`, `onboardingUseCases.test.js` |
+
+### GET /api/onboarding/status
+
+Response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "requiresSetup": true,
+    "setupAllowed": true
+  }
+}
+```
+
+### POST /api/onboarding/setup
+
+Request:
+
+```json
+{
+  "nombre": "Admin Principal",
+  "email": "admin@empresa.local",
+  "password": "ClaveFuerte2026!"
+}
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": 1,
+      "nombre": "Admin Principal",
+      "email": "admin@empresa.local",
+      "rol_codigo": "admin",
+      "activo": true
+    },
+    "status": {
+      "requiresSetup": false,
+      "setupAllowed": false
+    }
+  }
+}
+```
+
+Notas:
+
+- No retorna token ni autologuea.
+- La password debe tener al menos 12 caracteres e incluir mayuscula, minuscula, numero y simbolo.
+- Si el sistema ya fue configurado retorna `409`.
+
 ## Auth
 
 Fuente: `backend/routes/auth.js`, `backend/services/authService.js`.
@@ -64,8 +128,8 @@ Request:
 
 ```json
 {
-  "email": "admin@sendadocs.local",
-  "password": "SendaDocs2026!"
+  "email": "admin@empresa.local",
+  "password": "ClaveFuerte2026!"
 }
 ```
 
@@ -78,11 +142,11 @@ Response:
     "user": {
       "id": 1,
       "nombre": "Admin",
-      "email": "admin@sendadocs.local",
+      "email": "admin@empresa.local",
       "rol": 1,
-      "rol_codigo": "ADMIN",
+      "rol_codigo": "admin",
       "rol_nombre": "Administrador",
-      "permissions": ["DOCUMENTOS_VER"]
+      "permissions": ["acceso_total"]
     },
     "token": "jwt"
   }
@@ -106,9 +170,9 @@ Response:
     "user": {
       "id": 1,
       "nombre": "Admin",
-      "email": "admin@sendadocs.local",
+      "email": "admin@empresa.local",
       "rol": 1,
-      "rol_codigo": "ADMIN",
+      "rol_codigo": "admin",
       "rol_nombre": "Administrador"
     }
   }
@@ -447,7 +511,7 @@ Request:
 Notas:
 
 - `password` acepta vacio o `null` en actualizacion para conservar la clave vigente.
-- Crear usuario requiere password de 8 a 255 caracteres.
+- Crear usuario requiere password de 12 a 255 caracteres con mayuscula, minuscula, numero y simbolo.
 
 ### PUT /api/usuarios/:id/sociedades
 

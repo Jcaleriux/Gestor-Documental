@@ -38,38 +38,51 @@ function Login({ onLoginSuccess }) {
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: 'auto', padding: '20px' }}>
-      <h2>Login</h2>
-      <form onSubmit={handleLogin}>
-        <div style={{ marginBottom: '10px' }}>
-          <label>Email:</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{ width: '100%', padding: '8px' }}
-          />
+    <div className="auth-page">
+      <section className="auth-card" aria-labelledby="login-title">
+        <div className="auth-brand">
+          <img src="/logo-horizontal.svg" alt="SendaDocs" className="auth-logo" />
         </div>
-        <div style={{ marginBottom: '10px' }}>
-          <label>Contrasena:</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{ width: '100%', padding: '8px' }}
-          />
-        </div>
-        <button className="btn btn-primary" type="submit" disabled={loading} style={{ width: '100%', padding: '10px' }}>
-          {loading ? 'Cargando...' : 'Iniciar sesion'}
-        </button>
-      </form>
-      {message && (
-        <p style={{ marginTop: '10px', color: message.toLowerCase().includes('exitoso') ? 'green' : 'red' }}>
-          {message}
-        </p>
-      )}
+
+        <header className="auth-header">
+          <h1 id="login-title">Inicio de sesion</h1>
+          <p>Ingresa con las credenciales asignadas por administracion.</p>
+        </header>
+
+        <form className="auth-form" onSubmit={handleLogin}>
+          <label className="auth-field">
+            <span>Email</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+            />
+          </label>
+
+          <label className="auth-field">
+            <span>Contrasena</span>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="current-password"
+            />
+          </label>
+
+          <button className="btn btn-primary auth-submit" type="submit" disabled={loading}>
+            {loading ? 'Cargando...' : 'Iniciar sesion'}
+          </button>
+        </form>
+
+        {message && (
+          <p className={`auth-message ${message.toLowerCase().includes('exitoso') ? 'success' : 'error'}`} role="status">
+            {message}
+          </p>
+        )}
+      </section>
     </div>
   );
 }
