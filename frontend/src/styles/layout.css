@@ -300,8 +300,12 @@
   transform: translateY(-50%) rotate(45deg);
 }
 
-.sidebar-footer {
+.sidebar-footer-zone {
   margin-top: auto;
+  position: relative;
+}
+
+.sidebar-footer {
   display: flex;
   gap: 10px;
   align-items: center;
@@ -314,6 +318,98 @@
   width: 100%;
   cursor: pointer;
   transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.theme-discovery-tooltip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 10px);
+  z-index: 65;
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-lg);
+  background: var(--app-surface-elevated);
+  color: var(--app-text);
+  box-shadow: var(--app-shadow-lg);
+  padding: 12px;
+}
+
+.theme-discovery-tooltip::after {
+  content: "";
+  position: absolute;
+  left: 22px;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  border-right: 1px solid var(--app-border);
+  border-bottom: 1px solid var(--app-border);
+  background: var(--app-surface-elevated);
+  transform: rotate(45deg);
+}
+
+.theme-discovery-eyebrow {
+  color: var(--app-primary);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.theme-discovery-title {
+  margin-top: 3px;
+  color: var(--app-text);
+  font-size: 0.86rem;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.theme-discovery-tooltip p {
+  margin: 5px 0 0;
+  color: var(--app-muted);
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.theme-discovery-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.theme-discovery-actions button {
+  border-radius: var(--app-radius-sm);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  padding: 7px 9px;
+}
+
+.theme-discovery-secondary {
+  border: 1px solid var(--app-border);
+  background: var(--app-surface-muted);
+  color: var(--app-text-secondary);
+}
+
+.theme-discovery-secondary:hover,
+.theme-discovery-secondary:focus-visible {
+  background: var(--app-hover);
+  border-color: var(--app-border-strong);
+  color: var(--app-text);
+}
+
+.theme-discovery-primary {
+  border: 1px solid var(--app-primary-strong);
+  background: var(--app-primary-strong);
+  color: var(--app-primary-contrast);
+}
+
+.theme-discovery-primary:hover,
+.theme-discovery-primary:focus-visible {
+  filter: brightness(1.04);
 }
 
 .sidebar-footer:hover,

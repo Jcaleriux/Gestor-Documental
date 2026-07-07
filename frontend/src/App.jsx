@@ -16,6 +16,8 @@ import {
 import { buildNavigationSections } from './app/buildNavigationSections.js';
 import { useAppSession } from './hooks/app/useAppSession.js';
 import LoadingState from './components/common/LoadingState.jsx';
+import NotificationCenter from './components/notifications/NotificationCenter.jsx';
+import ThemeDiscoveryTooltip from './components/ThemeDiscoveryTooltip.jsx';
 import UserSettingsModal from './components/UserSettingsModal.jsx';
 import {
   deleteUserAvatar,
@@ -29,6 +31,10 @@ import {
   readUserPreferences,
   saveUserPreferences,
 } from './utils/userPreferences.js';
+import {
+  markThemeDiscoveryTipDismissed,
+  shouldShowThemeDiscoveryTip,
+} from './utils/themeDiscoveryTip.js';
 import './styles/app.css';
 
 const Dashboard = lazy(() => import('./components/Dashboard.jsx'));
@@ -399,6 +405,14 @@ function AuthenticatedAppShell({
     authUser,
     buildInitialUserProfileState,
   );
+  const themeDiscoveryUser = useMemo(() => ({
+    id: authUser?.id,
+    email: authUser?.email,
+    usuario: authUser?.usuario,
+  }), [authUser?.email, authUser?.id, authUser?.usuario]);
+  const [themeDiscoveryVisible, setThemeDiscoveryVisible] = useState(
+    () => shouldShowThemeDiscoveryTip(themeDiscoveryUser),
+  );
   const profilePhotoObjectUrlRef = useRef('');
   const userPreferences = userProfileState.preferences;
   const profilePhotoPreviewUrl = userProfileState.profilePhotoPreviewUrl;
@@ -591,10 +605,16 @@ function AuthenticatedAppShell({
     });
   }, []);
 
+  const dismissThemeDiscoveryTooltip = useCallback(() => {
+    markThemeDiscoveryTipDismissed(themeDiscoveryUser);
+    setThemeDiscoveryVisible(false);
+  }, [themeDiscoveryUser]);
+
   const openUserSettings = useCallback(() => {
     hideSidebarTooltip();
+    dismissThemeDiscoveryTooltip();
     setUserSettingsOpen(true);
-  }, [hideSidebarTooltip]);
+  }, [dismissThemeDiscoveryTooltip, hideSidebarTooltip]);
 
   const closeUserSettings = useCallback(() => {
     setUserSettingsOpen(false);
@@ -644,6 +664,8 @@ function AuthenticatedAppShell({
       },
     });
   }, [expandedSections, location.pathname, navigationSections]);
+  const shouldShowThemeDiscovery = themeDiscoveryVisible
+    && (isMobileView ? mobileSidebarOpen : !sidebarCollapsed);
 
   return (
     <div className="app-shell">
@@ -757,28 +779,36 @@ function AuthenticatedAppShell({
           })}
         </div>
 
-        <button
-          type="button"
-          className="sidebar-footer"
-          onClick={openUserSettings}
-          aria-label={`Abrir configuracion de usuario: ${userName} - ${userRole}`}
-          onMouseEnter={(event) => showSidebarTooltip(event, `${userName} - ${userRole}`)}
-          onMouseLeave={hideSidebarTooltip}
-          onFocus={(event) => showSidebarTooltip(event, `${userName} - ${userRole}`)}
-          onBlur={hideSidebarTooltip}
-        >
-          <div className="avatar">
-            {profilePhotoPreviewUrl ? (
-              <img src={profilePhotoPreviewUrl} alt="" />
-            ) : (
-              userInitials
-            )}
-          </div>
-          <div className="sidebar-footer-copy">
-            <div className="user-name">{userName}</div>
-            <div className="user-role">{userRole}</div>
-          </div>
-        </button>
+        <div className="sidebar-footer-zone">
+          {shouldShowThemeDiscovery && (
+            <ThemeDiscoveryTooltip
+              onDismiss={dismissThemeDiscoveryTooltip}
+              onOpenSettings={openUserSettings}
+            />
+          )}
+          <button
+            type="button"
+            className="sidebar-footer"
+            onClick={openUserSettings}
+            aria-label={`Abrir configuracion de usuario: ${userName} - ${userRole}`}
+            onMouseEnter={(event) => showSidebarTooltip(event, `${userName} - ${userRole}`)}
+            onMouseLeave={hideSidebarTooltip}
+            onFocus={(event) => showSidebarTooltip(event, `${userName} - ${userRole}`)}
+            onBlur={hideSidebarTooltip}
+          >
+            <div className="avatar">
+              {profilePhotoPreviewUrl ? (
+                <img src={profilePhotoPreviewUrl} alt="" />
+              ) : (
+                userInitials
+              )}
+            </div>
+            <div className="sidebar-footer-copy">
+              <div className="user-name">{userName}</div>
+              <div className="user-role">{userRole}</div>
+            </div>
+          </button>
+        </div>
       </aside>
 
       <UserSettingsModal
@@ -827,10 +857,10 @@ function AuthenticatedAppShell({
                 ))}
               </select>
             </div>
-            <button className="icon-btn" type="button" aria-label="Notificaciones">
-              <span className="badge">1</span>
-              N
-            </button>
+            <NotificationCenter
+              sociedadId={sociedadId}
+              selectedSociedadName={selectedSociedad?.nombre_proyecto || selectedSociedad?.razon_social || ''}
+            />
             <button className="btn btn-sm btn-outline-secondary" type="button" onClick={handleLogout}>
               Cerrar sesión
             </button>
