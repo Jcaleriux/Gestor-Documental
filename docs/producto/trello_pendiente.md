@@ -28,6 +28,9 @@ Este archivo contiene solo trabajo vivo para cargar en Trello. No incluye epics,
 - `reportes`
 - `perfil`
 - `multiempresa`
+- `auth`
+- `seguridad`
+- `onboarding`
 
 ## Epics Vivos
 
@@ -63,6 +66,16 @@ Tarjetas pendientes:
 
 - `TECH-002`
 - `TECH-003`
+
+### EPIC-A-008 Onboarding E Instalacion Segura
+
+Estado sugerido: `Propuesto`
+
+Objetivo: permitir instalaciones limpias sin usuarios demo por defecto, con primer admin creado desde la app, seed demo opcional y smoke checks sin credenciales hardcodeadas.
+
+Tarjetas pendientes:
+
+- `FEAT-011`
 
 ## Tarjetas Pendientes
 
@@ -167,6 +180,47 @@ Logs/errores mas utiles para endpoints criticos, sin introducir tooling pesado i
 
 Validacion sugerida:
 Forzar errores controlados y confirmar que la respuesta al usuario y los logs ayudan a diagnosticar.
+
+### FEAT-011 Onboarding inicial sin usuarios seed
+
+- Tipo: `feature`
+- Prioridad: `P0`
+- Estado inicial Trello: `Refinamiento`
+- Epic: `EPIC-A-008`
+- Area: auth, onboarding, usuarios, backend, frontend, DB, operacion
+
+Problema:
+El seed normal crea usuarios demo con credenciales conocidas. Eso sirve para desarrollo o demo controlada, pero no debe ser el camino normal de una instalacion limpia.
+
+Resultado esperado:
+Una base nueva conserva catalogos base de roles/permisos, pero no crea usuarios demo por defecto. La app detecta que falta setup, permite crear el primer usuario `admin` desde UI, y despues obliga a iniciar sesion normalmente.
+
+Alcance inicial:
+- mantener roles, permisos y `roles_permisos` base en SQL
+- separar usuarios demo hacia un seed demo opcional y explicito
+- agregar `GET /api/onboarding/status` publico
+- agregar `POST /api/onboarding/setup` publico solo cuando no exista admin/usuario activo
+- crear el primer admin con `acceso_total` y password hasheada
+- no exigir sociedades durante el setup inicial
+- redirigir a login despues de crear el primer admin, sin autologin
+- bloquear registro publico despues del setup
+- actualizar smoke checks para no usar credenciales demo por defecto
+- actualizar README, endpoints, demo guide y requerimientos vigentes
+
+Fuera de alcance inicial:
+- registro publico abierto
+- administracion completa de roles/permisos desde UI
+- permisos por usuario que sobreescriban el rol
+- MFA o recuperacion de password
+- preservar instalaciones de prueba existentes
+
+Decisiones pendientes o a confirmar:
+- definir comando/flujo exacto para ejecutar el seed demo opcional
+- definir politica concreta de password fuerte
+- convertir administracion avanzada de roles/permisos en una historia posterior
+
+Validacion sugerida:
+Probar una base limpia sin usuarios, completar setup, confirmar que el primer usuario queda como admin con `acceso_total`, iniciar sesion manualmente, crear sociedad desde la app, y verificar que el endpoint de setup queda bloqueado despues.
 
 ## No Cargar En Trello Como Pendiente
 
