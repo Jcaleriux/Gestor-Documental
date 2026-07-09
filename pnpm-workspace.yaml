@@ -11,4 +11,6 @@ minimumReleaseAgeStrict: true
 
 overrides:
   rollup: ^4.59.0
+  qs: ^6.15.2
+  uuid: ^11.1.1
 strictDepBuilds: true
