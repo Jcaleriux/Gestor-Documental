@@ -1,8 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import * as XLSX from 'xlsx';
 import {
   buildFacturasReportRows,
+  buildFacturasSimpleReportRows,
   downloadFacturasReportExcel,
+  downloadFacturasSimpleReportExcel,
   REPORT_COLUMNS
 } from '../../src/utils/facturasExcelReport.js';
 import { createMockFn } from '../utils/mockFn.js';
@@ -150,6 +153,113 @@ test('downloadFacturasReportExcel genera HTML escapado y nombre seguro', async (
     const html = await blob.text();
     assert.match(html, /Proveedor &lt;QA&gt; &amp; Asociados/);
     assert.match(html, /mso-number-format:'\\@';/);
+  } finally {
+    dom.restore();
+  }
+});
+
+test('buildFacturasSimpleReportRows replica las columnas del reporte simple y separa IVA por tarifa', () => {
+  const rows = buildFacturasSimpleReportRows({
+    facturas: [
+      {
+        consecutivo: '00100001010000012345',
+        fecha_emision: '2026-03-10T12:00:00.000Z',
+        emisor: {
+          Nombre: 'Proveedor 1',
+          Identificacion: { Numero: '3101123456' }
+        },
+        resumen: {
+          TotalComprobante: '114.5',
+          TotalDescuentos: '1.5'
+        },
+        xml_completo: {
+          DetalleServicio: {
+            LineaDetalle: [
+              { Impuesto: { Tarifa: '13.00', Monto: '13' } },
+              { Impuesto: { Tarifa: '1.00', Monto: '1' } }
+            ]
+          }
+        }
+      }
+    ],
+    notasCredito: [
+      {
+        numero_consecutivo: 'NC-100',
+        fecha_emision: '2026-03-12T09:00:00.000Z',
+        emisor: {
+          nombre: 'Nota Proveedor',
+          identificacion: { numero: '3101000001' }
+        },
+        resumen: {
+          TotalComprobante: 5000,
+          TotalDescuentos: 0
+        }
+      }
+    ],
+    mensajesHacienda: []
+  });
+
+  assert.equal(rows.length, 2);
+  assert.deepEqual(Object.keys(rows[0]), [
+    'DOCUMENTO',
+    'FECHA',
+    'PROVEEDOR',
+    'FACTURA',
+    'IVA 13%',
+    'IVA 1%',
+    'DEVOLUCIONES / DESCUENTOS',
+    'SUBTOTAL',
+    'TOTAL A PAGAR',
+    'CEDULA   JURIDICA'
+  ]);
+  assert.equal(rows[0].DOCUMENTO, 'Nota de credito');
+  assert.equal(rows[1].DOCUMENTO, 'Factura');
+  assert.equal(rows[1].FACTURA, '00100001010000012345');
+  assert.equal(rows[1]['IVA 13%'], 13);
+  assert.equal(rows[1]['IVA 1%'], 1);
+  assert.equal(rows[1]['DEVOLUCIONES / DESCUENTOS'], 1.5);
+  assert.equal(rows[1].SUBTOTAL, 99);
+  assert.equal(rows[1]['TOTAL A PAGAR'], 114.5);
+  assert.equal(rows[1]['CEDULA   JURIDICA'], '3101123456');
+});
+
+test('downloadFacturasSimpleReportExcel genera archivo con nombre y columnas simples', async () => {
+  const dom = installDownloadDom();
+  try {
+    downloadFacturasSimpleReportExcel({
+      sociedadId: '18 / norte',
+      rows: [{
+        DOCUMENTO: 'Factura',
+        FECHA: '10/3/2026',
+        PROVEEDOR: 'Proveedor <QA> & Asociados',
+        FACTURA: '001',
+        'IVA 13%': 13,
+        'IVA 1%': 0,
+        'DEVOLUCIONES / DESCUENTOS': 0,
+        SUBTOTAL: 100,
+        'TOTAL A PAGAR': 113,
+        'CEDULA   JURIDICA': '3101123456'
+      }]
+    });
+
+    assert.equal(dom.link.download, 'reporte_facturas_simple_18___norte_2026-03-20.xlsx');
+    const blob = URL.createObjectURL.calls[0][0];
+    const workbook = XLSX.read(await blob.arrayBuffer(), { type: 'array' });
+    const worksheet = workbook.Sheets['Reporte simple'];
+    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+    assert.deepEqual(rows[0], [
+      'DOCUMENTO',
+      'FECHA',
+      'PROVEEDOR',
+      'FACTURA',
+      'IVA 13%',
+      'IVA 1%',
+      'DEVOLUCIONES / DESCUENTOS',
+      'SUBTOTAL',
+      'TOTAL A PAGAR',
+      'CEDULA   JURIDICA'
+    ]);
+    assert.equal(rows[1][2], 'Proveedor <QA> & Asociados');
   } finally {
     dom.restore();
   }

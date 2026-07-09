@@ -159,3 +159,54 @@ test('useFacturasReport falla con un mensaje claro si el backend devuelve el con
     'El backend de facturas devolvio un formato no compatible. Reinicia o actualiza la API para usar el listado paginado.'
   );
 });
+
+test('useFacturasReport permite exportar el reporte simple con su generador dedicado', async () => {
+  const listAllFacturas = createMockFn(async () => ([{ id: 1, ruta_xml: '/tmp/f1.xml' }]));
+  const listNotasCredito = createMockFn(async () => ({
+    data: {
+      success: true,
+      data: []
+    }
+  }));
+  const listMensajesHacienda = createMockFn(async () => ({
+    data: {
+      success: true,
+      data: []
+    }
+  }));
+  const getFacturaManifest = createMockFn(async () => ({ data: { received_time: '2026-03-01T10:00:00Z' } }));
+  const buildReportRows = createMockFn(() => [{ tipo: 'completo' }]);
+  const buildSimpleReportRows = createMockFn(() => [{ tipo: 'simple' }]);
+  const downloadReport = createMockFn();
+  const downloadSimpleReport = createMockFn();
+
+  const hook = createHookHarness({
+    hook: useFacturasReportHarness,
+    initialProps: {
+      sociedadId: 10,
+      query: { page: 1, pageSize: 50 },
+      filterNotaCreditoForReport: () => true,
+      dependencies: {
+        api: {
+          listAllFacturas,
+          listNotasCredito,
+          listMensajesHacienda,
+          getFacturaManifest
+        },
+        buildReportRows,
+        buildSimpleReportRows,
+        downloadReport,
+        downloadSimpleReport
+      }
+    }
+  });
+
+  await hook.result.exportReport('simple');
+  await hook.flush({ cycles: 6 });
+
+  assert.equal(buildReportRows.calls.length, 0);
+  assert.equal(buildSimpleReportRows.calls.length, 1);
+  assert.equal(downloadReport.calls.length, 0);
+  assert.equal(downloadSimpleReport.calls.length, 1);
+  assert.equal(hook.result.reportMessage, 'Reporte generado con 1 registros filtrados.');
+});
