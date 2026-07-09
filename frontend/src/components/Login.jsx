@@ -5,8 +5,9 @@ import axios from 'axios';
 const PERSONAL_LINKS = [
   { label: 'GitHub', href: 'https://github.com/Jcaleriux', icon: 'github' },
   { label: 'LinkedIn', href: 'https://www.linkedin.com/in/josearamirezcalero/', icon: 'linkedin' },
-  { label: 'Instagram', href: 'https://www.instagram.com/josecalerodev/', icon: 'instagram' },
+  { label: 'Instagram', href: 'https://www.instagram.com/josecaler0/', icon: 'instagram' },
   { label: 'Correo', href: 'mailto:calero2121@hotmail.com', icon: 'mail' },
+  { label: 'Sitio web', href: 'https://jcaleriux.github.io/jcaleriux/index.html', icon: 'globe' },
 ];
 
 function FooterIcon({ icon }) {
@@ -35,6 +36,12 @@ function FooterIcon({ icon }) {
         <svg viewBox="0 0 16 16" aria-hidden="true">
           <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v.217l-8 4.8-8-4.8z" />
           <path d="M0 4.383v7.417a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4.383l-7.469 4.482a1 1 0 0 1-1.062 0z" />
+        </svg>
+      );
+    case 'globe':
+      return (
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0m4.938 6.5h-2.09a12.6 12.6 0 0 0-.52-2.437A6.52 6.52 0 0 1 12.938 6.5M8 1.5c.56 0 1.347.96 1.79 2.5H6.21C6.653 2.46 7.44 1.5 8 1.5M1.5 8c0-.52.063-1.025.18-1.5h2.372A13.7 13.7 0 0 0 4 8c0 .517.018 1.02.052 1.5H1.68A6.5 6.5 0 0 1 1.5 8m1.562 2.5h2.09c.12.852.3 1.677.52 2.437A6.52 6.52 0 0 1 3.062 10.5M5.152 6.5h5.696c.04.48.062.983.062 1.5s-.022 1.02-.062 1.5H5.152A12.2 12.2 0 0 1 5.09 8c0-.517.022-1.02.062-1.5m.848 4h3.58c-.443 1.54-1.23 2.5-1.79 2.5s-1.347-.96-1.79-2.5m0-5c.443-1.54 1.23-2.5 1.79-2.5s1.347.96 1.79 2.5zm4.328 7.437c.22-.76.4-1.585.52-2.437h2.09a6.52 6.52 0 0 1-2.61 2.437M11.948 9.5c.034-.48.052-.983.052-1.5s-.018-1.02-.052-1.5h2.372c.117.475.18.98.18 1.5s-.063 1.025-.18 1.5z" />
         </svg>
       );
     default:
@@ -147,9 +154,7 @@ function Login({ onLoginSuccess }) {
           ))}
         </div>
 
-        <p className="login-footer-copy">
-          Creado por Jose Ramirez 2026 ©
-        </p>
+        <p className="login-footer-copy">{'Creado por Jose Ramirez 2026 \u00A9'}</p>
       </footer>
     </main>
   );

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import {
   buildFacturasReportRows,
   buildFacturasSimpleReportRows,
@@ -226,7 +226,7 @@ test('buildFacturasSimpleReportRows replica las columnas del reporte simple y se
 test('downloadFacturasSimpleReportExcel genera archivo con nombre y columnas simples', async () => {
   const dom = installDownloadDom();
   try {
-    downloadFacturasSimpleReportExcel({
+    await downloadFacturasSimpleReportExcel({
       sociedadId: '18 / norte',
       rows: [{
         DOCUMENTO: 'Factura',
@@ -244,9 +244,12 @@ test('downloadFacturasSimpleReportExcel genera archivo con nombre y columnas sim
 
     assert.equal(dom.link.download, 'reporte_facturas_simple_18___norte_2026-03-20.xlsx');
     const blob = URL.createObjectURL.calls[0][0];
-    const workbook = XLSX.read(await blob.arrayBuffer(), { type: 'array' });
-    const worksheet = workbook.Sheets['Reporte simple'];
-    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(await blob.arrayBuffer());
+    const worksheet = workbook.getWorksheet('Reporte simple');
+    const rows = worksheet.getSheetValues().slice(1).map((row) => (
+      Array.isArray(row) ? row.slice(1) : row
+    ));
     assert.deepEqual(rows[0], [
       'DOCUMENTO',
       'FECHA',

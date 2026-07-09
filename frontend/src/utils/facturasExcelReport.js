@@ -431,33 +431,26 @@ const toExcelHtml = ({ rows, columns, textColumns }) => {
 </html>`;
 };
 
-const buildSimpleWorkbookBlob = ({ rows, columns }) => {
+const buildSimpleWorkbookBlob = async ({ rows, columns }) => {
+  const { default: ExcelJS } = await import('exceljs');
   const orderedRows = (Array.isArray(rows) ? rows : []).map((row) => (
     Object.fromEntries(columns.map((column) => [column, row?.[column] ?? '']))
   ));
-  const worksheet = XLSX.utils.json_to_sheet(orderedRows, {
-    header: columns,
-    skipHeader: false
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Reporte simple');
+  worksheet.columns = columns.map((column, index) => ({
+    header: column,
+    key: column,
+    width: [14, 14, 42, 24, 12, 12, 28, 14, 16, 18][index] || 18
+  }));
+  orderedRows.forEach((row) => {
+    worksheet.addRow(row);
   });
-  worksheet['!cols'] = [
-    { wch: 14 },
-    { wch: 14 },
-    { wch: 42 },
-    { wch: 24 },
-    { wch: 12 },
-    { wch: 12 },
-    { wch: 28 },
-    { wch: 14 },
-    { wch: 16 },
-    { wch: 18 }
-  ];
 
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Reporte simple');
-  const arrayBuffer = XLSX.write(workbook, {
-    type: 'array',
-    bookType: 'xlsx'
-  });
+  const headerRow = worksheet.getRow(1);
+  headerRow.font = { bold: true };
+
+  const arrayBuffer = await workbook.xlsx.writeBuffer();
 
   return new Blob(
     [arrayBuffer],
@@ -546,8 +539,8 @@ export const downloadFacturasReportExcel = ({
 export const downloadFacturasSimpleReportExcel = ({
   rows,
   sociedadId
-}) => {
-  const blob = buildSimpleWorkbookBlob({
+}) => (async () => {
+  const blob = await buildSimpleWorkbookBlob({
     rows,
     columns: SIMPLE_REPORT_COLUMNS
   });
@@ -561,10 +554,9 @@ export const downloadFacturasSimpleReportExcel = ({
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
-};
+})();
 
 export {
   COMPLETE_REPORT_COLUMNS as REPORT_COLUMNS,
   SIMPLE_REPORT_COLUMNS
 };
-import * as XLSX from 'xlsx';
