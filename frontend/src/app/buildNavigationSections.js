@@ -23,6 +23,13 @@ export const buildNavigationSections = ({
       items: [
         { id: 'facturas', label: 'Facturas', to: '/facturas', icon: 'facturas', visible: true },
         {
+          id: 'explorador-documentos',
+          label: 'Explorador de documentos',
+          to: '/explorador-documentos',
+          icon: 'facturas',
+          visible: canViewTramites || canEditContabilizacion,
+        },
+        {
           id: 'retenciones-pendientes',
           label: 'Retenciones pendientes',
           to: '/retenciones-pendientes',

@@ -112,6 +112,7 @@ const tramitesPagoRoutes = require('./routes/tramitesPago');
 const contabilizacionRoutes = require('./routes/contabilizacion');
 const contabilizacionMasivaRoutes = require('./routes/contabilizacionMasiva');
 const dashboardRoutes = require('./routes/dashboard');
+const exploradorDocumentosRoutes = require('./routes/exploradorDocumentos');
 const facturasRoutes = require('./routes/facturas');
 const pdfsPendientesRoutes = require('./routes/pdfsPendientes');
 const filesRoutes = require('./routes/files');
@@ -132,6 +133,7 @@ const reservasRoutes = require('./routes/reservas');
   contabilizacionRoutes,
   contabilizacionMasivaRoutes,
   dashboardRoutes,
+  exploradorDocumentosRoutes,
   facturasRoutes,
   pdfsPendientesRoutes,
   filesRoutes,

@@ -43,6 +43,10 @@ test('buildNavigationSections agrega secciones habilitadas por permisos sin mezc
     ['tramites'],
   );
   assert.deepEqual(
+    sections.find((section) => section.id === 'compras')?.items.map((item) => item.id),
+    ['facturas', 'explorador-documentos', 'retenciones-pendientes', 'notas-credito', 'tiquetes-electronicos'],
+  );
+  assert.deepEqual(
     sections.find((section) => section.id === 'ventas')?.items.map((item) => item.id),
     ['reservas'],
   );
@@ -53,6 +57,23 @@ test('buildNavigationSections agrega secciones habilitadas por permisos sin mezc
   assert.deepEqual(
     sections.find((section) => section.id === 'administracion')?.items.map((item) => item.id),
     ['sociedades', 'usuarios', 'proveedores', 'centros-costo'],
+  );
+});
+
+test('buildNavigationSections muestra explorador de documentos con lectura documental', () => {
+  const sections = buildNavigationSections({
+    canManageSociedades: false,
+    canManageUsers: false,
+    canUseOrdenesCompra: false,
+    canUseReservas: false,
+    canUseTablasPago: false,
+    canViewTramites: true,
+    canEditContabilizacion: false,
+  });
+
+  assert.deepEqual(
+    sections.find((section) => section.id === 'compras')?.items.map((item) => item.id),
+    ['facturas', 'explorador-documentos', 'retenciones-pendientes', 'notas-credito', 'tiquetes-electronicos'],
   );
 });
 
@@ -88,6 +109,7 @@ test('buildNavigationSections muestra herramientas contables solo con permiso de
     sections.find((section) => section.id === 'compras')?.items.map((item) => item.id),
     [
       'facturas',
+      'explorador-documentos',
       'retenciones-pendientes',
       'notas-credito',
       'tiquetes-electronicos',
