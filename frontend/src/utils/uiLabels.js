@@ -6,6 +6,8 @@ const FACTURAS_LABELS = {
   resetFiltersButton: 'Reiniciar filtros',
   exportReportButton: 'Exportar reporte',
   exportingReportButton: 'Generando reporte...',
+  exportReportCompleteOption: 'Reporte completo',
+  exportReportSimpleOption: 'Reporte simple',
   downloadSelectedPdfButton: 'Descargar PDF',
   downloadingSelectedPdfButton: 'Descargando PDF...',
   markVisibleButton: 'Marcar visibles',

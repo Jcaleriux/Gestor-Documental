@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useFacturas } from '../hooks/useFacturas.js';
 import { facturasApi } from '../services/facturasApi.js';
@@ -110,6 +110,8 @@ function Facturas({ sociedadId, canEditContabilizacion = false }) {
     ids: new Set(),
   }));
   const [selectedPdfLoading, setSelectedPdfLoading] = useState(false);
+  const [reportMenuOpen, setReportMenuOpen] = useState(false);
+  const reportMenuRef = useRef(null);
   const selectedFacturas = useMemo(
     () => (selectionState.scope === selectionScope ? selectionState.ids : new Set()),
     [selectionScope, selectionState],
@@ -195,6 +197,22 @@ function Facturas({ sociedadId, canEditContabilizacion = false }) {
       setActionError('');
     }
   }, [setActionError, sociedadId]);
+
+  useEffect(() => {
+    if (!reportMenuOpen) {
+      return undefined;
+    }
+
+    const handlePointerDown = (event) => {
+      if (reportMenuRef.current?.contains(event.target)) {
+        return;
+      }
+      setReportMenuOpen(false);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, [reportMenuOpen]);
 
   const visibleFacturaIds = useMemo(
     () => items.map((factura) => factura.id).filter(Boolean),
@@ -310,6 +328,11 @@ function Facturas({ sociedadId, canEditContabilizacion = false }) {
     }
   };
 
+  const handleExportReportOption = useCallback(async (reportType) => {
+    setReportMenuOpen(false);
+    await exportReport(reportType);
+  }, [exportReport]);
+
   const isInitialLoading = loading && items.length === 0 && !error;
   const hasBlockingError = !sociedadId || (error && items.length === 0);
 
@@ -390,14 +413,41 @@ function Facturas({ sociedadId, canEditContabilizacion = false }) {
               >
                 {FACTURAS_LABELS.resetFiltersButton}
               </button>
-              <button
-                className="btn btn-outline-secondary"
-                type="button"
-                onClick={exportReport}
-                disabled={!sociedadId || reportLoading}
+              <div
+                className={`factura-actions-menu facturas-report-menu${reportMenuOpen ? ' open' : ''}`}
+                data-factura-menu="true"
+                ref={reportMenuRef}
               >
-                {reportLoading ? FACTURAS_LABELS.exportingReportButton : FACTURAS_LABELS.exportReportButton}
-              </button>
+                <button
+                  className="btn btn-outline-secondary"
+                  type="button"
+                  onClick={() => setReportMenuOpen((current) => !current)}
+                  disabled={!sociedadId || reportLoading}
+                  aria-expanded={reportMenuOpen}
+                >
+                  {reportLoading ? FACTURAS_LABELS.exportingReportButton : FACTURAS_LABELS.exportReportButton}
+                </button>
+                {reportMenuOpen ? (
+                  <div className="factura-actions-popover facturas-report-popover" role="menu" data-factura-menu="true">
+                    <button
+                      type="button"
+                      className="factura-actions-item"
+                      role="menuitem"
+                      onClick={() => handleExportReportOption('complete')}
+                    >
+                      {FACTURAS_LABELS.exportReportCompleteOption}
+                    </button>
+                    <button
+                      type="button"
+                      className="factura-actions-item"
+                      role="menuitem"
+                      onClick={() => handleExportReportOption('simple')}
+                    >
+                      {FACTURAS_LABELS.exportReportSimpleOption}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
               {error && items.length > 0 ? (
                 <button
                   className="btn btn-outline-secondary"
