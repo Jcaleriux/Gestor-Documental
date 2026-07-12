@@ -5,6 +5,7 @@ Sistema web para gestion de facturas, procesamiento de XML, documentos y tramite
 ## Tabla de contenido
 
 - [Resumen](#resumen)
+- [Propiedad intelectual](#propiedad-intelectual)
 - [Arquitectura](#arquitectura)
 - [Estructura del repositorio](#estructura-del-repositorio)
 - [Documentacion funcional](#documentacion-funcional)
@@ -26,6 +27,21 @@ Sistema web para gestion de facturas, procesamiento de XML, documentos y tramite
 - Frontend React para operacion de facturas, tramites, proveedores y usuarios.
 - Bootstrap de base de datos desde SQL canonico (`00_init.sql` + `seed.sql`) sin usuarios demo por defecto.
 - Soporte de carga/lectura de documentos en filesystem con rutas normalizadas.
+
+## Propiedad intelectual
+
+Este repositorio corresponde a software propietario desarrollado por Jose Ramirez Calero.
+
+- Copyright (c) 2026 Jose Ramirez Calero.
+- Todos los derechos reservados.
+- La publicacion en GitHub no concede permiso de uso, copia, modificacion, redistribucion ni explotacion comercial.
+
+Revisar:
+
+- `LICENSE`
+- `COPYRIGHT.md`
+
+Si alguien desea usar el software, reutilizar partes del codigo o solicitar una licencia, debe contar con autorizacion expresa por escrito del autor.
 
 ## Arquitectura
 
