@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { usuariosApi } from '../../services/usuariosApi';
+import { isStrongPassword } from '../../utils/passwordPolicy';
 
 const EMPTY_FORM = {
   nombre: '',
@@ -120,7 +121,12 @@ export const useUsuariosAdminViewModel = () => {
 
       const password = form.password.trim();
       if (!isEditing && !password) {
-        setError('Password es requerido para crear el usuario.');
+        setError('La contrasena es requerida para crear el usuario.');
+        return false;
+      }
+
+      if (password && !isStrongPassword(password)) {
+        setError('La contrasena debe tener al menos 12 caracteres e incluir mayuscula, minuscula, numero y simbolo.');
         return false;
       }
 

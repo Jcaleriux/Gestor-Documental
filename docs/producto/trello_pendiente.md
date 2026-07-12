@@ -28,6 +28,9 @@ Este archivo contiene solo trabajo vivo para cargar en Trello. No incluye epics,
 - `reportes`
 - `perfil`
 - `multiempresa`
+- `auth`
+- `seguridad`
+- `onboarding`
 
 ## Epics Vivos
 
@@ -178,6 +181,7 @@ Estos items ya estan cerrados o son historicos:
 - `FEAT-008`
 - `FEAT-009`
 - `FEAT-010`
+- `FEAT-011`
 - `TECH-001`
 - `TECH-004`
 - `TECH-005`
@@ -185,3 +189,4 @@ Estos items ya estan cerrados o son historicos:
 - `TECH-007`
 - `EPIC-H-*`
 - `EPIC-A-004`
+- `EPIC-A-008`

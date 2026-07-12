@@ -14,10 +14,15 @@ const filesToCheck = [
   'config/runtime.js',
   'db/create_tables.js',
   'db/reset_schema.js',
+  'db/seed_demo.js',
   'db/check_structure.js',
   'db/migrationManager.js',
   'db/migrate.js',
   'db/migrate_status.js',
+  'routes/onboarding.js',
+  'services/onboardingService.js',
+  'services/onboardingUseCases.js',
+  'scripts/setup_local_preproduction.js',
   'scripts/release_smoke_checks.js',
 ];
 

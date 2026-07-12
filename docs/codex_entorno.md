@@ -157,14 +157,23 @@ cd C:\Jose\Gestor-Documental
 psql -U postgres -f backend\db\database\01_create_db.sql
 ```
 
-### Inicializar schema y seed
+### Inicializar schema y seed base
 
 ```powershell
 cd C:\Jose\Gestor-Documental\backend
 npm run db:reset
 ```
 
-Nota: este comando es destructivo sobre `public`.
+Nota: este comando es destructivo sobre `public`. Ejecuta el schema y el seed base de roles/permisos, pero no crea usuarios demo. En una base limpia, el primer admin se crea desde la pantalla de configuracion inicial de la app.
+
+### Cargar usuarios demo opcionales
+
+```powershell
+cd C:\Jose\Gestor-Documental\backend
+npm run db:seed:demo
+```
+
+Usar este comando solo para desarrollo o demos controladas. No forma parte del bootstrap normal.
 
 ### Aplicar migraciones versionadas pendientes
 

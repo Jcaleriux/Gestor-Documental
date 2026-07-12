@@ -15,6 +15,7 @@ import {
 } from './app/appShellState.js';
 import { buildNavigationSections } from './app/buildNavigationSections.js';
 import { useAppSession } from './hooks/app/useAppSession.js';
+import { useOnboardingStatus } from './hooks/app/useOnboardingStatus.js';
 import LoadingState from './components/common/LoadingState.jsx';
 import NotificationCenter from './components/notifications/NotificationCenter.jsx';
 import ThemeDiscoveryTooltip from './components/ThemeDiscoveryTooltip.jsx';
@@ -35,6 +36,10 @@ import {
   markThemeDiscoveryTipDismissed,
   shouldShowThemeDiscoveryTip,
 } from './utils/themeDiscoveryTip.js';
+import {
+  markFirstSociedadTipDismissed,
+  shouldShowFirstSociedadTip,
+} from './utils/firstSociedadTip.js';
 import './styles/app.css';
 
 const Dashboard = lazy(() => import('./components/Dashboard.jsx'));
@@ -55,6 +60,7 @@ const CentrosCosto = lazy(() => import('./components/CentrosCosto.jsx'));
 const TablasPagoIngenieria = lazy(() => import('./components/TablasPagoIngenieria.jsx'));
 const OrdenesCompraIngenieria = lazy(() => import('./components/OrdenesCompraIngenieria.jsx'));
 const ReservasOperaciones = lazy(() => import('./components/ReservasOperaciones.jsx'));
+const OnboardingSetup = lazy(() => import('./components/OnboardingSetup.jsx'));
 
 const SIDEBAR_COLLAPSED_KEY = 'sendadocs.sidebar.collapsed';
 const SIDEBAR_SECTIONS_KEY = 'sendadocs.sidebar.sections.v2';
@@ -344,6 +350,44 @@ function RouteLoadingFallback({ fullPage = false }) {
   );
 }
 
+function OnboardingStatusFallback({ error, loading, onRetry }) {
+  return (
+    <div className="auth-page">
+      <section className="auth-card" aria-labelledby="onboarding-status-title">
+        <div className="auth-brand">
+          <img src="/logo-horizontal.svg" alt="SendaDocs" className="auth-logo" />
+        </div>
+        <header className="auth-header">
+          <h1 id="onboarding-status-title">Configuracion inicial</h1>
+          <p>{error || 'Validando configuracion inicial...'}</p>
+        </header>
+        {error && (
+          <button className="btn btn-primary auth-submit" type="button" onClick={onRetry} disabled={loading}>
+            {loading ? 'Validando...' : 'Reintentar'}
+          </button>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function FirstSociedadTooltip({ onDismiss }) {
+  return (
+    <div className="first-sociedad-tooltip" role="status">
+      <button
+        type="button"
+        className="first-sociedad-tooltip-close"
+        aria-label="Cerrar aviso de primera sociedad"
+        onClick={onDismiss}
+      >
+        x
+      </button>
+      <div className="first-sociedad-tooltip-title">Primer paso</div>
+      <p>Registra tu primera sociedad aqui para poder importar y consultar documentos.</p>
+    </div>
+  );
+}
+
 function AuthenticatedAppShell({
   sociedades,
   sociedadId,
@@ -412,6 +456,9 @@ function AuthenticatedAppShell({
   }), [authUser?.email, authUser?.id, authUser?.usuario]);
   const [themeDiscoveryVisible, setThemeDiscoveryVisible] = useState(
     () => shouldShowThemeDiscoveryTip(themeDiscoveryUser),
+  );
+  const [firstSociedadTipVisible, setFirstSociedadTipVisible] = useState(
+    () => shouldShowFirstSociedadTip(themeDiscoveryUser),
   );
   const profilePhotoObjectUrlRef = useRef('');
   const userPreferences = userProfileState.preferences;
@@ -545,6 +592,22 @@ function AuthenticatedAppShell({
     pathname: location.pathname,
     state: mobileSidebarState,
   }), [isMobileView, location.pathname, mobileSidebarState]);
+  const hasNoSociedades = Array.isArray(sociedades) && sociedades.length === 0;
+  const shouldShowFirstSociedadGuide = firstSociedadTipVisible
+    && canManageSociedades
+    && hasNoSociedades
+    && !pathMatches(location.pathname, '/sociedades')
+    && (!sidebarCollapsed || isMobileView || mobileSidebarOpen);
+  const renderedExpandedSections = useMemo(() => {
+    if (!shouldShowFirstSociedadGuide) {
+      return expandedSections;
+    }
+
+    return {
+      ...expandedSections,
+      administracion: true,
+    };
+  }, [expandedSections, shouldShowFirstSociedadGuide]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -608,6 +671,11 @@ function AuthenticatedAppShell({
   const dismissThemeDiscoveryTooltip = useCallback(() => {
     markThemeDiscoveryTipDismissed(themeDiscoveryUser);
     setThemeDiscoveryVisible(false);
+  }, [themeDiscoveryUser]);
+
+  const dismissFirstSociedadTooltip = useCallback(() => {
+    markFirstSociedadTipDismissed(themeDiscoveryUser);
+    setFirstSociedadTipVisible(false);
   }, [themeDiscoveryUser]);
 
   const openUserSettings = useCallback(() => {
@@ -718,7 +786,7 @@ function AuthenticatedAppShell({
 
         <div className="sidebar-scroll">
           {navigationSections.map((section) => {
-            const isOpen = expandedSections[section.id] ?? false;
+            const isOpen = renderedExpandedSections[section.id] ?? false;
             const isActiveSection = activeSectionId === section.id;
 
             return (
@@ -750,28 +818,36 @@ function AuthenticatedAppShell({
 
                 {isOpen && (
                   <nav className="section-items">
-                    {section.items.map((item) => (
-                      <NavLink
-                        key={item.id}
-                        to={item.to}
-                        end={item.to === '/'}
-                        aria-label={item.label}
-                        onClick={() => {
-                          hideSidebarTooltip();
-                          closeMobileSidebar();
-                        }}
-                        onMouseEnter={(event) => showSidebarTooltip(event, item.label)}
-                        onMouseLeave={hideSidebarTooltip}
-                        onFocus={(event) => showSidebarTooltip(event, item.label)}
-                        onBlur={hideSidebarTooltip}
-                        className={({ isActive }) => ['menu-link', isActive ? 'active' : ''].filter(Boolean).join(' ')}
-                      >
-                        <span className="menu-link-icon" aria-hidden="true">
-                          <AppIcon name={item.icon} />
-                        </span>
-                        <span className="menu-link-label">{item.label}</span>
-                      </NavLink>
-                    ))}
+                    {section.items.map((item) => {
+                      const showFirstSociedadTooltip = shouldShowFirstSociedadGuide && item.id === 'sociedades';
+
+                      return (
+                        <div className="menu-link-wrap" key={item.id}>
+                          <NavLink
+                            to={item.to}
+                            end={item.to === '/'}
+                            aria-label={item.label}
+                            onClick={() => {
+                              hideSidebarTooltip();
+                              closeMobileSidebar();
+                            }}
+                            onMouseEnter={(event) => showSidebarTooltip(event, item.label)}
+                            onMouseLeave={hideSidebarTooltip}
+                            onFocus={(event) => showSidebarTooltip(event, item.label)}
+                            onBlur={hideSidebarTooltip}
+                            className={({ isActive }) => ['menu-link', isActive ? 'active' : ''].filter(Boolean).join(' ')}
+                          >
+                            <span className="menu-link-icon" aria-hidden="true">
+                              <AppIcon name={item.icon} />
+                            </span>
+                            <span className="menu-link-label">{item.label}</span>
+                          </NavLink>
+                          {showFirstSociedadTooltip && (
+                            <FirstSociedadTooltip onDismiss={dismissFirstSociedadTooltip} />
+                          )}
+                        </div>
+                      );
+                    })}
                   </nav>
                 )}
               </section>
@@ -990,6 +1066,19 @@ function App() {
     userPermissions,
     userRole,
   } = useAppSession();
+  const shouldCheckOnboarding = !authLoading && !isAuthenticated;
+  const {
+    checked: onboardingChecked,
+    error: onboardingError,
+    loading: onboardingLoading,
+    requiresSetup,
+    refresh: refreshOnboardingStatus,
+  } = useOnboardingStatus({
+    enabled: shouldCheckOnboarding,
+  });
+  const handleSetupComplete = useCallback(async () => {
+    await refreshOnboardingStatus();
+  }, [refreshOnboardingStatus]);
 
   if (authLoading) {
     return (
@@ -1000,11 +1089,45 @@ function App() {
   }
 
   if (!isAuthenticated) {
+    if (!onboardingChecked || onboardingLoading) {
+      return (
+        <OnboardingStatusFallback
+          error=""
+          loading={onboardingLoading}
+          onRetry={refreshOnboardingStatus}
+        />
+      );
+    }
+
+    if (onboardingError) {
+      return (
+        <OnboardingStatusFallback
+          error={onboardingError}
+          loading={onboardingLoading}
+          onRetry={refreshOnboardingStatus}
+        />
+      );
+    }
+
+    if (requiresSetup) {
+      return (
+        <Router>
+          <Suspense fallback={<RouteLoadingFallback fullPage />}>
+            <Routes>
+              <Route path="/setup" element={<OnboardingSetup onSetupComplete={handleSetupComplete} />} />
+              <Route path="*" element={<Navigate to="/setup" replace />} />
+            </Routes>
+          </Suspense>
+        </Router>
+      );
+    }
+
     return (
       <Router>
         <Suspense fallback={<RouteLoadingFallback fullPage />}>
           <Routes>
             <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
+            <Route path="/setup" element={<Navigate to="/login" replace />} />
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </Suspense>

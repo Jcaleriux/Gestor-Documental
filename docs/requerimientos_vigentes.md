@@ -18,6 +18,8 @@ El archivo `docs/historico/REQUERIMIENTOS.md` se conserva como levantamiento ini
 
 ### 1. Autenticacion y sesion
 
+- En una instalacion limpia sin usuarios activos, la app muestra configuracion inicial antes del login.
+- El primer usuario se crea desde la app como `admin` y hereda `acceso_total`.
 - Login con `email + password`.
 - Sesion autenticada con JWT.
 - Endpoint de sesion actual en `/api/auth/me`.
@@ -47,6 +49,8 @@ Roles activos en el seed base:
 - `proveeduria`
 - `asistencia`
 - `personalizado`
+
+El seed normal conserva roles/permisos, pero no crea usuarios demo. Los usuarios posteriores al primer admin se crean desde la administracion interna por usuarios con permiso `usuarios_administrar` o `acceso_total`.
 
 ### 3. Dominios documentales y persistencia
 

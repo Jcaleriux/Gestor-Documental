@@ -72,6 +72,7 @@ Complemento recomendado:
 - validar `GET /api/release-info`
 - y revisar los headers `X-SendaDocs-Release-*` en `/api/health`
 - correr smoke checks de dominio con `backend npm run release:smoke` o `backend npm run preprod:smoke`
+- definir `SMOKE_USER_EMAIL` y `SMOKE_USER_PASSWORD` por entorno si el sistema ya tiene usuarios y se quieren validar endpoints protegidos
 
 ## Que Debe Salir Bien
 

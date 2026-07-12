@@ -64,14 +64,14 @@ function UsuarioFormCard({
 
       <div className="col-12 col-md-6">
         <label className="form-label mb-0">
-          {isEditing ? 'Nueva password (opcional)' : 'Password'}
+          {isEditing ? 'Nueva contrasena (opcional)' : 'Contrasena'}
           <input
             className="form-control"
             type="password"
             value={form.password}
             onChange={(event) => onFieldChange('password', event.target.value)}
-            placeholder={isEditing ? 'Dejar vacio para no cambiar' : 'Minimo 8 caracteres'}
-            minLength={8}
+            placeholder={isEditing ? 'Dejar vacio para no cambiar' : 'Minimo 12, mayuscula, numero y simbolo'}
+            minLength={12}
             required={!isEditing}
             disabled={saving}
           />

@@ -73,6 +73,7 @@ cd backend
 npm run release:smoke
 ```
 
+- [ ] Si el entorno ya esta configurado, definir `SMOKE_USER_EMAIL` y `SMOKE_USER_PASSWORD` antes de correr smoke checks protegidos.
 - [ ] Ejecutar pruebas relevantes del release.
 - [ ] Si hay cambios de configuracion o arranque, validar sintaxis con `node -c` sobre los archivos tocados.
 
@@ -162,7 +163,8 @@ Nota: hoy el repo documenta `npm run dev` como forma principal de levantar la AP
 
 - [ ] `GET /api/health` responde `200`.
 - [ ] `GET /api/release-info` expone la version y commit esperados del deploy.
-- [ ] Login exitoso con un usuario valido.
+- [ ] `GET /api/onboarding/status` responde correctamente.
+- [ ] Login exitoso con un usuario valido, o onboarding inicial pendiente en una base limpia.
 - [ ] Dashboard carga sin errores visibles.
 - [ ] Listado de facturas responde y permite filtrar.
 - [ ] Tramites de pago cargan correctamente.

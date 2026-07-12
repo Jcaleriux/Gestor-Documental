@@ -10,7 +10,7 @@ Sistema web para gestion de facturas, procesamiento de XML, documentos y tramite
 - [Documentacion funcional](#documentacion-funcional)
 - [Requisitos](#requisitos)
 - [Inicio rapido](#inicio-rapido)
-- [Credenciales iniciales](#credenciales-iniciales)
+- [Configuracion inicial](#configuracion-inicial)
 - [Variables de entorno](#variables-de-entorno)
 - [Entorno para Codex](#entorno-para-codex)
 - [Convenciones de idioma](#convenciones-de-idioma)
@@ -24,7 +24,7 @@ Sistema web para gestion de facturas, procesamiento de XML, documentos y tramite
 
 - Backend con API REST, autenticacion JWT y permisos por rol.
 - Frontend React para operacion de facturas, tramites, proveedores y usuarios.
-- Bootstrap de base de datos desde SQL canonico (`00_init.sql` + `seed.sql`).
+- Bootstrap de base de datos desde SQL canonico (`00_init.sql` + `seed.sql`) sin usuarios demo por defecto.
 - Soporte de carga/lectura de documentos en filesystem con rutas normalizadas.
 
 ## Arquitectura
@@ -103,12 +103,19 @@ pnpm --dir frontend run dev
 
 8. Abrir `http://localhost:5173`.
 
-## Credenciales iniciales
+## Configuracion inicial
 
-El seed crea usuarios base para varios roles solo para bootstrap local. Hay que rotar esas credenciales antes de usar staging, produccion o cualquier entorno compartido. Cuenta ejemplo:
+El seed normal conserva catalogos base de permisos, roles y matriz `roles_permisos`, pero ya no crea usuarios demo por defecto.
 
-- Email: `admin@sendadocs.local`
-- Password: `SendaDocs2026!`
+En una base limpia, al abrir la app el frontend consulta `/api/onboarding/status`. Si no existen usuarios activos ni admin activo, muestra la pantalla de configuracion inicial para crear el primer usuario administrador. Ese usuario queda con rol `admin` y hereda `acceso_total`; despues la app redirige al login y se debe iniciar sesion con las credenciales creadas.
+
+Para preparar una demo local repetible con usuarios conocidos, ejecutar de forma explicita:
+
+```bash
+pnpm --dir backend run db:seed:demo
+```
+
+Ese comando crea usuarios demo con password `SendaDocs2026!`. Usarlo solo en desarrollo o demos controladas.
 
 ## Variables de entorno
 
@@ -197,6 +204,7 @@ Por ahora el principio operativo mas importante es `multicurrency-first`: no mez
 - `npm run test:ci`: suite CI de backend (`runInBand`)
 - `npm run db:init`: ejecutar schema si `public` esta vacio
 - `npm run db:reset`: reconstruir schema desde cero
+- `npm run db:seed:demo`: cargar usuarios demo opcionales para desarrollo/demo
 - `npm run db:check`: validar estructura actual
 - `npm run db:migrate`: aplicar migraciones versionadas pendientes
 - `npm run db:migrate:status`: ver estado del tracking versionado
@@ -220,6 +228,8 @@ Por ahora el principio operativo mas importante es `multicurrency-first`: no mez
 
 - `GET /api/health`
 - `GET /api/release-info`
+- `GET /api/onboarding/status`
+- `POST /api/onboarding/setup`
 - `POST /api/auth/login`
 - `GET /api/auth/me`
 - `GET /api/dashboard/stats`

@@ -6,8 +6,8 @@ const request = require('supertest');
 const app = require('../app');
 
 const DEFAULT_SMOKE_CONFIG = Object.freeze({
-  email: 'admin@sendadocs.local',
-  password: 'SendaDocs2026!',
+  email: '',
+  password: '',
   sociedadId: '',
   facturasPageSize: 5,
 });
@@ -27,8 +27,8 @@ const toPositiveInt = (value, fallback) => {
 };
 
 const resolveSmokeConfig = (env = process.env) => ({
-  email: readOptionalEnvValue(env.SMOKE_USER_EMAIL) || DEFAULT_SMOKE_CONFIG.email,
-  password: readOptionalEnvValue(env.SMOKE_USER_PASSWORD) || DEFAULT_SMOKE_CONFIG.password,
+  email: readOptionalEnvValue(env.SMOKE_USER_EMAIL),
+  password: readOptionalEnvValue(env.SMOKE_USER_PASSWORD),
   sociedadId: readOptionalEnvValue(env.SMOKE_SOCIEDAD_ID),
   facturasPageSize: toPositiveInt(
     readOptionalEnvValue(env.SMOKE_FACTURAS_PAGE_SIZE),
@@ -43,10 +43,18 @@ const createCheckResult = ({ name, ok, status = null, details = {} }) => ({
   details,
 });
 
+const maskSmokeConfig = (smokeConfig, overrides = {}) => ({
+  ...smokeConfig,
+  ...overrides,
+  password: smokeConfig.password ? '<hidden>' : '',
+});
+
 const writeJsonFile = (targetPath, value) => {
   fs.mkdirSync(path.dirname(targetPath), { recursive: true });
   fs.writeFileSync(targetPath, JSON.stringify(value, null, 2));
 };
+
+const createRequestAgent = () => request(app);
 
 const parseCliArgs = (argv) => {
   const args = [...argv];
@@ -82,11 +90,12 @@ const parseCliArgs = (argv) => {
 
 const runReleaseSmokeChecks = async ({
   env = process.env,
+  agent = createRequestAgent(),
 } = {}) => {
   const smokeConfig = resolveSmokeConfig(env);
   const checks = [];
 
-  const health = await request(app).get('/api/health');
+  const health = await agent.get('/api/health');
   checks.push(createCheckResult({
     name: 'api_health',
     ok: health.status === 200 && health.body?.success === true,
@@ -98,7 +107,7 @@ const runReleaseSmokeChecks = async ({
     },
   }));
 
-  const releaseInfo = await request(app).get('/api/release-info');
+  const releaseInfo = await agent.get('/api/release-info');
   checks.push(createCheckResult({
     name: 'api_release_info',
     ok: releaseInfo.status === 200 && releaseInfo.body?.success === true && Boolean(releaseInfo.body?.data?.version),
@@ -110,7 +119,45 @@ const runReleaseSmokeChecks = async ({
     },
   }));
 
-  const login = await request(app)
+  const onboardingStatus = await agent.get('/api/onboarding/status');
+  const onboardingData = onboardingStatus.body?.data || {};
+  const onboardingStatusOk = onboardingStatus.status === 200
+    && onboardingStatus.body?.success === true
+    && typeof onboardingData.requiresSetup === 'boolean';
+  checks.push(createCheckResult({
+    name: 'onboarding_status',
+    ok: onboardingStatusOk,
+    status: onboardingStatus.status,
+    details: {
+      requiresSetup: typeof onboardingData.requiresSetup === 'boolean' ? onboardingData.requiresSetup : null,
+      setupAllowed: typeof onboardingData.setupAllowed === 'boolean' ? onboardingData.setupAllowed : null,
+    },
+  }));
+
+  if (!smokeConfig.email || !smokeConfig.password) {
+    const credentialsOk = onboardingStatusOk
+      && onboardingData.requiresSetup === true
+      && onboardingData.setupAllowed === true;
+    checks.push(createCheckResult({
+      name: 'smoke_credentials_configured',
+      ok: credentialsOk,
+      status: null,
+      details: {
+        reason: credentialsOk
+          ? 'Ambiente pendiente de onboarding; no se requieren credenciales smoke.'
+          : 'Configura SMOKE_USER_EMAIL y SMOKE_USER_PASSWORD para validar endpoints protegidos.',
+      },
+    }));
+
+    return {
+      ok: checks.every((check) => check.ok),
+      generatedAt: new Date().toISOString(),
+      config: maskSmokeConfig(smokeConfig),
+      checks,
+    };
+  }
+
+  const login = await agent
     .post('/api/auth/login')
     .send({
       email: smokeConfig.email,
@@ -133,14 +180,14 @@ const runReleaseSmokeChecks = async ({
     return {
       ok: false,
       generatedAt: new Date().toISOString(),
-      config: smokeConfig,
+      config: maskSmokeConfig(smokeConfig),
       checks,
     };
   }
 
   const withAuth = (req) => req.set('Authorization', `Bearer ${token}`);
 
-  const me = await withAuth(request(app).get('/api/auth/me'));
+  const me = await withAuth(agent.get('/api/auth/me'));
   checks.push(createCheckResult({
     name: 'auth_me',
     ok: me.status === 200 && me.body?.success === true && Boolean(me.body?.data?.user),
@@ -151,7 +198,7 @@ const runReleaseSmokeChecks = async ({
     },
   }));
 
-  const sociedades = await withAuth(request(app).get('/api/sociedades'));
+  const sociedades = await withAuth(agent.get('/api/sociedades'));
   const sociedadesList = Array.isArray(sociedades.body?.data) ? sociedades.body.data : [];
   const resolvedSociedadId = smokeConfig.sociedadId || String(sociedadesList[0]?.id || '');
 
@@ -166,7 +213,7 @@ const runReleaseSmokeChecks = async ({
   }));
 
   const dashboardStats = await withAuth(
-    request(app).get('/api/dashboard/stats').query(
+    agent.get('/api/dashboard/stats').query(
       resolvedSociedadId ? { sociedadId: resolvedSociedadId } : {}
     )
   );
@@ -183,7 +230,7 @@ const runReleaseSmokeChecks = async ({
   }));
 
   const dashboardWorkQueue = await withAuth(
-    request(app).get('/api/dashboard/work-queue').query(
+    agent.get('/api/dashboard/work-queue').query(
       resolvedSociedadId ? { sociedadId: resolvedSociedadId } : {}
     )
   );
@@ -203,7 +250,7 @@ const runReleaseSmokeChecks = async ({
   }));
 
   const dashboardRecent = await withAuth(
-    request(app).get('/api/dashboard/recent-documents').query(
+    agent.get('/api/dashboard/recent-documents').query(
       resolvedSociedadId ? { sociedadId: resolvedSociedadId } : {}
     )
   );
@@ -219,7 +266,7 @@ const runReleaseSmokeChecks = async ({
   }));
 
   const facturas = await withAuth(
-    request(app).get('/api/facturas').query({
+    agent.get('/api/facturas').query({
       ...(resolvedSociedadId ? { sociedadId: resolvedSociedadId } : {}),
       page: 1,
       pageSize: smokeConfig.facturasPageSize,
@@ -240,7 +287,7 @@ const runReleaseSmokeChecks = async ({
   }));
 
   const tramites = await withAuth(
-    request(app).get('/api/tramites-pago').query(
+    agent.get('/api/tramites-pago').query(
       resolvedSociedadId ? { sociedadId: resolvedSociedadId } : {}
     )
   );
@@ -258,11 +305,9 @@ const runReleaseSmokeChecks = async ({
   return {
     ok: checks.every((check) => check.ok),
     generatedAt: new Date().toISOString(),
-    config: {
-      ...smokeConfig,
-      password: smokeConfig.password ? '<hidden>' : '',
+    config: maskSmokeConfig(smokeConfig, {
       sociedadId: resolvedSociedadId,
-    },
+    }),
     checks,
   };
 };
@@ -272,7 +317,7 @@ const renderSmokeChecksReport = (report) => {
     '=== Release Smoke Checks ===',
     `Resultado general: ${report.ok ? 'ok' : 'fallo'}`,
     `Generado en: ${report.generatedAt}`,
-    `Usuario smoke: ${report.config.email}`,
+    `Usuario smoke: ${report.config.email || 'no configurado'}`,
     `Sociedad usada: ${report.config.sociedadId || 'auto'}`,
     '',
     'Checks:',
@@ -287,6 +332,7 @@ const renderSmokeChecksReport = (report) => {
 
 module.exports = {
   DEFAULT_SMOKE_CONFIG,
+  createRequestAgent,
   createCheckResult,
   parseCliArgs,
   renderSmokeChecksReport,

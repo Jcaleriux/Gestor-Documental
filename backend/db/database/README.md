@@ -4,7 +4,8 @@ Este proyecto ahora se construye **desde cero** usando un solo esquema:
 
 - `00_init.sql`: esquema completo (tablas, constraints, FKs e indices).
 - `01_create_db.sql`: script opcional para crear la base `sendadocs_db`.
-- `seed.sql`: datos iniciales opcionales.
+- `seed.sql`: catalogos base de permisos, roles y matriz `roles_permisos`.
+- `demo_seed.sql`: usuarios demo opcionales para ambientes locales o demos controladas.
 - `backend/db/migrations/`: migraciones incrementales versionadas sobre el baseline runtime.
 
 ## Flujo recomendado
@@ -22,6 +23,16 @@ Esto hace:
 3. Ejecuta `00_init.sql`
 4. Ejecuta `seed.sql` (si existe)
 5. Registra el baseline runtime y aplica migraciones pendientes de `backend/db/migrations/`
+
+El flujo normal no crea usuarios demo. En una base limpia, el primer administrador se crea desde la app mediante la pantalla de configuracion inicial.
+
+Para cargar usuarios demo de forma explicita:
+
+```bash
+npm run db:seed:demo
+```
+
+Ese comando ejecuta `demo_seed.sql`; no forma parte de `db:init` ni de `db:reset`.
 
 Para inicializar sin borrar schema:
 

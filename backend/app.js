@@ -78,6 +78,9 @@ app.get(
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 
+const onboardingRoutes = require('./routes/onboarding');
+app.use('/api/onboarding', onboardingRoutes);
+
 // Public API routes
 app.get('/api', (req, res) => {
   res.json({ success: true, message: 'API root. Use /api/health or other endpoints.' });
