@@ -36,6 +36,10 @@ import {
   markThemeDiscoveryTipDismissed,
   shouldShowThemeDiscoveryTip,
 } from './utils/themeDiscoveryTip.js';
+import {
+  markFirstSociedadTipDismissed,
+  shouldShowFirstSociedadTip,
+} from './utils/firstSociedadTip.js';
 import './styles/app.css';
 
 const Dashboard = lazy(() => import('./components/Dashboard.jsx'));
@@ -367,6 +371,23 @@ function OnboardingStatusFallback({ error, loading, onRetry }) {
   );
 }
 
+function FirstSociedadTooltip({ onDismiss }) {
+  return (
+    <div className="first-sociedad-tooltip" role="status">
+      <button
+        type="button"
+        className="first-sociedad-tooltip-close"
+        aria-label="Cerrar aviso de primera sociedad"
+        onClick={onDismiss}
+      >
+        x
+      </button>
+      <div className="first-sociedad-tooltip-title">Primer paso</div>
+      <p>Registra tu primera sociedad aqui para poder importar y consultar documentos.</p>
+    </div>
+  );
+}
+
 function AuthenticatedAppShell({
   sociedades,
   sociedadId,
@@ -435,6 +456,9 @@ function AuthenticatedAppShell({
   }), [authUser?.email, authUser?.id, authUser?.usuario]);
   const [themeDiscoveryVisible, setThemeDiscoveryVisible] = useState(
     () => shouldShowThemeDiscoveryTip(themeDiscoveryUser),
+  );
+  const [firstSociedadTipVisible, setFirstSociedadTipVisible] = useState(
+    () => shouldShowFirstSociedadTip(themeDiscoveryUser),
   );
   const profilePhotoObjectUrlRef = useRef('');
   const userPreferences = userProfileState.preferences;
@@ -568,6 +592,22 @@ function AuthenticatedAppShell({
     pathname: location.pathname,
     state: mobileSidebarState,
   }), [isMobileView, location.pathname, mobileSidebarState]);
+  const hasNoSociedades = Array.isArray(sociedades) && sociedades.length === 0;
+  const shouldShowFirstSociedadGuide = firstSociedadTipVisible
+    && canManageSociedades
+    && hasNoSociedades
+    && !pathMatches(location.pathname, '/sociedades')
+    && (!sidebarCollapsed || isMobileView || mobileSidebarOpen);
+  const renderedExpandedSections = useMemo(() => {
+    if (!shouldShowFirstSociedadGuide) {
+      return expandedSections;
+    }
+
+    return {
+      ...expandedSections,
+      administracion: true,
+    };
+  }, [expandedSections, shouldShowFirstSociedadGuide]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -631,6 +671,11 @@ function AuthenticatedAppShell({
   const dismissThemeDiscoveryTooltip = useCallback(() => {
     markThemeDiscoveryTipDismissed(themeDiscoveryUser);
     setThemeDiscoveryVisible(false);
+  }, [themeDiscoveryUser]);
+
+  const dismissFirstSociedadTooltip = useCallback(() => {
+    markFirstSociedadTipDismissed(themeDiscoveryUser);
+    setFirstSociedadTipVisible(false);
   }, [themeDiscoveryUser]);
 
   const openUserSettings = useCallback(() => {
@@ -741,7 +786,7 @@ function AuthenticatedAppShell({
 
         <div className="sidebar-scroll">
           {navigationSections.map((section) => {
-            const isOpen = expandedSections[section.id] ?? false;
+            const isOpen = renderedExpandedSections[section.id] ?? false;
             const isActiveSection = activeSectionId === section.id;
 
             return (
@@ -773,28 +818,36 @@ function AuthenticatedAppShell({
 
                 {isOpen && (
                   <nav className="section-items">
-                    {section.items.map((item) => (
-                      <NavLink
-                        key={item.id}
-                        to={item.to}
-                        end={item.to === '/'}
-                        aria-label={item.label}
-                        onClick={() => {
-                          hideSidebarTooltip();
-                          closeMobileSidebar();
-                        }}
-                        onMouseEnter={(event) => showSidebarTooltip(event, item.label)}
-                        onMouseLeave={hideSidebarTooltip}
-                        onFocus={(event) => showSidebarTooltip(event, item.label)}
-                        onBlur={hideSidebarTooltip}
-                        className={({ isActive }) => ['menu-link', isActive ? 'active' : ''].filter(Boolean).join(' ')}
-                      >
-                        <span className="menu-link-icon" aria-hidden="true">
-                          <AppIcon name={item.icon} />
-                        </span>
-                        <span className="menu-link-label">{item.label}</span>
-                      </NavLink>
-                    ))}
+                    {section.items.map((item) => {
+                      const showFirstSociedadTooltip = shouldShowFirstSociedadGuide && item.id === 'sociedades';
+
+                      return (
+                        <div className="menu-link-wrap" key={item.id}>
+                          <NavLink
+                            to={item.to}
+                            end={item.to === '/'}
+                            aria-label={item.label}
+                            onClick={() => {
+                              hideSidebarTooltip();
+                              closeMobileSidebar();
+                            }}
+                            onMouseEnter={(event) => showSidebarTooltip(event, item.label)}
+                            onMouseLeave={hideSidebarTooltip}
+                            onFocus={(event) => showSidebarTooltip(event, item.label)}
+                            onBlur={hideSidebarTooltip}
+                            className={({ isActive }) => ['menu-link', isActive ? 'active' : ''].filter(Boolean).join(' ')}
+                          >
+                            <span className="menu-link-icon" aria-hidden="true">
+                              <AppIcon name={item.icon} />
+                            </span>
+                            <span className="menu-link-label">{item.label}</span>
+                          </NavLink>
+                          {showFirstSociedadTooltip && (
+                            <FirstSociedadTooltip onDismiss={dismissFirstSociedadTooltip} />
+                          )}
+                        </div>
+                      );
+                    })}
                   </nav>
                 )}
               </section>
