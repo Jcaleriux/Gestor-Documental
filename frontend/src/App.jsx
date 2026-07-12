@@ -43,6 +43,7 @@ import {
 import './styles/app.css';
 
 const Dashboard = lazy(() => import('./components/Dashboard.jsx'));
+const ExploradorDocumentos = lazy(() => import('./components/ExploradorDocumentos.jsx'));
 const Sociedades = lazy(() => import('./components/Sociedades.jsx'));
 const Usuarios = lazy(() => import('./components/Usuarios.jsx'));
 const Facturas = lazy(() => import('./components/Facturas.jsx'));
@@ -967,6 +968,15 @@ function AuthenticatedAppShell({
               <Route
                 path="/facturas"
                 element={<Facturas sociedadId={sociedadId} canEditContabilizacion={canEditContabilizacion} />}
+              />
+              <Route
+                path="/explorador-documentos"
+                element={(canViewTramites || canEditContabilizacion) ? (
+                  <ExploradorDocumentos
+                    sociedadId={sociedadId}
+                    selectedSociedadName={selectedSociedad?.nombre_proyecto || selectedSociedad?.razon_social || ''}
+                  />
+                ) : <Navigate to="/" replace />}
               />
               <Route
                 path="/facturas/pdf-pendientes"
