@@ -19,6 +19,7 @@
     "@popperjs/core": "^2.11.8",
     "axios": "^1.18.0",
     "bootstrap": "^5.3.8",
+    "exceljs": "4.4.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.13.0"

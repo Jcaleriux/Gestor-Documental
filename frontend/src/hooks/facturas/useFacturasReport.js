@@ -6,7 +6,9 @@ import {
 } from '../../services/facturasApi.js';
 import {
   buildFacturasReportRows,
-  downloadFacturasReportExcel
+  buildFacturasSimpleReportRows,
+  downloadFacturasReportExcel,
+  downloadFacturasSimpleReportExcel
 } from '../../utils/facturasExcelReport.js';
 
 const toManifestCacheKey = (documentType, documentId) => `${documentType}:${documentId}`;
@@ -142,7 +144,9 @@ export const useFacturasReport = ({
   const {
     api = facturasApi,
     buildReportRows = buildFacturasReportRows,
-    downloadReport = downloadFacturasReportExcel
+    buildSimpleReportRows = buildFacturasSimpleReportRows,
+    downloadReport = downloadFacturasReportExcel,
+    downloadSimpleReport = downloadFacturasSimpleReportExcel
   } = dependencies;
 
   const [reportLoading, setReportLoading] = useState(false);
@@ -150,7 +154,7 @@ export const useFacturasReport = ({
   const [reportMessage, setReportMessage] = useState('');
   const manifestReceivedTimeCacheRef = useRef(new Map());
 
-  const exportReport = async () => {
+  const exportReport = async (reportType = 'complete') => {
     if (!sociedadId || reportLoading) return;
 
     try {
@@ -186,7 +190,13 @@ export const useFacturasReport = ({
         notasWithReceivedTimePromise
       ]);
 
-      const rows = buildReportRows({
+      const selectedBuildReportRows = reportType === 'simple'
+        ? buildSimpleReportRows
+        : buildReportRows;
+      const selectedDownloadReport = reportType === 'simple'
+        ? downloadSimpleReport
+        : downloadReport;
+      const rows = selectedBuildReportRows({
         facturas: facturasWithReceivedTime,
         notasCredito: notasWithReceivedTime,
         mensajesHacienda
@@ -197,7 +207,7 @@ export const useFacturasReport = ({
         return;
       }
 
-      downloadReport({
+      selectedDownloadReport({
         rows,
         sociedadId
       });
