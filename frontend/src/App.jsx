@@ -734,6 +734,7 @@ function AuthenticatedAppShell({
     });
   }, [expandedSections, location.pathname, navigationSections]);
   const shouldShowThemeDiscovery = themeDiscoveryVisible
+    && shouldShowThemeDiscoveryTip(themeDiscoveryUser)
     && (isMobileView ? mobileSidebarOpen : !sidebarCollapsed);
 
   return (
