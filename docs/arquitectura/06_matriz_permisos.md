@@ -7,19 +7,23 @@ Documentar acciones y endpoints con el permiso minimo requerido.
 1. `ACCESO_TOTAL`
 2. `SOCIEDADES_TODAS`
 3. `SOCIEDADES_ASIGNADAS`
-4. `USUARIOS_ADMINISTRAR`
-5. `DOCUMENTOS_VER`
-6. `DOCUMENTOS_DESCARGAR`
-7. `DOCUMENTOS_SUBIR`
-8. `DOCUMENTOS_COMENTAR`
-9. `DOCUMENTOS_CONTABILIZAR`
-10. `DOCUMENTOS_TRAMITAR_PAGO`
-11. `DOCUMENTOS_APROBAR_GERENCIA`
-12. `DOCUMENTOS_APROBAR_GERENCIA_CONTABLE`
-13. `DOCUMENTOS_APROBAR_GERENCIA_FINANCIERA`
-14. `DOCUMENTOS_FIRMAR_AUTORIZAR`
-15. `DOCUMENTOS_MARCAR_PAGADO`
-16. `AUDITORIA_VER`
+4. `SOCIEDADES_ADMINISTRAR`
+5. `USUARIOS_ADMINISTRAR`
+6. `DOCUMENTOS_VER`
+7. `DOCUMENTOS_DESCARGAR`
+8. `DOCUMENTOS_SUBIR`
+9. `DOCUMENTOS_COMENTAR`
+10. `DOCUMENTOS_CONTABILIZAR`
+11. `DOCUMENTOS_TRAMITAR_PAGO`
+12. `DOCUMENTOS_APROBAR_GERENCIA`
+13. `DOCUMENTOS_APROBAR_GERENCIA_CONTABLE`
+14. `DOCUMENTOS_APROBAR_GERENCIA_FINANCIERA`
+15. `DOCUMENTOS_FIRMAR_AUTORIZAR`
+16. `DOCUMENTOS_MARCAR_PAGADO`
+17. `AUDITORIA_VER`
+18. `RESERVAS_VER`
+19. `RESERVAS_CREAR`
+20. `RESERVAS_GESTIONAR`
 
 Fuente: `backend/domain/permissions.js`
 
@@ -37,7 +41,7 @@ Fuente: `backend/domain/permissions.js`
 | Tramites | Cambiar estado tramite | `POST /api/tramites-pago/:id/estado` | `WORKFLOW_PERMISSIONS` |
 | Tramites | Decision por etapa | `POST /api/tramites-pago/:id/documentos/:facturaId/decision` | Permiso por etapa |
 | Auditoria | Ver auditoria | `/api/facturas/:id/auditoria` | `AUDITORIA_VER` |
-| Usuarios | Administrar usuarios/roles | `/api/usuarios`, `/api/roles` | `USUARIOS_ADMINISTRAR` |
+| Usuarios | Administrar usuarios/roles/permisos | `/api/usuarios`, `/api/roles`, `/api/permisos`, `/api/roles/:id/permisos` | `USUARIOS_ADMINISTRAR` |
 
 ## Politica de autorizacion recomendada
 1. Cada endpoint define permiso explicito en route.
@@ -48,6 +52,7 @@ Fuente: `backend/domain/permissions.js`
 1. Matriz final Rol x Permiso x Sociedad.
 2. Reglas de delegacion jerarquica.
 3. Permisos de override y trazabilidad reforzada.
+4. Excepciones de permisos por usuario si el negocio confirma ese modelo.
 
 ## Definition of Done
 1. Ningun endpoint sin permiso.

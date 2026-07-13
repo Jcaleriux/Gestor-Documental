@@ -28,8 +28,11 @@ El archivo `docs/historico/REQUERIMIENTOS.md` se conserva como levantamiento ini
 ### 2. Usuarios, roles y acceso por sociedades
 
 - Cada usuario pertenece a un solo rol.
-- Existe administracion de usuarios, roles y asignacion de sociedades.
+- Existe administracion de usuarios, roles, permisos por rol y asignacion de sociedades.
 - El acceso se controla por permisos y por sociedades asignadas.
+- El codigo de un rol se define al crearlo y luego queda inmutable desde la app para no romper referencias operativas.
+- El rol `admin` debe conservar `acceso_total` y `usuarios_administrar`.
+- No existen excepciones de permisos por usuario; cualquier ajuste de permisos aplica al rol completo.
 
 Roles activos en el seed base:
 
@@ -50,7 +53,7 @@ Roles activos en el seed base:
 - `asistencia`
 - `personalizado`
 
-El seed normal conserva roles/permisos, pero no crea usuarios demo. Los usuarios posteriores al primer admin se crean desde la administracion interna por usuarios con permiso `usuarios_administrar` o `acceso_total`.
+El seed normal conserva roles/permisos, pero no crea usuarios demo. Los usuarios posteriores al primer admin se crean desde la administracion interna por usuarios con permiso `usuarios_administrar` o `acceso_total`; los roles y permisos se administran desde la pantalla de usuarios.
 
 ### 3. Dominios documentales y persistencia
 

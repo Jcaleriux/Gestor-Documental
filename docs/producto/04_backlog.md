@@ -47,6 +47,7 @@ Para contexto historico usa:
 | FEAT-009 | feature | P2 | Hecho | EPIC-A-006 | Perfil de usuario persistente multiempresa con preferencias, avatar, validaciones, storage seguro y fallback local |
 | FEAT-010 | feature | P1 | Hecho | EPIC-A-007 | Limpieza de marca SendaDocs independiente con llaves, headers, tooling, seeds y documentacion operativa sin rastros activos del nombre anterior |
 | FEAT-011 | feature | P0 | Hecho | EPIC-A-008 | Onboarding inicial sin usuarios seed: primer admin creado desde la app, seed demo opcional y smoke checks sin credenciales hardcodeadas |
+| FEAT-012 | feature | P1 | Hecho | EPIC-A-008 | Administracion basica de roles y permisos desde la app: crear roles, editar metadatos, asignar permisos por rol y proteger el rol admin |
 
 ## Regla para agregar items nuevos
 

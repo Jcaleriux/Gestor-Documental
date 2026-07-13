@@ -2,7 +2,7 @@
 
 ## Estado
 
-Hecho para el alcance inicial de FEAT-011. El trabajo posterior de administracion avanzada de roles/permisos queda como historia separada.
+Hecho para el alcance inicial de FEAT-011. La administracion basica de roles/permisos desde UI quedo cubierta en FEAT-012; las excepciones de permisos por usuario siguen como decision futura de negocio.
 
 ## Problema
 
@@ -37,21 +37,22 @@ Una instalacion limpia permite crear el primer usuario administrador desde la UI
 ## Fuera de alcance inicial
 
 - Registro publico abierto de usuarios.
-- Administracion completa de roles y permisos custom desde UI.
 - Permisos adicionales por usuario que sobreescriban el rol.
 - MFA o recuperacion de password.
 - Migracion conservadora de instalaciones demo existentes.
 
 ## Trabajo posterior recomendado
 
-Crear una historia separada para administrar roles y permisos desde UI:
+FEAT-012 cubre la administracion basica de roles y permisos desde UI:
 
 - crear roles,
 - asignar permisos a roles,
-- asignar rol al usuario,
-- y permitir excepciones de permisos por usuario si el negocio lo confirma.
+- editar nombre, descripcion y jerarquia,
+- y asignar rol al usuario desde la administracion existente de usuarios.
 
-Para FEAT-011 conviene mantener el catalogo base en SQL porque el sistema necesita un rol `admin` confiable antes de que exista administracion avanzada de roles.
+El trabajo posterior recomendado es definir si habra excepciones de permisos por usuario. Si se aprueba, debe disenarse como historia separada porque requiere nuevo contrato, persistencia y reglas de resolucion entre rol y excepcion.
+
+El catalogo base sigue en SQL porque el sistema necesita un rol `admin` confiable para instalaciones limpias y para evitar que una mala configuracion deje la app sin administracion.
 
 ## Nota Sobre Smoke Checks
 
@@ -60,7 +61,8 @@ Para FEAT-011 conviene mantener el catalogo base en SQL porque el sistema necesi
 ## Historias candidatas
 
 - FEAT-011: Onboarding inicial sin usuarios seed. Estado: `Hecho`.
-- Historia futura: administracion avanzada de roles/permisos desde UI.
+- FEAT-012: Administracion basica de roles/permisos desde UI. Estado: `Hecho`.
+- Historia futura: excepciones de permisos por usuario, solo si el negocio confirma ese modelo.
 
 ## Riesgos
 

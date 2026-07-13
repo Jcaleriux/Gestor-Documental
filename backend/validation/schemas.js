@@ -195,6 +195,39 @@ const createUsuarioSchema = Joi.object({
   activo: Joi.boolean().optional()
 });
 
+const roleCodeSchema = Joi.string()
+  .trim()
+  .lowercase()
+  .min(2)
+  .max(50)
+  .pattern(/^[a-z][a-z0-9_]*$/)
+  .messages({
+    'string.pattern.base': 'El codigo del rol solo permite letras minusculas, numeros y guion bajo',
+  });
+
+const rolePermissionsArraySchema = Joi.array()
+  .items(Joi.string().trim().max(100));
+const rolePermissionsSchema = rolePermissionsArraySchema.default([]);
+
+const createRoleSchema = Joi.object({
+  codigo: roleCodeSchema.required(),
+  nombre: Joi.string().trim().min(2).max(50).required(),
+  descripcion: Joi.string().trim().max(255).allow('', null),
+  nivel_jerarquia: Joi.number().integer().min(0).max(100).required(),
+  permisos: rolePermissionsSchema
+});
+
+const updateRoleSchema = Joi.object({
+  nombre: Joi.string().trim().min(2).max(50).required(),
+  descripcion: Joi.string().trim().max(255).allow('', null),
+  nivel_jerarquia: Joi.number().integer().min(0).max(100).required(),
+  permisos: rolePermissionsArraySchema.optional()
+});
+
+const setRolePermissionsSchema = Joi.object({
+  permisos: rolePermissionsArraySchema.required()
+});
+
 const updateUsuarioSchema = Joi.object({
   nombre: Joi.string().trim().min(2).max(100).required(),
   email: Joi.string().trim().email({ tlds: { allow: false } }).max(100).required(),
@@ -457,6 +490,9 @@ module.exports = {
   uploadContabilizacionDocumentoRespaldoSchema,
   registrarPagoRetencionSchema,
   createUsuarioSchema,
+  createRoleSchema,
+  updateRoleSchema,
+  setRolePermissionsSchema,
   updateUsuarioSchema,
   onboardingSetupSchema,
   setUsuarioSociedadesSchema,

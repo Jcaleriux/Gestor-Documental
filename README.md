@@ -248,6 +248,9 @@ Por ahora el principio operativo mas importante es `multicurrency-first`: no mez
 - `POST /api/onboarding/setup`
 - `POST /api/auth/login`
 - `GET /api/auth/me`
+- `GET /api/usuarios`
+- `GET /api/roles`
+- `GET /api/permisos`
 - `GET /api/dashboard/stats`
 - `GET /api/facturas`
 - `GET /api/notas-credito`
