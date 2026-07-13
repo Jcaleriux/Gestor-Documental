@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildThemeDiscoveryTipKey,
+  buildThemeDiscoveryTipKeys,
   markThemeDiscoveryTipDismissed,
   shouldShowThemeDiscoveryTip,
 } from '../../src/utils/themeDiscoveryTip.js';
@@ -57,6 +58,46 @@ test('theme discovery tip se muestra una sola vez por usuario', async () => {
 
     assert.equal(shouldShowThemeDiscoveryTip(user), false);
     assert.equal(shouldShowThemeDiscoveryTip({ email: 'otro@empresa.test' }), true);
+  });
+});
+
+test('theme discovery tip reconoce id, email y usuario como el mismo dismissal', async () => {
+  const storage = createStorageMock();
+  const user = {
+    id: 7,
+    email: 'Ana.Conta@Empresa.test',
+    usuario: 'ana.conta',
+  };
+
+  await withStorage(storage, async () => {
+    assert.deepEqual(buildThemeDiscoveryTipKeys(user), [
+      'sendadocs.theme.discoveryTip.v1.7',
+      'sendadocs.theme.discoveryTip.v1.ana.conta%40empresa.test',
+      'sendadocs.theme.discoveryTip.v1.ana.conta',
+    ]);
+
+    markThemeDiscoveryTipDismissed(user);
+
+    assert.equal(shouldShowThemeDiscoveryTip({ id: 7 }), false);
+    assert.equal(shouldShowThemeDiscoveryTip({ email: 'ana.conta@empresa.test' }), false);
+    assert.equal(shouldShowThemeDiscoveryTip({ usuario: 'ana.conta' }), false);
+    assert.equal(shouldShowThemeDiscoveryTip({ email: 'otro@empresa.test' }), true);
+  });
+});
+
+test('theme discovery tip no reaparece si existe una llave legacy por email', async () => {
+  const storage = createStorageMock();
+
+  await withStorage(storage, async () => {
+    storage.setItem(
+      'sendadocs.theme.discoveryTip.v1.ana.conta%40empresa.test',
+      'dismissed',
+    );
+
+    assert.equal(shouldShowThemeDiscoveryTip({
+      id: 7,
+      email: 'Ana.Conta@Empresa.test',
+    }), false);
   });
 });
 

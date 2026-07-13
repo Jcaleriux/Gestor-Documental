@@ -25,6 +25,21 @@ export const buildThemeDiscoveryTipKey = (user) => {
   return `${THEME_DISCOVERY_TIP_KEY_PREFIX}.${encodeURIComponent(String(identity).trim().toLowerCase())}`;
 };
 
+export const buildThemeDiscoveryTipKeys = (user) => {
+  const identities = [
+    user?.id,
+    user?.email,
+    user?.usuario,
+  ]
+    .map((identity) => String(identity ?? '').trim().toLowerCase())
+    .filter(Boolean);
+  const uniqueIdentities = [...new Set(identities.length > 0 ? identities : ['default'])];
+
+  return uniqueIdentities.map((identity) => (
+    `${THEME_DISCOVERY_TIP_KEY_PREFIX}.${encodeURIComponent(identity)}`
+  ));
+};
+
 export const shouldShowThemeDiscoveryTip = (user) => {
   const storage = getStorage();
   if (!storage) {
@@ -32,7 +47,7 @@ export const shouldShowThemeDiscoveryTip = (user) => {
   }
 
   try {
-    return storage.getItem(buildThemeDiscoveryTipKey(user)) !== 'dismissed';
+    return !buildThemeDiscoveryTipKeys(user).some((key) => storage.getItem(key) === 'dismissed');
   } catch {
     return false;
   }
@@ -45,7 +60,9 @@ export const markThemeDiscoveryTipDismissed = (user) => {
   }
 
   try {
-    storage.setItem(buildThemeDiscoveryTipKey(user), 'dismissed');
+    buildThemeDiscoveryTipKeys(user).forEach((key) => {
+      storage.setItem(key, 'dismissed');
+    });
   } catch {
     // Ignore storage failures; this onboarding hint should never block the app.
   }
