@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { usuariosApi } from '../../services/usuariosApi';
 import { isStrongPassword } from '../../utils/passwordPolicy';
+import { buildRoleFormPayload, normalizePermissionNames } from '../../utils/rolesAdmin';
 
 const EMPTY_FORM = {
   nombre: '',
@@ -8,6 +9,14 @@ const EMPTY_FORM = {
   rol_id: '',
   activo: true,
   password: ''
+};
+
+const EMPTY_ROLE_FORM = {
+  codigo: '',
+  nombre: '',
+  descripcion: '',
+  nivel_jerarquia: 40,
+  permisos: []
 };
 
 const toFormFromUser = (user) => ({
@@ -18,29 +27,43 @@ const toFormFromUser = (user) => ({
   password: ''
 });
 
+const toFormFromRole = (role) => ({
+  codigo: role.codigo || '',
+  nombre: role.nombre || '',
+  descripcion: role.descripcion || '',
+  nivel_jerarquia: role.nivel_jerarquia ?? 40,
+  permisos: normalizePermissionNames(role.permisos)
+});
+
 export const useUsuariosAdminViewModel = () => {
   const [usuarios, setUsuarios] = useState([]);
   const [roles, setRoles] = useState([]);
+  const [permisos, setPermisos] = useState([]);
   const [sociedades, setSociedades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingRole, setSavingRole] = useState(false);
   const [savingSociedades, setSavingSociedades] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [editingRoleId, setEditingRoleId] = useState(null);
   const [sociedadesUser, setSociedadesUser] = useState(null);
   const [sociedadesAsignadas, setSociedadesAsignadas] = useState([]);
   const [search, setSearch] = useState('');
   const [form, setForm] = useState(EMPTY_FORM);
+  const [roleForm, setRoleForm] = useState(EMPTY_ROLE_FORM);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
   const isEditing = editingId != null;
+  const isEditingRole = editingRoleId != null;
 
   const loadData = async ({ showLoader = true } = {}) => {
     try {
       if (showLoader) setLoading(true);
-      const [usersRes, rolesRes, sociedadesRes] = await Promise.all([
+      const [usersRes, rolesRes, permisosRes, sociedadesRes] = await Promise.all([
         usuariosApi.listUsuarios(),
         usuariosApi.listRoles(),
+        usuariosApi.listPermisos(),
         usuariosApi.listSociedades()
       ]);
 
@@ -49,6 +72,9 @@ export const useUsuariosAdminViewModel = () => {
       }
       if (rolesRes.data?.success) {
         setRoles(rolesRes.data.data || []);
+      }
+      if (permisosRes.data?.success) {
+        setPermisos(permisosRes.data.data || []);
       }
       if (sociedadesRes.data?.success) {
         setSociedades(sociedadesRes.data.data || []);
@@ -91,6 +117,11 @@ export const useUsuariosAdminViewModel = () => {
     setForm(EMPTY_FORM);
   };
 
+  const resetRoleForm = () => {
+    setEditingRoleId(null);
+    setRoleForm(EMPTY_ROLE_FORM);
+  };
+
   const startCreate = () => {
     resetForm();
     setError('');
@@ -100,6 +131,19 @@ export const useUsuariosAdminViewModel = () => {
   const startEdit = (user) => {
     setEditingId(user.id);
     setForm(toFormFromUser(user));
+    setError('');
+    setMessage('');
+  };
+
+  const startCreateRole = () => {
+    resetRoleForm();
+    setError('');
+    setMessage('');
+  };
+
+  const startEditRole = (role) => {
+    setEditingRoleId(role.id);
+    setRoleForm(toFormFromRole(role));
     setError('');
     setMessage('');
   };
@@ -151,6 +195,57 @@ export const useUsuariosAdminViewModel = () => {
       return false;
     } finally {
       setSaving(false);
+    }
+  };
+
+  const setRoleFormField = (field, value) => {
+    setRoleForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const toggleRolePermission = (permissionName) => {
+    setRoleForm((prev) => {
+      const current = new Set(normalizePermissionNames(prev.permisos));
+      if (current.has(permissionName)) {
+        current.delete(permissionName);
+      } else {
+        current.add(permissionName);
+      }
+
+      return {
+        ...prev,
+        permisos: normalizePermissionNames(Array.from(current))
+      };
+    });
+  };
+
+  const handleRoleFormSubmit = async (event) => {
+    event.preventDefault();
+
+    try {
+      setSavingRole(true);
+      setError('');
+      setMessage('');
+
+      const payload = buildRoleFormPayload(roleForm);
+      if (isEditingRole) {
+        const updatePayload = { ...payload };
+        delete updatePayload.codigo;
+        await usuariosApi.updateRole(editingRoleId, updatePayload);
+        setMessage('Rol actualizado correctamente.');
+      } else {
+        await usuariosApi.createRole(payload);
+        setMessage('Rol creado correctamente.');
+      }
+
+      await loadData({ showLoader: false });
+      resetRoleForm();
+      return true;
+    } catch (err) {
+      const apiError = err.response?.data?.error || 'No se pudo guardar el rol.';
+      setError(apiError);
+      return false;
+    } finally {
+      setSavingRole(false);
     }
   };
 
@@ -238,26 +333,37 @@ export const useUsuariosAdminViewModel = () => {
 
   return {
     roles,
+    permisos,
     sociedades,
     loading,
     saving,
+    savingRole,
     savingSociedades,
     editingId,
+    editingRoleId,
     isEditing,
+    isEditingRole,
     sociedadesUser,
     sociedadesAsignadas,
     search,
     setSearch,
     form,
+    roleForm,
     message,
     error,
     filteredUsers,
     startCreate,
     startEdit,
+    startCreateRole,
+    startEditRole,
     resetForm,
+    resetRoleForm,
     setFormField,
+    setRoleFormField,
     handleFormSubmit,
+    handleRoleFormSubmit,
     handleToggleActive,
+    toggleRolePermission,
     openSociedadesPanel,
     closeSociedadesPanel,
     toggleSociedad,

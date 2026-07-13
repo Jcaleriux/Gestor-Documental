@@ -473,12 +473,64 @@ Fuente: `backend/routes/usuarios.js`, `backend/routes/sociedades.js`, `backend/v
 | Metodo | Endpoint | Permiso | Descripcion | Tests relacionados |
 | --- | --- | --- | --- | --- |
 | `GET` | `/api/usuarios` | `USUARIOS_ADMINISTRAR` | Lista usuarios. | Sin test dedicado identificado |
-| `GET` | `/api/roles` | `USUARIOS_ADMINISTRAR` | Lista roles. | Sin test dedicado identificado |
+| `GET` | `/api/roles` | `USUARIOS_ADMINISTRAR` | Lista roles con permisos asignados. | `rolesRoutes.test.js`, `rolesUseCases.test.js` |
+| `GET` | `/api/permisos` | `USUARIOS_ADMINISTRAR` | Lista catalogo de permisos disponibles. | `rolesRoutes.test.js`, `rolesUseCases.test.js` |
+| `POST` | `/api/roles` | `USUARIOS_ADMINISTRAR` | Crea rol y asigna permisos iniciales. | `rolesRoutes.test.js`, `rolesUseCases.test.js` |
+| `PATCH` | `/api/roles/:id` | `USUARIOS_ADMINISTRAR` | Actualiza nombre, descripcion, nivel y opcionalmente permisos del rol. | `rolesRoutes.test.js`, `rolesUseCases.test.js` |
+| `PUT` | `/api/roles/:id/permisos` | `USUARIOS_ADMINISTRAR` | Reemplaza permisos asignados al rol. | `rolesRoutes.test.js`, `rolesUseCases.test.js` |
 | `POST` | `/api/usuarios` | `USUARIOS_ADMINISTRAR` | Crea usuario. | Sin test dedicado identificado |
 | `PATCH` | `/api/usuarios/:id` | `USUARIOS_ADMINISTRAR` | Actualiza usuario. | Sin test dedicado identificado |
 | `GET` | `/api/usuarios/:id/sociedades` | `USUARIOS_ADMINISTRAR` | Lista sociedades asignadas a usuario. | Sin test dedicado identificado |
 | `PUT` | `/api/usuarios/:id/sociedades` | `USUARIOS_ADMINISTRAR` | Reemplaza sociedades asignadas a usuario. | Sin test dedicado identificado |
 | `GET` | `/api/sociedades` | Alguno de `SOCIEDADES_ACCESS_PERMISSIONS` | Lista sociedades visibles para el usuario. | Sin test dedicado identificado |
+
+### POST /api/roles
+
+Request:
+
+```json
+{
+  "codigo": "qa_operativo",
+  "nombre": "QA operativo",
+  "descripcion": "Control operativo",
+  "nivel_jerarquia": 35,
+  "permisos": ["documentos_ver"]
+}
+```
+
+Notas:
+
+- `codigo` se normaliza a minusculas, permite letras, numeros y guion bajo, y queda inmutable despues de crear el rol.
+- `permisos` debe contener nombres existentes en `permisos`.
+- El rol `admin` no puede quedar sin `acceso_total` ni `usuarios_administrar`.
+
+### PATCH /api/roles/:id
+
+Request:
+
+```json
+{
+  "nombre": "QA operativo",
+  "descripcion": "Control operativo",
+  "nivel_jerarquia": 35,
+  "permisos": ["documentos_ver"]
+}
+```
+
+Notas:
+
+- Si `permisos` no viene en el payload, solo se actualizan metadatos del rol.
+- Si `permisos` viene en el payload, reemplaza la matriz completa del rol.
+
+### PUT /api/roles/:id/permisos
+
+Request:
+
+```json
+{
+  "permisos": ["documentos_ver", "documentos_descargar"]
+}
+```
 
 ### POST /api/usuarios
 

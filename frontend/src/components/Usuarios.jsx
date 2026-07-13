@@ -10,6 +10,7 @@ import { useUsuariosAdminViewModel } from '../hooks/usuarios/useUsuariosAdminVie
 import UsuarioFormCard from './usuarios/UsuarioFormCard';
 import UsuariosListCard from './usuarios/UsuariosListCard';
 import UsuarioSociedadesCard from './usuarios/UsuarioSociedadesCard';
+import RolesAdminCard from './usuarios/RolesAdminCard';
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100];
 const ROLES_TODAS_SOCIEDADES = new Set([
@@ -146,26 +147,37 @@ function Usuarios() {
   const [pageSize, setPageSize] = useState(PAGE_SIZE_OPTIONS[0]);
   const {
     roles,
+    permisos,
     sociedades,
     loading,
     saving,
+    savingRole,
     savingSociedades,
     editingId,
+    editingRoleId,
     isEditing,
+    isEditingRole,
     sociedadesUser,
     sociedadesAsignadas,
     search,
     setSearch,
     form,
+    roleForm,
     message,
     error,
     filteredUsers,
     startCreate,
     startEdit,
+    startCreateRole,
+    startEditRole,
     resetForm,
+    resetRoleForm,
     setFormField,
+    setRoleFormField,
     handleFormSubmit,
+    handleRoleFormSubmit,
     handleToggleActive,
+    toggleRolePermission,
     openSociedadesPanel,
     closeSociedadesPanel,
     toggleSociedad,
@@ -286,6 +298,21 @@ function Usuarios() {
         totalPages={totalPages}
         users={filteredUsers}
         rolesCount={roles.length}
+      />
+
+      <RolesAdminCard
+        roles={roles}
+        permisos={permisos}
+        roleForm={roleForm}
+        savingRole={savingRole}
+        editingRoleId={editingRoleId}
+        isEditingRole={isEditingRole}
+        onStartCreateRole={startCreateRole}
+        onStartEditRole={startEditRole}
+        onResetRoleForm={resetRoleForm}
+        onRoleFieldChange={setRoleFormField}
+        onToggleRolePermission={toggleRolePermission}
+        onSubmit={handleRoleFormSubmit}
       />
 
       <UsuariosListCard

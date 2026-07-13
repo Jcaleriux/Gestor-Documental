@@ -182,6 +182,7 @@ Estos items ya estan cerrados o son historicos:
 - `FEAT-009`
 - `FEAT-010`
 - `FEAT-011`
+- `FEAT-012`
 - `TECH-001`
 - `TECH-004`
 - `TECH-005`

@@ -6,6 +6,163 @@
   margin-bottom: 8px;
 }
 
+.roles-admin-card {
+  margin-bottom: 16px;
+}
+
+.roles-admin-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.roles-admin-list {
+  display: grid;
+  gap: 8px;
+  max-height: 520px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.roles-admin-list-item {
+  width: 100%;
+  min-height: 58px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: #fff;
+  color: #101828;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.roles-admin-list-item:hover:not(:disabled),
+.roles-admin-list-item.is-active {
+  border-color: #0d6efd;
+  background: #f5f9ff;
+}
+
+.roles-admin-list-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.roles-admin-list-main strong,
+.roles-admin-list-main span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.roles-admin-list-main strong {
+  font-size: 0.9rem;
+}
+
+.roles-admin-list-main span {
+  color: #667085;
+  font-size: 0.76rem;
+}
+
+.roles-admin-count {
+  min-width: 32px;
+  border-radius: 999px;
+  background: #eef2f6;
+  color: #344054;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 7px 8px;
+  text-align: center;
+}
+
+.roles-admin-form {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.roles-admin-form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) 120px;
+  gap: 12px;
+}
+
+.roles-admin-description {
+  grid-column: 1 / -1;
+}
+
+.roles-permissions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.roles-permission-group {
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.roles-permission-group-title {
+  border-bottom: 1px solid var(--app-border);
+  background: #f8fafc;
+  color: #344054;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 9px 12px;
+  text-transform: uppercase;
+}
+
+.roles-permission-options {
+  display: grid;
+  gap: 0;
+}
+
+.roles-permission-option {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  border-bottom: 1px solid #eef2f6;
+  padding: 9px 12px;
+}
+
+.roles-permission-option:last-child {
+  border-bottom: none;
+}
+
+.roles-permission-option span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.roles-permission-option strong {
+  color: #101828;
+  font-size: 0.8rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.roles-permission-option small {
+  color: #667085;
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+.roles-admin-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
 .usuarios-data-table {
   table-layout: fixed;
   width: 100%;
@@ -108,6 +265,24 @@
 }
 
 @media (max-width: 992px) {
+  .roles-admin-layout,
+  .roles-admin-form-grid,
+  .roles-permissions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .roles-admin-list {
+    max-height: 280px;
+  }
+
+  .roles-admin-actions {
+    justify-content: stretch;
+  }
+
+  .roles-admin-actions .btn {
+    flex: 1 1 180px;
+  }
+
   .usuarios-row-actions {
     width: 100%;
     display: grid;
