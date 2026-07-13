@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { usuariosApi } from '../../services/usuariosApi';
 import { isStrongPassword } from '../../utils/passwordPolicy';
 import { buildRoleFormPayload, normalizePermissionNames } from '../../utils/rolesAdmin';
+import { buildUsuariosAdminLoadState } from './usuariosAdminLoadState';
 
 const EMPTY_FORM = {
   nombre: '',
@@ -60,25 +61,32 @@ export const useUsuariosAdminViewModel = () => {
   const loadData = async ({ showLoader = true } = {}) => {
     try {
       if (showLoader) setLoading(true);
-      const [usersRes, rolesRes, permisosRes, sociedadesRes] = await Promise.all([
+      const [usersResult, rolesResult, permisosResult, sociedadesResult] = await Promise.allSettled([
         usuariosApi.listUsuarios(),
         usuariosApi.listRoles(),
         usuariosApi.listPermisos(),
         usuariosApi.listSociedades()
       ]);
+      const nextState = buildUsuariosAdminLoadState({
+        usersResult,
+        rolesResult,
+        permisosResult,
+        sociedadesResult
+      });
 
-      if (usersRes.data?.success) {
-        setUsuarios(usersRes.data.data || []);
+      if (nextState.usuarios) {
+        setUsuarios(nextState.usuarios);
       }
-      if (rolesRes.data?.success) {
-        setRoles(rolesRes.data.data || []);
+      if (nextState.roles) {
+        setRoles(nextState.roles);
       }
-      if (permisosRes.data?.success) {
-        setPermisos(permisosRes.data.data || []);
+      if (nextState.permisos) {
+        setPermisos(nextState.permisos);
       }
-      if (sociedadesRes.data?.success) {
-        setSociedades(sociedadesRes.data.data || []);
+      if (nextState.sociedades) {
+        setSociedades(nextState.sociedades);
       }
+      setError(nextState.error);
     } catch (err) {
       const apiError = err.response?.data?.error || 'No se pudo cargar la administracion de usuarios.';
       setError(apiError);
